@@ -6,6 +6,11 @@ The goal is to provide state of the art machine learning models in a central lib
 
 # Setting up your environment required for DiffDock
 
+----
+
+```
+git clone https://github.com/gcorso/DiffDock.git
+```
 ## GPU available
 ```
 conda create --name proteusAI python=3.8
@@ -15,7 +20,7 @@ pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geo
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
 ```
 
-## CPU only
+## CPU only 
 ```
 conda create --name proteusAI python=3.8
 conda activate proteusAI
@@ -24,13 +29,9 @@ pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geo
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
 ```
 
-If you want to run use notebooks, run:
+# Install ESM
 
-```
-conda install -c conda-forge jupyterlab
-```
-
-## Install ESM
+----
 
 ```
 pip install fair-esm  # latest release, OR:
@@ -51,10 +52,18 @@ if no GPU available use huggingface
 pip install "transformers[torch]"
 ```
 
-## Additional requirements
+# Additional requirements
+
+----
 
 ```
 conda install -c conda-forge biopython
 conda install -c conda-forge biotite
 conda install -c conda-forge py3dmol
+```
+
+If you want to run use notebooks, run:
+
+```
+conda install -c conda-forge jupyterlab
 ```
