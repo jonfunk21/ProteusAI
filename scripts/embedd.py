@@ -11,7 +11,7 @@ model.to(device)
 model.eval()  # disables dropout for deterministic results
 batch_converter = alphabet.get_batch_converter()
 
-def compute_representations(data: tuple, dest: str = None, device: str = 'cpu'):
+def compute_representations(data: tuple, dest: str = None, device: str = 'cuda'):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
@@ -30,8 +30,7 @@ def compute_representations(data: tuple, dest: str = None, device: str = 'cpu'):
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
 
     with torch.no_grad():
-        batch_tokens.to(device)
-        results = model(batch_tokens, repr_layers=[33], return_contacts=True)
+        results = model(batch_tokens.to(device), repr_layers=[33], return_contacts=True)
 
     token_representations = results["representations"][33]
 
