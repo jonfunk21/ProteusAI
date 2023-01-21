@@ -103,7 +103,7 @@ batch_sizes = range(1, 26, 1)
 for BATCH_SIZE in batch_sizes:
     start_time = time.time()
     batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=BATCH_SIZE)
-    for batch in batches:
+    for batch in batches[0:100]:
         seq_rep = compute_representations(batch, dest=DEST, device=device)
     end_time = time.time()
     elapsed_time = end_time - start_time
