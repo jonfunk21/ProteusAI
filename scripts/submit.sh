@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### -- set the job Name --
-#BSUB -J train
+#BSUB -J test
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 4
 #BSUB -R "span[hosts=1]"
@@ -17,14 +17,14 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o train.out
-#BSUB -e train.err
+#BSUB -o test.out
+#BSUB -e test.err
 
 # here follow the commands you want to execute
 
 # submit with bsub < submit.sh
->train.out
->train.err
+>test.out
+>test.err
 
 cd ~/projects/ProteusAI
 module load cuda/11.7
