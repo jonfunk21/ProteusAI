@@ -94,14 +94,23 @@ FASTA_PATH = "../esm/examples/data/P62593.fasta"
 DEST = "../example_data/representations/P62593"
 if not os.path.exists(DEST):
     os.makedirs(DEST)
-BATCH_SIZE=26
+BATCH_SIZE=10
 
 import time
-start_time = time.time()
-batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=BATCH_SIZE)
-for batch in batches:
-    seq_rep = compute_representations(batch, dest=DEST, device=device)
-end_time = time.time()
-elapsed_time = end_time - start_time
+import matplotlib.pyplot as plt
+times = []
+batch_sizes = range(1, 26, 1)
+for BATCH_SIZE in batch_sizes:
+    start_time = time.time()
+    batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=BATCH_SIZE)
+    for batch in batches[0:100]:
+        seq_rep = compute_representations(batch, dest=DEST, device=device)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    times.append(elapsed_time)
 
-print(elapsed_time)
+plt.plot(batch_sizes, times)
+plt.title('Benchmark embedding speed versus batch size')
+plt.xlabel('Batch size')
+plt.ylabel('Time (s)')
+plt.savefig('plots/embedding_benchmark.png')
