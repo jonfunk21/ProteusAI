@@ -99,7 +99,7 @@ BATCH_SIZE=10
 import time
 import matplotlib.pyplot as plt
 times = []
-batch_sizes = range(1, 100, 10)
+batch_sizes = range(1, 50, 10)
 for BATCH_SIZE in batch_sizes:
     start_time = time.time()
     batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=BATCH_SIZE)
