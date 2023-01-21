@@ -33,4 +33,5 @@ module load python3/3.8.14
 source proteus_env/bin/activate
 # additional requirements
 
-python3 scripts/embedd.py
+cd scripts
+python3 embedd.py
