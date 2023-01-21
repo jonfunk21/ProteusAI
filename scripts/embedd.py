@@ -11,7 +11,7 @@ model.to(device)
 model.eval()  # disables dropout for deterministic results
 batch_converter = alphabet.get_batch_converter()
 
-def compute_representations(data: tuple, dest: str = None):
+def compute_representations(data: tuple, dest: str = None, device: str = 'cpu'):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
@@ -30,6 +30,7 @@ def compute_representations(data: tuple, dest: str = None):
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
 
     with torch.no_grad():
+        batch_tokens.to(device)
         results = model(batch_tokens, repr_layers=[33], return_contacts=True)
 
     token_representations = results["representations"][33]
@@ -53,7 +54,7 @@ def divide_list(lst, chunk_size):
         yield lst[i:i + chunk_size]
 
 
-def batch_fasta(fasta_path: str, batch_size: int, dest: str = None):
+def batch_fasta(fasta_path: str, batch_size: int):
     """
     Get batches from fasta file with format:
     >{index}|{id}|{activity}
@@ -87,13 +88,12 @@ def batch_fasta(fasta_path: str, batch_size: int, dest: str = None):
         _activities = []
         for chunk in divide_list(activities, batch_size):
             _activities.append(chunk)
-        # batches = [data[i:i+batch_size] for i in range(0, len(data), batch_size)]
-        # activities = []
+
         return batches, _activities
 
 FASTA_PATH = "../esm/examples/data/P62593.fasta"
 DEST = "../example_data/representations/P62593"
 
-batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=10, dest=DEST)
+batches, activities = batch_fasta(fasta_path=FASTA_PATH, batch_size=10)
 
-seq_rep = compute_representations(batches[0], dest='.')
+seq_rep = compute_representations(batches[0], dest='.', device=device)
