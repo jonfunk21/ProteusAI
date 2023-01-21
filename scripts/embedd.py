@@ -92,6 +92,8 @@ def batch_fasta(fasta_path: str, batch_size: int):
 
 FASTA_PATH = "../esm/examples/data/P62593.fasta"
 DEST = "../example_data/representations/P62593"
+if not os.path.exists(DEST):
+    os.makedirs(DEST)
 BATCH_SIZE=10
 
 import time
