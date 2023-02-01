@@ -26,7 +26,7 @@
 >test.out
 >test.err
 
-cd ~/projects/ProteusAI
+cd ~/projects/proteusAI
 module load cuda/11.7
 module load python3/3.8.14
 
