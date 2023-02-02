@@ -112,7 +112,7 @@ if __name__ == '__main__':
      <path to dest>/{id}.pt
      
      example:
-     python3 embedd.py -f input.fasta -d out_dir -b 16
+     python3 embedd.py -f input.fasta -d out_dir -b 26
      ''',
     formatter_class=argparse.RawTextHelpFormatter)
 
@@ -124,9 +124,13 @@ if __name__ == '__main__':
 
     FASTA_PATH = args.fasta
     DEST = args.dest
-    BATCH_SIZE= args.batch_size
+    BATCH_SIZE = int(args.batch_size)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # on M1 if mps available
+    if device == torch.device(type='cpu'):
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
     print('Using device:', device)
 
     # Load ESM-2 model
