@@ -18,7 +18,7 @@ def show(pdb_str, color='rainbow', vmin=50, vmax=90, chains=None, Ls=None, size=
 
     Parameters:
     pdb_str (str): The filename of the PDB file that contains the protein structure.
-    color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", or "confidence".
+    color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", or "confidence". Defaults to "rainbow".
     vmin (float, optional): The minimum value of pLDDT or confidence value. Defaults to 50.
     vmax (float, optional): The maximum value of pLDDT or confidence value. Defaults to 90.
     chains (int, optional): The number of chains to be displayed. Defaults to None.
