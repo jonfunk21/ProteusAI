@@ -13,7 +13,8 @@ def search_related_sequences(query_sequence, db: str = "nr"):
         query_sequence (Bio.SeqRecord.SeqRecord): query sequence
         db (str): database, default nr (non redundant)
 
-    Returns: list of hits
+    Returns:
+        list of hits
 
     Examples:
         query_sequence = SeqIO.read("example.fasta", "fasta")
