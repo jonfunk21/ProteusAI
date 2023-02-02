@@ -1,7 +1,7 @@
 import requests
 import os
 
-def get_alphafold_db_pdb(protein_id: str, out_path: str) -> bool:
+def get_pdb(protein_id: str, out_path: str) -> bool:
     """
     This function takes in a UniProt ID and an output path and downloads the corresponding AlphaFold model
     from the EBI AlphaFold database in PDB format.
