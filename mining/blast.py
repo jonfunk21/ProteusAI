@@ -10,10 +10,8 @@ def search_related_sequences(query_sequence, db: str = "nr"):
     Search for related protein sequences using blast.
 
     Parameters:
-        :param query_sequence: query sequence
-        :type query_sequence: Bio.SeqRecord.SeqRecord
-        :param db: database, default nr (non redundant)
-        :type db: str
+        query_sequence (Bio.SeqRecord.SeqRecord): query sequence
+        db (str): database, default nr (non redundant)
 
     Returns: list of hits
 
@@ -42,12 +40,9 @@ def fastas_from_blast(hits: list, dest: str, email: str = "your@email.com", db: 
     Download fastas from blast search result.
 
     Parameters:
-        :param hits: list of alignements (alignments type = : Bio.Blast.Record.Alignment)
-        :type hits: list
-        :param email: email adress
-        :type email: str
-        :param dest: destination where files will be saved
-        :type dest: string
+        hits (list): list of alignements (alignments type = : Bio.Blast.Record.Alignment)
+        email (str): email adress
+        dest (str): destination where files will be saved
 
     Examples:
         query_sequence = SeqIO.read("example.fasta", "fasta")
