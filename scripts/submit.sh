@@ -26,11 +26,11 @@
 >test.out
 >test.err
 
-cd ~/projects/proteusAI
+cd ~/projects/proteusAI/scripts
 module load cuda/11.7
 module load python3/3.8.14
 
 source proteus_env/bin/activate
 # additional requirements
 
-python3 extraction/embedd.py
+python3 test.py
