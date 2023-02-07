@@ -4,13 +4,13 @@ import os
 import time
 import argparse
 
-def compute_representations(data: tuple, dest: str = None, device: str = 'cuda'):
+def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
 
     Parameters:
-        data : tuple of label for sequence and protein sequence (label, sequence)
+        data : list of tuples containing sequence labels (str) and protein sequences (str) (label, sequence)
 
     Returns: representations (list)
 
