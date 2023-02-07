@@ -1,69 +1,54 @@
-from Bio.Blast import NCBIWWW
-from Bio import SeqIO
-from Bio.Blast import NCBIXML
-from Bio import Entrez
-import os
+from tempfile import gettempdir
+import biotite.sequence as seq
+import biotite.sequence.io.fasta as fasta
+import biotite.sequence.graphics as graphics
+import biotite.application.muscle as muscle
+import biotite.application.blast as blast
+import biotite.database.entrez as entrez
+import matplotlib.pyplot as plt
 
 
-def search_related_sequences(query_sequence, db: str = "nr"):
+def search_related_sequences(query: str, program: str = 'blastp', database: str = 'nr', obey_rules: bool = True,
+                            mail: str = 'padix.key@gmail.com'):
     """
-    Search for related protein sequences using blast.
+    Search for related sequences using the plast web app.
 
     Parameters:
-        query_sequence (Bio.SeqRecord.SeqRecord): query sequence
-        db (str): database, default nr (non redundant)
+        query (str):
+            Query sequence
+        program (str, optional):
+            The specific BLAST program. One of 'blastn', 'megablast', 'blastp', 'blastx', 'tblastn' and 'tblastx'.
+        database (str, optional):
+            The NCBI sequence database to blast against. By default it contains all sequences (`database`='nr'`).
+        obey_rules (bool, optional):
+            If true, the application raises an :class:`RuleViolationError`, if the server is contacted too often,
+            based on the NCBI BLAST usage rules. (Default: True)
+        mail : str, optional
+            If a mail address is provided, it will be appended in the
+            HTTP request. This allows the NCBI to contact you in case
+            your application sends too many requests.
 
     Returns:
-        list of hits
+        tuple: two lits, the first containing the hits and the second the hit sequences
 
-    Examples:
-        query_sequence = SeqIO.read("example.fasta", "fasta")
-        hits = search_related_sequences(query_sequence, "nr")
+    Example:
+        hits, hit_seqs = blast_related_sequences(query=sequence, database='swissprot')
     """
-    # Run a BLAST search against the specified database
-    result_handle = NCBIWWW.qblast("blastp", db, query_sequence.format("fasta"))
-
-    # Parse the BLAST results
-    blast_records = NCBIXML.parse(result_handle)
-
-    # Extract the IDs and descriptions of the top 10 hits
+    # Search only the UniProt/SwissProt database
+    blast_app = blast.BlastWebApp(program=program, query=query, database=database, obey_rules=obey_rules, mail=mail)
+    blast_app.start()
+    blast_app.join()
+    alignments = blast_app.get_alignments()
+    # Get hit IDs for hits with score > 200
     hits = []
-    for blast_record in blast_records:
-        for alignment in blast_record.alignments:
-            for hsp in alignment.hsps:
-                hits.append(alignment)
+    for ali in alignments:
+        if ali.score > 200:
+            hits.append(ali.hit_id)
+    # Get the sequences from hit IDs
+    hit_seqs = []
+    for hit in hits:
+        file_name = entrez.fetch(hit, gettempdir(), "fa", "protein", "fasta")
+        fasta_file = fasta.FastaFile.read(file_name)
+        hit_seqs.append(fasta.get_sequence(fasta_file))
 
-    return hits
-
-
-def fastas_from_blast(hits: list, dest: str, email: str = "your@email.com", db: str = "protein"):
-    """
-    Download fastas from blast search result.
-
-    Parameters:
-        hits (list): list of alignements (alignments type = : Bio.Blast.Record.Alignment)
-        email (str): email adress
-        dest (str): destination where files will be saved
-
-    Examples:
-        query_sequence = SeqIO.read("example.fasta", "fasta")
-        hits = search_related_sequences(query_sequence, "nr")
-        fastas_from_blast(hits, './results/', 'your@email.com')
-    """
-
-    assert email != 'your@email.com', "Error: provide a valid email"
-    hit_ids = [hit.hit_id for hit in hits]
-
-    # Retrieve the sequences of the hits from the database
-    Entrez.email = email
-    handle = Entrez.efetch(db=db, id=hit_ids, rettype="fasta")
-    records = list(SeqIO.parse(handle, "fasta"))
-
-    if not os.path.exists(dest):
-        os.makedirs(dest)
-
-    # Save the sequences to FASTA files
-    for record in records:
-        out_f = os.path.join(dest, f"{record.id}.fasta")
-        with open(out_f, "w") as f:
-            SeqIO.write(record, f, "fasta")
+    return hits, hit_seqs
