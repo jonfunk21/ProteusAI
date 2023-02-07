@@ -3,7 +3,7 @@ import requests
 from io import StringIO
 from hashlib import md5
 
-def get_protein_sequence(uniprot_id: str):
+def get_protein_sequence(uniprot_id: str) -> str:
     """
     This function takes a UniProt ID as input and returns the corresponding sequence record.
 
