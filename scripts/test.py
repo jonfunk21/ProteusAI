@@ -10,8 +10,9 @@ import os
 import time
 import argparse
 
-# loading sequences and names from example data
-names, seqs = fasta.load_fastas('../example_data/sequences/swissprot_methyltransferases/')
+# INPUTS
+names, seqs = fasta.load('../example_data/sequences/swissprot_methyltransferases/')
+dest = '../example_data/representations/methyltransferases'
 
 # select device based on
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -73,4 +74,4 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
 data = list(zip(hits, seqs))
 print(len(data))
 for i in range(0, len(data), batch_size):
-    r = compute_representations(PNMT_data[i:i + batch_size], dest='../example_data/representations/methyltransferases' ,device=str(device))
+    r = compute_representations(PNMT_data[i:i + batch_size], dest=dest ,device=str(device))
