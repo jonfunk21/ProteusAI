@@ -83,5 +83,5 @@ for i in range(0, len(PNMT_data), 10):
 ASMT_data = list(zip(ASMT_hits, ASMT_hit_seqs))
 ASMT_representations = []
 for i in range(0, len(ASMT_data), 5):
-    r = compute_representations(ASMT_data[i:i + batch_size], dest='../example_data/representations/PNMT', device=str(device))
+    r = compute_representations(ASMT_data[i:i + batch_size], dest='../example_data/representations/ASMT', device=str(device))
     ASMT_representations.append(r)
