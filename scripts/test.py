@@ -11,8 +11,7 @@ import time
 import argparse
 
 # loading sequences and names from example data
-ASMT_hits, ASMT_hit_seqs = fasta.load_fastas('../example_data/mining/ASMT/')
-PNMT_hits, PNMT_hit_seqs = fasta.load_fastas('../example_data/mining/PNMT/')
+names, seqs = fasta.load_fastas('../example_data/sequences/swissprot_methyltransferases/')
 
 # select device based on
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -71,16 +70,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
 
     return sequence_representations
 
-PNMT_data = list(zip(PNMT_hits, PNMT_hit_seqs))
-print(len(PNMT_data))
-#PNMT_representations = []
-for i in range(0, len(PNMT_data), batch_size):
-    r = compute_representations(PNMT_data[i:i + batch_size], dest='../example_data/representations/PNMT' ,device=str(device))
-#    PNMT_representations.append(r)
-
-ASMT_data = list(zip(ASMT_hits, ASMT_hit_seqs))
-print(len(ASMT_data))
-#ASMT_representations = []
-for i in range(0, len(ASMT_data), batch_size):
-    r = compute_representations(ASMT_data[i:i + batch_size], dest='../example_data/representations/ASMT', device=str(device))
-#    ASMT_representations.append(r)
+data = list(zip(hits, seqs))
+print(len(data))
+for i in range(0, len(data), batch_size):
+    r = compute_representations(PNMT_data[i:i + batch_size], dest='../example_data/representations/methyltransferases' ,device=str(device))
