@@ -74,4 +74,4 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
 data = list(zip(names, seqs))
 print(len(data))
 for i in range(0, len(data), batch_size):
-    r = compute_representations(data[i:i + batch_size], dest=dest ,device=str('cpu'))
+    r = compute_representations(data[i:i + batch_size], dest=dest ,device=str(device))
