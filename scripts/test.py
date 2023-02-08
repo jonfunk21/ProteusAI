@@ -19,7 +19,7 @@ PNMT_hits, PNMT_hit_seqs = fasta.load_fastas('../example_data/mining/PNMT/')
 
 # select device based on
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
-batch_size = 10
+batch_size = 5
 
 # Load ESM-2 model
 model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
