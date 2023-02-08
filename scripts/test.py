@@ -10,9 +10,6 @@ import os
 import time
 import argparse
 
-
-
-
 # loading sequences and names from example data
 ASMT_hits, ASMT_hit_seqs = fasta.load_fastas('../example_data/mining/ASMT/')
 PNMT_hits, PNMT_hit_seqs = fasta.load_fastas('../example_data/mining/PNMT/')
