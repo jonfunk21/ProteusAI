@@ -141,7 +141,6 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
     elapsed_time = end_time - start_time
     print(elapsed_time)
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=
      '''
