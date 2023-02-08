@@ -69,10 +69,10 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
             _dest = os.path.join(dest, batch_labels[i])
             torch.save(sequence_representations[i], _dest + '.pt')
 
+    torch.cuda.empty_cache()
     return sequence_representations
 
 data = list(zip(names, seqs))
 print(len(data))
 for i in range(0, len(data), batch_size):
     r = compute_representations(data[i:i + batch_size], dest=dest ,device=str(device))
-    torch.cuda.empty_cache()
