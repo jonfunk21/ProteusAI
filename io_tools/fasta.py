@@ -2,7 +2,7 @@ import os
 from biotite.sequence import ProteinSequence
 
 
-def load_fastas(path):
+def load(path: str) -> list:
     """
     Loads all fasta files from a directory, returns the names/ids and sequences as lists.
 
