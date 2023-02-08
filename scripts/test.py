@@ -1,4 +1,6 @@
 import torch
+import sys
+sys.path.append('../')
 from extraction import embedd
 from mining import blast
 from io_tools import fasta
