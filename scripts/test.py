@@ -5,12 +5,7 @@ from extraction import embedd
 from mining import blast
 from io_tools import fasta
 
-# Load ESM-2 model
-model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-model.to(device)
-model.eval()  # disables dropout for deterministic results
 
-batch_converter = alphabet.get_batch_converter()
 
 # loading sequences and names from example data
 ASMT_hits, ASMT_hit_seqs = fasta.load_fastas('../example_data/mining/ASMT/')
@@ -19,6 +14,13 @@ PNMT_hits, PNMT_hit_seqs = fasta.load_fastas('../example_data/mining/PNMT/')
 # select device based on
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 batch_size = 10
+
+# Load ESM-2 model
+model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+model.to(device)
+model.eval()  # disables dropout for deterministic results
+
+batch_converter = alphabet.get_batch_converter()
 
 PNMT_data = list(zip(PNMT_hits, PNMT_hit_seqs))
 PNMT_representations = []
