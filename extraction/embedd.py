@@ -4,13 +4,31 @@ import os
 import time
 import argparse
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# on M1 if mps available
+if device == torch.device(type='cpu'):
+    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
+print('Using device:', device)
+
+# Load ESM-2 model
+model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+model.to(device)
+model.eval()  # disables dropout for deterministic results
+
+batch_converter = alphabet.get_batch_converter()
+
 def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
 
     Parameters:
-        data : list of tuples containing sequence labels (str) and protein sequences (str) (label, sequence)
+        data (list): list of tuples containing sequence labels (str) and protein sequences 
+                     (str or biotite.sequence.ProteinSequence) (label, sequence)
+        dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
+        device (str): device used for calculation or representations. Default "cuda". 
+                      other options are "cpu", or "mps" for M1/M2 chip
 
     Returns: representations (list)
 
@@ -19,6 +37,12 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
         representations = get_sequence_representations(data)
 
     '''
+    # check datatype of data
+    if all(isinstance(x[0], str) and isinstance(x[1], str) for x in data):
+        pass # all elements are strings
+    else:
+        data = [(x[0], str(x[1])) for x in data]
+    
     batch_labels, batch_strs, batch_tokens = batch_converter(data)
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
 
@@ -46,7 +70,7 @@ def divide_list(lst, chunk_size):
         yield lst[i:i + chunk_size]
 
 
-def batch_fasta(fasta_path: str, batch_size: int):
+def batchify_fasta(fasta_path: str, batch_size: int):
     """
     Get batches from fasta file with format:
     >{index}|{id}|{activity}
@@ -82,16 +106,37 @@ def batch_fasta(fasta_path: str, batch_size: int):
             _activities.append(chunk)
 
         return batches, _activities
+    
 
-def embedd(fasta_path:str, dest:str, batch_size):
+### TODO: FROM HERE MOVE TO SCRIPTS SECTION AND IMPORT RELEVANT SCRIPTS###
+def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
+    """
+    takes fasta files in a specific format and embedds all the sequences using the 
+    esm2_t33_650M_UR50D model. The embeddings are saved in the destination folder.
+    Fasta format:
+    
+        >{index}|{id}|{activity}
+        {Sequence}
+        >{index}|{id}|{activity}
+        {Sequence}
+    
+    Parameters:
+        fasta_path (str): path to fasta file
+        dest (str): destination
+        batch_size (int)
+
+    Returns:
+        list of sequence representations
+    """
 
     if not os.path.exists(dest):
         os.makedirs(dest)
 
     start_time = time.time()
-    batches, activities = batch_fasta(fasta_path=fasta_path, batch_size=batch_size)
+    batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
+
     for batch in batches:
-        seq_rep = compute_representations(batch, dest=dest, device=device)
+        _ = compute_representations(batch, dest=dest, device=device)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(elapsed_time)
@@ -140,4 +185,4 @@ if __name__ == '__main__':
 
     batch_converter = alphabet.get_batch_converter()
 
-    embedd(FASTA_PATH, DEST, BATCH_SIZE)
+    batch_embedd(FASTA_PATH, DEST, BATCH_SIZE)
