@@ -71,7 +71,15 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
 
     return sequence_representations
 
+def remove_elements(l, condition):
+    new_list = []
+    for item in l:
+        if len(item[1]) <= condition:
+            new_list.append(item)
+    return new_list
+
 data = list(zip(names, seqs))
+data = remove_elements(data, 700)
 print(len(data))
 for i in range(0, len(data), batch_size):
     r = compute_representations(data[i:i + batch_size], dest=dest ,device=str(device))
