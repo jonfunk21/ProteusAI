@@ -79,7 +79,7 @@ def remove_elements(l, condition):
     return new_list
 
 data = list(zip(names, seqs))
-data = remove_elements(data, 700)
+data = remove_elements(data, 1000)
 print(len(data))
 for i in range(0, len(data), batch_size):
     r = compute_representations(data[i:i + batch_size], dest=dest ,device=str(device))
