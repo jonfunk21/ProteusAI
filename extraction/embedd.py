@@ -3,6 +3,9 @@ import esm
 import os
 import time
 import argparse
+import sys
+sys.path.append('../')
+from io_tools import fasta
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # on M1 if mps available
@@ -106,6 +109,39 @@ def batchify_fasta(fasta_path: str, batch_size: int):
             _activities.append(chunk)
 
         return batches, _activities
+
+def extract_sequences(file_name):
+    """
+    Given a fasta file with the format:
+
+    >name1
+    sequence1
+    >name2
+    sequence2
+
+    this function will return the names and sequences of the fasta as lists.
+
+    Parameters:
+        file_name (str): name and path to file
+
+    Returns:
+        tuple: (names [list], sequences [list])
+    """
+    names = []
+    sequences = []
+    with open(file_name, 'r') as f:
+        current_sequence = ""
+        for line in f:
+            line = line.strip()
+            if line.startswith(">"):
+                if current_sequence:
+                    sequences.append(current_sequence)
+                names.append(line[1:])
+                current_sequence = ""
+            else:
+                current_sequence += line
+        sequences.append(current_sequence)
+    return names, sequences
     
 
 ### TODO: FROM HERE MOVE TO SCRIPTS SECTION AND IMPORT RELEVANT SCRIPTS###
@@ -148,9 +184,10 @@ if __name__ == '__main__':
      Creates embeddings for a fasta file using esm.pretrained.esm2_t33_650M_UR50D() 
      and saves them at the destination.
      
-     Fasta file format:
-     >{index}|{id}|{activity}
-     {Sequence}
+     if the activity flag (-a or --activity) flag is set, the fasta should have the
+     following format:
+         >{index}|{id}|{activity}
+         {Sequence}
      
      saves files as:
      <path to dest>/{id}.pt
@@ -160,9 +197,10 @@ if __name__ == '__main__':
      ''',
     formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-f', '--fasta', help='path to fasta file', default='../esm/examples/data/P62593.fasta')
-    parser.add_argument('-d', '--dest', help='path to destination', default='../example_data/representations/P62593')
-    parser.add_argument('-b', '--batch_size', help='batch_size', default=26)
+    parser.add_argument('-f', '--fasta', help='path to fasta file', required=True, default=None)
+    parser.add_argument('-d', '--dest', help='path to destination', required=True, default=None)
+    parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', default=26)
+    parser.add_argument('-a', '--activity', help='Set true if activity values are provided', default=False)
     args = parser.parse_args()
 
 
@@ -182,6 +220,11 @@ if __name__ == '__main__':
     model.to(device)
     model.eval()  # disables dropout for deterministic results
 
-    batch_converter = alphabet.get_batch_converter()
-
-    batch_embedd(FASTA_PATH, DEST, BATCH_SIZE)
+    if args.activity:
+        batch_converter = alphabet.get_batch_converter()
+        batch_embedd(FASTA_PATH, DEST, BATCH_SIZE)
+    else:
+        names, seqs = extract_sequences(FASTA_PATH)
+        data = list(zip(names, seqs))
+        for i in range(0, len(data), BATCH_SIZE):
+            r = compute_representations(data[i:i + BATCH_SIZE], dest=DEST, device=str(device))
