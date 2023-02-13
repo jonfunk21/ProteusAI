@@ -208,18 +208,6 @@ if __name__ == '__main__':
     DEST = args.dest
     BATCH_SIZE = int(args.batch_size)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # on M1 if mps available
-    if device == torch.device(type='cpu'):
-        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-
-    print('Using device:', device)
-
-    # Load ESM-2 model
-    model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-    model.to(device)
-    model.eval()  # disables dropout for deterministic results
-
     if args.activity:
         batch_converter = alphabet.get_batch_converter()
         batch_embedd(FASTA_PATH, DEST, BATCH_SIZE)
