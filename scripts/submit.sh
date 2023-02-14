@@ -26,7 +26,7 @@
 >test.out
 >test.err
 
-cd ~/projects/proteusAI/scripts
+cd ~/projects/proteusAI/extraction
 module load cuda/11.7
 module load python3/3.8.14
 
@@ -41,4 +41,4 @@ pip3 install biopython
 pip3 install biotite
 # additional requirements
 
-python3 test.py
+python3 ../embedd.py -f ../example_data/A0A6B9VLF5/A0A6B9VLF5_mut.fasta -b 1 -d ../example_data/representations/A0A6B9VLF5 -a True
