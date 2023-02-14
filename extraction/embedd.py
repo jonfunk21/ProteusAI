@@ -5,21 +5,6 @@ import time
 import argparse
 import sys
 sys.path.append('../')
-from io_tools import fasta
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# on M1 if mps available
-if device == torch.device(type='cpu'):
-    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-
-print('Using device:', device)
-
-# Load ESM-2 model
-model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-model.to(device)
-model.eval()  # disables dropout for deterministic results
-
-batch_converter = alphabet.get_batch_converter()
 
 def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
     '''
@@ -201,12 +186,34 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dest', help='path to destination', required=True, default=None)
     parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', default=26)
     parser.add_argument('-a', '--activity', help='Set true if activity values are provided', default=False)
+    parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}', default='esm1v')
     args = parser.parse_args()
 
 
     FASTA_PATH = args.fasta
     DEST = args.dest
     BATCH_SIZE = int(args.batch_size)
+    MODEL = args.model
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # on M1 if mps available
+    if device == torch.device(type='cpu'):
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
+    print('Using device:', device)
+
+    # Load ESM-2 model
+    if MODEL == 'esm1v':
+        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+    if MODEL == 'esm2':
+        model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+    else:
+        raise f'{MODEL} is not a valid model: choose either esm2 or esm1v'
+
+    model.to(device)
+    model.eval()  # disables dropout for deterministic results
+
+    batch_converter = alphabet.get_batch_converter()
 
     if args.activity:
         batch_converter = alphabet.get_batch_converter()
