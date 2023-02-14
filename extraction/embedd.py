@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
     # Load ESM-2 model
     if MODEL == 'esm1v':
-        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S_5()
     if MODEL == 'esm2':
         model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
     else:
