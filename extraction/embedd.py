@@ -202,13 +202,13 @@ if __name__ == '__main__':
 
     print('Using device:', device)
 
-    # Load ESM-2 model
-    if MODEL == 'esm1v':
-        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+    # THIS SEEMS TO MAKE PROBLEMS
     if MODEL == 'esm2':
         model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+        # Load ESM-2 model
     else:
-        raise f'{MODEL} is not a valid model: choose either esm2 or esm1v'
+        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+
 
     model.to(device)
     model.eval()  # disables dropout for deterministic results
