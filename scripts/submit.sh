@@ -26,11 +26,12 @@
 >test.out
 >test.err
 
-cd ~/projects/proteusAI/extraction
+
 module load cuda/11.7
 module load python3/3.8.14
 
-source ../proteus_env/bin/activate
+cd ~/projects/proteusAI/
+source proteus_env/bin/activate
 pip3 install torch torchvision torchaudio
 pip3 install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
@@ -40,6 +41,15 @@ pip3 install matplotlib
 pip3 install biopython
 pip3 install biotite
 pip3 install seaborn
-# additional requirements
 
-python3 embedd.py -f ../example_data/A0A6B9VLF5/A0A6B9VLF5_mut.fasta -b 1 -d ../example_data/representations/A0A6B9VLF5 -a True
+#cd extraction
+#python3 embedd.py -f ../example_data/A0A6B9VLF5/A0A6B9VLF5_mut.fasta -b 1 -d ../example_data/representations/A0A6B9VLF5 -a True
+
+# additional requirements for folding
+pip install "fair-esm[esmfold]"
+# OpenFold and its remaining dependency
+pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
+pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
+
+cd scripts
+python3  test_folding.py
