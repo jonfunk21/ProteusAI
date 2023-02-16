@@ -129,7 +129,6 @@ def extract_sequences(file_name):
     return names, sequences
     
 
-### TODO: FROM HERE MOVE TO SCRIPTS SECTION AND IMPORT RELEVANT SCRIPTS###
 def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
     """
     takes fasta files in a specific format and embedds all the sequences using the 
@@ -186,7 +185,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dest', help='path to destination', required=True, default=None)
     parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', default=26)
     parser.add_argument('-a', '--activity', help='Set true if activity values are provided', default=False)
-    parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}', default='esm1v')
+    parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', default=None)
     args = parser.parse_args()
 
 
@@ -205,7 +204,6 @@ if __name__ == '__main__':
     # THIS SEEMS TO MAKE PROBLEMS
     if MODEL == 'esm2':
         model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-        # Load ESM-2 model
     else:
         model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
 
