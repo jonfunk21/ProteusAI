@@ -39,6 +39,7 @@ pip3 install fair-esm
 pip3 install matplotlib
 pip3 install biopython
 pip3 install biotite
+pip3 install seaborn
 # additional requirements
 
 python3 embedd.py -f ../example_data/A0A6B9VLF5/A0A6B9VLF5_mut.fasta -b 1 -d ../example_data/representations/A0A6B9VLF5 -a True
