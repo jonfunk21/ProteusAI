@@ -6,7 +6,7 @@ import argparse
 import sys
 sys.path.append('../')
 
-def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
+def compute_representations(data: list, dest: str = None, device: str = 'cuda', rep_layer: int = 33):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
@@ -17,6 +17,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
         dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
         device (str): device used for calculation or representations. Default "cuda". 
                       other options are "cpu", or "mps" for M1/M2 chip
+        rep_layer (int) : representation layer from which the sequence is extracted. Default 33 (final layer)
 
     Returns: representations (list)
 
@@ -35,9 +36,9 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda'):
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
 
     with torch.no_grad():
-        results = model(batch_tokens.to(device), repr_layers=[33], return_contacts=True)
+        results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
 
-    token_representations = results["representations"][33]
+    token_representations = results["representations"][rep_layer]
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
@@ -129,7 +130,7 @@ def extract_sequences(file_name):
     return names, sequences
     
 
-def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
+def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: int = 33):
     """
     takes fasta files in a specific format and embedds all the sequences using the 
     esm2_t33_650M_UR50D model. The embeddings are saved in the destination folder.
@@ -143,7 +144,8 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
     Parameters:
         fasta_path (str): path to fasta file
         dest (str): destination
-        batch_size (int)
+        batch_size (int): batch size for computation
+        rep_layer (int) : representation layer from which the sequence is extracted. Default 33 (final layer)
 
     Returns:
         list of sequence representations
@@ -156,7 +158,7 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10):
     batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
 
     for batch in batches:
-        _ = compute_representations(batch, dest=dest, device=device)
+        _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(elapsed_time)
@@ -181,11 +183,12 @@ if __name__ == '__main__':
      ''',
     formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-f', '--fasta', help='path to fasta file', required=True, default=None)
-    parser.add_argument('-d', '--dest', help='path to destination', required=True, default=None)
-    parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', default=26)
-    parser.add_argument('-a', '--activity', help='Set true if activity values are provided', default=False)
-    parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', default=None)
+    parser.add_argument('-f', '--fasta', help='path to fasta file', required=True, type=str, default=None)
+    parser.add_argument('-d', '--dest', help='path to destination', required=True, type=str,default=None)
+    parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', type=int, default=26)
+    parser.add_argument('-a', '--activity', help='Set true if activity values are provided', type=bool, default=False)
+    parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', type=str, default=None)
+    parser.add_argument('-r', '--rep_layer', help='choose representation layer of model. Default 33 (finla layer)', type=int, default=33)
     args = parser.parse_args()
 
 
@@ -193,6 +196,8 @@ if __name__ == '__main__':
     DEST = args.dest
     BATCH_SIZE = int(args.batch_size)
     MODEL = args.model
+    REP_LAYER = args.rep_layer
+    ACTIVITY = args.activity
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # on M1 if mps available
@@ -213,11 +218,11 @@ if __name__ == '__main__':
 
     batch_converter = alphabet.get_batch_converter()
 
-    if args.activity:
+    if ACTIVITY:
         batch_converter = alphabet.get_batch_converter()
-        batch_embedd(FASTA_PATH, DEST, BATCH_SIZE)
+        batch_embedd(FASTA_PATH, DEST, BATCH_SIZE, REP_LAYER)
     else:
         names, seqs = extract_sequences(FASTA_PATH)
         data = list(zip(names, seqs))
         for i in range(0, len(data), BATCH_SIZE):
-            r = compute_representations(data[i:i + BATCH_SIZE], dest=DEST, device=str(device))
+            r = compute_representations(data[i:i + BATCH_SIZE], dest=DEST, device=str(device), rep_layer=REP_LAYER)
