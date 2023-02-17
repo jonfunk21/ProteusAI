@@ -32,7 +32,7 @@ def load(path: str, file_type: str = '.fasta') -> tuple:
                     current_sequence = ""
                 else:
                     current_sequence += line
-            sequences.append(current_sequence)
+            sequences.append(ProteinSequence(current_sequence))
 
     return names, sequences
 
