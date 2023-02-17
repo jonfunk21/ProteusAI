@@ -2,16 +2,17 @@ import os
 from biotite.sequence import ProteinSequence
 
 
-def load(path: str, file_type: str = '.fasta') -> tuple:
+def load(path: str, file_type: str = '.fasta', biotite: bool = False) -> tuple:
     """
     Loads all fasta files from a directory, returns the names/ids and sequences as lists.
 
     Parameters:
         path (str): path to directory containing fasta files
         file_type (str): some fastas are stored with different file endings. Default '.fasta'.
+        biotite (bool): returns sequences as biotite.sequence.ProteinSequence object
 
     Returns:
-        tuple: two lists containing the names and sequences as biotite.sequence.ProteinSequence object
+        tuple: two lists containing the names and sequences
 
     Example:
         names, sequences = load_fastas('/path/to/fastas')
@@ -32,7 +33,10 @@ def load(path: str, file_type: str = '.fasta') -> tuple:
                     current_sequence = ""
                 else:
                     current_sequence += line
-            sequences.append(ProteinSequence(current_sequence))
+            if biotite:
+                sequences.append(ProteinSequence(current_sequence))
+            else:
+                sequences.append(current_sequence)
 
     return names, sequences
 
