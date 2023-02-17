@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # Perform a multiple sequence alignment using MUSCLE
 def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple = (0, 200), muscle_version: str = '5',
-        save_fig: str = None, figsize: tuple = (10.0, 8.0)):
+        save_fig: str = None, save_fasta:str = None, figsize: tuple = (10.0, 8.0)):
     """
     performs multiple sequence alignement given a list of blast hits and the corresponding sequences.
 
@@ -16,6 +16,7 @@ def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple
         plt_range (tuple, optional): range of sequence which is plotted. Default first 200 amino acids.
         muscle_version (str, optional): which muscle version is installed on your machine. Default 5.
         save_fig (str): saves fig if path is provided. Default None - won't save the figure.
+        save_fasta (str): saves fasta if path is provided. Default None - won't save fasta.
         figsize (tuple): dimensions of the figure.
 
     Returns:
@@ -53,5 +54,16 @@ def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple
     if save_fig != None: plt.savefig(save_fig)
 
     if plot_results: plt.show()
+
+    if save_fasta != None:
+        with open(save_fasta, 'w') as f:
+            for i, key in enumerate(MSA_results.keys()):
+                s = MSA_results[key]
+                if i < len(MSA_results) - 1:
+                    f.writelines(f'>{key}\n')
+                    f.writelines(f'{s}\n')
+                else:
+                    f.writelines(f'>{key}\n')
+                    f.writelines(f'{s}')
 
     return MSA_results
