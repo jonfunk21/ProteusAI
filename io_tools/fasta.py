@@ -16,16 +16,22 @@ def load(path: str) -> tuple:
         names, sequences = load_fastas('/path/to/fastas')
     """
     files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.fasta')]
-    names = [f[:-6] for f in os.listdir(path) if f.endswith('.fasta')]
 
+    names = []
     sequences = []
     for file in files:
         with open(file, 'r') as f:
-            for i, line in enumerate(f):
-                if i == 0:
-                    pass
+            current_sequence = ""
+            for line in f:
+                line = line.strip()
+                if line.startswith(">"):
+                    if current_sequence:
+                        sequences.append(current_sequence)
+                    names.append(line[1:])
+                    current_sequence = ""
                 else:
-                    sequences.append(ProteinSequence(line))
+                    current_sequence += line
+            sequences.append(current_sequence)
 
     return names, sequences
 
