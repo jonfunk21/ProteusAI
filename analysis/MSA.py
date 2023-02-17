@@ -1,17 +1,23 @@
 import biotite.sequence.graphics as graphics
 import biotite.application.muscle as muscle
 import matplotlib.pyplot as plt
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
+from Bio.Align.Applications import ClustalwCommandline
+from Bio import AlignIO
+from Bio import SeqIO
+from collections import Counter
 
 
 # Perform a multiple sequence alignment using MUSCLE
-def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple = (0, 200), muscle_version: str = '5',
+def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_range: tuple = (0, 200), muscle_version: str = '5',
         save_fig: str = None, save_fasta:str = None, figsize: tuple = (10.0, 8.0)):
     """
-    performs multiple sequence alignement given a list of blast hits and the corresponding sequences.
+    performs multiple sequence alignement given a list of blast names and the corresponding sequences.
 
     Parameters:
-        hits (list): list of sequence names/ids
-        hits_seqs (list): list of sequences corresponding to names/ids for MSA
+        names (list): list of sequence names
+        seqs (list): list of sequences for MSA
         plot_results (bool, optional): plot results.
         plt_range (tuple, optional): range of sequence which is plotted. Default first 200 amino acids.
         muscle_version (str, optional): which muscle version is installed on your machine. Default 5.
@@ -24,9 +30,9 @@ def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple
     """
 
     if muscle_version == '5':
-        app = muscle.Muscle5App(hit_seqs)
+        app = muscle.Muscle5App(seqs)
     elif muscle_version == '3':
-        app = muscle.MuscleApp(hit_seqs)
+        app = muscle.MuscleApp(seqs)
     else:
         raise 'Muscle version must be either 3 or 5'
 
@@ -39,14 +45,14 @@ def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple
 
     MSA_results = {}
     for i in range(len(gapped_seqs)):
-        MSA_results[hits[i]] = gapped_seqs[i]
+        MSA_results[names[i]] = gapped_seqs[i]
 
     # Reorder alignments to reflect sequence distance
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
     order = app.get_alignment_order()
     graphics.plot_alignment_type_based(
-        ax, alignment[plt_range[0]:plt_range[1], order.tolist()], labels=[hits[i] for i in order],
+        ax, alignment[plt_range[0]:plt_range[1], order.tolist()], labels=[names[i] for i in order],
         show_numbers=True, color_scheme="clustalx"
     )
     fig.tight_layout()
@@ -67,3 +73,78 @@ def MSA(hits: list, hit_seqs: list, plot_results: bool = False, plt_range: tuple
                     f.writelines(f'{s}')
 
     return MSA_results
+
+
+def align_dna(dna_sequences: list, debug: bool = False):
+    """
+    performs multiple sequence alignement given a list of blast names and the corresponding sequences.
+    The function uses the clustalw2 app which uses the global needleman-wunsch algorithm.
+
+    Parameters:
+        seqs (list): list of DNA sequences for MSA
+        debug (bool): print std out and std error if True. Default False
+
+    Returns:
+        list: MSA list of sequences
+    """
+    # Create SeqRecord objects for each DNA sequence
+    seq_records = [SeqRecord(Seq(seq), id=f"seq{i + 1}") for i, seq in enumerate(dna_sequences)]
+
+    # Write the DNA sequences to a temporary file in FASTA format
+    temp_input_file = "temp_input.fasta"
+    with open(temp_input_file, "w") as handle:
+        SeqIO.write(seq_records, handle, "fasta")
+
+    # Run ClustalW to perform the multiple sequence alignment
+    temp_output_file = "temp_output.aln"
+    clustalw_cline = ClustalwCommandline("clustalw2", infile=temp_input_file, outfile=temp_output_file)
+    stdout, stderr = clustalw_cline()
+    if debug:
+        print('std out:')
+        print('-------')
+        print(stdout)
+        print('std error:')
+        print('----------')
+        print(stderr)
+
+    # Read in the aligned sequences from the output file
+    aligned_seqs = []
+    with open(temp_output_file) as handle:
+        alignment = AlignIO.read(handle, "clustal")
+        for record in alignment:
+            aligned_seqs.append(str(record.seq))
+
+    return aligned_seqs
+
+
+def get_consensus_sequence(dna_sequences: list):
+    """
+    Calculates the consensus sequence of multiple sequence alignements.
+    It uses the most common character of every sequence in a list. All
+    sequences need to be the same length.
+
+    Parameters:
+        dna_sequences (list): list of DNA sequences.
+
+    Returns:
+        str: consensus sequence.
+    """
+    # Get the length of the sequences
+    sequence_length = len(dna_sequences[0])
+
+    # Iterate over each position in the sequences
+    consensus_sequence = ""
+    for i in range(sequence_length):
+        # Create a list of the characters at this position
+        char_list = [seq[i] for seq in dna_sequences]
+
+        # Count the occurrences of each character
+        char_counts = Counter(char_list)
+
+        # Get the most common character
+        most_common_char = char_counts.most_common(1)[0][0]
+
+        # Add the most common character to the consensus sequence
+        consensus_sequence += most_common_char
+
+    return consensus_sequence
