@@ -8,7 +8,7 @@ model = model.eval().cuda()
 # Lower sizes will have lower memory requirements at the cost of increased speed.
 # model.set_chunk_size(128)
 
-sequence = "MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQVIVQDIAYLRSLGYNIVATPRGYVLAGG"
+sequence = "LNLKDSIGLRIKTERERQQMSREVLCLDGAELTVRQLIRIEKGESLPSLDRLSYIAKRLGKSMTELL"
 # Multimer prediction can be done with chains separated by ':'
 
 with torch.no_grad():
