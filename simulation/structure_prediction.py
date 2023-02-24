@@ -26,7 +26,7 @@ model = model.eval().cuda()
 with torch.no_grad():
     for i, sequence in enumerate(sequences):
         output = model.infer_pdb(sequence)
-        outfile = os.path.join(OUTDIR, names[i]+'pdb')
+        outfile = os.path.join(OUTDIR, names[i]+'.pdb')
         with open(outfile, "w") as f:
             f.write(output)
 
