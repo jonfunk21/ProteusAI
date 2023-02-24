@@ -1,5 +1,7 @@
 import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
+import Bio.PDB
+from Bio.PDB.Polypeptide import is_aa
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
 pymol_color_list = ["#33ff33", "#00ffff", "#ff33cc", "#ffff00", "#ff9999", "#e5e5e5", "#7f7fff", "#ff7f00",
@@ -63,3 +65,66 @@ def show(pdb_str, color='rainbow', vmin=50, vmax=90, chains=None, Ls=None, size=
 
     view.zoomTo()
     return view
+
+
+def get_sequence_length(ref_model):
+    """
+    Get sequence length of a Bio.PDB.Structure.Structure object
+    """
+    seq_len = 0
+    for chain in ref_model:
+        for residue in chain:
+            if is_aa(residue):
+                seq_len += 1
+    return seq_len
+
+
+def align_proteins(ref_filename: str, sample_filename: str, outfile: str, start_id: int = 1, end_id: int = None):
+    """
+    Alignes sample structure to reference structure, saves pdb aligned sample structure as pdb. Returns RMSD.
+
+    Parameters:
+        ref_filename (str): reference structure file path
+        sample_filename (str): sample structure file path
+        outfile (str): outfile name
+        start_id (int, optional): beginning residue for alignement
+        end_id (int, optional): end residue for alignement, if None it will take all residues of the shorter protein. Default None
+    """
+    pdb_parser = Bio.PDB.PDBParser(QUIET=True)
+
+    ref_structure = pdb_parser.get_structure("reference", ref_filename)
+    sample_structure = pdb_parser.get_structure("sample", sample_filename)
+
+    ref_model = ref_structure[0]
+    sample_model = sample_structure[0]
+
+    if end_id == None:
+        end_id = min(get_sequence_length(ref_model), get_sequence_length(sample_model))
+
+    atoms_to_be_aligned = range(start_id, end_id + 1)
+
+    ref_atoms = []
+    sample_atoms = []
+    for ref_chain in ref_model:
+        for ref_res in ref_chain:
+            if ref_res.get_id()[1] in atoms_to_be_aligned:
+                if 'CA' in ref_res:
+                    ref_atoms.append(ref_res['CA'])
+
+    for sample_chain in sample_model:
+        for sample_res in sample_chain:
+            if sample_res.get_id()[1] in atoms_to_be_aligned:
+                if 'CA' in sample_res:
+                    sample_atoms.append(sample_res['CA'])
+
+    super_imposer = Bio.PDB.Superimposer()
+    super_imposer.set_atoms(ref_atoms[:end_id], sample_atoms[:end_id])
+    super_imposer.apply(sample_model.get_atoms())
+
+    print(f"RMSD: {super_imposer.rms:.3f}")
+
+    io = Bio.PDB.PDBIO()
+    io.set_structure(sample_structure)
+    io.save(outfile)
+
+    return super_imposer.rms
