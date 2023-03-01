@@ -10,6 +10,70 @@ def format_integer(num, length=4):
         return ' ' * num_spaces + num_str
 
 
+def normalize_list(numbers, lower=0., upper=99.99):
+    """
+    Normalizes a list of numbers to the range of lower boundry to upper boundry.
+    """
+    # Find the minimum and maximum values in the list.
+    minimum = min(numbers)
+    maximum = max(numbers)
+
+    # Calculate the range of the values.
+    range_ = maximum - minimum
+
+    # Normalize each value in the list to the range of 0.00 to 99.00.
+    normalized = [((x - minimum) / range_) * upper if range_ != 0 else lower for x in numbers]
+
+    # Format each value to have two decimal places.
+    normalized = ["{:.2f}".format(x) for x in normalized]
+
+    return normalized
+
+
+def normalize_b_factor(pdb: str, lower=0., upper=99.99, outfile: str = None):
+    """
+    Normalizes the b_factor
+
+    Parameters:
+        pdb (str): path to file
+        lower (float, optional): lower limit
+        upper (float, optional): upper limit
+        outfile (str, optional): path to outfile
+
+    Returns:
+        list: lines of reordered pdb file.
+    """
+    chains = {}
+    b_factors = []
+    with open(pdb, 'r') as f:
+        for line in f:
+            if line.startswith('ATOM') or line.startswith('HETATM'):
+                if line[21] not in chains.keys():
+                    chains[line[21]] = []
+                else:
+                    chains[line[21]].append(line)
+                b_factors.append(float(line[60:66]))
+
+    norm_b_factors = normalize_list(b_factors, lower, upper)
+    norm_b_factors = [format_integer(x, 6) for x in norm_b_factors]
+
+    lines = []
+    c = 0
+    for key in chains.keys():
+        for i, line in enumerate(chains[key]):
+            lines.append(line[0:60] + norm_b_factors[i + c] + line[66:])
+        lines.append('TER   \n')
+        c += i
+    lines.append('END')
+
+    if outfile is not None:
+        with open(outfile, 'w') as f:
+            for line in lines:
+                f.writelines(line)
+
+    return lines
+
+
 def clean_pdb(pdb, remove_chains: list = [], remove_water: bool = False, keep_hetat: bool = True,
               renumber_chains: bool = True, outfile: str = None):
     """
@@ -116,15 +180,18 @@ def reorder_chains(pdb: str, order: list, outfile: str = None):
     chains = {}
     with open(pdb, 'r') as f:
         for line in f:
-            if line.startswith('ATOM'):
+            if line.startswith('ATOM') or line.startswith('HETATM'):
                 if line[21] not in chains.keys():
                     chains[line[21]] = []
                 else:
                     chains[line[21]].append(line)
     lines = []
+    i = 1
     for key in order:
         for line in chains[key]:
-            lines.append(line)
+            num = format_integer(int(i), 5)
+            lines.append(line[:6] + num + line[11:])
+            i += 1
         lines.append('TER   \n')
     lines.append('END')
 
