@@ -52,4 +52,4 @@ pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 
 cd simulation
-python3  structure_prediction.py -f ../example_data/sequences/ComR/all_binding_regions.fasta -o ../example_data/ComR/
+python3  structure_prediction.py -f ../example_data/ComR/all_comr_alignment.fasta -o ../example_data/ComR/
