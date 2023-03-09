@@ -69,7 +69,7 @@ def structure_prediction(
     pLDDTs = []
     for headers, sequences in batched_sequences:
         with open("sequences", "w") as f:
-            print(sequences, file=f)
+            print(batched_sequences, file=f)
         pdbs = model.infer_pdbs(sequences)
 
     return all_headers, all_pdbs, pTMs, pLDDTs
