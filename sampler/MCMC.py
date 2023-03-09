@@ -133,6 +133,17 @@ class SequenceOptimizer:
         energies += self.w_ptm * np.array(pTMs)
         energies += self.w_plddt * np.array([val/100 for val in pLDDTs])
 
+        with open('test_output', 'w') as f:
+            for i in range(len(seqs)):
+                line = [
+                    headers[i], '\n',
+                    seqs[i], '\n',
+                    sequences[i], '\n',
+                    str(pTMs[i]), '\n',
+                    str(pLDDTs[i]), '\n',
+                ]
+                f.writelines(line)
+
         return energies, pdbs
 
     def p_accept(self, E_x_mut, E_x_i, T, i, M):
