@@ -193,9 +193,9 @@ class SequenceOptimizer:
                 if p[n] > random.random():
                     seqs[n] = mut_seqs[n]
                     with open(f'accepted/sequence_{n}_iter{i}.pdb', 'w') as f:
-                        f.writelines(pdbs[i])
+                        f.writelines(pdbs[n])
                 else:
                     with open(f'rejected/sequence_{n}_iter{i}.pdb', 'w') as f:
-                        f.writelines(pdbs[i])
+                        f.writelines(pdbs[n])
 
         return (seqs)
