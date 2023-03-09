@@ -75,7 +75,7 @@ def structure_prediction(
             print(output.keys(), file=f)
         with open('help_msg', 'w') as f:
             sys.stdout = f
-            help(model.output_to_pdb)
+            help(model.infer_pdbs)
             sys.stdout = sys.__stdout__
         pdbs = model.output_to_pdb(output)
         for header, seq, pdb_string, mean_plddt, ptm in zip(
