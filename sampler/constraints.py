@@ -78,4 +78,4 @@ def structure_prediction(
             pLDDTs.append(mean_plddt)
             pTMs.append(ptm)
 
-    return list(zip(headers, sequences, pdbs, output["mean_plddt"], output["ptm"]))
+    return all_headers, all_pdbs, pTMs, pLDDTs
