@@ -128,10 +128,11 @@ class SequenceOptimizer:
         # structure prediction
         names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
         headers, sequences, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
+        pLDDTs = [val/100 for val in pLDDTs] # scale between 0 and 1
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
-        energies += self.w_plddt * np.array([val/100 for val in pLDDTs])
+        energies += self.w_plddt * np.array(pLDDTs)
 
         with open('test_output', 'w') as f:
             for i in range(len(seqs)):
@@ -191,7 +192,10 @@ class SequenceOptimizer:
             for n in range(len(p)):
                 if p[n] > random.random():
                     seqs[n] = mut_seqs[n]
-                    with open(f'sequence_{n}_iter{i}.pdb', 'w') as f:
+                    with open(f'accepted/sequence_{n}_iter{i}.pdb', 'w') as f:
+                        f.writelines(pdbs[i])
+                else:
+                    with open(f'rejected/sequence_{n}_iter{i}.pdb', 'w') as f:
                         f.writelines(pdbs[i])
 
         return (seqs)
