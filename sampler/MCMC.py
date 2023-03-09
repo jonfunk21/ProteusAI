@@ -105,6 +105,7 @@ class SequenceOptimizer:
                 mutated_seqs.append(mut_seq)
 
             else:
+                # will perform insertion if length is to small
                 pos = random.randint(0, len(seq) - 1)
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
@@ -128,7 +129,10 @@ class SequenceOptimizer:
         # structure prediction
         names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
         headers, sequences, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
-        pLDDTs = [val/100 for val in pLDDTs] # scale between 0 and 1
+
+        # rescale pLDDT and make values negative. The higher the confidence the more rewarding
+        pTMs = [-val for val in pTMs]
+        pLDDTs = [-val/100 for val in pLDDTs]
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
