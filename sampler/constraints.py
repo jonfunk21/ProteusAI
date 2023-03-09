@@ -59,17 +59,27 @@ def structure_prediction(
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
-    all_sequences = list(zip(sequences, names))
+    #all_sequences = list(zip(sequences, names))
+    all_sequences = list(zip(names, sequences))
 
     batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
-
+    with open("sequences", "w") as f:
+        print(sequences, file=f)
     all_headers = []
     all_pdbs = []
     pTMs = []
     pLDDTs = []
     for headers, sequences in batched_sequences:
-        with open("sequences", "w") as f:
-            print(batched_sequences, file=f)
-        pdbs = model.infer_pdbs(sequences)
+        output = model.infer(sequences, num_recycles=num_recycles)
+        output = {key: value.cpu() for key, value in output.items()}
+        pdbs = model.output_to_pdb(output)
+        for header, seq, pdb_string, mean_plddt, ptm in zip(
+                headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
+        ):
+            all_headers.append(header)
+            all_sequences.append(seq)
+            all_pdbs.append(pdb_string)
+            pLDDTs.append(mean_plddt)
+            pTMs.append(ptm)
 
     return all_headers, all_pdbs, pTMs, pLDDTs
