@@ -17,14 +17,17 @@ class SequenceOptimizer:
         mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
         T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
         M (float): rate of temperature decay. or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
-        length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float))
-        w_max_len (float): weight of the length constraint
+        length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float)). Default (200, 0.1)
+        w_ptm (float): weight for ptm. Default 0.1
+        w_plddt (float): weight for plddt. Default 0.1
     """
 
     def __init__(self, native_seq: str = None, sampler: str = 'simulated_annealing',
-                 n_traj: int = 5, n_iter: int = 1000, mut_p: tuple = (0.6, 0.2, 0.2),
+                 n_traj: int = 5, n_iter: int = 1000,
+                 mut_p: tuple = (0.6, 0.2, 0.2),
                  T: float = 10., M: float = 0.01,
-                 length_constraint: tuple = (200, 0)
+                 length_constraint: tuple = (200, 0.1),
+                 w_ptm: float = 0.1, w_plddt: float = 0.1
                  ):
 
         self.native_seq = native_seq
@@ -37,6 +40,8 @@ class SequenceOptimizer:
         self.length_constraint = length_constraint
         self.max_len = int(length_constraint[0])
         self.w_max_len = float(length_constraint[1])
+        self.w_ptm = w_ptm
+        self.w_plddt = w_plddt
 
     def __str__(self):
         l = ['ProteusAI.MCMC.SequenceOptimizer class: \n',
@@ -120,21 +125,15 @@ class SequenceOptimizer:
         """
         energies = np.zeros(len(seqs))
 
-        energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-
+        # structure prediction
         names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
-        headers, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
-        with open('test_output', 'w') as f:
-            for i in range(len(seqs)):
-                lines = [headers[i], seqs[i], str(pLDDTs[i]), str(pTMs[i])]
-                for line in lines:
-                    f.writelines([line, '\n'])
+        headers, sequences, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
 
-        for i, pdb in enumerate(pdbs):
-            with open(f'test_pdb_{i}.pdb', 'w') as f:
-                f.writelines(pdb)
+        energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        energies += self.w_ptm * np.array(pTMs)
+        energies += self.w_plddt * np.array([val/100 for val in pLDDTs])
 
-        return energies
+        return energies, pdbs
 
     def p_accept(self, E_x_mut, E_x_i, T, i, M):
         """
@@ -172,8 +171,8 @@ class SequenceOptimizer:
 
         for i in range(n_iter):
             mut_seqs = mutate(seqs, mut_p)
-            E_x_i = energy_function(seqs, i)
-            E_x_mut = energy_function(mut_seqs, i)
+            E_x_i, _ = energy_function(seqs, i)
+            E_x_mut, pdbs = energy_function(mut_seqs, i)
 
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
@@ -181,5 +180,7 @@ class SequenceOptimizer:
             for n in range(len(p)):
                 if p[n] > random.random():
                     seqs[n] = mut_seqs[n]
+                    with open(f'sequence_{n}_iter{i}.pdb', 'w') as f:
+                        f.writelines(pdbs[i])
 
         return (seqs)
