@@ -15,7 +15,7 @@ def length_constraint(seqs: list, max_len: int = 200):
         max_len (int): maximum length that a sequence is allowed to be. Default = 300
 
     Returns:
-        float: Energy value
+        np.array: Energy values
     """
     energies = np.zeros(len(seqs))
 
@@ -76,7 +76,7 @@ def structure_prediction(
             all_headers.append(header)
             all_sequences.append(seq)
             all_pdbs.append(pdb_string)
-            pLDDTs.append(mean_plddt)
-            pTMs.append(ptm)
+            pLDDTs.append(mean_plddt.item())
+            pTMs.append(ptm.item())
 
     return all_headers, all_pdbs, pTMs, pLDDTs
