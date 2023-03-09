@@ -108,7 +108,7 @@ class SequenceOptimizer:
         return mutated_seqs
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
-    def energy_function(self, seqs: list):
+    def energy_function(self, seqs: list, i):
         """
         Combines constraints into an energy function.
 
@@ -121,7 +121,17 @@ class SequenceOptimizer:
         energies = np.zeros(len(seqs))
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        ### More constraints to come:
+
+        names = [f'structure_{j}_cycle{i}' for j in range(len(seqs))]
+        headers, sequences, pdbs, plddts, ptms = constraints.structure_prediction(seqs, names)
+        with open('test_output', 'w') as f:
+            for i in range(len(seqs)):
+                line = '\n'.join([headers[i], sequences[i], plddts[i], ptms[i]])
+                f.writelines(line)
+
+        for i, pdb in enumerate(pdbs):
+            with open(f'test_pdb_{i}.pdb', 'w') as f:
+                f.writelines(pdb)
 
         return energies
 
@@ -161,8 +171,8 @@ class SequenceOptimizer:
 
         for i in range(n_iter):
             mut_seqs = mutate(seqs, mut_p)
-            E_x_i = energy_function(seqs)
-            E_x_mut = energy_function(mut_seqs)
+            E_x_i = energy_function(seqs, i)
+            E_x_mut = energy_function(mut_seqs, i)
 
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
