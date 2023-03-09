@@ -59,12 +59,9 @@ def structure_prediction(
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
-    #all_sequences = list(zip(sequences, names))
     all_sequences = list(zip(names, sequences))
 
     batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
-    with open("sequences", "w") as f:
-        print(sequences, file=f)
     all_headers = []
     all_pdbs = []
     pTMs = []
