@@ -106,6 +106,7 @@ def align_proteins(ref_filename: str, sample_filename: str, outfile: str, start_
     ref_atoms = []
     sample_atoms = []
     for ref_chain in ref_model:
+        print(ref_chain)
         for ref_res in ref_chain:
             if ref_res.get_id()[1] in atoms_to_be_aligned:
                 if 'CA' in ref_res:
