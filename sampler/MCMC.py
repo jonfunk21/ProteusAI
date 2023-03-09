@@ -123,10 +123,10 @@ class SequenceOptimizer:
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
 
         names = [f'structure_{j}_cycle{i}' for j in range(len(seqs))]
-        headers, sequences, pdbs, plddts, ptms = constraints.structure_prediction(seqs, names)
+        headers, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
         with open('test_output', 'w') as f:
             for i in range(len(seqs)):
-                lines = [headers[i], sequences[i], plddts[i], ptms[i]]
+                lines = [headers[i], seqs[i], pLDDTs[i], pTMs[i]]
                 for line in lines:
                     f.writelines(line+'\n')
 
