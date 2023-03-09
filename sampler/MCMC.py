@@ -205,6 +205,6 @@ class SequenceOptimizer:
                         f.writelines(pdbs[n])
                 else:
                     with open(f'rejected/sequence_{n}_iter{i}.pdb', 'w') as f:
-                        f.writelines(pdbs[n])
+                        f.writelines(pdbs_mut[n])
 
         return (seqs)
