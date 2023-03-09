@@ -4,6 +4,7 @@ import esm
 import os
 import typing as T
 from timeit import default_timer as timer
+import sys
 
 def length_constraint(seqs: list, max_len: int = 200):
     """
@@ -61,7 +62,7 @@ def structure_prediction(
     all_sequences = list(zip(sequences, names))
 
     batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
-    with open("debug.txt", "w") as f:
+    with open("sequences", "w") as f:
         print(sequences, file=f)
     all_headers = []
     all_pdbs = []
@@ -70,6 +71,12 @@ def structure_prediction(
     for headers, sequences in batched_sequences:
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
+        with open("output_keys", "w") as f:
+            print(output.keys(), file=f)
+        with open('help_msg', 'w') as f:
+            sys.stdout = f
+            help(model.output_to_pdb)
+            sys.stdout = sys.__stdout__
         pdbs = model.output_to_pdb(output)
         for header, seq, pdb_string, mean_plddt, ptm in zip(
                 headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
