@@ -77,6 +77,8 @@ def structure_prediction(
             all_headers.append(header)
             all_sequences.append(seq)
             all_pdbs.append(pdb_string)
+            with open('pdb_peak', 'w') as f:
+                f.writelines(pdb_string)
             pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 
