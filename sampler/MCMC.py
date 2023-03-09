@@ -139,7 +139,7 @@ class SequenceOptimizer:
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
         energies += self.w_plddt * np.array(pLDDTs)
-        energies += self.self.w_globularity * constraints.globularity(pdbs)
+        energies += self.w_globularity * constraints.globularity(pdbs)
 
         # just a line to peak into some of the progress
         with open('peak', 'w') as f:
