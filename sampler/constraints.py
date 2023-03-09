@@ -63,6 +63,7 @@ def structure_prediction(
 
     batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
     all_headers = []
+    all_sequences = []
     all_pdbs = []
     pTMs = []
     pLDDTs = []
