@@ -17,17 +17,17 @@ class SequenceOptimizer:
         mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
         T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
         M (float): rate of temperature decay. or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
-        length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float)). Default (200, 0.1)
-        w_ptm (float): weight for ptm. Default 0.1
-        w_plddt (float): weight for plddt. Default 0.1
+        length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float)). Default (200, 0.2)
+        w_ptm (float): weight for ptm. Default 0.4
+        w_plddt (float): weight for plddt. Default 0.4
     """
 
     def __init__(self, native_seq: str = None, sampler: str = 'simulated_annealing',
                  n_traj: int = 5, n_iter: int = 1000,
                  mut_p: tuple = (0.6, 0.2, 0.2),
                  T: float = 10., M: float = 0.01,
-                 length_constraint: tuple = (200, 0.1),
-                 w_ptm: float = 0.1, w_plddt: float = 0.1
+                 length_constraint: tuple = (200, 0.2),
+                 w_ptm: float = 0.4, w_plddt: float = 0.4
                  ):
 
         self.native_seq = native_seq
