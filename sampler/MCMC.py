@@ -66,12 +66,12 @@ class SequenceOptimizer:
         return s
 
     ### SAMPLERS
-    def mutate(self, seqs, mut_p: list = (0.6, 0.2, 0.2)):
+    def mutate(self, seqs, mut_p: tuple = (0.6, 0.2, 0.2)):
         """
         mutates input sequences.
 
         Parameters:
-            seqs (list): list of peptide sequences
+            seqs (tuple): list of peptide sequences
 
         Returns:
             list: mutated sequences
@@ -138,14 +138,17 @@ class SequenceOptimizer:
         energies += self.w_ptm * np.array(pTMs)
         energies += self.w_plddt * np.array(pLDDTs)
 
-        with open('test_output', 'w') as f:
+        # just a line to peak into some of the progress
+        with open('peak', 'w') as f:
             for i in range(len(seqs)):
                 line = [
+                    'header:', '\n',
                     headers[i], '\n',
-                    seqs[i], '\n',
+                    'sequence:\n',
                     sequences[i], '\n',
-                    str(pTMs[i]), '\n',
-                    str(pLDDTs[i]), '\n',
+                    'pTMs:', str(pTMs[i]), '\n',
+                    'pLDDT:', str(pLDDTs[i]), '\n',
+                    'energy:', str(energies[i]), '\n'
                 ]
                 f.writelines(line)
 
@@ -185,16 +188,18 @@ class SequenceOptimizer:
 
         seqs = [native_seq for _ in range(n_traj)]
 
+        E_x_i, pdbs = energy_function(seqs, 0)
         for i in range(n_iter):
             mut_seqs = mutate(seqs, mut_p)
-            E_x_i, _ = energy_function(seqs, i)
-            E_x_mut, pdbs = energy_function(mut_seqs, i)
+            E_x_mut, pdbs_mut = energy_function(mut_seqs, i)
 
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
 
             for n in range(len(p)):
                 if p[n] > random.random():
+                    E_x_i[n] = E_x_mut[n]
+                    pdbs[n] = pdbs_mut[n]
                     seqs[n] = mut_seqs[n]
                     with open(f'accepted/sequence_{n}_iter{i}.pdb', 'w') as f:
                         f.writelines(pdbs[n])
