@@ -130,9 +130,9 @@ class SequenceOptimizer:
         names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
         headers, sequences, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
 
-        # rescale pLDDT and make values negative. The higher the confidence the more rewarding
-        pTMs = [-val for val in pTMs]
-        pLDDTs = [-val/100 for val in pLDDTs]
+        # rescale pLDDT and make values negative. The higher the confidence is better
+        pTMs = [1 - val for val in pTMs]
+        pLDDTs = [1 - val/100 for val in pLDDTs]
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
