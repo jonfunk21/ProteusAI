@@ -126,8 +126,9 @@ class SequenceOptimizer:
         headers, sequences, pdbs, plddts, ptms = constraints.structure_prediction(seqs, names)
         with open('test_output', 'w') as f:
             for i in range(len(seqs)):
-                line = '\n'.join([headers[i], sequences[i], plddts[i], ptms[i]])
-                f.writelines(line)
+                lines = [headers[i], sequences[i], plddts[i], ptms[i]]
+                for line in lines:
+                    f.writelines(line+'\n')
 
         for i, pdb in enumerate(pdbs):
             with open(f'test_pdb_{i}.pdb', 'w') as f:
