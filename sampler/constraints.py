@@ -83,3 +83,31 @@ def structure_prediction(
             pTMs.append(ptm.item())
 
     return all_headers, all_sequences, all_pdbs, pTMs, pLDDTs
+
+
+def globularity(pdbs: str):
+    """
+    globularity constraint
+
+    Parameters:
+        pdb (list): list of pdb_strings
+
+    Returns:
+        np.array: variances
+    """
+    variances = np.zeros(len(pdbs))
+
+    for i, pdb in enumerate(pdbs):
+        coordinates = []
+        pdb = pdb.split('\n')
+        for line in pdb:
+            if line.startswith('ATOM'):
+                x = float(line[32:38])
+                y = float(line[39:46])
+                z = float(line[46:54])
+                coordinates.append(np.array([x, y, z]))
+
+        variance = sum(np.var(coordinates, axis=0, ddof=1))
+        variances[i] = variance.item()
+
+    return variances

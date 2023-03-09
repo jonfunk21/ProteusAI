@@ -27,7 +27,8 @@ class SequenceOptimizer:
                  mut_p: tuple = (0.6, 0.2, 0.2),
                  T: float = 10., M: float = 0.01,
                  length_constraint: tuple = (200, 0.2),
-                 w_ptm: float = 0.4, w_plddt: float = 0.4
+                 w_ptm: float = 0.2, w_plddt: float = 0.002,
+                 w_globularity: float = 0.002
                  ):
 
         self.native_seq = native_seq
@@ -42,6 +43,7 @@ class SequenceOptimizer:
         self.w_max_len = float(length_constraint[1])
         self.w_ptm = w_ptm
         self.w_plddt = w_plddt
+        self.w_globularity = w_globularity
 
     def __str__(self):
         l = ['ProteusAI.MCMC.SequenceOptimizer class: \n',
@@ -132,11 +134,12 @@ class SequenceOptimizer:
 
         # rescale pLDDT and make values negative. The higher the confidence is better
         pTMs = [1 - val for val in pTMs]
-        pLDDTs = [1 - val/100 for val in pLDDTs]
+        pLDDTs = [1 - val for val in pLDDTs]
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
         energies += self.w_plddt * np.array(pLDDTs)
+        energies += self.self.w_globularity * constraints.globularity(pdbs)
 
         # just a line to peak into some of the progress
         with open('peak', 'w') as f:
