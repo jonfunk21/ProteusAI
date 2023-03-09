@@ -67,6 +67,8 @@ def structure_prediction(
     pLDDTs = []
     for headers, sequences in batched_sequences:
         output = model.infer(sequences, num_recycles=num_recycles)
+        with open("debug.txt", "w") as f:
+            print(output, file=f)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
         for header, seq, pdb_string, mean_plddt, ptm in zip(

@@ -30,3 +30,4 @@ with torch.no_grad():
         with open(outfile, "w") as f:
             f.write(output)
 
+model.output_to_pdb()
