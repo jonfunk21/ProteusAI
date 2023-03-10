@@ -3,5 +3,5 @@ sys.path.append('../')
 from sampler import MCMC
 
 Sampler = MCMC.SequenceOptimizer(native_seq='CNLARCQLSCKSLGLKGGCQGSFCTCG',
-                                 n_iter=1000, n_traj=5, mut_p=(0.6,0.3,0.1))
+                                 n_iter=1000, n_traj=5, T=100, mut_p=(0.2,0.6,0.1))
 Sampler.run()
