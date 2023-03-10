@@ -46,7 +46,7 @@ def create_batched_sequence_datasest(
 
 def structure_prediction(
         sequences: tuple, names: tuple, chunk_size: int = 124,
-        max_tokens_per_batch: int = 1024, num_recycles: int = 4):
+        max_tokens_per_batch: int = 1024, num_recycles: int = None):
     """
     Predict the structure of proteins.
     Parameters:
