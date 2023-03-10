@@ -5,7 +5,7 @@ sys.path.append('../sampler')
 from sampler import constraints
 
 
-class SequenceOptimizer:
+class Hallucination:
     """
     Optimizes a protein sequence based on a custom energy function. Set weights of constraints to 0 which you don't want to use.
 
@@ -27,7 +27,7 @@ class SequenceOptimizer:
                  mut_p: tuple = (0.6, 0.2, 0.2),
                  T: float = 10., M: float = 0.01,
                  length_constraint: tuple = (200, 0.2),
-                 w_ptm: float = 0.2, w_plddt: float = 0.002,
+                 w_ptm: float = 0.2, w_plddt: float = 0.2,
                  w_globularity: float = 0.002
                  ):
 
@@ -46,9 +46,9 @@ class SequenceOptimizer:
         self.w_globularity = w_globularity
 
     def __str__(self):
-        l = ['ProteusAI.MCMC.SequenceOptimizer class: \n',
+        l = ['ProteusAI.MCMC.Hallucination class: \n',
              '---------------------------------------\n',
-             'When SequenceOptimizer.run() is called sequence optimization will be performed on sequence:\n\n',
+             'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
              f'{self.native_seq}\n',
              '\nThe following variables were set:\n\n',
              'variable\t|value\n',
@@ -134,7 +134,7 @@ class SequenceOptimizer:
 
         # rescale pLDDT and make values negative. The higher the confidence is better
         pTMs = [1 - val for val in pTMs]
-        pLDDTs = [1 - val for val in pLDDTs]
+        pLDDTs = [1 - val/100 for val in pLDDTs]
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         energies += self.w_ptm * np.array(pTMs)
