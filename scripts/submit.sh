@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ### -- set the job Name --
 #BSUB -J test
 ### -- ask for number of cores (default: 1) --
@@ -28,6 +30,11 @@
 module load cuda/11.7
 module load python3/3.8.14
 
+# for visualization with pymol
+module load pymol/2.4.1
+pip3 install Pillow
+pip3 install imageio
+
 cd ~/projects/proteusAI/
 source proteus_env/bin/activate
 pip3 install torch torchvision torchaudio
@@ -45,11 +52,6 @@ pip install "fair-esm[esmfold]"
 # OpenFold and its remaining dependency
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
-
-# for visualization with pymol
-module load pymol/2.4.1
-pip3 install Pillow
-pip3 install imageio
 
 cd scripts
 python3  test_folding.py
