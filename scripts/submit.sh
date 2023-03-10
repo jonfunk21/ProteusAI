@@ -30,11 +30,6 @@
 module load cuda/11.7
 module load python3/3.8.14
 
-# for visualization with pymol
-module load pymol/2.4.1
-pip3 install Pillow
-pip3 install imageio
-
 cd ~/projects/proteusAI/
 source proteus_env/bin/activate
 pip3 install torch torchvision torchaudio
@@ -55,3 +50,12 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd scripts
 python3 test_folding.py
+
+
+
+# for visualization with pymol
+module load pymol/2.4.1
+pip3 install Pillow
+pip3 install imageio
+
+python3 make_video.py
