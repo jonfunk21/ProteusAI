@@ -54,7 +54,7 @@ cd scripts
 
 
 # for visualization with pymol
-module load pymol/2.4.0
+module load pymol/2.4.1
 pip3 install Pillow
 pip3 install imageio
 
