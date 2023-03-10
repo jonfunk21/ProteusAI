@@ -49,12 +49,13 @@ pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 
 cd scripts
-#python3 hallucination.py
+
+python3 hallucination.py
 
 
 
 # for visualization with pymol
-module load pymol/2.4.0
+module load pymol/2.4.1
 pip3 install Pillow
 pip3 install imageio
 
