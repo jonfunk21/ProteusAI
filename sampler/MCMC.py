@@ -198,13 +198,13 @@ class SequenceOptimizer:
 
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
-
+            num = '{:04d}'.format(i)
             for n in range(len(p)):
                 if p[n] > random.random():
                     E_x_i[n] = E_x_mut[n]
                     pdbs[n] = pdbs_mut[n]
                     seqs[n] = mut_seqs[n]
-                    num = '{:04d}'.format(i)
+
                     with open(f'accepted/{num}_hallucination_{n}.pdb', 'w') as f:
                         f.writelines(pdbs[n])
                 else:
