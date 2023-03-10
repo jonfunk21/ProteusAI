@@ -205,10 +205,10 @@ class SequenceOptimizer:
                     pdbs[n] = pdbs_mut[n]
                     seqs[n] = mut_seqs[n]
                     num = '{:04d}'.format(i)
-                    with open(f'accepted/{num}_sequence_{n}_iter.pdb', 'w') as f:
+                    with open(f'accepted/{num}_hallucination_{n}.pdb', 'w') as f:
                         f.writelines(pdbs[n])
                 else:
-                    with open(f'rejected/{num}_sequence_{n}.pdb', 'w') as f:
+                    with open(f'rejected/{num}_hallucination_{n}.pdb', 'w') as f:
                         f.writelines(pdbs_mut[n])
 
         return (seqs)
