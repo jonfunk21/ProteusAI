@@ -39,7 +39,7 @@ for traj in hallucinations.keys():
                     f.writelines(line + '\n')
 
             images[traj] = [png]
-            check_call(['pymol', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
+            check_call(['pymol', '-cpihq', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
         else:
             # align to previous file
             struc = pdb
