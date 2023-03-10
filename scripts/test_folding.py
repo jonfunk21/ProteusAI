@@ -72,7 +72,7 @@ for traj in hallucinations.keys():
                     f.writelines(line + '\n')
 
             images[traj].append(png)
-            check_call(['pymol', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
+            check_call(['pymol', '-cpihq', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
 
 import imageio
 
