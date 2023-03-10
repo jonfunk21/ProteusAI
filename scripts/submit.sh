@@ -42,14 +42,16 @@ pip3 install biopython
 pip3 install biotite
 pip3 install seaborn
 
-#cd extraction
-#python3 embedd.py -f ../example_data/A0A6B9VLF5/A0A6B9VLF5_mut.fasta -b 1 -d ../example_data/representations/A0A6B9VLF5 -a True
-
 # additional requirements for folding
 pip install "fair-esm[esmfold]"
 # OpenFold and its remaining dependency
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
+
+# for visualization with pymol
+module load pymol/2.4.1
+pip3 install Pillow
+pip3 install imageio
 
 cd scripts
 python3  test_folding.py

@@ -205,7 +205,7 @@ class Hallucination:
                     pdbs[n] = pdbs_mut[n]
                     seqs[n] = mut_seqs[n]
 
-                    with open(f'accepted/{num}_hallucination_{n}.pdb', 'w') as f:
+                    with open(f'hallucinations/{num}_hallucination_{n}.pdb', 'w') as f:
                         f.writelines(pdbs[n])
                 else:
                     with open(f'rejected/{num}_hallucination_{n}.pdb', 'w') as f:
