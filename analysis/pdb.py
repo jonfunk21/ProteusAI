@@ -19,18 +19,18 @@ def show(pdb_str, color='rainbow', vmin=50, vmax=90, chains=None, Ls=None, size=
     display can be changed. The sidechains and mainchains can be displayed or hidden.
 
     Parameters:
-    pdb_str (str): The filename of the PDB file that contains the protein structure.
-    color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", or "confidence". Defaults to "rainbow".
-    vmin (float, optional): The minimum value of pLDDT or confidence value. Defaults to 50.
-    vmax (float, optional): The maximum value of pLDDT or confidence value. Defaults to 90.
-    chains (int, optional): The number of chains to be displayed. Defaults to None.
-    Ls (list, optional): A list of the chains to be displayed. Defaults to None.
-    size (tuple, optional): The size of the display window. Defaults to (800, 480).
-    show_sidechains (bool, optional): Whether to display the sidechains. Defaults to False.
-    show_mainchains (bool, optional): Whether to display the mainchains. Defaults to False.
+        pdb_str (str): The filename of the PDB file that contains the protein structure.
+        color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", or "confidence". Defaults to "rainbow".
+        vmin (float, optional): The minimum value of pLDDT or confidence value. Defaults to 50.
+        vmax (float, optional): The maximum value of pLDDT or confidence value. Defaults to 90.
+        chains (int, optional): The number of chains to be displayed. Defaults to None.
+        Ls (list, optional): A list of the chains to be displayed. Defaults to None.
+        size (tuple, optional): The size of the display window. Defaults to (800, 480).
+        show_sidechains (bool, optional): Whether to display the sidechains. Defaults to False.
+        show_mainchains (bool, optional): Whether to display the mainchains. Defaults to False.
 
     Returns:
-    view: The 3Dmol view object that displays the protein structure.
+        view: The 3Dmol view object that displays the protein structure.
     """
 
     with open(pdb_str) as ifile:
@@ -64,6 +64,7 @@ def show(pdb_str, color='rainbow', vmin=50, vmax=90, chains=None, Ls=None, size=
         view.zoomTo()
 
     view.zoomTo()
+
     return view
 
 
