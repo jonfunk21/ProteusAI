@@ -67,7 +67,7 @@ for traj in hallucinations.keys():
             images[traj].append(png)
             check_call(['pymol', '-cpihq', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
 
-import imageio
+import imageio.v2 as imageio
 
 # Read each PNG file and append to the list of frames
 for i in images.keys():
@@ -77,4 +77,4 @@ for i in images.keys():
 
     # Save the frames as a GIF
     output_file = f"hallucination_{i}.gif"
-    imageio.mimsave(output_file, frames, duration=0.5)
+    imageio.mimsave(output_file, frames, duration=0.1)
