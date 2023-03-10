@@ -1,5 +1,3 @@
-#!/bin/sh
-
 ### -- set the job Name --
 #BSUB -J test
 ### -- ask for number of cores (default: 1) --
