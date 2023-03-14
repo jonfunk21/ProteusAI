@@ -34,7 +34,7 @@ cd ~/projects/proteusAI/
 source proteus_env/bin/activate
 pip3 install torch torchvision torchaudio
 pip3 install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-python3 -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
+python3 -m pip3 install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
 
 pip3 install fair-esm
 pip3 install matplotlib
@@ -50,8 +50,7 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd DiffDock
 #pip install rdkit-pypi
-python3 -m inference --protein_path ../example_data/structures/ASMT.pdb \
---complex_name ASMT_SAM --ligand ../example_data/molecules/SAM.sdf \
+python3 -m inference --protein_ligand_csv ../example_data/docking.csv
 --out_dir ../example_data/docking/ --inference_steps 20 \
 --samples_per_complex 40 --batch_size 10 \
 --actual_steps 18 --no_final_step_noise --save_visualisation
