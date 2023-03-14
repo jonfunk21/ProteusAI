@@ -50,7 +50,7 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd DiffDock
 #pip install rdkit-pypi
-python3 -m inference --protein_ligand_csv ../example_data/docking.csv
+python3 -m inference --protein_ligand_csv ../example_data/docking/docking.csv
 --out_dir ../example_data/docking/ --inference_steps 20 \
 --samples_per_complex 40 --batch_size 10 \
 --actual_steps 18 --no_final_step_noise --save_visualisation
