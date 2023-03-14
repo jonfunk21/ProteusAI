@@ -34,7 +34,9 @@ cd ~/projects/proteusAI/
 source proteus_env/bin/activate
 pip3 install torch torchvision torchaudio
 pip3 install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+cd DiffDock
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
+cd ..
 
 pip3 install fair-esm
 pip3 install matplotlib
