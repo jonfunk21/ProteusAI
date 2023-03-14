@@ -48,6 +48,10 @@ pip install "fair-esm[esmfold]"
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 
-cd scripts
+cd DiffDock
 
-python3 hallucination.py
+python3 -m inference --protein_path ../example_data/structures/ASMT.pdb \
+--complex_name ASMT_SAM --ligand ../example_data/molecules/SAM.sdf \
+--out_dir ../example_data/docking/ --inference_steps 20 \
+--samples_per_complex 40 --batch_size 10 \
+--actual_steps 18 --no_final_step_noise
