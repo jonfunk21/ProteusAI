@@ -54,4 +54,4 @@ python3 -m inference --protein_path ../example_data/structures/ASMT.pdb \
 --complex_name ASMT_SAM --ligand ../example_data/molecules/SAM.sdf \
 --out_dir ../example_data/docking/ --inference_steps 20 \
 --samples_per_complex 40 --batch_size 10 \
---actual_steps 18 --no_final_step_noise
+--actual_steps 18 --no_final_step_noise --save_visualisation
