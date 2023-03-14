@@ -2,8 +2,8 @@ import os
 import random
 import numpy as np
 import sys
-sys.path.append('../sampler')
-from sampler import constraints
+sys.path.append('')
+from design import constraints
 
 
 class ProteinDesign:
@@ -12,7 +12,7 @@ class ProteinDesign:
 
     Parameters:
         native_seq (str): native sequence to be optimized
-        sampler (str): choose between simulated_annealing and substitution sampler. Default simulated annealing
+        sampler (str): choose between simulated_annealing and substitution design. Default simulated annealing
         n_traj (int): number of trajectories.
         n_iter (int): number of sampling intervals per trajectory. For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
         mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
@@ -61,7 +61,7 @@ class ProteinDesign:
              '\nThe following variables were set:\n\n',
              'variable\t|value\n',
              '----------------+-------------------\n',
-             f'sampler: \t|{self.sampler}\n',
+             f'algorithm: \t|{self.sampler}\n',
              f'n_traj: \t|{self.n_traj}\n',
              f'n_iter: \t|{self.n_iter}\n',
              f'mut_p: \t\t|{self.mut_p}\n',
