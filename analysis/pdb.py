@@ -2,6 +2,7 @@ import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
 import Bio.PDB
 from Bio.PDB.Polypeptide import is_aa
+from Bio import SeqIO
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
 pymol_color_list = ["#33ff33", "#00ffff", "#ff33cc", "#ffff00", "#ff9999", "#e5e5e5", "#7f7fff", "#ff7f00",
@@ -130,3 +131,40 @@ def align_proteins(ref_filename: str, sample_filename: str, outfile: str, start_
     io.save(outfile)
 
     return super_imposer.rms
+
+
+def to_fasta(pdb_path: str):
+    """
+    Returns fasta sequence of pdb file.
+
+    Parameters:
+        pdb_path (str): path to pdb file
+
+    Returns:
+        str: fasta sequence string
+    """
+    seq = ""
+    with open(pdb_path, 'r') as pdb_file:
+        for record in SeqIO.parse(pdb_file, 'pdb-atom'):
+            seq = "".join(['>', str(record.id), '\n', str(record.seq)])
+
+    return seq
+
+
+import biotite.structure as struc
+import biotite.structure.io as strucio
+
+
+def get_sse(pdb_path: str):
+    """
+    Returns the secondary structure of a protein given the pdb file.
+    The secondary structure is infered using the P-SEA algorithm
+    as imple-mented by the biotite Python package.
+
+    Parameters:
+        pdb_path (str): path to pdb
+    """
+    array = strucio.load_structure(pdb_path)
+    sse = struc.annotate_sse(array)
+    sse = ''.join(sse)
+    return sse
