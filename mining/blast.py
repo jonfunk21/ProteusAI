@@ -1,11 +1,7 @@
 from tempfile import gettempdir
-import biotite.sequence as seq
 import biotite.sequence.io.fasta as fasta
-import biotite.sequence.graphics as graphics
-import biotite.application.muscle as muscle
 import biotite.application.blast as blast
 import biotite.database.entrez as entrez
-import matplotlib.pyplot as plt
 
 
 def search_related_sequences(query: str, program: str = 'blastp', database: str = 'nr', obey_rules: bool = True,
