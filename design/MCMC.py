@@ -13,7 +13,7 @@ class ProteinDesign:
     Parameters:
         native_seq (str): native sequence to be optimized
         sampler (str): choose between simulated_annealing and substitution design. Default simulated annealing
-        n_traj (int): number of trajectories.
+        n_traj (int): number of independent trajectories.
         n_iter (int): number of sampling intervals per trajectory. For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
         mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
         T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
@@ -72,6 +72,13 @@ class ProteinDesign:
              '----------------+-------+------------\n',
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
              ]
+        s = ''.join(l)
+        if self.pred_struc:
+            l = [
+                s,
+                f'pTM\t\t|\t|{self.w_ptm}\n'
+                f'pLDDT\t\t|\t|{self.w_plddt}\n'
+            ]
         s = ''.join(l)
         return s
 
