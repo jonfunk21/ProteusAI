@@ -19,6 +19,8 @@ class ProteinDesign:
         T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
         M (float): rate of temperature decay. or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
         length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float)). Default (200, 0.2)
+        identity (bool): Use sequence identity constraint.
+        w_identity (float): Weight of sequence identity constraint. Positive values reward low sequence identity to native sequence.
         pred_struc (bool): if True predict the structure of the protein at every step and use structure based constraints in the energy function. Default True.
         w_ptm (float): weight for ptm. Default 0.4
         w_plddt (float): weight for plddt. Default 0.4
@@ -32,6 +34,7 @@ class ProteinDesign:
                  length_constraint: tuple = (200, 0.2),
                  pred_struc: bool = True,
                  w_ptm: float = 0.2, w_plddt: float = 0.2,
+                 identity=True, w_identity = 0.2,
                  w_globularity: float = 0.002,
                  outdir = None
                  ):
@@ -47,6 +50,8 @@ class ProteinDesign:
         self.length_constraint = length_constraint
         self.max_len = int(length_constraint[0])
         self.w_max_len = float(length_constraint[1])
+        self.identity = identity
+        self.w_identity = w_identity
         self.w_ptm = w_ptm
         self.w_plddt = w_plddt
         self.w_globularity = w_globularity
@@ -73,13 +78,19 @@ class ProteinDesign:
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
              ]
         s = ''.join(l)
+        if self.identity:
+            l = [
+                s,
+                f'identity\t|\t|{self.w_identity}\n'
+            ]
+            s = ''.join(l)
         if self.pred_struc:
             l = [
                 s,
                 f'pTM\t\t|\t|{self.w_ptm}\n'
                 f'pLDDT\t\t|\t|{self.w_plddt}\n'
             ]
-        s = ''.join(l)
+            s = ''.join(l)
         return s
 
     ### SAMPLERS
@@ -151,6 +162,8 @@ class ProteinDesign:
 
 
         energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        energies += self.w_identity * constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+
         pdbs = []
         if self.pred_struc:
             names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]

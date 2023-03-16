@@ -1,6 +1,8 @@
 import numpy as np
 import esm
 import typing as T
+import biotite.sequence as seq
+import biotite.sequence.align as align
 
 def length_constraint(seqs: list, max_len: int = 200):
     """
@@ -107,3 +109,33 @@ def globularity(pdbs: str):
         variances[i] = variance.item()
 
     return variances
+
+
+def seq_identity(seqs, ref, matrix="BLOSUM62", local=False):
+    """
+    Calculates sequence identity of sequences against a reference sequence based on alignment.
+    By default a global alignment is performed using the BLOSUM62 matrix.
+
+    Parameters:
+        seq1 (str): reference sequence
+        seq2 (str): query sequence
+        matrix (str): alignement matrix {BLOSUM62, BLOSUM50, BLOSUM30}. Default BLOSUM62
+        local (bool): Local alignment if True, else global alignment.
+
+    Returns:
+        numpy.ndarray: identity scores of sequences
+
+    """
+    alph = seq.ProteinSequence.alphabet
+    matrix = align.SubstitutionMatrix(alph, alph, matrix)
+
+    seqs = [seq.ProteinSequence(s) for s in seqs]
+    ref = seq.ProteinSequence(ref)
+
+    scores = np.zeros(len(seqs))
+    for i, s in enumerate(seqs):
+        alignments = align.align_optimal(s, ref, matrix, local=local)
+        score = align.get_sequence_identity(alignments[0])
+        scores[i] = score
+
+    return scores
