@@ -122,7 +122,7 @@ def structure_prediction(
         ):
             all_headers.append(header)
             all_sequences.append(seq)
-            all_pdbs.append(string_to_tempfile(pdb_string))
+            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string)))
             pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 
@@ -134,7 +134,7 @@ def globularity(pdbs):
     globularity constraint
 
     Parameters:
-        pdb (list): list of temporary pdb files
+        pdb (list): list of biotite pdb files
 
     Returns:
         np.array: variances
@@ -142,40 +142,7 @@ def globularity(pdbs):
     variances = np.zeros(len(pdbs))
 
     for i, pdb in enumerate(pdbs):
-        pdb_file = PDBFile.read(pdb.name)
-        variance = pdb_file.get_coord().var()
-        variances[i] = variance.item()
-
-    return variances
-
-
-def all_atom_coordination(pdbs: str, constraints: list):
-    """
-    All atom coordination constraint. This constraint considers
-    the all_atom constraint by calculating the cRMSD of the
-    original structure and the mutated structures.
-    The structures will be structurally superimposed followed
-    by the calculation of the cRMSD of the constrained residues.
-
-    Parameters:
-        pdb (list): list of pdb_strings
-
-    Returns:
-        np.array: variances
-    """
-    variances = np.zeros(len(pdbs))
-
-    for i, pdb in enumerate(pdbs):
-        coordinates = []
-        pdb = pdb.split('\n')
-        for line in pdb:
-            if line.startswith('ATOM'):
-                x = float(line[32:38])
-                y = float(line[39:46])
-                z = float(line[46:54])
-                coordinates.append(np.array([x, y, z]))
-
-        variance = sum(np.var(coordinates, axis=0, ddof=1))
+        variance = pdb.get_coord().var()
         variances[i] = variance.item()
 
     return variances
