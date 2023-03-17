@@ -25,6 +25,8 @@ class ProteinDesign:
         pred_struc (bool): if True predict the structure of the protein at every step and use structure based constraints in the energy function. Default True.
         w_ptm (float): weight for ptm. Default 0.4
         w_plddt (float): weight for plddt. Default 0.4
+        w_globularity (float): weight of globularity constraint
+        w_sasa (float): weight of surface exposed hydrophobics constraint
         outdir (str): path to output directory. Default None
         verbose (bool): if verbose print information
     """
@@ -39,6 +41,7 @@ class ProteinDesign:
                  w_ptm: float = 0.2, w_plddt: float = 0.2,
                  w_identity = 0.2,
                  w_globularity: float = 0.002,
+                 w_sasa: float = 0.02,
                  outdir = None,
                  verbose = False,
                  ):
@@ -60,6 +63,7 @@ class ProteinDesign:
         self.outdir = outdir
         self.verbose = verbose
         self.constraints = constraints
+        self.w_sasa = w_sasa
 
 
     def __str__(self):
@@ -196,6 +200,7 @@ class ProteinDesign:
             energies += self.w_ptm * np.array(pTMs)
             energies += self.w_plddt * np.array(pLDDTs)
             energies += self.w_globularity * constraints.globularity(pdbs)
+            energies += self.w_sasa * constraints.surface_exposed_hydrophobics(pdbs)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:
