@@ -50,4 +50,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd scripts
 
-python3 hallucination.py
+python3 design.py
