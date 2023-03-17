@@ -4,6 +4,7 @@ import typing as T
 import biotite.sequence as seq
 import biotite.sequence.align as align
 from biotite.structure.io.pdb import PDBFile
+from biotite.structure import sasa
 import tempfile
 
 #_____Sequence Constraints_____
@@ -136,7 +137,7 @@ def globularity(pdbs):
         pdb (list): list of biotite pdb files
 
     Returns:
-        np.array: variances
+        np.array: variances of coordinates for each structure
     """
     variances = np.zeros(len(pdbs))
 
@@ -145,3 +146,20 @@ def globularity(pdbs):
         variances[i] = variance.item()
 
     return variances
+
+def surface_exposed_hydrophobics(pdbs):
+    """
+    Calculate the surface exposed hydrophobics using the Shrake-Rupley (“rolling probe”) algorithm.
+
+    Parameters:
+        pdbs (list): list of biotite pdb files
+
+    Returns:
+        np.array: average sasa values for each structure
+    """
+    avrg_sasa_values = np.zeros(len(pdbs))
+    for i, pdb in enumerate(pdbs):
+        sasa_val = sasa(pdb, probe_radius=1.4, atom_filter=None, ignore_ions=True,
+                                      point_number=1000, point_distr='Fibonacci', vdw_radii='ProtOr')
+        sasa_mean = sasa_val.mean()
+        avrg_sasa_values[i] = sasa_mean.item()
