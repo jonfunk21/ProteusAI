@@ -41,9 +41,10 @@ for res_id in contacts:
 
 res_constraints = {'no_mut':contact_indices}
 
-Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=100, n_traj=1,
+Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=10, n_traj=2,
                             T=1, M=0.01, pred_struc=True, max_len=300,
                             verbose=True, constraints=res_constraints,
+                            outdir='designs'
                            )
 
 print('constraints on residues')
