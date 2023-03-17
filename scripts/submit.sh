@@ -50,4 +50,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd scripts
 
-python3 design.py
+python3 design_test.py
