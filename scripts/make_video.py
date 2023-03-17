@@ -1,23 +1,23 @@
 import os
 from subprocess import DEVNULL, STDOUT, check_call
 
-path_to_files = 'hallucinations/'
+path_to_files = 'designs/'
 outdir = 'pngs/'
 pdbs = [path_to_files + file for file in os.listdir(path_to_files)]
-pdbs = sorted(pdbs, key=lambda f: int(f.split('/')[-1].split('_hallucination')[0]))
+pdbs = sorted(pdbs, key=lambda f: int(f.split('/')[-1].split('_design')[0]))
 
-hallucinations = {}
+designs = {}
 for pdb in pdbs:
-    traj = (pdb.split('_hallucination_')[-1][:-4])
-    if traj not in hallucinations.keys():
-        hallucinations[traj] = [pdb]
+    traj = (pdb.split('_design_')[-1][:-4])
+    if traj not in designs.keys():
+        designs[traj] = [pdb]
     else:
-        hallucinations[traj].append(pdb)
+        designs[traj].append(pdb)
 
 images = {}
-for traj in hallucinations.keys():
+for traj in designs.keys():
 
-    for i, pdb in enumerate(hallucinations[traj]):
+    for i, pdb in enumerate(designs[traj]):
         if i == 0:
             # only open this one file without alignemt
             struc = pdb
@@ -39,11 +39,12 @@ for traj in hallucinations.keys():
                     f.writelines(line + '\n')
 
             images[traj] = [png]
+            print('hello')
             check_call(['pymol', '-cpihq', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
         else:
             # align to previous file
             struc = pdb
-            prev_struc = hallucinations[traj][i - 1]
+            prev_struc = designs[traj][i - 1]
             png = outdir + pdb.split('/')[-1][:-4] + '.png'
             lines = [
                 f'load {struc}, struc',
@@ -65,9 +66,13 @@ for traj in hallucinations.keys():
                     f.writelines(line + '\n')
 
             images[traj].append(png)
+            print('hello')
             check_call(['pymol', '-cpihq', 'make_png.pml'], stdout=DEVNULL, stderr=STDOUT)
 
 import imageio.v2 as imageio
+
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
 
 # Read each PNG file and append to the list of frames
 for i in images.keys():
@@ -76,5 +81,5 @@ for i in images.keys():
         frames.append(imageio.imread(file))
 
     # Save the frames as a GIF
-    output_file = f"hallucination_{i}.gif"
+    output_file = f"design_{i}.gif"
     imageio.mimsave(output_file, frames, duration=0.1)
