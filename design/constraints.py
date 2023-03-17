@@ -122,7 +122,7 @@ def structure_prediction(
         ):
             all_headers.append(header)
             all_sequences.append(seq)
-            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string)))
+            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name))
             pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 

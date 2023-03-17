@@ -114,6 +114,8 @@ class ProteinDesign:
         mutated_seqs = []
         for i, seq in enumerate(seqs):
             seq_constraints = constraints[i]
+
+            # loop until allowed mutation has been selected
             mutate = True
             while mutate:
                 pos = random.randint(0, len(seq) - 1)
