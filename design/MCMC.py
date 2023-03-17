@@ -12,50 +12,54 @@ class ProteinDesign:
 
     Parameters:
         native_seq (str): native sequence to be optimized
+        constraints (dict): constraints on sequence. Keys describe the kind of constraint and values the position on which they act.
         sampler (str): choose between simulated_annealing and substitution design. Default simulated annealing
         n_traj (int): number of independent trajectories.
-        n_iter (int): number of sampling intervals per trajectory. For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
+        steps (int): number of sampling steps per trajectory. For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
         mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
         T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
         M (float): rate of temperature decay. or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
-        length_constraint (tuple): constraint on length. (maximum_allowed_length(int), weight_of_constraint(float)). Default (200, 0.2)
-        identity (bool): Use sequence identity constraint.
+        max_len (int): maximum length sequence length for lenght constraint
+        w_len (float): weight of length constraint
         w_identity (float): Weight of sequence identity constraint. Positive values reward low sequence identity to native sequence.
         pred_struc (bool): if True predict the structure of the protein at every step and use structure based constraints in the energy function. Default True.
         w_ptm (float): weight for ptm. Default 0.4
         w_plddt (float): weight for plddt. Default 0.4
         outdir (str): path to output directory. Default None
+        verbose (bool): if verbose print information
     """
 
-    def __init__(self, native_seq: str = None, sampler: str = 'simulated_annealing',
-                 n_traj: int = 5, n_iter: int = 1000,
+    def __init__(self, native_seq: str = None, constraints: dict = {'no_mut':[]},
+                 sampler: str = 'simulated_annealing',
+                 n_traj: int = 5, steps: int = 1000,
                  mut_p: tuple = (0.6, 0.2, 0.2),
                  T: float = 10., M: float = 0.01,
-                 length_constraint: tuple = (200, 0.2),
+                 max_len = 200, w_len=0.2,
                  pred_struc: bool = True,
                  w_ptm: float = 0.2, w_plddt: float = 0.2,
-                 identity=True, w_identity = 0.2,
+                 w_identity = 0.2,
                  w_globularity: float = 0.002,
-                 outdir = None
+                 outdir = None,
+                 verbose = False,
                  ):
 
         self.native_seq = native_seq
         self.sampler = sampler
         self.n_traj = n_traj
-        self.n_iter = n_iter
+        self.steps = steps
         self.mut_p = mut_p
         self.T = T
         self.M = M
         self.pred_struc = pred_struc
-        self.length_constraint = length_constraint
-        self.max_len = int(length_constraint[0])
-        self.w_max_len = float(length_constraint[1])
-        self.identity = identity
+        self.max_len = max_len
+        self.w_max_len = w_len
         self.w_identity = w_identity
         self.w_ptm = w_ptm
         self.w_plddt = w_plddt
         self.w_globularity = w_globularity
         self.outdir = outdir
+        self.verbose = verbose
+        self.constraints = constraints
 
 
     def __str__(self):
@@ -67,8 +71,8 @@ class ProteinDesign:
              'variable\t|value\n',
              '----------------+-------------------\n',
              f'algorithm: \t|{self.sampler}\n',
+             f'steps: \t\t|{self.steps}\n',
              f'n_traj: \t|{self.n_traj}\n',
-             f'n_iter: \t|{self.n_iter}\n',
              f'mut_p: \t\t|{self.mut_p}\n',
              f'T: \t\t|{self.T}\n',
              f'M: \t\t|{self.M}\n\n',
@@ -76,14 +80,9 @@ class ProteinDesign:
              f'constraint\t|value\t|weight\n',
              '----------------+-------+------------\n',
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
+             f'identity\t|\t|{self.w_identity}\n'
              ]
         s = ''.join(l)
-        if self.identity:
-            l = [
-                s,
-                f'identity\t|\t|{self.w_identity}\n'
-            ]
-            s = ''.join(l)
         if self.pred_struc:
             l = [
                 s,
@@ -94,12 +93,14 @@ class ProteinDesign:
         return s
 
     ### SAMPLERS
-    def mutate(self, seqs, mut_p: tuple = (0.6, 0.2, 0.2)):
+    def mutate(self, seqs, mut_p: tuple = (0.6, 0.2, 0.2), constraints=None):
         """
         mutates input sequences.
 
         Parameters:
             seqs (tuple): list of peptide sequences
+            mut_p (tuple): mutation probabilities
+            constraints (dict): dictionary of constraints
 
         Returns:
             list: mutated sequences
@@ -111,8 +112,21 @@ class ProteinDesign:
         mut_types = ('substitution', 'insertion', 'deletion')
 
         mutated_seqs = []
-        for seq in seqs:
-            mut_type = random.choices(mut_types, mut_p)[0]
+        for i, seq in enumerate(seqs):
+            seq_constraints = constraints[i]
+            mutate = True
+            while mutate:
+                pos = random.randint(0, len(seq) - 1)
+                mut_type = random.choices(mut_types, mut_p)[0]
+                if pos in seq_constraints['no_mut']:
+                    pass
+                # all atom constraines disallows deletion
+                # secondary structure constraint disallows deletion
+                # insertions between two secondary structure constraints will have the constraint of their neighbors
+                else:
+                    break
+
+
             if mut_type == 'substitution':
                 pos = random.randint(0, len(seq) - 1)
                 replacement = random.choice(AAs)
@@ -124,6 +138,12 @@ class ProteinDesign:
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 mutated_seqs.append(mut_seq)
+                # shift constraints after insertion
+                for const in seq_constraints.keys():
+                    positions = seq_constraints[const]
+                    positions = [i if i < pos else i + 1 for i in positions]
+                    seq_constraints[const] = positions
+
 
             elif mut_type == 'deletion' and len(seq) > 1:
                 pos = random.randint(0, len(seq) - 1)
@@ -131,6 +151,11 @@ class ProteinDesign:
                 del l[pos]
                 mut_seq = ''.join(l)
                 mutated_seqs.append(mut_seq)
+                # shift constraints after deletion
+                for const in seq_constraints.keys():
+                    positions = seq_constraints[const]
+                    positions = [i if i < pos else i - 1 for i in positions]
+                    seq_constraints[const] = positions
 
             else:
                 # will perform insertion if length is to small
@@ -139,7 +164,7 @@ class ProteinDesign:
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 mutated_seqs.append(mut_seq)
 
-        return mutated_seqs
+        return mutated_seqs, constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
     def energy_function(self, seqs: list, i):
@@ -152,17 +177,13 @@ class ProteinDesign:
         Returns:
             list: Energy value
         """
+        # reinitialize energy
         energies = np.zeros(len(seqs))
 
-        # structure prediction
-
-
-
-        # rescale pLDDT and make values negative. The higher the confidence is better
-
-
-        energies += self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        energies += self.w_identity * constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+        e_len = self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        e_identity = self.w_identity * constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+        energies += e_len
+        energies +=  e_identity
 
         pdbs = []
         if self.pred_struc:
@@ -207,8 +228,9 @@ class ProteinDesign:
         Runs MCMC-sampling based on user defined inputs. Returns optimized sequences.
         """
         native_seq = self.native_seq
+        constraints = self.constraints
         n_traj = self.n_traj
-        n_iter = self.n_iter
+        steps = self.steps
         sampler = self.sampler
         energy_function = self.energy_function
         T = self.T
@@ -228,12 +250,13 @@ class ProteinDesign:
             raise 'The optimizer needs a sequence to run. Define a sequence by calling SequenceOptimizer(native_seq = <your_sequence>)'
 
         seqs = [native_seq for _ in range(n_traj)]
+        constraints = [constraints for _ in range(n_traj)]
 
         E_x_i, pdbs = energy_function(seqs, 0)
-        for i in range(n_iter):
-            mut_seqs = mutate(seqs, mut_p)
-            E_x_mut, pdbs_mut = energy_function(mut_seqs, i)
+        for i in range(steps):
+            mut_seqs, constraints = mutate(seqs, mut_p, constraints)
 
+            E_x_mut, pdbs_mut = energy_function(mut_seqs, i)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
             num = '{:04d}'.format(i)
@@ -243,10 +266,6 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     if self.pred_struc and outdir != None:
                         pdbs[n] = pdbs_mut[n]
-                        with open(f'hallucinations/{num}_hallucination_{n}.pdb', 'w') as f:
-                            f.writelines(pdbs[n])
-                elif p[n] <= random.random() and (self.pred_struc and outdir != None):
-                    with open(f'rejected/{num}_hallucination_{n}.pdb', 'w') as f:
-                        f.writelines(pdbs_mut[n])
+                        pdbs[n].write(os.path.join(outdir, f'{num}_design_{n}.pdb'))
 
         return (seqs)
