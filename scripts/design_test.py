@@ -1,14 +1,14 @@
 import sys
 sys.path.append('../')
+import re
 from design import MCMC
 from analysis import pdb, interactions
 import os
 
-
 ASMT_pdb = '../example_data/structures/ASMT.pdb'
 ASMT_seq = pdb.to_fasta(ASMT_pdb).split('\n')[1]
 
-import re
+
 
 pattern = r'rank[1]_'
 

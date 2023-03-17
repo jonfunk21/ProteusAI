@@ -2,7 +2,7 @@ import os
 import random
 import numpy as np
 import sys
-sys.path.append('')
+sys.path.append('../')
 from design import constraints
 
 

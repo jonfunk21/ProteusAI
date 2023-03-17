@@ -3,7 +3,6 @@ import esm
 import typing as T
 import biotite.sequence as seq
 import biotite.sequence.align as align
-import biotite
 from biotite.structure.io.pdb import PDBFile
 import tempfile
 
