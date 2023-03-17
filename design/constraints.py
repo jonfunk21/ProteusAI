@@ -42,7 +42,6 @@ def seq_identity(seqs, ref, matrix="BLOSUM62", local=False):
 
     Returns:
         numpy.ndarray: identity scores of sequences
-
     """
     alph = seq.ProteinSequence.alphabet
     matrix = align.SubstitutionMatrix(alph, alph, matrix)

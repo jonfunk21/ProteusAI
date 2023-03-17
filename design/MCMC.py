@@ -268,8 +268,6 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     if self.pred_struc and outdir != None:
                         pdbs[n] = pdbs_mut[n]
-                        with open('debug', 'w') as f:
-                            f.write(type(pdbs[n]))
                         pdbs[n].write(os.path.join(outdir, f'{num}_design_{n}.pdb'))
 
         return (seqs)
