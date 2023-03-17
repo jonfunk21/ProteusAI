@@ -159,7 +159,8 @@ def surface_exposed_hydrophobics(pdbs):
     """
     avrg_sasa_values = np.zeros(len(pdbs))
     for i, pdb in enumerate(pdbs):
-        sasa_val = sasa(pdb, probe_radius=1.4, atom_filter=None, ignore_ions=True,
+        struc = pdb.get_structure()
+        sasa_val = sasa(struc[0], probe_radius=1.4, atom_filter=None, ignore_ions=True,
                                       point_number=1000, point_distr='Fibonacci', vdw_radii='ProtOr')
         sasa_mean = sasa_val.mean()
         avrg_sasa_values[i] = sasa_mean.item()
