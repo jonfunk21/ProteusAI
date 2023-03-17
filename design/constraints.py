@@ -164,3 +164,5 @@ def surface_exposed_hydrophobics(pdbs):
                                       point_number=1000, point_distr='Fibonacci', vdw_radii='ProtOr')
         sasa_mean = sasa_val.mean()
         avrg_sasa_values[i] = sasa_mean.item()
+
+    return avrg_sasa_values

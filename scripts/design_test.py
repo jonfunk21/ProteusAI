@@ -42,11 +42,15 @@ for res_id in contacts:
 res_constraints = {'no_mut':contact_indices}
 
 # Design process
+outdir = '../example_data/designs/ASMT/pdbs'
 Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=100, n_traj=2,
                             T=1, M=0.01, pred_struc=True, max_len=300,
                             verbose=True, constraints=res_constraints,
-                            outdir='../example_data/designs/ASMT'
+                            outdir=outdir
                            )
+
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
 
 print('constraints on residues')
 print(res_constraints)
