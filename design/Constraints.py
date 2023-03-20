@@ -231,8 +231,10 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         ref_indices = np.where(np.isin(ref_struc.res_id, [i + 1 for i in ref_const['all_atm']]))
 
         with open('indices', 'w') as f:
+            f.writelines([i + 1 for i in sample_const['all_atm']])
             f.write(str(sample_indices))
             f.write('\n')
+            f.writelines([i + 1 for i in ref_const['all_atm']])
             f.write(str(ref_indices))
 
         sample_struc_common = sample_struc[sample_indices[0]]
