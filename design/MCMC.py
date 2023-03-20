@@ -3,7 +3,7 @@ import random
 import numpy as np
 import sys
 sys.path.append('../')
-from design import constraints
+from design import Constraints
 
 
 class ProteinDesign:
@@ -133,7 +133,9 @@ class ProteinDesign:
                 mut_type = random.choices(mut_types, mut_p)[0]
                 if pos in seq_constraints['no_mut']:
                     pass
-                # all atom constraines disallows deletion
+                # all atom constraints disallows deletion
+                if pos in seq_constraints['all_atm'] and mut_type == 'deletion':
+                    pass
                 # secondary structure constraint disallows deletion
                 # insertions between two secondary structure constraints will have the constraint of their neighbors
                 else:
@@ -193,26 +195,26 @@ class ProteinDesign:
         # reinitialize energy
         energies = np.zeros(len(seqs))
 
-        e_len = self.w_max_len * constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        e_identity = self.w_identity * constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+        e_len = self.w_max_len * Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        e_identity = self.w_identity * Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
         energies += e_len
         energies +=  e_identity
 
         pdbs = []
         if self.pred_struc:
             names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
-            headers, sequences, pdbs, pTMs, pLDDTs = constraints.structure_prediction(seqs, names)
+            headers, sequences, pdbs, pTMs, pLDDTs = Constraints.structure_prediction(seqs, names)
             pTMs = [1 - val for val in pTMs]
             pLDDTs = [1 - val / 100 for val in pLDDTs]
             energies += self.w_ptm * np.array(pTMs)
             energies += self.w_plddt * np.array(pLDDTs)
-            energies += self.w_globularity * constraints.globularity(pdbs)
-            energies += self.w_sasa * constraints.surface_exposed_hydrophobics(pdbs)
+            energies += self.w_globularity * Constraints.globularity(pdbs)
+            energies += self.w_sasa * Constraints.surface_exposed_hydrophobics(pdbs)
 
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
-                energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
+                energies += self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
+                energies += self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:

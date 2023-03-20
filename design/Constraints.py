@@ -192,7 +192,7 @@ def backbone_coordination(samples: list, refs: list):
     rmsds = np.zeros(len(samples))
 
     for i in range(len(samples)):
-        _,_,rmsd = pdb.struc_align(refs[i], samples[i])
+        _, _, rmsd = pdb.struc_align(refs[i], samples[i])
         rmsds[i] = rmsd.item()
 
     return rmsds
@@ -232,6 +232,11 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
 
         sample_struc_common = sample_struc[sample_indices[0]]
         ref_struc_common = ref_struc[ref_indices[0]]
+
+        with open('peak', 'w') as f:
+            f.write(str(sample_struc_common), '\n')
+            f.write(str(ref_struc_common))
+
 
         sample_superimposed, transformation = struc.superimpose(
             ref_struc_common, sample_struc_common
