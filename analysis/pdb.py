@@ -1,8 +1,10 @@
 import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
-import Bio.PDB
+from biotite.structure.io.pdb import PDBFile
 from Bio.PDB.Polypeptide import is_aa
 from Bio import SeqIO
+import biotite.structure as struc
+import biotite.structure.io as strucio
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
 pymol_color_list = ["#33ff33", "#00ffff", "#ff33cc", "#ffff00", "#ff9999", "#e5e5e5", "#7f7fff", "#ff7f00",
@@ -81,56 +83,54 @@ def get_sequence_length(ref_model):
     return seq_len
 
 
-def align_proteins(ref_filename: str, sample_filename: str, outfile: str, start_id: int = 1, end_id: int = None):
+def struc_align(pdb1: str, pdb2: str, atms1: list = None, atms2: list = None):
     """
-    Alignes sample structure to reference structure, saves pdb aligned sample structure as pdb. Returns RMSD.
+    Alignes superimposes protein structures, either based on common residues
+    or alignes a set of atoms. superimpose struc2 on struc1
 
     Parameters:
-        ref_filename (str): reference structure file path
-        sample_filename (str): sample structure file path
-        outfile (str): outfile name
-        start_id (int, optional): beginning residue for alignement
-        end_id (int, optional): end residue for alignement, if None it will take all residues of the shorter protein. Default None
+    -----------
+        pdb1 (str): biotite pdb file
+        pdb2 (str): biotite pdb file
+        atms1, atms2 (list): list of atoms which should be superimposed.
+            atms1 are atoms of struc1 which are common in struc2 (atms2)
+
+    Returns:
+    --------
+        pdb_file1, pdb_file2: biotite pdb file
+        rmsd: np.float32
     """
-    pdb_parser = Bio.PDB.PDBParser(QUIET=True)
+    struc1 = pdb1.get_structure()[0]
+    struc2 = pdb2.get_structure()[0]
 
-    ref_structure = pdb_parser.get_structure("reference", ref_filename)
-    sample_structure = pdb_parser.get_structure("sample", sample_filename)
+    if atms1 == None or atms2 == None:
+        intersection1 = struc.filter_intersection(struc1, struc2)
+        intersection2 = struc.filter_intersection(struc2, struc1)
+        struc1_common = struc1[intersection1]
+        struc2_common = struc2[intersection2]
 
-    ref_model = ref_structure[0]
-    sample_model = sample_structure[0]
+    # write a test if the atoms are valid
+    else:
+        struc1_common = atms1
+        struc2_common = atms2
 
-    if end_id == None:
-        end_id = min(get_sequence_length(ref_model), get_sequence_length(sample_model))
+    struc2_superimposed, transformation = struc.superimpose(
+        struc1_common, struc2_common, (struc1_common.atom_name == "CA")
+    )
 
-    atoms_to_be_aligned = range(start_id, end_id + 1)
+    struc2_superimposed = struc.superimpose_apply(struc2, transformation)
 
-    ref_atoms = []
-    sample_atoms = []
-    for ref_chain in ref_model:
-        print(ref_chain)
-        for ref_res in ref_chain:
-            if ref_res.get_id()[1] in atoms_to_be_aligned:
-                if 'CA' in ref_res:
-                    ref_atoms.append(ref_res['CA'])
+    pdb_file1 = PDBFile()
+    struc1 = PDBFile.set_structure(pdb_file1, struc1)
+    coord1 = pdb_file1.get_coord()[0][intersection1]
 
-    for sample_chain in sample_model:
-        for sample_res in sample_chain:
-            if sample_res.get_id()[1] in atoms_to_be_aligned:
-                if 'CA' in sample_res:
-                    sample_atoms.append(sample_res['CA'])
+    pdb_file2 = PDBFile()
+    struc2 = PDBFile.set_structure(pdb_file2, struc2_superimposed)
+    coord2 = pdb_file2.get_coord()[0][intersection2]
 
-    super_imposer = Bio.PDB.Superimposer()
-    super_imposer.set_atoms(ref_atoms[:end_id], sample_atoms[:end_id])
-    super_imposer.apply(sample_model.get_atoms())
+    rmsd = struc.rmsd(coord1, coord2)
 
-    print(f"RMSD: {super_imposer.rms:.3f}")
-
-    io = Bio.PDB.PDBIO()
-    io.set_structure(sample_structure)
-    io.save(outfile)
-
-    return super_imposer.rms
+    return pdb_file1, pdb_file2, rmsd
 
 
 def to_fasta(pdb_path: str):
@@ -149,10 +149,6 @@ def to_fasta(pdb_path: str):
             seq = "".join(['>', str(record.id), '\n', str(record.seq)])
 
     return seq
-
-
-import biotite.structure as struc
-import biotite.structure.io as strucio
 
 
 def get_sse(pdb_path: str):
