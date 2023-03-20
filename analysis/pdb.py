@@ -121,11 +121,11 @@ def struc_align(pdb1: str, pdb2: str, atms1: list = None, atms2: list = None):
     struc2_superimposed = struc.superimpose_apply(struc2, transformation)
 
     pdb_file1 = PDBFile()
-    struc1 = PDBFile.set_structure(pdb_file1, struc1)
+    PDBFile.set_structure(pdb_file1, struc1)
     coord1 = pdb_file1.get_coord()[0][intersection1]
 
     pdb_file2 = PDBFile()
-    struc2 = PDBFile.set_structure(pdb_file2, struc2_superimposed)
+    PDBFile.set_structure(pdb_file2, struc2_superimposed)
     coord2 = pdb_file2.get_coord()[0][intersection2]
 
     rmsd = struc.rmsd(coord1, coord2)
