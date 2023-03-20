@@ -69,6 +69,7 @@ class ProteinDesign:
         self.w_sasa = w_sasa
         self.w_bb_coord = w_bb_coord
         self.w_all_atm = w_all_atm
+        self.ref_pdbs = None
 
 
     def __str__(self):
@@ -207,8 +208,11 @@ class ProteinDesign:
             energies += self.w_plddt * np.array(pLDDTs)
             energies += self.w_globularity * constraints.globularity(pdbs)
             energies += self.w_sasa * constraints.surface_exposed_hydrophobics(pdbs)
-            energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.ref_pdbs)
-            energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
+
+            # there are now ref pdbs before the first calculation
+            if self.ref_pdbs != None:
+                energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.ref_pdbs)
+                energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:
