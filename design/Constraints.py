@@ -234,7 +234,8 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         ref_struc_common = ref_struc[ref_indices[0]]
 
         with open('peak', 'w') as f:
-            f.write(str(sample_struc_common), '\n')
+            f.write(str(sample_struc_common))
+            f.write('\n')
             f.write(str(ref_struc_common))
 
 
