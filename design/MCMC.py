@@ -180,7 +180,7 @@ class ProteinDesign:
         return mutated_seqs, constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
-    def energy_function(self, seqs: list, i):
+    def energy_function(self, seqs: list, i, consts: list):
         """
         Combines constraints into an energy function.
 
@@ -212,7 +212,7 @@ class ProteinDesign:
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
                 energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
+                energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:
@@ -272,7 +272,7 @@ class ProteinDesign:
         constraints = [constraints for _ in range(n_traj)]
 
         # calculation of initial state
-        E_x_i, pdbs = energy_function(seqs, 0)
+        E_x_i, pdbs = energy_function(seqs, 0, constraints)
 
         self.initial_enery = E_x_i
         self.ref_pdbs = pdbs
@@ -280,7 +280,7 @@ class ProteinDesign:
         for i in range(steps):
             mut_seqs, constraints = mutate(seqs, mut_p, constraints)
 
-            E_x_mut, pdbs_mut = energy_function(mut_seqs, i)
+            E_x_mut, pdbs_mut = energy_function(mut_seqs, i, constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
             num = '{:04d}'.format(i)
