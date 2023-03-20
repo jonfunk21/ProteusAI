@@ -4,6 +4,7 @@ import typing as T
 import biotite.sequence as seq
 import biotite.sequence.align as align
 from biotite.structure.io.pdb import PDBFile
+import biotite.structure as struc
 from biotite.structure import sasa
 import tempfile
 import sys
@@ -195,3 +196,57 @@ def backbone_coordination(samples: list, refs: list):
         rmsds[i] = rmsd.item()
 
     return rmsds
+
+
+def all_atom_coordination(samples, refs, sample_consts, ref_consts):
+    """
+    Calculate the RMSD of residues with all atom constraints.
+    All atomic positions will be taken into consideration.
+
+    Parameters:
+    -----------
+        samples (list): list of biotite pdb files (mutated)
+        refs (list): list of biotite pdb files (reference)
+        sample_consts (list): list of constraints on the sample
+            (potentially shifts over time due to deletions and insertions)
+        ref_consts (list): list of constraints of the reference
+
+    Returns:
+    --------
+        np.array (len(samples),): calculated RMSD values for each sequence
+    """
+
+    for i in range(len(samples)):
+        sample = samples[i]
+        ref = refs[i]
+        sample_const = sample_consts[i]
+        ref_const = ref_consts[i]
+
+        # get structures
+        sample_struc = sample.get_structure()[0]
+        ref_struc = ref.get_structure()[0]
+
+        # get indices for alignment
+        sample_indices = np.where(np.isin(sample_struc.res_id, [i + 1 for i in sample_const['all_atm']]))
+        ref_indices = np.where(np.isin(ref_struc.res_id, [i + 1 for i in ref_const['all_atm']]))
+
+        sample_struc_common = sample_struc[sample_indices[0]]
+        ref_struc_common = ref_struc[ref_indices[0]]
+
+        sample_superimposed, transformation = struc.superimpose(
+            ref_struc_common, sample_struc_common
+        )
+
+        sample_superimposed = struc.superimpose_apply(sample_struc, transformation)
+
+        sample_pdb = PDBFile()
+        PDBFile.set_structure(sample_pdb, sample_superimposed)
+        sample_coord = sample_pdb.get_coord()[0][sample_indices]
+
+        ref_pdb = PDBFile()
+        PDBFile.set_structure(ref_pdb, ref_struc)
+        ref_coord = ref_pdb.get_coord()[0][ref_indices]
+
+        rmsd = struc.rmsd(sample_coord, ref_coord)
+
+        return rmsd
