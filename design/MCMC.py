@@ -272,13 +272,14 @@ class ProteinDesign:
 
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
+        self.ref_constraints = constraints
 
         # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0, constraints)
 
         self.initial_enery = E_x_i
         self.ref_pdbs = pdbs
-        self.ref_constraints = constraints
+
         for i in range(steps):
             mut_seqs, constraints = mutate(seqs, mut_p, constraints)
 
