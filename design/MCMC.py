@@ -32,7 +32,7 @@ class ProteinDesign:
         verbose (bool): if verbose print information
     """
 
-    def __init__(self, native_seq: str = None, constraints: dict = {'no_mut':[]},
+    def __init__(self, native_seq: str = None, constraints: dict = {'no_mut':[], 'all_atm':[]},
                  sampler: str = 'simulated_annealing',
                  n_traj: int = 5, steps: int = 1000,
                  mut_p: tuple = (0.6, 0.2, 0.2),
@@ -43,6 +43,7 @@ class ProteinDesign:
                  w_identity = 0.2,
                  w_globularity: float = 0.002,
                  w_bb_coord: float = 0.02,
+                 w_all_atm: float = 0.02,
                  w_sasa: float = 0.02,
                  outdir = None,
                  verbose = False,
@@ -67,6 +68,7 @@ class ProteinDesign:
         self.constraints = constraints
         self.w_sasa = w_sasa
         self.w_bb_coord = w_bb_coord
+        self.w_all_atm = w_all_atm
 
 
     def __str__(self):
@@ -205,7 +207,8 @@ class ProteinDesign:
             energies += self.w_plddt * np.array(pLDDTs)
             energies += self.w_globularity * constraints.globularity(pdbs)
             energies += self.w_sasa * constraints.surface_exposed_hydrophobics(pdbs)
-            #energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.native_pdbs)
+            energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.ref_pdbs)
+            energies += self.w_all_atm * constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:
@@ -268,7 +271,8 @@ class ProteinDesign:
         E_x_i, pdbs = energy_function(seqs, 0)
 
         self.initial_enery = E_x_i
-        self.native_pdbs = pdbs
+        self.ref_pdbs = pdbs
+        self.ref_constraints = constraints
         for i in range(steps):
             mut_seqs, constraints = mutate(seqs, mut_p, constraints)
 
