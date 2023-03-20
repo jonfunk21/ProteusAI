@@ -6,6 +6,9 @@ import biotite.sequence.align as align
 from biotite.structure.io.pdb import PDBFile
 from biotite.structure import sasa
 import tempfile
+import sys
+sys.path.append('../')
+from analysis import pdb
 
 #_____Sequence Constraints_____
 def length_constraint(seqs: list, max_len: int = 200):
@@ -122,7 +125,7 @@ def structure_prediction(
         ):
             all_headers.append(header)
             all_sequences.append(seq)
-            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name))
+            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name)) # biotite pdb file name
             pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 
@@ -134,7 +137,7 @@ def globularity(pdbs):
     globularity constraint
 
     Parameters:
-        pdb (list): list of biotite pdb files
+        pdb (list): list of biotite pdb file
 
     Returns:
         np.array: variances of coordinates for each structure
@@ -152,7 +155,7 @@ def surface_exposed_hydrophobics(pdbs):
     Calculate the surface exposed hydrophobics using the Shrake-Rupley (“rolling probe”) algorithm.
 
     Parameters:
-        pdbs (list): list of biotite pdb files
+        pdbs (list): list of biotite pdb file
 
     Returns:
         np.array: average sasa values for each structure
@@ -166,3 +169,29 @@ def surface_exposed_hydrophobics(pdbs):
         avrg_sasa_values[i] = sasa_mean.item()
 
     return avrg_sasa_values
+
+
+def backbone_coordination(samples: list, refs: list):
+    """
+    Superimpose structures and calculate the RMSD of the backbones.
+    sample structures will be aligned against reference structures.
+
+    Parameters:
+    -----------
+        samples (list): list of sample structures
+        refs (list): list of reference structures
+
+    Returns:
+    --------
+        np.array: RMSD values of alignments
+    """
+    if len(samples) != len(refs):
+        raise "samples and refs must have the same length"
+
+    rmsds = np.zeros(len(samples))
+
+    for i in range(len(samples)):
+        _,_,rmsd = pdb.struc_align(refs[i], samples[i])
+        rmsds[i] = rmsd.item()
+
+    return rmsds

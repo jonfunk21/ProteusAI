@@ -26,6 +26,7 @@ class ProteinDesign:
         w_ptm (float): weight for ptm. Default 0.4
         w_plddt (float): weight for plddt. Default 0.4
         w_globularity (float): weight of globularity constraint
+        w_bb_coord (float): weight on backbone constraint. Constraints backbone to native structure.
         w_sasa (float): weight of surface exposed hydrophobics constraint
         outdir (str): path to output directory. Default None
         verbose (bool): if verbose print information
@@ -41,6 +42,7 @@ class ProteinDesign:
                  w_ptm: float = 0.2, w_plddt: float = 0.2,
                  w_identity = 0.2,
                  w_globularity: float = 0.002,
+                 w_bb_coord: float = 0.02,
                  w_sasa: float = 0.02,
                  outdir = None,
                  verbose = False,
@@ -64,6 +66,7 @@ class ProteinDesign:
         self.verbose = verbose
         self.constraints = constraints
         self.w_sasa = w_sasa
+        self.w_bb_coord = w_bb_coord
 
 
     def __str__(self):
@@ -84,14 +87,15 @@ class ProteinDesign:
              f'constraint\t|value\t|weight\n',
              '----------------+-------+------------\n',
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
-             f'identity\t|\t|{self.w_identity}\n'
+             f'identity\t|\t|{self.w_identity}\n',
              ]
         s = ''.join(l)
         if self.pred_struc:
             l = [
                 s,
-                f'pTM\t\t|\t|{self.w_ptm}\n'
-                f'pLDDT\t\t|\t|{self.w_plddt}\n'
+                f'pTM\t\t|\t|{self.w_ptm}\n',
+                f'pLDDT\t\t|\t|{self.w_plddt}\n',
+                f'sasa\t\t|\t|{self.w_sasa}\n',
             ]
             s = ''.join(l)
         return s
@@ -201,6 +205,7 @@ class ProteinDesign:
             energies += self.w_plddt * np.array(pLDDTs)
             energies += self.w_globularity * constraints.globularity(pdbs)
             energies += self.w_sasa * constraints.surface_exposed_hydrophobics(pdbs)
+            #energies += self.w_bb_coord * constraints.backbone_coordination(pdbs, self.native_pdbs)
 
             # just a line to peak into some of the progress
             with open('peak', 'w') as f:
@@ -259,7 +264,11 @@ class ProteinDesign:
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
 
+        # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0)
+
+        self.initial_enery = E_x_i
+        self.native_pdbs = pdbs
         for i in range(steps):
             mut_seqs, constraints = mutate(seqs, mut_p, constraints)
 

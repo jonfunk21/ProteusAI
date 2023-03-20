@@ -39,18 +39,24 @@ for res_id in contacts:
     contact_indices.append(res_id-1)
     print(res_name.capitalize() + str(res_id))
 
-res_constraints = {'no_mut':contact_indices}
+
+# constraints
+res_constraints = {'no_mut':contact_indices,
+                   'all_atm':contact_indices}
+
+mut_p = (1,0,0) # for fixxed bb design
 
 # Design process
-outdir = '../example_data/designs/ASMT/pdbs'
-Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=100, n_traj=2,
-                            T=1, M=0.01, pred_struc=True, max_len=300,
-                            verbose=True, constraints=res_constraints,
-                            outdir=outdir
-                           )
+outdir = './fixxed_bb_design'
 
 if not os.path.exists(outdir):
     os.mkdir(outdir)
+
+Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=10, n_traj=2,
+                            T=1, M=0.01, pred_struc=True, max_len=300,
+                            verbose=True, constraints=res_constraints,
+                            mut_p=mut_p, outdir=outdir
+                           )
 
 print('constraints on residues')
 print(res_constraints)
