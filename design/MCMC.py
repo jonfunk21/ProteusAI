@@ -335,8 +335,9 @@ class ProteinDesign:
                     constraints[n] = _constraints[n]
                     energies_dict = self.energy_log[n]
                     for key in energies_dict.keys():
-                        e = _energies_dict[key]
-                        energies_dict[key].append(e[n].item())
+                        if key != 'T' or key != 'M':
+                            e = _energies_dict[key]
+                            energies_dict[key].append(e[n].item())
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
 
