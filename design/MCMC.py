@@ -141,13 +141,11 @@ class ProteinDesign:
 
 
             if mut_type == 'substitution':
-                pos = random.randint(0, len(seq) - 1)
                 replacement = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
                 mutated_seqs.append(mut_seq)
 
             elif mut_type == 'insertion':
-                pos = random.randint(0, len(seq) - 1)
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 mutated_seqs.append(mut_seq)
@@ -159,7 +157,6 @@ class ProteinDesign:
 
 
             elif mut_type == 'deletion' and len(seq) > 1:
-                pos = random.randint(0, len(seq) - 1)
                 l = list(seq)
                 del l[pos]
                 mut_seq = ''.join(l)
@@ -172,7 +169,6 @@ class ProteinDesign:
 
             else:
                 # will perform insertion if length is to small
-                pos = random.randint(0, len(seq) - 1)
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 mutated_seqs.append(mut_seq)
@@ -181,9 +177,11 @@ class ProteinDesign:
                     positions = seq_constraints[const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     seq_constraints[const] = positions
+
             mutated_constraints.append(seq_constraints)
             with open('mutations', 'w') as f:
                 print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'original constraints:', constraints[i], '\n', 'mutated constraints:', seq_constraints,'sequence:', mut_seq, file=f)
+
         return mutated_seqs, mutated_constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
