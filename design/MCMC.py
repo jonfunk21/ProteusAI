@@ -131,10 +131,7 @@ class ProteinDesign:
             while mutate:
                 pos = random.randint(0, len(seq) - 1)
                 mut_type = random.choices(mut_types, mut_p)[0]
-                if pos in seq_constraints['no_mut']:
-                    pass
-                # all atom constraints disallows deletion
-                if pos in seq_constraints['all_atm'] and mut_type == 'deletion':
+                if pos in seq_constraints['no_mut'] or pos in seq_constraints['all_atm']:
                     pass
                 # secondary structure constraint disallows deletion
                 # insertions between two secondary structure constraints will have the constraint of their neighbors
@@ -178,7 +175,14 @@ class ProteinDesign:
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 mutated_seqs.append(mut_seq)
+                # shift constraints after insertion
+                for const in seq_constraints.keys():
+                    positions = seq_constraints[const]
+                    positions = [i if i < pos else i + 1 for i in positions]
+                    seq_constraints[const] = positions
 
+            with open('mutations', 'w') as f:
+                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'sequence:', mut_seq)
         return mutated_seqs, constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
@@ -236,7 +240,6 @@ class ProteinDesign:
         """
         Decides to accep or reject changes.
         """
-
         T = T / (1 + M * i)
         dE = E_x_i - E_x_mut
         exp_val = np.exp(1 / (T * dE))
