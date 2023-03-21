@@ -331,7 +331,7 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
                     for key in self.energy_log[n].keys():
-                        self.energy_log[n][key].append(energies_dict[key][n])
+                        self.energy_log[n][key].append(energies_dict[key][n].item())
                     self.energy_log[n]['T'].append(T)
                     self.energy_log[n]['M'].append(T)
 
