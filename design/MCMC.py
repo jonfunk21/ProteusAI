@@ -285,8 +285,6 @@ class ProteinDesign:
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
         self.ref_constraints = constraints.copy() # THESE ARE CORRECT
-        with open('original_constraints', 'w') as f:
-            print(constraints, file=f)
 
         # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0, constraints)
@@ -294,9 +292,8 @@ class ProteinDesign:
         self.initial_energy = E_x_i
         self.ref_pdbs = pdbs
         for i in range(steps):
-            mut_seqs, constraints = mutate(seqs, mut_p, constraints)
-
-            E_x_mut, pdbs_mut = energy_function(mut_seqs, i, constraints)
+            mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
+            E_x_mut, pdbs_mut = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
             num = '{:04d}'.format(i)
@@ -304,6 +301,7 @@ class ProteinDesign:
                 if p[n] > random.random():
                     E_x_i[n] = E_x_mut[n]
                     seqs[n] = mut_seqs[n]
+                    constraints[n] = _constraints[n]
                     if self.pred_struc and outdir != None:
                         pdbs[n] = pdbs_mut[n]
                         pdbs[n].write(os.path.join(outdir, f'{num}_design_{n}.pdb'))
