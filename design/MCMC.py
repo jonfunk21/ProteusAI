@@ -348,6 +348,8 @@ class ProteinDesign:
                             energies_dict[key].append(e[n].item())
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
+                    with open('test', 'a') as f:
+                        print(energies_dict, file=f)
                     self.energy_log[n] = energies_dict
 
                     # write pdb in pdb_out
