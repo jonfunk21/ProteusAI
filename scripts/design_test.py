@@ -52,7 +52,7 @@ outdir = './all_atm_design'
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
-Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=100, n_traj=2,
+Design = MCMC.ProteinDesign(native_seq=ASMT_seq, steps=100, n_traj=1,
                             T=1, M=0.01, pred_struc=True, max_len=300,
                             verbose=True, constraints=res_constraints,
                             mut_p=mut_p, outdir=outdir
