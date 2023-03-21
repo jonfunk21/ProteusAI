@@ -45,7 +45,7 @@ res_constraints = {'no_mut':contact_indices,
 mut_p = (0.6, 0.2, 0.2)
 
 # Design process
-outdir = './all_atm_design'
+outdir = '../example_data/designs/ASMT/'
 
 if not os.path.exists(outdir):
     os.mkdir(outdir)

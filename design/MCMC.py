@@ -4,6 +4,7 @@ import numpy as np
 import sys
 sys.path.append('../')
 from design import Constraints
+import pandas as pd
 
 
 class ProteinDesign:
@@ -37,17 +38,17 @@ class ProteinDesign:
                  sampler: str = 'simulated_annealing',
                  n_traj: int = 5, steps: int = 1000,
                  mut_p: tuple = (0.6, 0.2, 0.2),
-                 T: float = 10., M: float = 0.01,
-                 max_len = 200, w_len=0.2,
+                 T: float = 1., M: float = 0.01,
+                 max_len: int = 300, w_len: float=0.2,
                  pred_struc: bool = True,
                  w_ptm: float = 0.2, w_plddt: float = 0.2,
-                 w_identity = 0.2,
+                 w_identity: float = 0.2,
                  w_globularity: float = 0.002,
                  w_bb_coord: float = 0.02,
                  w_all_atm: float = 0.02,
                  w_sasa: float = 0.02,
-                 outdir = None,
-                 verbose = False,
+                 outdir: str = None,
+                 verbose: bool = False,
                  ):
 
         self.native_seq = native_seq
@@ -70,6 +71,12 @@ class ProteinDesign:
         self.w_sasa = w_sasa
         self.w_bb_coord = w_bb_coord
         self.w_all_atm = w_all_atm
+
+        # Parameters
+        self.ref_pdbs = None
+        self.ref_constraints = None
+        self.energy_log = None
+        self.initial_energy = None
         self.ref_pdbs = None
 
 
@@ -187,53 +194,70 @@ class ProteinDesign:
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
     def energy_function(self, seqs: list, i, consts: list):
         """
-        Combines constraints into an energy function.
+        Combines constraints into an energy function. The energy function
+        returns the energy values of the mutated files and the associated pdb
+        files as temporary files. In addition it returns a dictionary of the different
+        energies.
 
         Parameters:
             seqs (list): list of sequences
 
         Returns:
-            list: Energy value
+            tuple: Energy value, pdbs, energies_dict
         """
         # reinitialize energy
         energies = np.zeros(len(seqs))
+        energies_dict = dict()
 
-        e_len = self.w_max_len * Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        e_identity = self.w_identity * Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
-        energies += e_len
-        energies +=  e_identity
+        e_len = Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        e_identity = Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+
+        energies += self.w_max_len * e_len
+        energies += self.w_identity * e_identity
+
+        energies_dict['e_len'] = e_len
+        energies_dict['e_identity'] = e_identity
 
         pdbs = []
         if self.pred_struc:
+            # structure prediction
             names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
-            headers, sequences, pdbs, pTMs, pLDDTs = Constraints.structure_prediction(seqs, names)
+            headers, sequences, pdbs, pTMs, mean_pLDDTs = Constraints.structure_prediction(seqs, names)
             pTMs = [1 - val for val in pTMs]
-            pLDDTs = [1 - val / 100 for val in pLDDTs]
-            energies += self.w_ptm * np.array(pTMs)
-            energies += self.w_plddt * np.array(pLDDTs)
-            energies += self.w_globularity * Constraints.globularity(pdbs)
-            energies += self.w_sasa * Constraints.surface_exposed_hydrophobics(pdbs)
+            mean_pLDDTs = [1 - val / 100 for val in mean_pLDDTs]
+
+            e_pTMs = np.array(pTMs)
+            e_mean_pLDDTs = np.array(mean_pLDDTs)
+            e_globularity = Constraints.globularity(pdbs)
+            e_sasa = Constraints.surface_exposed_hydrophobics(pdbs)
+
+            energies += self.w_ptm * e_pTMs
+            energies += self.w_plddt * e_mean_pLDDTs
+            energies += self.w_globularity * e_globularity
+            energies += self.w_sasa * e_sasa
+
+            energies_dict['e_pTMs'] = e_pTMs
+            energies_dict['e_mean_pLDDTs'] = e_mean_pLDDTs
+            energies_dict['e_globularity'] = e_globularity
+            energies_dict['e_sasa'] = e_sasa
 
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
-                energies += self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                energies += self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
+                e_bb_coord = Constraints.backbone_coordination(pdbs, self.ref_pdbs)
+                e_all_atm = Constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
 
-            # just a line to peak into some of the progress
-            with open('peak', 'w') as f:
-                for i in range(len(seqs)):
-                    line = [
-                        'header:', '\n',
-                        headers[i], '\n',
-                        'sequence:\n',
-                        sequences[i], '\n',
-                        'pTMs:', str(pTMs[i]), '\n',
-                        'pLDDT:', str(pLDDTs[i]), '\n',
-                        'energy:', str(energies[i]), '\n'
-                    ]
-                    f.writelines(line)
+                energies += self.w_bb_coord * e_bb_coord
+                energies += self.w_all_atm * e_all_atm
 
-        return energies, pdbs
+                energies_dict['e_bb_coord'] = e_bb_coord
+                energies_dict['e_all_atm'] = e_all_atm
+            else:
+                energies_dict['e_bb_coord'] = []
+                energies_dict['e_all_atm'] = []
+
+        energies_dict['iteration'] = i
+
+        return energies, pdbs, energies_dict
 
     def p_accept(self, E_x_mut, E_x_i, T, i, M):
         """
@@ -261,10 +285,16 @@ class ProteinDesign:
         p_accept = self.p_accept
         mut_p = self.mut_p
         outdir = self.outdir
+        pdb_out = os.path.join(outdir, 'pdbs')
+        png_out = os.path.join(outdir, 'pngs')
+        data_out = os.path.join(outdir, 'data')
 
         if outdir != None:
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
+                os.mkdir(pdb_out)
+                os.mkdir(png_out)
+                os.mkdir(data_out)
 
         if sampler == 'simulated_annealing':
             mutate = self.mutate
@@ -277,13 +307,21 @@ class ProteinDesign:
         self.ref_constraints = constraints.copy() # THESE ARE CORRECT
 
         # calculation of initial state
-        E_x_i, pdbs = energy_function(seqs, 0, constraints)
+        E_x_i, pdbs, energies_dict = energy_function(seqs, 0, constraints)
+
+        # empty energies dictionary for the first run
+        for key in energies_dict.keys():
+            energies_dict[key] = []
+        energies_dict['T'] = []
+        energies_dict['M'] = []
+
+        self.energy_log = [energies_dict for _ in range(n_traj)]
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
 
         for i in range(steps):
             mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
-            E_x_mut, pdbs_mut = energy_function(mut_seqs, i, _constraints)
+            E_x_mut, pdbs_mut, energies_dict = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
             num = '{:04d}'.format(i)
@@ -292,8 +330,19 @@ class ProteinDesign:
                     E_x_i[n] = E_x_mut[n]
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
-                    if self.pred_struc and outdir != None:
+                    for key in self.energy_log[n].keys():
+                        self.energy_log[n][key].append(energies_dict[key][n])
+                    self.energy_log[n]['T'].append(T)
+                    self.energy_log[n]['M'].append(T)
+
+                    # write pdb in pdb_out
+                    if self.pred_struc and outdir is not None:
                         pdbs[n] = pdbs_mut[n]
-                        pdbs[n].write(os.path.join(outdir, f'{num}_design_{n}.pdb'))
+                        pdbs[n].write(os.path.join(pdb_out, f'{num}_design_{n}.pdb'))
+
+                    # write energy_log in data_out
+                    if outdir is not None:
+                        df = pd.DataFrame(self.energy_log[n])
+                        df.to_csv(os.path.join(data_out, f'energy_log_{n}.pdb'), index=False)
 
         return (seqs)

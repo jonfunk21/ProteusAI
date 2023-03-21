@@ -116,7 +116,7 @@ def structure_prediction(
     all_sequences = []
     all_pdbs = []
     pTMs = []
-    pLDDTs = []
+    mean_pLDDTs = []
     for headers, sequences in batched_sequences:
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
@@ -127,10 +127,10 @@ def structure_prediction(
             all_headers.append(header)
             all_sequences.append(seq)
             all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name)) # biotite pdb file name
-            pLDDTs.append(mean_plddt.item())
+            mean_pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 
-    return all_headers, all_sequences, all_pdbs, pTMs, pLDDTs
+    return all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
 
 
 def globularity(pdbs):
