@@ -26,7 +26,8 @@ class ProteinDesign:
         w_ptm (float): weight for ptm. Default 0.4
         w_plddt (float): weight for plddt. Default 0.4
         w_globularity (float): weight of globularity constraint
-        w_bb_coord (float): weight on backbone constraint. Constraints backbone to native structure.
+        w_bb_coord (float): weight on backbone coordination constraint. Constraints backbone to native structure.
+        w_all_atm (float): weight on all atom coordination constraint. Acts on all atoms which are constrained
         w_sasa (float): weight of surface exposed hydrophobics constraint
         outdir (str): path to output directory. Default None
         verbose (bool): if verbose print information
@@ -98,6 +99,8 @@ class ProteinDesign:
                 s,
                 f'pTM\t\t|\t|{self.w_ptm}\n',
                 f'pLDDT\t\t|\t|{self.w_plddt}\n',
+                f'bb_coord\t\t|\t|{self.w_bb_coord}\n',
+                f'all_atm\t\t|\t|{self.w_all_atm}\n',
                 f'sasa\t\t|\t|{self.w_sasa}\n',
             ]
             s = ''.join(l)

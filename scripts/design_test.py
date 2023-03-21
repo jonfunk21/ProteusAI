@@ -37,8 +37,6 @@ contact_indices = []
 for res_id in contacts:
     res_name = ASMT_atms.res_name[ASMT_atms.res_id == res_id][0]
     contact_indices.append(res_id-1)
-    print(res_name.capitalize() + str(res_id))
-
 
 # constraints
 res_constraints = {'no_mut':contact_indices,
