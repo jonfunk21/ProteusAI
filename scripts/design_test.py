@@ -44,7 +44,7 @@ for res_id in contacts:
 res_constraints = {'no_mut':contact_indices,
                    'all_atm':contact_indices}
 
-mut_p = (0., 0.2, 0.2)
+mut_p = (0.6, 0.2, 0.2)
 
 # Design process
 outdir = './all_atm_design'
