@@ -292,8 +292,11 @@ class ProteinDesign:
         if outdir != None:
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
+            if not os.path.exists(pdb_out):
                 os.mkdir(pdb_out)
+            if not os.path.exists(png_out):
                 os.mkdir(png_out)
+            if not os.path.exists(data_out):
                 os.mkdir(data_out)
 
         if sampler == 'simulated_annealing':
