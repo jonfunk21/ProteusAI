@@ -222,11 +222,6 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         sample_const = sample_consts[i]
         ref_const = ref_consts[i]
 
-        with open('sample_indices', 'w') as f:
-            print(sample_const, file=f)
-        with open('ref_indices', 'w') as f:
-            print(ref_const, file=f)
-
         # get structures
         sample_struc = sample.get_structure()[0]
         ref_struc = ref.get_structure()[0]
@@ -235,19 +230,8 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         sample_indices = np.where(np.isin(sample_struc.res_id, [i + 1 for i in sample_const['all_atm']]))
         ref_indices = np.where(np.isin(ref_struc.res_id, [i + 1 for i in ref_const['all_atm']]))
 
-        with open('sample_indices', 'w') as f:
-            print(sample_indices, file=f)
-        with open('ref_indices', 'w') as f:
-            print(ref_indices, file=f)
-
         sample_struc_common = sample_struc[sample_indices[0]]
         ref_struc_common = ref_struc[ref_indices[0]]
-
-        with open('sample_struc', 'w') as f:
-            print(sample_struc_common, file=f)
-        with open('ref_struc', 'w') as f:
-            print(ref_struc_common, file=f)
-
 
         sample_superimposed, transformation = struc.superimpose(
             ref_struc_common, sample_struc_common

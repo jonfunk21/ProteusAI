@@ -122,9 +122,6 @@ class ProteinDesign:
                'R', 'S', 'T', 'V', 'W', 'Y')
 
         mut_types = ('substitution', 'insertion', 'deletion')
-        with open('constraints', 'w') as f:
-            print(constraints, file=f)
-
 
         mutated_seqs = []
         mutated_constraints = []
@@ -144,8 +141,6 @@ class ProteinDesign:
                     break
 
             if mut_type == 'substitution':
-                with open('test', 'w') as f:
-                    print(mut_type, file=f)
                 replacement = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
                 for const in constraints[i].keys():
@@ -153,8 +148,6 @@ class ProteinDesign:
                     mut_constraints[const] = positions
 
             elif mut_type == 'insertion':
-                with open('test', 'w') as f:
-                    print(mut_type, file=f)
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 # shift constraints after insertion
@@ -164,8 +157,6 @@ class ProteinDesign:
                     mut_constraints[const] = positions
 
             elif mut_type == 'deletion' and len(seq) > 1:
-                with open('test', 'w') as f:
-                    print(mut_type, file=f)
                 l = list(seq)
                 del l[pos]
                 mut_seq = ''.join(l)
@@ -176,8 +167,6 @@ class ProteinDesign:
                     mut_constraints[const] = positions
 
             else:
-                with open('test', 'w') as f:
-                    print('else', file=f)
                 # will perform insertion if length is to small
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
@@ -189,8 +178,6 @@ class ProteinDesign:
 
             mutated_seqs.append(mut_seq)
             mutated_constraints.append(mut_constraints)
-            with open('mutations', 'w') as f:
-                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'original constraints:', constraints, '\n', 'mutated constraints:', mutated_constraints,'sequence:', mut_seq, file=f)
 
         return mutated_seqs, mutated_constraints
 
@@ -288,9 +275,9 @@ class ProteinDesign:
 
         # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0, constraints)
+        self.initial_energy = E_x_i.copy()
+        self.ref_pdbs = pdbs.copy()
 
-        self.initial_energy = E_x_i
-        self.ref_pdbs = pdbs
         for i in range(steps):
             mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
             E_x_mut, pdbs_mut = energy_function(mut_seqs, i, _constraints)
