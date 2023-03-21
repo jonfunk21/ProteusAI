@@ -346,6 +346,7 @@ class ProteinDesign:
                             with open('test', 'a') as f:
                                 print(e, file=f)
                             energies_dict[key].append(e[n].item())
+                    energies_dict['iteration'].append(i)
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
                     with open('test', 'a') as f:
