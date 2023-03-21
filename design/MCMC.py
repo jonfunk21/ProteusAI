@@ -282,6 +282,8 @@ class ProteinDesign:
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
         self.ref_constraints = constraints.copy()
+        with open('constraints', 'w') as f:
+            print(constraints, file=f)
 
         # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0, constraints)
