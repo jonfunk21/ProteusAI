@@ -334,7 +334,7 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
                     energies_dict = self.energy_log[n]
-                    with open('test', 'a') as f:
+                    with open('test', 'w') as f:
                         print(energies_dict, file=f)
                         print(_energies_dict, file=f)
                     for key in energies_dict.keys():
