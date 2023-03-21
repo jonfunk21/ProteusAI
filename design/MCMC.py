@@ -116,6 +116,7 @@ class ProteinDesign:
         Returns:
             list: mutated sequences
         """
+
         AAs = ('A', 'C', 'D', 'E', 'F', 'G', 'H',
                'I', 'K', 'L', 'M', 'N', 'P', 'Q',
                'R', 'S', 'T', 'V', 'W', 'Y')
@@ -139,28 +140,23 @@ class ProteinDesign:
                 else:
                     break
 
-
             if mut_type == 'substitution':
                 replacement = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
-                mutated_seqs.append(mut_seq)
 
             elif mut_type == 'insertion':
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
-                mutated_seqs.append(mut_seq)
                 # shift constraints after insertion
                 for const in seq_constraints.keys():
                     positions = seq_constraints[const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     seq_constraints[const] = positions
 
-
             elif mut_type == 'deletion' and len(seq) > 1:
                 l = list(seq)
                 del l[pos]
                 mut_seq = ''.join(l)
-                mutated_seqs.append(mut_seq)
                 # shift constraints after deletion
                 for const in seq_constraints.keys():
                     positions = seq_constraints[const]
@@ -171,16 +167,16 @@ class ProteinDesign:
                 # will perform insertion if length is to small
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
-                mutated_seqs.append(mut_seq)
                 # shift constraints after insertion
                 for const in seq_constraints.keys():
                     positions = seq_constraints[const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     seq_constraints[const] = positions
 
+            mutated_seqs.append(mut_seq)
             mutated_constraints.append(seq_constraints)
             with open('mutations', 'w') as f:
-                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'original constraints:', constraints[i], '\n', 'mutated constraints:', seq_constraints,'sequence:', mut_seq, file=f)
+                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'original constraints:', constraints, '\n', 'mutated constraints:', mutated_constraints,'sequence:', mut_seq, file=f)
 
         return mutated_seqs, mutated_constraints
 
