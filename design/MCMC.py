@@ -123,6 +123,7 @@ class ProteinDesign:
         mut_types = ('substitution', 'insertion', 'deletion')
 
         mutated_seqs = []
+        mutated_constraints = []
         for i, seq in enumerate(seqs):
             seq_constraints = constraints[i]
 
@@ -180,10 +181,10 @@ class ProteinDesign:
                     positions = seq_constraints[const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     seq_constraints[const] = positions
-
+            mutated_constraints.append(seq_constraints)
             with open('mutations', 'w') as f:
-                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'sequence:', mut_seq, file=f)
-        return mutated_seqs, constraints
+                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'original constraints:', constraints[i], '\n', 'mutated constraints:', seq_constraints,'sequence:', mut_seq, file=f)
+        return mutated_seqs, mutated_constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
     def energy_function(self, seqs: list, i, consts: list):
