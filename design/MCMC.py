@@ -182,7 +182,7 @@ class ProteinDesign:
                     seq_constraints[const] = positions
 
             with open('mutations', 'w') as f:
-                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'sequence:', mut_seq)
+                print('mutation:', mut_type, '\n', 'pos:', pos, '\n', 'sequence:', mut_seq, file=f)
         return mutated_seqs, constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
@@ -275,7 +275,7 @@ class ProteinDesign:
 
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
-        self.ref_constraints = constraints
+        self.ref_constraints = constraints.copy()
 
         # calculation of initial state
         E_x_i, pdbs = energy_function(seqs, 0, constraints)
