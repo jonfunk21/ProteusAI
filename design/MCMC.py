@@ -324,7 +324,7 @@ class ProteinDesign:
 
         for i in range(steps):
             mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
-            E_x_mut, pdbs_mut, energies_dict = energy_function(mut_seqs, i, _constraints)
+            E_x_mut, pdbs_mut, _energies_dict = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
             num = '{:04d}'.format(i)
@@ -333,10 +333,12 @@ class ProteinDesign:
                     E_x_i[n] = E_x_mut[n]
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
-                    for key in self.energy_log[n].keys():
-                        self.energy_log[n][key].append(energies_dict[key][n].item())
-                    self.energy_log[n]['T'].append(T)
-                    self.energy_log[n]['M'].append(T)
+                    energies_dict = self.energy_log[n]
+                    for key in energies_dict.keys():
+                        e = _energies_dict[key]
+                        energies_dict[key].append(e[n].item())
+                    energies_dict['T'].append(T)
+                    energies_dict['M'].append(T)
 
                     # write pdb in pdb_out
                     if self.pred_struc and outdir is not None:
