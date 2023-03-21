@@ -334,12 +334,18 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
                     energies_dict = self.energy_log[n]
+                    with open('test', 'a') as f:
+                        print(energies_dict, file=f)
                     for key in energies_dict.keys():
+                        print(key, file=f)
+                        # skip skalar values in this step
                         if key not in ['T', 'M', 'iteration']:
                             e = _energies_dict[key]
+                            print(e, file=f)
                             energies_dict[key].append(e[n].item())
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
+                    self.energy_log[n] = energies_dict
 
                     # write pdb in pdb_out
                     if self.pred_struc and outdir is not None:
