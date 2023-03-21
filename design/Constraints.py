@@ -216,6 +216,8 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         np.array (len(samples),): calculated RMSD values for each sequence
     """
 
+    rmsds = np.zeros(len(samples))
+
     for i in range(len(samples)):
         sample = samples[i]
         ref = refs[i]
@@ -249,4 +251,6 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
 
         rmsd = struc.rmsd(sample_coord, ref_coord)
 
-        return rmsd
+        rmsds[i] = rmsd
+
+    return rmsds
