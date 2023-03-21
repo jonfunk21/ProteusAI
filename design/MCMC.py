@@ -126,7 +126,7 @@ class ProteinDesign:
         mutated_seqs = []
         mutated_constraints = []
         for i, seq in enumerate(seqs):
-            seq_constraints = constraints[i]
+            seq_constraints = {}
 
             # loop until allowed mutation has been selected
             mutate = True
@@ -145,6 +145,9 @@ class ProteinDesign:
                     print(mut_type, file=f)
                 replacement = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
+                for const in constraints[i].keys():
+                    positions = constraints[i][const]
+                    seq_constraints[const] = positions
 
             elif mut_type == 'insertion':
                 with open('test', 'w') as f:
@@ -152,8 +155,8 @@ class ProteinDesign:
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 # shift constraints after insertion
-                for const in seq_constraints.keys():
-                    positions = seq_constraints[const]
+                for const in constraints[i].keys():
+                    positions = constraints[i][const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     seq_constraints[const] = positions
 
@@ -164,8 +167,8 @@ class ProteinDesign:
                 del l[pos]
                 mut_seq = ''.join(l)
                 # shift constraints after deletion
-                for const in seq_constraints.keys():
-                    positions = seq_constraints[const]
+                for const in constraints[i].keys():
+                    positions = constraints[i][const]
                     positions = [i if i < pos else i - 1 for i in positions]
                     seq_constraints[const] = positions
 
