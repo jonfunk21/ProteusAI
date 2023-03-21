@@ -125,6 +125,7 @@ class ProteinDesign:
         with open('constraints', 'w') as f:
             print(constraints, file=f)
 
+
         mutated_seqs = []
         mutated_constraints = []
         for i, seq in enumerate(seqs):
