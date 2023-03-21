@@ -141,10 +141,14 @@ class ProteinDesign:
                     break
 
             if mut_type == 'substitution':
+                with open('test', 'w') as f:
+                    print(mut_type, file=f)
                 replacement = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
 
             elif mut_type == 'insertion':
+                with open('test', 'w') as f:
+                    print(mut_type, file=f)
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
                 # shift constraints after insertion
@@ -154,6 +158,8 @@ class ProteinDesign:
                     seq_constraints[const] = positions
 
             elif mut_type == 'deletion' and len(seq) > 1:
+                with open('test', 'w') as f:
+                    print(mut_type, file=f)
                 l = list(seq)
                 del l[pos]
                 mut_seq = ''.join(l)
@@ -164,6 +170,8 @@ class ProteinDesign:
                     seq_constraints[const] = positions
 
             else:
+                with open('test', 'w') as f:
+                    print('else', file=f)
                 # will perform insertion if length is to small
                 insertion = random.choice(AAs)
                 mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
