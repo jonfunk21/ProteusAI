@@ -27,7 +27,7 @@ def length_constraint(seqs: list, max_len: int = 200):
 
     for i, seq in enumerate(seqs):
         if len(seq) > max_len:
-            energies[i] = float(len(seq) - max_len) / 1000
+            energies[i] = float(len(seq) - max_len)
         else:
             energies[i] = 0.
 

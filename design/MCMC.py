@@ -65,7 +65,7 @@ class ProteinDesign:
                  pred_struc: bool = True,
                  max_len: int = 300,
                  w_len: float=0.001,
-                 w_identity: float = 4e-05,
+                 w_identity: float = 0.1,
                  w_ptm: float = 1,
                  w_plddt: float = 1,
                  w_globularity: float = 0.001,
@@ -234,11 +234,11 @@ class ProteinDesign:
         energies = np.zeros(len(seqs))
         energies_dict = dict()
 
-        e_len = Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        e_identity = Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+        e_len = self.w_max_len * Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
+        e_identity = self.w_identity * Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
 
-        energies += self.w_max_len * e_len
-        energies += self.w_identity * e_identity
+        energies += e_len
+        energies += e_identity
 
         energies_dict[f'e_len x {self.w_max_len}'] = e_len
         energies_dict[f'e_identity x {self.w_identity}'] = e_identity
