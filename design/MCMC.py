@@ -286,7 +286,10 @@ class ProteinDesign:
 
     def p_accept(self, E_x_mut, E_x_i, T, i, M):
         """
-        Decides to accep or reject changes.
+        Decides to accep or reject changes. Changes which have a lower energy
+        than the previous state will always be accepted. Changes which have
+        higher energies will be accepted with a probability p_accept. The
+        acceptance probability for bad states decreases over time.
         """
         T = T / (1 + M * i)
         dE = E_x_i - E_x_mut
@@ -373,7 +376,7 @@ class ProteinDesign:
 
                     if self.pred_struc and outdir is not None:
                         # saves the n th structure
-                        num = '{:0{}d}'.format(len(energies_dict), len(str(self.steps)))
+                        num = '{:0{}d}'.format(len(energies_dict['iteration']), len(str(self.steps)))
                         pdbs[n] = pdbs_mut[n]
                         pdbs[n].write(os.path.join(pdb_out, f'{num}_design_{n}.pdb'))
 
