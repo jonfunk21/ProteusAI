@@ -192,7 +192,7 @@ class ProteinDesign:
         return mutated_seqs, mutated_constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
-    def energy_function(self, seqs: list, i, consts: list):
+    def energy_function(self, seqs: list, i, constraints: list):
         """
         Combines constraints into an energy function. The energy function
         returns the energy values of the mutated files and the associated pdb
@@ -244,7 +244,7 @@ class ProteinDesign:
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
                 e_bb_coord = Constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                e_all_atm = Constraints.all_atom_coordination(pdbs, self.ref_pdbs, consts, self.ref_constraints)
+                e_all_atm = Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
 
                 energies += self.w_bb_coord * e_bb_coord
                 energies += self.w_all_atm * e_all_atm
@@ -327,7 +327,6 @@ class ProteinDesign:
             E_x_mut, pdbs_mut, _energies_dict = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
-            num = '{:04d}'.format(i)
             for n in range(len(p)):
                 if p[n] > random.random():
                     E_x_i[n] = E_x_mut[n]
@@ -349,12 +348,15 @@ class ProteinDesign:
                     energies_dict['iteration'].append(i)
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
+
                     with open('test', 'a') as f:
                         print(energies_dict, file=f)
                     self.energy_log[n] = energies_dict
 
                     # write pdb in pdb_out
                     if self.pred_struc and outdir is not None:
+                        # saves the n th structure
+                        num = '{:0{}d}'.format(i, len(str(energies_dict['iteration'])))
                         pdbs[n] = pdbs_mut[n]
                         pdbs[n].write(os.path.join(pdb_out, f'{num}_design_{n}.pdb'))
 
