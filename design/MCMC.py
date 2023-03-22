@@ -373,7 +373,7 @@ class ProteinDesign:
 
                     if self.pred_struc and outdir is not None:
                         # saves the n th structure
-                        num = '{:0{}d}'.format(i, len(str(energies_dict['iteration'])))
+                        num = '{:0{}d}'.format(len(energies_dict), len(str(self.steps)))
                         pdbs[n] = pdbs_mut[n]
                         pdbs[n].write(os.path.join(pdb_out, f'{num}_design_{n}.pdb'))
 
