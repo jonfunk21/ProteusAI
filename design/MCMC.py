@@ -65,7 +65,7 @@ class ProteinDesign:
                  pred_struc: bool = True,
                  max_len: int = 300,
                  w_len: float=0.001,
-                 w_identity: float = 0.004,
+                 w_identity: float = 0.0004,
                  w_ptm: float = 1,
                  w_plddt: float = 1,
                  w_globularity: float = 0.001,
