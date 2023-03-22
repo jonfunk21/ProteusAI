@@ -51,7 +51,6 @@ if not os.path.exists(outdir):
     os.mkdir(outdir)
 
 Design = MCMC.ProteinDesign(native_seq=ASMT_seq,
-                            T=100,
                             constraints=res_constraints,
                             outdir=outdir
                            )
