@@ -370,7 +370,7 @@ class ProteinDesign:
 
                     energies_dict['iteration'].append(i)
                     energies_dict['T'].append(T)
-                    energies_dict['M'].append(T)
+                    energies_dict['M'].append(M)
 
                     self.energy_log[n] = energies_dict
 
