@@ -59,7 +59,7 @@ class ProteinDesign:
                  sampler: str = 'simulated_annealing',
                  n_traj: int = 1,
                  steps: int = 1000,
-                 T: float = 1.,
+                 T: float = 10.,
                  M: float = 0.01,
                  mut_p: tuple = (0.6, 0.2, 0.2),
                  pred_struc: bool = True,
