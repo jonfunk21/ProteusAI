@@ -12,40 +12,65 @@ class ProteinDesign:
     Optimizes a protein sequence based on a custom energy function. Set weights of constraints to 0 which you don't want to use.
 
     Parameters:
+    -----------
         native_seq (str): native sequence to be optimized
-        constraints (dict): constraints on sequence. Keys describe the kind of constraint and values the position on which they act.
-        sampler (str): choose between simulated_annealing and substitution design. Default simulated annealing
+        constraints (dict): constraints on sequence.
+            Keys describe the kind of constraint and values the position on which they act.
+        sampler (str): choose between simulated_annealing and substitution design.
+            Default 'simulated annealing'
         n_traj (int): number of independent trajectories.
-        steps (int): number of sampling steps per trajectory. For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
-        mut_p (tuple): probabilities for substitution, insertion and deletion. Default [0.6, 0.2, 0.2]
-        T (float): sampling temperature. For simulated annealing, T0 is often chosen in the range [1, 100]. default 10
-        M (float): rate of temperature decay. or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
-        max_len (int): maximum length sequence length for lenght constraint
-        w_len (float): weight of length constraint
+            Default 1
+        steps (int): number of sampling steps per trajectory.
+            For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
+        T (float): sampling temperature.
+            For simulated annealing, T0 is often chosen in the range [1, 100]. default 1
+        M (float): rate of temperature decay.
+            or simulated annealing, a is often chosen in the range [0.01, 0.1] or [0.001, 0.01]. Default 0.01
+        mut_p (tuple): probabilities for substitution, insertion and deletion.
+            Default [0.6, 0.2, 0.2]
+        pred_struc (bool): if True predict the structure of the protein at every step and use structure
+            based constraints in the energy function. Default True.
+        max_len (int): maximum length sequence length for lenght constraint.
+            Default 300.
+        w_len (float): weight of length constraint.
+            Default 0.001
         w_identity (float): Weight of sequence identity constraint. Positive values reward low sequence identity to native sequence.
-        pred_struc (bool): if True predict the structure of the protein at every step and use structure based constraints in the energy function. Default True.
-        w_ptm (float): weight for ptm. Default 0.4
-        w_plddt (float): weight for plddt. Default 0.4
+            Default 0.04
+        w_ptm (float): weight for ptm. pTM is calculated as 1-pTM, because lower energies should be better.
+            Default 1.
+        w_plddt (float): weight for plddt.  The mean pLDDT is calculated as 1-mean_pLDDT, because lower energies should be better.
+            Default 1.
         w_globularity (float): weight of globularity constraint
+            Default 0.001
         w_bb_coord (float): weight on backbone coordination constraint. Constraints backbone to native structure.
+            Default 0.02
         w_all_atm (float): weight on all atom coordination constraint. Acts on all atoms which are constrained
+            Default 0.15
         w_sasa (float): weight of surface exposed hydrophobics constraint
-        outdir (str): path to output directory. Default None
+            Default 0.02
+        outdir (str): path to output directory.
+            Default None
         verbose (bool): if verbose print information
     """
 
-    def __init__(self, native_seq: str = None, constraints: dict = {'no_mut':[], 'all_atm':[]},
+    def __init__(self,
+                 native_seq: str = None,
+                 constraints: dict = {'no_mut':[], 'all_atm':[]},
                  sampler: str = 'simulated_annealing',
-                 n_traj: int = 5, steps: int = 1000,
+                 n_traj: int = 1,
+                 steps: int = 1000,
+                 T: float = 1.,
+                 M: float = 0.01,
                  mut_p: tuple = (0.6, 0.2, 0.2),
-                 T: float = 1., M: float = 0.01,
-                 max_len: int = 300, w_len: float=0.2,
                  pred_struc: bool = True,
-                 w_ptm: float = 0.2, w_plddt: float = 0.2,
-                 w_identity: float = 0.2,
-                 w_globularity: float = 0.002,
+                 max_len: int = 300,
+                 w_len: float=0.001,
+                 w_identity: float = 0.04,
+                 w_ptm: float = 1,
+                 w_plddt: float = 1,
+                 w_globularity: float = 0.001,
                  w_bb_coord: float = 0.02,
-                 w_all_atm: float = 0.02,
+                 w_all_atm: float = 0.15,
                  w_sasa: float = 0.02,
                  outdir: str = None,
                  verbose: bool = False,
@@ -215,8 +240,8 @@ class ProteinDesign:
         energies += self.w_max_len * e_len
         energies += self.w_identity * e_identity
 
-        energies_dict['e_len'] = e_len
-        energies_dict['e_identity'] = e_identity
+        energies_dict[f'e_len x {self.w_max_len}'] = e_len
+        energies_dict[f'e_identity x {self.w_identity}'] = e_identity
 
         pdbs = []
         if self.pred_struc:
@@ -226,34 +251,34 @@ class ProteinDesign:
             pTMs = [1 - val for val in pTMs]
             mean_pLDDTs = [1 - val / 100 for val in mean_pLDDTs]
 
-            e_pTMs = np.array(pTMs)
-            e_mean_pLDDTs = np.array(mean_pLDDTs)
-            e_globularity = Constraints.globularity(pdbs)
-            e_sasa = Constraints.surface_exposed_hydrophobics(pdbs)
+            e_pTMs = self.w_ptm * np.array(pTMs)
+            e_mean_pLDDTs = self.w_plddt * np.array(mean_pLDDTs)
+            e_globularity = self.w_globularity *Constraints.globularity(pdbs)
+            e_sasa = self.w_sasa * Constraints.surface_exposed_hydrophobics(pdbs)
 
-            energies += self.w_ptm * e_pTMs
-            energies += self.w_plddt * e_mean_pLDDTs
-            energies += self.w_globularity * e_globularity
-            energies += self.w_sasa * e_sasa
+            energies += e_pTMs
+            energies += e_mean_pLDDTs
+            energies += e_globularity
+            energies += e_sasa
 
-            energies_dict['e_pTMs'] = e_pTMs
-            energies_dict['e_mean_pLDDTs'] = e_mean_pLDDTs
-            energies_dict['e_globularity'] = e_globularity
-            energies_dict['e_sasa'] = e_sasa
+            energies_dict[f'e_pTMs x {self.w_ptm}'] = e_pTMs
+            energies_dict[f'e_mean_pLDDTs x {self.w_plddt}'] = e_mean_pLDDTs
+            energies_dict[f'e_globularity x {self.w_globularity}'] = e_globularity
+            energies_dict[f'e_sasa x {self.w_sasa}'] = e_sasa
 
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
-                e_bb_coord = Constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                e_all_atm = Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
+                e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
+                e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
 
-                energies += self.w_bb_coord * e_bb_coord
-                energies += self.w_all_atm * e_all_atm
+                energies += e_bb_coord
+                energies += e_all_atm
 
-                energies_dict['e_bb_coord'] = e_bb_coord
-                energies_dict['e_all_atm'] = e_all_atm
+                energies_dict[f'e_bb_coord x {self.w_bb_coord}'] = e_bb_coord
+                energies_dict[f'e_all_atm x {self.w_all_atm}'] = e_all_atm
             else:
-                energies_dict['e_bb_coord'] = []
-                energies_dict['e_all_atm'] = []
+                energies_dict[f'e_bb_coord x {self.w_bb_coord}'] = []
+                energies_dict[f'e_all_atm x {self.w_all_atm}'] = []
 
         energies_dict['iteration'] = i
 
@@ -333,27 +358,19 @@ class ProteinDesign:
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
                     energies_dict = self.energy_log[n]
-                    with open('test', 'w') as f:
-                        print(energies_dict, file=f)
-                        print(_energies_dict, file=f)
+
                     for key in energies_dict.keys():
-                        with open('test', 'a') as f:
-                            print(key, file=f)
                         # skip skalar values in this step
                         if key not in ['T', 'M', 'iteration']:
                             e = _energies_dict[key]
-                            with open('test', 'a') as f:
-                                print(e, file=f)
                             energies_dict[key].append(e[n].item())
+
                     energies_dict['iteration'].append(i)
                     energies_dict['T'].append(T)
                     energies_dict['M'].append(T)
 
-                    with open('test', 'a') as f:
-                        print(energies_dict, file=f)
                     self.energy_log[n] = energies_dict
 
-                    # write pdb in pdb_out
                     if self.pred_struc and outdir is not None:
                         # saves the n th structure
                         num = '{:0{}d}'.format(i, len(str(energies_dict['iteration'])))
