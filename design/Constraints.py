@@ -93,13 +93,13 @@ def create_batched_sequence_datasest(
     yield batch_headers, batch_sequences
 
 def structure_prediction(
-        sequences: tuple, names: tuple, chunk_size: int = 124,
+        sequences: list, names: list, chunk_size: int = 124,
         max_tokens_per_batch: int = 1024, num_recycles: int = None):
     """
     Predict the structure of proteins.
     Parameters:
-        sequences (tuple): all sequences for structure prediction
-        names (tuple): names of the sequences
+        sequences (list): all sequences for structure prediction
+        names (list): names of the sequences
         chunck_size (int): Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). Recommended values: 128, 64, 32.
         max_tokens_per_batch (int): Maximum number of tokens per gpu forward-pass. This will group shorter sequences together.
         num_recycles (int): Number of recycles to run. Defaults to number used in training 4.
