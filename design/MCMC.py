@@ -413,7 +413,7 @@ class ProteinDesign:
 
                 for key in energy_log.keys():
                     # skip skalar values in this step
-                    if key not in ['T', 'M', 'iteration']:
+                    if key not in ['T', 'M', 'iteration', 'mut']:
                         e = _energy_log[key]
                         energy_log[key].append(e[min_E].item())
 
