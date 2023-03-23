@@ -407,7 +407,7 @@ class ProteinDesign:
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
-                    num = '{:0{}d}'.format(len(self.energy_log[0]['iteration']), len(str(self.steps)))
+                    num = '{:0{}d}'.format(len(self.energy_log['iteration']), len(str(self.steps)))
                     pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
 
                 # write energy_log in data_out
