@@ -342,7 +342,6 @@ class ProteinDesign:
         E_x_i, pdbs, energies_dict = energy_function([seqs[0]], -1, [constraints[0]])
         E_x_i = [E_x_i[0] for _ in range(n_traj)]
         pdbs = [pdbs[0] for _ in range(n_traj)]
-        energies_dict = [energies_dict for _ in range(n_traj)]
 
         # empty energies dictionary for the first run
         for key in energies_dict.keys():
@@ -350,13 +349,13 @@ class ProteinDesign:
         energies_dict['T'] = []
         energies_dict['M'] = []
 
-        self.energy_log = [energies_dict for _ in range(n_traj)]
+        self.energy_log = energies_dict
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
 
         if self.pred_struc and outdir is not None:
             # saves the n th structure
-            num = '{:0{}d}'.format(len(self.energy_log[0]['iteration']), len(str(self.steps)))
+            num = '{:0{}d}'.format(len(self.energy_log['iteration']), len(str(self.steps)))
             pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
 
         # write energy_log in data_out
@@ -393,7 +392,7 @@ class ProteinDesign:
                 constraints = [constraints[min_E] for _ in range(n_traj)]
                 pdbs = [pdbs[min_E] for _ in range(n_traj)]
 
-                energies_dict = self.energy_log[min_E]
+                energies_dict = self.energy_log
                 for key in energies_dict.keys():
                     # skip skalar values in this step
                     if key not in ['T', 'M', 'iteration']:
@@ -404,7 +403,7 @@ class ProteinDesign:
                 energies_dict['T'].append(T)
                 energies_dict['M'].append(M)
 
-                self.energy_log = [energies_dict for _ in range(n_traj)]
+                self.energy_log = energies_dict
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
