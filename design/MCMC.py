@@ -412,7 +412,7 @@ class ProteinDesign:
 
                 # write energy_log in data_out
                 if outdir is not None:
-                    df = pd.DataFrame(self.energy_log[0])
+                    df = pd.DataFrame(self.energy_log)
                     df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
         return (seqs)
