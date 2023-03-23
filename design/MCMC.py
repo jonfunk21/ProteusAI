@@ -57,7 +57,7 @@ class ProteinDesign:
                  native_seq: str = None,
                  constraints: dict = {'no_mut':[], 'all_atm':[]},
                  sampler: str = 'simulated_annealing',
-                 n_traj: int = 10,
+                 n_traj: int = 20,
                  steps: int = 1000,
                  T: float = 10.,
                  M: float = 0.01,
