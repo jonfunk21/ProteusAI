@@ -159,6 +159,7 @@ class ProteinDesign:
 
         mutated_seqs = []
         mutated_constraints = []
+        mutations = []
         for i, seq in enumerate(seqs):
             mut_constraints = {}
 
@@ -180,6 +181,7 @@ class ProteinDesign:
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
                     mut_constraints[const] = positions
+                mutations.append(f'sub:{seq[pos]}{pos}{replacement}')
 
             elif mut_type == 'insertion':
                 insertion = random.choice(AAs)
@@ -189,6 +191,7 @@ class ProteinDesign:
                     positions = constraints[i][const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     mut_constraints[const] = positions
+                mutations.append(f'ins:{pos}{insertion}')
 
             elif mut_type == 'deletion' and len(seq) > 1:
                 l = list(seq)
@@ -199,6 +202,7 @@ class ProteinDesign:
                     positions = constraints[i][const]
                     positions = [i if i < pos else i - 1 for i in positions]
                     mut_constraints[const] = positions
+                mutations.append(f'del:{seq[pos]}{pos}')
 
             else:
                 # will perform insertion if length is to small
@@ -209,11 +213,13 @@ class ProteinDesign:
                     positions = constraints[i][const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     mut_constraints[const] = positions
+                mutations.append(f'ins:{pos}{insertion}')
 
             mutated_seqs.append(mut_seq)
             mutated_constraints.append(mut_constraints)
 
-        return mutated_seqs, mutated_constraints
+
+        return mutated_seqs, mutated_constraints, mutations
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
     def energy_function(self, seqs: list, i: int, constraints: list):
@@ -361,6 +367,7 @@ class ProteinDesign:
             energy_log[key] = []
         energy_log['T'] = []
         energy_log['M'] = []
+        energy_log['mut'] = []
 
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
@@ -376,7 +383,7 @@ class ProteinDesign:
             df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
         for i in range(steps):
-            mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
+            mut_seqs, _constraints, mutations = mutate(seqs, mut_p, constraints)
             E_x_mut, pdbs_mut, _energy_log = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
@@ -413,6 +420,7 @@ class ProteinDesign:
                 energy_log['iteration'].append(i)
                 energy_log['T'].append(T)
                 energy_log['M'].append(M)
+                energy_log['mut'].append(mutations[min_E])
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
