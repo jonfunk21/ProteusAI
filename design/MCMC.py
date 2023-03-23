@@ -131,7 +131,7 @@ class ProteinDesign:
                 s,
                 f'pTM\t\t|\t|{self.w_ptm}\n',
                 f'pLDDT\t\t|\t|{self.w_plddt}\n',
-                f'bb_coord\t\t|\t|{self.w_bb_coord}\n',
+                f'bb_coord\t\t|{self.w_bb_coord}\n',
                 f'all_atm\t\t|\t|{self.w_all_atm}\n',
                 f'sasa\t\t|\t|{self.w_sasa}\n',
             ]
