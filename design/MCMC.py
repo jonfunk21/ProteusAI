@@ -358,7 +358,7 @@ class ProteinDesign:
 
             new_struc_found = False
             accepted_ind = [] # indices of accepted structures
-            for n in range(len(p)):
+            for n in range(n_traj):
                 if p[n] > random.random():
                     accepted_ind.append(n)
                     E_x_i[n] = E_x_mut[n]
@@ -387,15 +387,15 @@ class ProteinDesign:
                         min_E = i
 
                 # update all to lowest energy structure
-                E_x_i = [E_x_i[min_E] for _ in E_x_i]
-                seqs = [seqs[min_E] for _ in seqs]
-                constraints = [constraints[min_E] for _ in constraints]
-                self.energy_log = [self.energy_log[min_E] for _ in self.energy_log]
-                pdbs = [pdbs[min_E] for _ in pdbs]
+                E_x_i = [E_x_i[min_E] for _ in range(n_traj)]
+                seqs = [seqs[min_E] for _ in range(n_traj)]
+                constraints = [constraints[min_E] for _ in range(n_traj)]
+                self.energy_log = [self.energy_log[min_E] for _ in range(n_traj)]
+                pdbs = [pdbs[min_E] for _ in range(n_traj)]
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
-                    num = '{:0{}d}'.format(len(energies_dict['iteration']), len(str(self.steps)))
+                    num = '{:0{}d}'.format(len(self.energy_log[0]['iteration']), len(str(self.steps)))
                     pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
 
                 # write energy_log in data_out
