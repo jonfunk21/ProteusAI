@@ -341,7 +341,7 @@ class ProteinDesign:
                 os.mkdir(data_out)
 
         if sampler == 'simulated_annealing':
-            global mutate
+            mutate = self.mutate
 
         if native_seq is None:
             raise 'The optimizer needs a sequence to run. Define a sequence by calling SequenceOptimizer(native_seq = <your_sequence>)'
