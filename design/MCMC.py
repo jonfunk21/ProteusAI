@@ -18,8 +18,8 @@ class ProteinDesign:
             Keys describe the kind of constraint and values the position on which they act.
         sampler (str): choose between simulated_annealing and substitution design.
             Default 'simulated annealing'
-        n_traj (int): number of independent trajectories.
-            Default 10
+        n_traj (int): number of independent trajectories per sampling step. Lowest energy mutant will be selected when
+            multiple are viable. Default 16
         steps (int): number of sampling steps per trajectory.
             For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
         T (float): sampling temperature.
@@ -33,7 +33,7 @@ class ProteinDesign:
         max_len (int): maximum length sequence length for lenght constraint.
             Default 300.
         w_len (float): weight of length constraint.
-            Default 0.001
+            Default 0.01
         w_identity (float): Weight of sequence identity constraint. Positive values reward low sequence identity to native sequence.
             Default 0.04
         w_ptm (float): weight for ptm. pTM is calculated as 1-pTM, because lower energies should be better.
@@ -57,14 +57,14 @@ class ProteinDesign:
                  native_seq: str = None,
                  constraints: dict = {'no_mut':[], 'all_atm':[]},
                  sampler: str = 'simulated_annealing',
-                 n_traj: int = 20,
+                 n_traj: int = 16,
                  steps: int = 1000,
                  T: float = 10.,
                  M: float = 0.01,
-                 mut_p: tuple = (0.6, 0.2, 0.2),
+                 mut_p: list = (0.6, 0.2, 0.2),
                  pred_struc: bool = True,
                  max_len: int = 300,
-                 w_len: float=0.001,
+                 w_len: float=0.01,
                  w_identity: float = 0.1,
                  w_ptm: float = 1,
                  w_plddt: float = 1,
@@ -138,13 +138,13 @@ class ProteinDesign:
         return s
 
     ### SAMPLERS
-    def mutate(self, seqs, mut_p: tuple = (0.6, 0.2, 0.2), constraints=None):
+    def mutate(self, seqs, mut_p: list = [0.6, 0.2, 0.2], constraints=None):
         """
         mutates input sequences.
 
         Parameters:
-            seqs (tuple): list of peptide sequences
-            mut_p (tuple): mutation probabilities
+            seqs (list): list of peptide sequences
+            mut_p (list): mutation probabilities
             constraints (dict): dictionary of constraints
 
         Returns:
@@ -216,7 +216,7 @@ class ProteinDesign:
         return mutated_seqs, mutated_constraints
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
-    def energy_function(self, seqs: list, i, constraints: list):
+    def energy_function(self, seqs: list, i: int, constraints: list):
         """
         Combines constraints into an energy function. The energy function
         returns the energy values of the mutated files and the associated pdb
@@ -225,6 +225,8 @@ class ProteinDesign:
 
         Parameters:
             seqs (list): list of sequences
+            i (int): current iteration in sampling
+            constraints (list): list of constraints
 
         Returns:
             tuple: Energy value, pdbs, energy_log
@@ -266,7 +268,7 @@ class ProteinDesign:
             energy_log[f'e_sasa x {self.w_sasa}'] = e_sasa
 
             # there are now ref pdbs before the first calculation
-            if self.ref_pdbs != None:
+            if self.ref_pdbs is not None:
                 e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
                 e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
 
@@ -289,6 +291,18 @@ class ProteinDesign:
         than the previous state will always be accepted. Changes which have
         higher energies will be accepted with a probability p_accept. The
         acceptance probability for bad states decreases over time.
+
+        Parameters:
+        -----------
+            E_x_mut (np.array): energies of mutated sequences
+            E_x_i (np.array): energies of initial sequences
+            T (float): Temperature
+            i (int): current itteration
+            M (float): decay constant
+
+        Returns:
+        --------
+            np.array: accept probabilities
         """
         T = T / (1 + M * i)
         dE = E_x_i - E_x_mut
@@ -327,7 +341,7 @@ class ProteinDesign:
                 os.mkdir(data_out)
 
         if sampler == 'simulated_annealing':
-            mutate = self.mutate
+            global mutate
 
         if native_seq is None:
             raise 'The optimizer needs a sequence to run. Define a sequence by calling SequenceOptimizer(native_seq = <your_sequence>)'
