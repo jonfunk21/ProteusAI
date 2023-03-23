@@ -100,7 +100,6 @@ class ProteinDesign:
         # Parameters
         self.ref_pdbs = None
         self.ref_constraints = None
-        self.energy_log = None
         self.initial_energy = None
         self.ref_pdbs = None
 
@@ -228,11 +227,11 @@ class ProteinDesign:
             seqs (list): list of sequences
 
         Returns:
-            tuple: Energy value, pdbs, energies_dict
+            tuple: Energy value, pdbs, energy_log
         """
         # reinitialize energy
         energies = np.zeros(len(seqs))
-        energies_dict = dict()
+        energy_log = dict()
 
         e_len = self.w_max_len * Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
         e_identity = self.w_identity * Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
@@ -240,8 +239,8 @@ class ProteinDesign:
         energies += e_len
         energies += e_identity
 
-        energies_dict[f'e_len x {self.w_max_len}'] = e_len
-        energies_dict[f'e_identity x {self.w_identity}'] = e_identity
+        energy_log[f'e_len x {self.w_max_len}'] = e_len
+        energy_log[f'e_identity x {self.w_identity}'] = e_identity
 
         pdbs = []
         if self.pred_struc:
@@ -261,10 +260,10 @@ class ProteinDesign:
             energies += e_globularity
             energies += e_sasa
 
-            energies_dict[f'e_pTMs x {self.w_ptm}'] = e_pTMs
-            energies_dict[f'e_mean_pLDDTs x {self.w_plddt}'] = e_mean_pLDDTs
-            energies_dict[f'e_globularity x {self.w_globularity}'] = e_globularity
-            energies_dict[f'e_sasa x {self.w_sasa}'] = e_sasa
+            energy_log[f'e_pTMs x {self.w_ptm}'] = e_pTMs
+            energy_log[f'e_mean_pLDDTs x {self.w_plddt}'] = e_mean_pLDDTs
+            energy_log[f'e_globularity x {self.w_globularity}'] = e_globularity
+            energy_log[f'e_sasa x {self.w_sasa}'] = e_sasa
 
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs != None:
@@ -274,15 +273,15 @@ class ProteinDesign:
                 energies += e_bb_coord
                 energies += e_all_atm
 
-                energies_dict[f'e_bb_coord x {self.w_bb_coord}'] = e_bb_coord
-                energies_dict[f'e_all_atm x {self.w_all_atm}'] = e_all_atm
+                energy_log[f'e_bb_coord x {self.w_bb_coord}'] = e_bb_coord
+                energy_log[f'e_all_atm x {self.w_all_atm}'] = e_all_atm
             else:
-                energies_dict[f'e_bb_coord x {self.w_bb_coord}'] = []
-                energies_dict[f'e_all_atm x {self.w_all_atm}'] = []
+                energy_log[f'e_bb_coord x {self.w_bb_coord}'] = []
+                energy_log[f'e_all_atm x {self.w_all_atm}'] = []
 
-        energies_dict['iteration'] = i + 1
+        energy_log['iteration'] = i + 1
 
-        return energies, pdbs, energies_dict
+        return energies, pdbs, energy_log
 
     def p_accept(self, E_x_mut, E_x_i, T, i, M):
         """
@@ -339,33 +338,32 @@ class ProteinDesign:
 
         # for initial calculation don't use the full sequences, unecessary
         # calculation of initial state
-        E_x_i, pdbs, energies_dict = energy_function([seqs[0]], -1, [constraints[0]])
+        E_x_i, pdbs, energy_log = energy_function([seqs[0]], -1, [constraints[0]])
         E_x_i = [E_x_i[0] for _ in range(n_traj)]
         pdbs = [pdbs[0] for _ in range(n_traj)]
 
         # empty energies dictionary for the first run
-        for key in energies_dict.keys():
-            energies_dict[key] = []
-        energies_dict['T'] = []
-        energies_dict['M'] = []
+        for key in energy_log.keys():
+            energy_log[key] = []
+        energy_log['T'] = []
+        energy_log['M'] = []
 
-        self.energy_log = energies_dict
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
 
         if self.pred_struc and outdir is not None:
             # saves the n th structure
-            num = '{:0{}d}'.format(len(self.energy_log['iteration']), len(str(self.steps)))
+            num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
             pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
 
         # write energy_log in data_out
         if outdir is not None:
-            df = pd.DataFrame(self.energy_log)
+            df = pd.DataFrame(energy_log)
             df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
         for i in range(steps):
             mut_seqs, _constraints = mutate(seqs, mut_p, constraints)
-            E_x_mut, pdbs_mut, _energies_dict = energy_function(mut_seqs, i, _constraints)
+            E_x_mut, pdbs_mut, _energy_log = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
 
@@ -382,9 +380,9 @@ class ProteinDesign:
             if new_struc_found:
                 # get index of lowest energie sructure out of the newly found structures
                 min_E = accepted_ind[0]
-                for i in accepted_ind:
-                    if i < min_E:
-                        min_E = i
+                for a in accepted_ind:
+                    if a < min_E:
+                        min_E = a
 
                 # update all to lowest energy structure
                 E_x_i = [E_x_i[min_E] for _ in range(n_traj)]
@@ -392,27 +390,24 @@ class ProteinDesign:
                 constraints = [constraints[min_E] for _ in range(n_traj)]
                 pdbs = [pdbs[min_E] for _ in range(n_traj)]
 
-                energies_dict = self.energy_log
-                for key in energies_dict.keys():
+                for key in energy_log.keys():
                     # skip skalar values in this step
                     if key not in ['T', 'M', 'iteration']:
-                        e = _energies_dict[key]
-                        energies_dict[key].append(e[min_E].item())
+                        e = _energy_log[key]
+                        energy_log[key].append(e[min_E].item())
 
-                energies_dict['iteration'].append(i)
-                energies_dict['T'].append(T)
-                energies_dict['M'].append(M)
-
-                self.energy_log = energies_dict
+                energy_log['iteration'].append(i)
+                energy_log['T'].append(T)
+                energy_log['M'].append(M)
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
-                    num = '{:0{}d}'.format(len(self.energy_log['iteration']), len(str(self.steps)))
+                    num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
                     pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
 
                 # write energy_log in data_out
                 if outdir is not None:
-                    df = pd.DataFrame(self.energy_log)
+                    df = pd.DataFrame(energy_log)
                     df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
         return (seqs)
