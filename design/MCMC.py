@@ -342,7 +342,7 @@ class ProteinDesign:
         E_x_i, pdbs, energies_dict = energy_function([seqs[0]], -1, [constraints[0]])
         E_x_i = [E_x_i[0] for _ in range(n_traj)]
         pdbs = [pdbs[0] for _ in range(n_traj)]
-        energies_dict = [energies_dict[0] for _ in range(n_traj)]
+        energies_dict = [energies_dict for _ in range(n_traj)]
 
         # empty energies dictionary for the first run
         for key in energies_dict.keys():
