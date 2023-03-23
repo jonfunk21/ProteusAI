@@ -357,10 +357,10 @@ class ProteinDesign:
             p = p_accept(E_x_mut, E_x_i, T, i, M)
 
             new_struc_found = False
-            accepted = []
+            accepted_ind = [] # indices of accepted structures
             for n in range(len(p)):
                 if p[n] > random.random():
-                    accepted.append(n)
+                    accepted_ind.append(n)
                     E_x_i[n] = E_x_mut[n]
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
@@ -379,14 +379,12 @@ class ProteinDesign:
                     self.energy_log[n] = energies_dict
                     new_struc_found = True
 
-            # UPDATE SELECTION - NOT ALLWAYS TAKE LOWEST ENERGY, ONLY AMONG ACCEPTED IF MULTIPLE
-
             if new_struc_found:
                 # get index of lowest energie sructure out of the newly found structures
-                min_E = 99999999999999
-                for i in accepted:
+                min_E = accepted_ind[0]
+                for i in accepted_ind:
                     if i < min_E:
-                        n = i
+                        min_E = i
 
                 # update all to lowest energy structure
                 E_x_i = [E_x_i[min_E] for _ in E_x_i]
