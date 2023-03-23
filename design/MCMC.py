@@ -19,7 +19,7 @@ class ProteinDesign:
         sampler (str): choose between simulated_annealing and substitution design.
             Default 'simulated annealing'
         n_traj (int): number of independent trajectories.
-            Default 1
+            Default 10
         steps (int): number of sampling steps per trajectory.
             For simulated annealing, the number of iterations is often chosen in the range of [1,000, 10,000].
         T (float): sampling temperature.
@@ -57,7 +57,7 @@ class ProteinDesign:
                  native_seq: str = None,
                  constraints: dict = {'no_mut':[], 'all_atm':[]},
                  sampler: str = 'simulated_annealing',
-                 n_traj: int = 1,
+                 n_traj: int = 10,
                  steps: int = 1000,
                  T: float = 10.,
                  M: float = 0.01,
@@ -355,8 +355,12 @@ class ProteinDesign:
             E_x_mut, pdbs_mut, _energies_dict = energy_function(mut_seqs, i, _constraints)
             # accept or reject change
             p = p_accept(E_x_mut, E_x_i, T, i, M)
+
+            new_struc_found = False
+            accepted = []
             for n in range(len(p)):
                 if p[n] > random.random():
+                    accepted.append(n)
                     E_x_i[n] = E_x_mut[n]
                     seqs[n] = mut_seqs[n]
                     constraints[n] = _constraints[n]
@@ -373,16 +377,32 @@ class ProteinDesign:
                     energies_dict['M'].append(M)
 
                     self.energy_log[n] = energies_dict
+                    new_struc_found = True
 
-                    if self.pred_struc and outdir is not None:
-                        # saves the n th structure
-                        num = '{:0{}d}'.format(len(energies_dict['iteration']), len(str(self.steps)))
-                        pdbs[n] = pdbs_mut[n]
-                        pdbs[n].write(os.path.join(pdb_out, f'{num}_design_{n}.pdb'))
+            # UPDATE SELECTION - NOT ALLWAYS TAKE LOWEST ENERGY, ONLY AMONG ACCEPTED IF MULTIPLE
 
-                    # write energy_log in data_out
-                    if outdir is not None:
-                        df = pd.DataFrame(self.energy_log[n])
-                        df.to_csv(os.path.join(data_out, f'energy_log_{n}.pdb'), index=False)
+            if new_struc_found:
+                # get index of lowest energie sructure out of the newly found structures
+                min_E = 99999999999999
+                for i in accepted:
+                    if i < min_E:
+                        n = i
+
+                # update all to lowest energy structure
+                E_x_i = [E_x_i[min_E] for _ in E_x_i]
+                seqs = [seqs[min_E] for _ in seqs]
+                constraints = [constraints[min_E] for _ in constraints]
+                self.energy_log = [self.energy_log[min_E] for _ in self.energy_log]
+                pdbs = [pdbs[min_E] for _ in pdbs]
+
+                if self.pred_struc and outdir is not None:
+                    # saves the n th structure
+                    num = '{:0{}d}'.format(len(energies_dict['iteration']), len(str(self.steps)))
+                    pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
+
+                # write energy_log in data_out
+                if outdir is not None:
+                    df = pd.DataFrame(self.energy_log[0])
+                    df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
         return (seqs)
