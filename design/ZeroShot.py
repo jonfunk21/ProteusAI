@@ -262,7 +262,7 @@ class ZeroShot:
                 for key in energy_log.keys():
                     # skip skalar values in this step
                     if key not in ['position', 'mut', 'description']:
-                        e = _energy_log[key].item()
+                        e = _energy_log[key].tolist()
                         with open('test', 'w') as f:
                             print('energy_log', file=f)
                             print(energy_log, file=f)
