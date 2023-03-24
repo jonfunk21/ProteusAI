@@ -42,7 +42,7 @@ for res_id in contacts:
 res_constraints = {'all_atm':contact_indices}
 
 # Design process
-outdir = '../example_data/designs/zero_shot/'
+outdir = '../example_data/zero_shot/'
 
 if not os.path.exists(outdir):
     os.mkdir(outdir)
