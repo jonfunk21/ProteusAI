@@ -237,7 +237,7 @@ class ZeroShot:
         # for initial calculation don't use the full sequences, unecessary
         # calculation of initial state
         _, pdbs, energy_log = energy_function([seq], 0, ['native'])
-        pdbs = [pdbs[0] for _ in range(batch_size)]
+        pdbs = [pdbs[0] for _ in range(batch_size-1)]
         energy_log['mut'] = ['-']
         energy_log['description'] = ['native']
 
@@ -252,25 +252,25 @@ class ZeroShot:
             df = pd.DataFrame(energy_log)
             df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
 
-        for i in range(len(seq)):
-            seqs, names = mutate(seq, i)
-            E_x_i, pdbs, _energy_log = energy_function(seqs, i, names)
+        for pos in range(len(seq)):
+            seqs, names = mutate(seq, pos)
+            E_x_i, pdbs, _energy_log = energy_function(seqs, pos, names)
 
-            for k in range(len(seqs)):
+            for n in range(len(seqs)):
                 for key in energy_log.keys():
                     # skip skalar values in this step
                     if key not in ['position', 'mut', 'description']:
                         e = _energy_log[key]
-                        energy_log[key].append(e[k])
+                        energy_log[key].append(e[n])
 
-                energy_log['position'].append(i)
-                energy_log['mut'].append(names[k])
+                energy_log['position'].append(pos)
+                energy_log['mut'].append(names[n])
 
-                energy_log['description'].append(f'{names[k]}_{self.name}')
+                energy_log['description'].append(f'{names[n]}_{self.name}')
 
                 if outdir is not None:
                     # saves the n th structure
-                    pdbs[0].write(os.path.join(pdb_out, f'{names[k]}_{self.name}.pdb'))
+                    pdbs[n].write(os.path.join(pdb_out, f'{names[n]}_{self.name}.pdb'))
 
                 # write energy_log in data_out
                 if outdir is not None:
