@@ -428,16 +428,16 @@ class ProteinDesign:
                 energy_log['M'].append(M)
                 energy_log['mut'].append(mutations[min_E])
 
+                num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
+                energy_log['description'].append(f'{num}_design')
+
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
-                    num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
                     pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
-                    energy_log['description'].append(f'{num}_design')
 
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
                     df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
-                    energy_log['description'].append(f'{num}_design')
 
         return (seqs)
