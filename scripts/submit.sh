@@ -51,4 +51,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd scripts
 
-python3 design_test.py
+python3 zero_shot_test.py
