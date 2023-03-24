@@ -243,6 +243,11 @@ class ZeroShot:
         energy_log['mut'] = ['-']
         energy_log['description'] = ['native']
 
+        # make energies to list
+        for key in energy_log.keys():
+            if type(energy_log[key]) != list:
+                energy_log[key] = energy_log[key].tolist()
+
         self.ref_pdbs = pdbs.copy()
 
         if outdir is not None:
