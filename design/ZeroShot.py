@@ -205,7 +205,7 @@ class ZeroShot:
             energy_log[f'e_bb_coord x {self.w_bb_coord}'] = [0]
             energy_log[f'e_all_atm x {self.w_all_atm}'] = [0]
 
-        energy_log['position'] = pos
+        energy_log['position'] = [pos]
 
         return energies, pdbs, energy_log
 
