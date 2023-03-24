@@ -16,7 +16,6 @@ def make(pdb_path, png_path, video_path):
         if i == 0:
             # only open this one file without alignemt
             struc = pdb
-            print(pdb)
             png = os.path.join(png_path, pdb.split('/')[-1][:-4] + '.png')
             lines = [
                 f'load {struc}, struc',
@@ -40,7 +39,6 @@ def make(pdb_path, png_path, video_path):
         else:
             # align to previous file
             struc = pdb
-            print(pdb)
             prev_struc = pdbs[i-1]
             png = os.path.join(png_path, pdb.split('/')[-1][:-4] + '.png')
             lines = [
