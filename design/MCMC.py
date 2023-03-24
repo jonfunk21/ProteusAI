@@ -103,11 +103,10 @@ class ProteinDesign:
         self.ref_pdbs = None
         self.ref_constraints = None
         self.initial_energy = None
-        self.ref_pdbs = None
 
 
     def __str__(self):
-        l = ['ProteusAI.MCMC.Hallucination class: \n',
+        l = ['ProteusAI.MCMC.Design class: \n',
              '---------------------------------------\n',
              'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
              f'{self.native_seq}\n',
