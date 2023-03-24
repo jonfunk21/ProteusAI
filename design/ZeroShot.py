@@ -167,6 +167,7 @@ class ZeroShot:
         for i, c in enumerate(constraints['all_atm']):
             if c == pos:
                 del constraints['all_atm'][i]
+        constraints = [constraints for i in range(seqs)]
 
         # structure prediction
         names = [f'{name}_{self.name}' for name in names]
