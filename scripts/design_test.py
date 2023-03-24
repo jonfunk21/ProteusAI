@@ -52,7 +52,8 @@ if not os.path.exists(outdir):
 
 Design = MCMC.ProteinDesign(native_seq=ASMT_seq,
                             constraints=res_constraints,
-                            outdir=outdir
+                            outdir=outdir,
+                            M=0.1
                            )
 
 print('constraints on residues')
