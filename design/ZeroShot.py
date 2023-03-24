@@ -176,7 +176,7 @@ class ZeroShot:
 
         e_pTMs = self.w_ptm * np.array(pTMs)
         e_mean_pLDDTs = self.w_plddt * np.array(mean_pLDDTs)
-        e_globularity = self.w_globularity *Constraints.globularity(pdbs)
+        e_globularity = self.w_globularity * Constraints.globularity(pdbs)
         e_sasa = self.w_sasa * Constraints.surface_exposed_hydrophobics(pdbs)
 
         energies += e_pTMs
