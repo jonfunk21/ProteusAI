@@ -259,20 +259,6 @@ class ZeroShot:
             E_x_i, pdbs, _energy_log = energy_function(seqs, pos, names)
 
             for n in range(len(seqs)):
-                for key in energy_log.keys():
-                    # skip skalar values in this step
-                    if key not in ['position', 'mut', 'description']:
-                        e = _energy_log[key]
-                        with open('test', 'w') as f:
-                            print('energy_log', file=f)
-                            print(energy_log, file=f)
-                            print('_energy_log', file=f)
-                            print(_energy_log, file=f)
-                            print('key', file=f)
-                            print(key, file=f)
-                            print(e)
-                        energy_log[key].append(e[n])
-
                 energy_log['position'].append(pos)
                 energy_log['mut'].append(names[n])
 
