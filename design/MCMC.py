@@ -55,7 +55,7 @@ class ProteinDesign:
 
     def __init__(self,
                  native_seq: str = None,
-                 constraints: dict = {'no_mut':[], 'all_atm':[]},
+                 constraints=None,
                  sampler: str = 'simulated_annealing',
                  n_traj: int = 16,
                  steps: int = 1000,
@@ -76,6 +76,8 @@ class ProteinDesign:
                  verbose: bool = False,
                  ):
 
+        if constraints is None:
+            constraints = {'no_mut': [], 'all_atm': []}
         self.native_seq = native_seq
         self.sampler = sampler
         self.n_traj = n_traj
@@ -138,18 +140,21 @@ class ProteinDesign:
         return s
 
     ### SAMPLERS
-    def mutate(self, seqs, mut_p: list = [0.6, 0.2, 0.2], constraints=None):
+    def mutate(self, seqs, mut_p: list = None, constraints: list = None):
         """
         mutates input sequences.
 
         Parameters:
             seqs (list): list of peptide sequences
             mut_p (list): mutation probabilities
-            constraints (dict): dictionary of constraints
+            constraints (list): dictionary of constraints
 
         Returns:
             list: mutated sequences
         """
+
+        if mut_p is None:
+            mut_p = [0.6, 0.2, 0.2]
 
         AAs = ('A', 'C', 'D', 'E', 'F', 'G', 'H',
                'I', 'K', 'L', 'M', 'N', 'P', 'Q',
@@ -368,6 +373,7 @@ class ProteinDesign:
         energy_log['T'] = []
         energy_log['M'] = []
         energy_log['mut'] = []
+        energy_log['description'] = []
 
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
@@ -409,7 +415,7 @@ class ProteinDesign:
                 E_x_i = [E_x_i[min_E] for _ in range(n_traj)]
                 seqs = [seqs[min_E] for _ in range(n_traj)]
                 constraints = [constraints[min_E] for _ in range(n_traj)]
-                pdbs = [pdbs[min_E] for _ in range(n_traj)]
+                pdbs = [pdbs_mut[min_E] for _ in range(n_traj)]
 
                 for key in energy_log.keys():
                     # skip skalar values in this step
@@ -426,10 +432,12 @@ class ProteinDesign:
                     # saves the n th structure
                     num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
                     pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
+                    energy_log['description'].append(f'{num}_design.pdb')
 
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
                     df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+                    energy_log['description'].append(f'{num}_design')
 
         return (seqs)
