@@ -164,10 +164,11 @@ class ZeroShot:
         energies = np.zeros(len(seqs))
         energy_log = dict()
         constraints = self.constraints
-        for i, c in enumerate(constraints['all_atm']):
-            if c == pos:
-                del constraints['all_atm'][i]
-        constraints = [constraints for i in range(seqs)]
+        if constraints != None
+            for i, c in enumerate(constraints['all_atm']):
+                if c == pos:
+                    del constraints['all_atm'][i]
+            constraints = [constraints for i in range(len(seqs))]
 
         # structure prediction
         names = [f'{name}_{self.name}' for name in names]
