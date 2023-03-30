@@ -77,7 +77,7 @@ def load(file: str, biotite: bool = False) -> tuple:
     return names, sequences
 
 
-def write(names: str, sequences: str, dest: str = None):
+def write(names: list, sequences: list, dest: str = None):
     """
     Takes a list of names and sequences and writes a single
     fasta file containing all the names and sequences. The
@@ -91,6 +91,7 @@ def write(names: str, sequences: str, dest: str = None):
     Example:
         write_fasta(names, sequences, './out.fasta')
     """
+    assert type(names) == list and type(sequences) == list, 'names and sequences must be type list'
     assert len(names) == len(sequences), 'names and sequences must have the same length'
 
     with open(dest, 'w') as f:
@@ -100,3 +101,4 @@ def write(names: str, sequences: str, dest: str = None):
                 f.writelines(sequences[i])
             else:
                 f.writelines(sequences[i] + '\n')
+
