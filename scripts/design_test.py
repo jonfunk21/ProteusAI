@@ -5,7 +5,7 @@ from design import MCMC
 from analysis import pdb, interactions
 import os
 
-ASMT_pdb = '../example_data/structures/ASMT.pdb'
+ASMT_pdb = '../example_data/structures/ASMT_representations.pdb'
 ASMT_seq = pdb.to_fasta(ASMT_pdb).split('\n')[1]
 
 # determine best docking results
@@ -45,7 +45,7 @@ res_constraints = {'no_mut':contact_indices,
 mut_p = (0.6, 0.2, 0.2)
 
 # Design process
-outdir = '../example_data/designs/ASMT/'
+outdir = '../example_data/designs/ASMT_representations/'
 
 if not os.path.exists(outdir):
     os.mkdir(outdir)

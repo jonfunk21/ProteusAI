@@ -1,7 +1,7 @@
 import esm
 from biotite.structure.io.pdb import PDBFile
 
-fpath = '../example_data/structures/ASMT.pdb'
+fpath = '../example_data/structures/ASMT_representations.pdb'
 
 def get_representation(fpath):
 

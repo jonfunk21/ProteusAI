@@ -5,7 +5,7 @@ from design import ZeroShot
 from analysis import pdb, interactions
 import os
 
-ASMT_pdb = '../example_data/structures/ASMT.pdb'
+ASMT_pdb = '../example_data/structures/ASMT_representations.pdb'
 ASMT_seq = pdb.to_fasta(ASMT_pdb).split('\n')[1]
 
 # determine best docking results
@@ -48,7 +48,7 @@ if not os.path.exists(outdir):
     os.mkdir(outdir)
 
 Design = ZeroShot.ZeroShot(seq=ASMT_seq,
-                           name='ASMT',
+                           name='ASMT_representations',
                            constraints=res_constraints,
                            outdir=outdir,
                            )

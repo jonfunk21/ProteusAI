@@ -14,8 +14,8 @@ def get_protein_sequence(uniprot_id: str) -> str:
         list: List with results as Bio.SeqRecord.SeqRecord object
 
     Example:
-        ASMT = uniprot.get_protein_sequence('P46597')
-        sequence_string = str(ASMT[0].seq)
+        ASMT_representations = uniprot.get_protein_sequence('P46597')
+        sequence_string = str(ASMT_representations[0].seq)
     """
     base_url = "http://www.uniprot.org/uniprot/"
     current_url = base_url + uniprot_id + ".fasta"
