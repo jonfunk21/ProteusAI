@@ -199,6 +199,9 @@ if __name__ == '__main__':
     REP_LAYER = args.rep_layer
     ACTIVITY = args.activity
 
+    if DEST and not os.path.exists(DEST):
+        os.mkdir(DEST)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # on M1 if mps available
     if device == torch.device(type='cpu'):
