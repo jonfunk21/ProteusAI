@@ -179,7 +179,7 @@ if __name__ == '__main__':
      <path to dest>/{id}.pt
      
      example:
-     python3 embedd.py -f input.fasta -d out_dir -b 26
+     python3 embedd_esm.py -f input.fasta -d out_dir -b 26
      ''',
     formatter_class=argparse.RawTextHelpFormatter)
 
