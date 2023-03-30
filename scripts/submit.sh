@@ -49,6 +49,6 @@ pip install "fair-esm[esmfold]"
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 
-cd scripts
+cd embedd
 
-python3 zero_shot_test.py
+python3 embedd_esm.py -f '../example_data/directed_evolution/GB1/GB1.fasta' -d '../example_data/directed_evolution/GB1/representations' -a
