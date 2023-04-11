@@ -191,7 +191,7 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: in
     batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
 
     with open('test', 'w') as f:
-        print(seq_rep_only, f)
+        print(seq_rep_only, file=f)
 
     for batch in batches:
         _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer, seq_rep_only=seq_rep_only)
