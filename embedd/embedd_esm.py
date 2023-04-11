@@ -48,12 +48,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
-    with open('test1', 'w') as f:
-        print(seq_rep_only, file=f)
-        print(type(seq_rep_only), file=f)
     if not seq_rep_only:
-        with open('test2', 'w') as f:
-            print(seq_rep_only, file=f)
         logits = results["logits"][rep_layer]
         attentions = ["attentions"][rep_layer]
         contacts = ["contacts"][rep_layer]
@@ -76,8 +71,6 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                 _dest = os.path.join(dest, batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
             else:
-                with open('test3', 'w') as f:
-                    print('saving all', file=f)
                 _dest = os.path.join(dest, "representations", batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
                 _dest = os.path.join(dest, "logits", batch_labels[i])
@@ -235,6 +228,9 @@ if __name__ == '__main__':
     REP_LAYER = args.rep_layer
     ACTIVITY = args.activity
     SEQ_REP_ONLY = args.seq_rep_only
+
+    if SEQ_REP_ONLY == "False":
+        SEQ_REP_ONLY = False
 
     if DEST and not os.path.exists(DEST):
         os.mkdir(DEST)
