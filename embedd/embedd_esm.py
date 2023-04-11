@@ -6,7 +6,7 @@ import argparse
 import sys
 sys.path.append('../')
 
-def compute_representations(data: list, dest: str = None, device: str = 'cuda', rep_layer: int = 33):
+def compute_representations(data: list, dest: str = None, device: str = 'cuda', rep_layer: int = 33, seq_rep_only=True):
     '''
     generate sequence representations using esm2_t33_650M_UR50D.
     The representation are of size 1280.
@@ -17,7 +17,10 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
         dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
         device (str): device used for calculation or representations. Default "cuda". 
                       other options are "cpu", or "mps" for M1/M2 chip
-        rep_layer (int) : representation layer from which the sequence is extracted. Default 33 (final layer)
+        rep_layer (int): representation layer from which the sequence is extracted. Default 33 (final layer)
+        seq_rep_only (bool): if seq_rep_only then only sequence representations will be saved, else
+            logits, representations, attentions and contacts will also be saved. If seq_rep is False,
+            directories will be created for logits, representations, attentions and contacts at destination.
 
     Returns: representations (list) of sequence representation and token representations.
         [(seq_rep1, token_rep1),...(seq_repN, token_repN)]
@@ -40,21 +43,43 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
         results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
 
     token_representations = results["representations"][rep_layer]
-    with open('test', 'w') as f:
-        print(results.keys(), file=f)
-    asdf
+
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
+
+    if not seq_rep_only:
+        logits = results["logits"][rep_layer]
+        attentions = ["attentions"][rep_layer]
+        contacts = ["contacts"][rep_layer]
+        if not os.path.exists(os.path.join(dest, 'logits')):
+            os.mkdir(os.path.join(dest, 'logits'))
+        if not os.path.exists(os.path.join(dest, 'representations')):
+            os.mkdir(os.path.join(dest, 'representations'))
+        if not os.path.exists(os.path.join(dest, 'attentions')):
+            os.mkdir(os.path.join(dest, 'attentions'))
+        if not os.path.exists(os.path.join(dest, 'contacts')):
+            os.mkdir(os.path.join(dest, 'contacts'))
+
     sequence_representations = []
     for i, tokens_len in enumerate(batch_lens):
         sequence_representations.append(token_representations[i, 1: tokens_len - 1].mean(0))
 
     if dest is not None:
         for i in range(len(sequence_representations)):
-            _dest = os.path.join(dest, batch_labels[i])
-            torch.save(sequence_representations[i], _dest + '.pt')
+            if seq_rep_only:
+                _dest = os.path.join(dest, batch_labels[i])
+                torch.save(sequence_representations[i], _dest + '.pt')
+            else:
+                _dest = os.path.join(dest, "representations", batch_labels[i])
+                torch.save(sequence_representations[i], _dest + '.pt')
+                _dest = os.path.join(dest, "logits", batch_labels[i])
+                torch.save(logits[i], _dest + '.pt')
+                _dest = os.path.join(dest, "attentions", batch_labels[i])
+                torch.save(attentions[i], _dest + '.pt')
+                _dest = os.path.join(dest, "contacts", batch_labels[i])
+                torch.save(contacts[i], _dest + '.pt')
 
-    return sequence_representations
+    return list(zip(sequence_representations, logits, attentions, contacts))
 
 
 def divide_list(lst, chunk_size):
@@ -192,6 +217,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--activity', help='Set true if activity values are provided', type=bool, default=False)
     parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', type=str, default=None)
     parser.add_argument('-r', '--rep_layer', help='choose representation layer of model. Default 33 (finla layer)', type=int, default=33)
+    parser.add_argument('--seq_rep_only', help='Only save sequence representation. If false save logits, attentions and contacts in addition', type=bool, default=True)
     args = parser.parse_args()
 
 
@@ -201,6 +227,7 @@ if __name__ == '__main__':
     MODEL = args.model
     REP_LAYER = args.rep_layer
     ACTIVITY = args.activity
+    SEQ_REP_ONLY = args.seq_rep_only
 
     if DEST and not os.path.exists(DEST):
         os.mkdir(DEST)
@@ -231,4 +258,4 @@ if __name__ == '__main__':
         names, seqs = extract_sequences(FASTA_PATH)
         data = list(zip(names, seqs))
         for i in range(0, len(data), BATCH_SIZE):
-            r = compute_representations(data[i:i + BATCH_SIZE], dest=DEST, device=str(device), rep_layer=REP_LAYER)
+            r = compute_representations(data[i:i + BATCH_SIZE], dest=DEST, device=str(device), rep_layer=REP_LAYER, seq_rep_only=SEQ_REP_ONLY)
