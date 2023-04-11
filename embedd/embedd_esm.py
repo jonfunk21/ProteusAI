@@ -40,7 +40,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
         results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
 
     token_representations = results["representations"][rep_layer]
-    with open('test', 'a') as f:
+    with open('test', 'w') as f:
         print(results, file=f)
 
     # Generate per-sequence representations via averaging
