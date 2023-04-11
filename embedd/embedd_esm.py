@@ -48,7 +48,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
-
+    with open('test1', 'w') as f:
+        print(seq_rep_only, file=f)
     if not seq_rep_only:
         logits = results["logits"][rep_layer]
         attentions = ["attentions"][rep_layer]
@@ -72,6 +73,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                 _dest = os.path.join(dest, batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
             else:
+                with open('test2', 'w') as f:
+                    print('saving all', file=f)
                 _dest = os.path.join(dest, "representations", batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
                 _dest = os.path.join(dest, "logits", batch_labels[i])
@@ -109,7 +112,6 @@ def batchify_fasta(fasta_path: str, batch_size: int):
     with open(fasta_path, 'r') as f:
         activities = []
         data = []
-        batch = []
         for line in f:
             if line.startswith('>'):
                 label = line.split('|')[1]
@@ -189,9 +191,6 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: in
         os.makedirs(dest)
 
     batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
-
-    with open('test', 'w') as f:
-        print(seq_rep_only, file=f)
 
     for batch in batches:
         _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer, seq_rep_only=seq_rep_only)
