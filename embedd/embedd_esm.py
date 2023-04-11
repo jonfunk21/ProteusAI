@@ -178,7 +178,8 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: in
         fasta_path (str): path to fasta file
         dest (str): destination
         batch_size (int): batch size for computation
-        rep_layer (int) : representation layer from which the sequence is extracted. Default 33 (final layer)
+        rep_layer (int): representation layer from which the sequence is extracted. Default 33 (final layer)
+        seq_rep_only (bool): if True, only save seq_representations. Else, also save contacts, logits and attentions
 
     Returns:
         list of sequence representations
@@ -256,6 +257,10 @@ if __name__ == '__main__':
 
     batch_converter = alphabet.get_batch_converter()
 
+    with open('test', 'w') as f:
+        print(SEQ_REP_ONLY, file=f)
+
+    asdf
     if ACTIVITY:
         batch_converter = alphabet.get_batch_converter()
         batch_embedd(FASTA_PATH, DEST, BATCH_SIZE, REP_LAYER, SEQ_REP_ONLY)
