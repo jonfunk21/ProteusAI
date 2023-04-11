@@ -163,7 +163,7 @@ def extract_sequences(file_name):
     return names, sequences
     
 
-def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: int = 33):
+def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: int = 33, seq_rep_only=True):
     """
     takes fasta files in a specific format and embedds all the sequences using the 
     esm2_t33_650M_UR50D model. The embeddings are saved in the destination folder.
@@ -191,7 +191,7 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: in
     batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
 
     for batch in batches:
-        _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer)
+        _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer, seq_rep_only=seq_rep_only)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(elapsed_time)
@@ -258,7 +258,7 @@ if __name__ == '__main__':
 
     if ACTIVITY:
         batch_converter = alphabet.get_batch_converter()
-        batch_embedd(FASTA_PATH, DEST, BATCH_SIZE, REP_LAYER)
+        batch_embedd(FASTA_PATH, DEST, BATCH_SIZE, REP_LAYER, SEQ_REP_ONLY)
     else:
         names, seqs = extract_sequences(FASTA_PATH)
         data = list(zip(names, seqs))
