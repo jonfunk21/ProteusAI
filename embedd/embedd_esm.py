@@ -79,7 +79,10 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                 _dest = os.path.join(dest, "contacts", batch_labels[i])
                 torch.save(contacts[i], _dest + '.pt')
 
-    return list(zip(sequence_representations, logits, attentions, contacts))
+    if seq_rep_only:
+        return sequence_representations
+    else:
+        return list(zip(sequence_representations, logits, attentions, contacts))
 
 
 def divide_list(lst, chunk_size):
