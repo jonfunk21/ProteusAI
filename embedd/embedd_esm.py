@@ -50,8 +50,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     if not seq_rep_only:
         logits = results["logits"]
-        attentions = ["attentions"]
-        contacts = ["contacts"]
+        attentions = results["attentions"]
+        contacts = results["contacts"]
         with open('logits', 'w') as f:
             print(logits, file=f)
         with open('attentions', 'w') as f:
