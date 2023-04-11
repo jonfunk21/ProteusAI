@@ -220,7 +220,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--fasta', help='path to fasta file', required=True, type=str, default=None)
     parser.add_argument('-d', '--dest', help='path to destination', required=True, type=str,default=None)
     parser.add_argument('-b', '--batch_size', help='batch size for computation of representations', type=int, default=26)
-    parser.add_argument('-a', '--activity', help='Set true if activity values are provided', type=bool, default=False)
+    parser.add_argument('-a', '--activity', help='Set true if activity values are provided', default=False)
     parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', type=str, default=None)
     parser.add_argument('-r', '--rep_layer', help='choose representation layer of model. Default 33 (finla layer)', type=int, default=33)
     parser.add_argument('--seq_rep_only', help='Only save sequence representation. If false save logits, attentions and contacts in addition', default=True)
@@ -257,10 +257,6 @@ if __name__ == '__main__':
 
     batch_converter = alphabet.get_batch_converter()
 
-    with open('test', 'w') as f:
-        print(SEQ_REP_ONLY, file=f)
-
-    asdf
     if ACTIVITY:
         batch_converter = alphabet.get_batch_converter()
         batch_embedd(FASTA_PATH, DEST, BATCH_SIZE, REP_LAYER, SEQ_REP_ONLY)
