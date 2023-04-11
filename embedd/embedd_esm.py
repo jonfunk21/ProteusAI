@@ -51,6 +51,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
     with open('test1', 'w') as f:
         print(seq_rep_only, file=f)
     if not seq_rep_only:
+        with open('test2', 'w') as f:
+            print(seq_rep_only, file=f)
         logits = results["logits"][rep_layer]
         attentions = ["attentions"][rep_layer]
         contacts = ["contacts"][rep_layer]
@@ -73,7 +75,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                 _dest = os.path.join(dest, batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
             else:
-                with open('test2', 'w') as f:
+                with open('test3', 'w') as f:
                     print('saving all', file=f)
                 _dest = os.path.join(dest, "representations", batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
