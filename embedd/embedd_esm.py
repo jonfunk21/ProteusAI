@@ -50,6 +50,7 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     with open('test1', 'w') as f:
         print(seq_rep_only, file=f)
+        print(type(seq_rep_only), file=f)
     if not seq_rep_only:
         with open('test2', 'w') as f:
             print(seq_rep_only, file=f)
