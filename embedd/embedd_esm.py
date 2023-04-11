@@ -19,7 +19,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                       other options are "cpu", or "mps" for M1/M2 chip
         rep_layer (int) : representation layer from which the sequence is extracted. Default 33 (final layer)
 
-    Returns: representations (list)
+    Returns: representations (list) of sequence representation and token representations.
+        [(seq_rep1, token_rep1),...(seq_repN, token_repN)]
 
     Example:
         data = [("protein1", "AGAVCTGAKLI"), ("protein2", "AGHRFLIKLKI")]
@@ -43,15 +44,21 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     sequence_representations = []
+    full_representations = []
     for i, tokens_len in enumerate(batch_lens):
         sequence_representations.append(token_representations[i, 1: tokens_len - 1].mean(0))
+        full_representations.append(token_representations[i, 1: tokens_len - 1])
 
+    seq_rep_dest = os.path.join(dest, 'sequence_representations')
+    token_rep_dest = os.path.join(dest, 'token_representations')
     if dest is not None:
         for i in range(len(sequence_representations)):
-            _dest = os.path.join(dest, batch_labels[i])
+            _dest = os.path.join(seq_rep_dest, batch_labels[i])
             torch.save(sequence_representations[i], _dest + '.pt')
+            _dest = os.path.join(token_rep_dest, batch_labels[i])
+            torch.save(full_representations[i], _dest + '.pt')
 
-    return sequence_representations
+    return list(zip(sequence_representations, full_representations))
 
 
 def divide_list(lst, chunk_size):
