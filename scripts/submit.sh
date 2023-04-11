@@ -50,4 +50,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd embedd
 
-python3 embedd_esm.py -f '../example_data/directed_evolution/GB1/GB1.fasta' -d '../example_data/directed_evolution/GB1/representations' -a True --seq_rep_only False
+python3 embedd_esm.py -f '../example_data/directed_evolution/GB1/GB1.fasta' -d '../example_data/directed_evolution/GB1/representations' -a True --seq_rep_only 0
