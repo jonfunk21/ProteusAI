@@ -54,9 +54,9 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
     if not seq_rep_only:
         with open('test2', 'w') as f:
             print(seq_rep_only, file=f)
-        logits = results["logits"][rep_layer]
-        attentions = ["attentions"][rep_layer]
-        contacts = ["contacts"][rep_layer]
+        logits = results["logits"]
+        attentions = ["attentions"]
+        contacts = ["contacts"]
         if not os.path.exists(os.path.join(dest, 'logits')):
             os.mkdir(os.path.join(dest, 'logits'))
         if not os.path.exists(os.path.join(dest, 'representations')):
