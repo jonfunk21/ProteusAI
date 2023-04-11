@@ -58,6 +58,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
 
     if dest is not None:
         for i in range(len(sequence_representations)):
+            with open('test', 'a') as f:
+                print(i, file=f)
             _dest = os.path.join(seq_rep_dest, batch_labels[i])
             torch.save(sequence_representations[i], _dest + '.pt')
             _dest = os.path.join(token_rep_dest, batch_labels[i])
