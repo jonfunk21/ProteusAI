@@ -188,14 +188,13 @@ def batch_embedd(fasta_path: str, dest: str, batch_size: int = 10, rep_layer: in
     if not os.path.exists(dest):
         os.makedirs(dest)
 
-    start_time = time.time()
     batches, activities = batchify_fasta(fasta_path=fasta_path, batch_size=batch_size)
+
+    with open('test', 'w') as f:
+        print(seq_rep_only, f)
 
     for batch in batches:
         _ = compute_representations(batch, dest=dest, device=device, rep_layer=rep_layer, seq_rep_only=seq_rep_only)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(elapsed_time)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=
