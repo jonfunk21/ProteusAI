@@ -41,8 +41,8 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
 
     token_representations = results["representations"][rep_layer]
     with open('test', 'w') as f:
-        print(results, file=f)
-
+        print(results.keys(), file=f)
+    asdf
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     sequence_representations = []
