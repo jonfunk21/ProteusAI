@@ -52,12 +52,6 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
         logits = results["logits"]
         attentions = results["attentions"]
         contacts = results["contacts"]
-        with open('logits', 'w') as f:
-            print(logits, file=f)
-        with open('attentions', 'w') as f:
-            print(attentions, file=f)
-        with open('contacts', 'w') as f:
-            print(contacts, file=f)
 
         if not os.path.exists(os.path.join(dest, 'logits')):
             os.mkdir(os.path.join(dest, 'logits'))
