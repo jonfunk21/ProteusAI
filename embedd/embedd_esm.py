@@ -19,11 +19,13 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
                       other options are "cpu", or "mps" for M1/M2 chip
         rep_layer (int): representation layer from which the sequence is extracted. Default 33 (final layer)
         seq_rep_only (bool): if seq_rep_only then only sequence representations will be saved, else
-            logits, representations, attentions and contacts will also be saved. If seq_rep is False,
+            logits, representations, attentions and contacts will also be saved. If seq_rep_only is False,
             directories will be created for logits, representations, attentions and contacts at destination.
 
-    Returns: representations (list) of sequence representation and token representations.
-        [(seq_rep1, token_rep1),...(seq_repN, token_repN)]
+    Returns: representations (list) of sequence representation if seq_rep_only.
+        [seq_rep1, ..., seq_repN]
+        Else:
+        [(seq_rep1, logits1, attentions1, contacts1),...(seq_repN, logitsN, attentionsN, contactsN)]
 
     Example:
         data = [("protein1", "AGAVCTGAKLI"), ("protein2", "AGHRFLIKLKI")]
