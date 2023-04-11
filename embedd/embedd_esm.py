@@ -40,32 +40,21 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
         results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
 
     token_representations = results["representations"][rep_layer]
+    with open('test', 'a') as f:
+        print(results, file=f)
 
     # Generate per-sequence representations via averaging
     # NOTE: token 0 is always a beginning-of-sequence token, so the first residue is token 1.
     sequence_representations = []
-    full_representations = []
     for i, tokens_len in enumerate(batch_lens):
         sequence_representations.append(token_representations[i, 1: tokens_len - 1].mean(0))
-        full_representations.append(token_representations[i, 1: tokens_len - 1])
-
-    seq_rep_dest = os.path.join(dest, 'sequence_representations')
-    token_rep_dest = os.path.join(dest, 'token_representations')
-    if not os.path.exists(seq_rep_dest):
-        os.mkdir(seq_rep_dest)
-    if not os.path.exists(token_rep_dest):
-        os.mkdir(token_rep_dest)
 
     if dest is not None:
         for i in range(len(sequence_representations)):
-            with open('test', 'a') as f:
-                print(i, file=f)
-            _dest = os.path.join(seq_rep_dest, batch_labels[i])
+            _dest = os.path.join(dest, batch_labels[i])
             torch.save(sequence_representations[i], _dest + '.pt')
-            _dest = os.path.join(token_rep_dest, batch_labels[i])
-            torch.save(full_representations[i], _dest + '.pt')
 
-    return list(zip(sequence_representations, full_representations))
+    return sequence_representations
 
 
 def divide_list(lst, chunk_size):
