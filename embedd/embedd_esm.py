@@ -51,6 +51,11 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
 
     seq_rep_dest = os.path.join(dest, 'sequence_representations')
     token_rep_dest = os.path.join(dest, 'token_representations')
+    if not os.path.exists(seq_rep_dest):
+        os.mkdir(seq_rep_dest)
+    if not os.path.exists(token_rep_dest):
+        os.mkdir(token_rep_dest)
+
     if dest is not None:
         for i in range(len(sequence_representations)):
             _dest = os.path.join(seq_rep_dest, batch_labels[i])
