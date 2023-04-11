@@ -223,7 +223,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--activity', help='Set true if activity values are provided', type=bool, default=False)
     parser.add_argument('-m', '--model', help='select model for embedding {esm2, esm1v}, Uses esm1v if esm2 not selected', type=str, default=None)
     parser.add_argument('-r', '--rep_layer', help='choose representation layer of model. Default 33 (finla layer)', type=int, default=33)
-    parser.add_argument('--seq_rep_only', help='Only save sequence representation. If false save logits, attentions and contacts in addition', type=bool, default=True)
+    parser.add_argument('--seq_rep_only', help='Only save sequence representation. If false save logits, attentions and contacts in addition', default=True)
     args = parser.parse_args()
 
 
