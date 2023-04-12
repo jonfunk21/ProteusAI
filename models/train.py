@@ -10,8 +10,8 @@ from models.utils import CustomDataset, embedd, validate
 import os
 
 # Hyper parameters
-epochs = 1
-batch_size = 10
+epochs = 10
+batch_size = 26
 rep_layer = 33
 input_size = 147 * 1280
 hidden_layers = [1280]
