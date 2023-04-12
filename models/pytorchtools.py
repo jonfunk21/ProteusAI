@@ -61,3 +61,104 @@ def validate(model, dataloader, criterion):
     avg_rmse = total_rmse / n_samples
     r, _ = pearsonr(predicted_values, target_values)
     return avg_loss, avg_rmse, r
+
+def invoke(early_stopping, loss, model, implement=False):
+    if implement == False:
+        return False
+    else:
+        early_stopping(loss, model)
+        if early_stopping.early_stop:
+            print("Early stopping")
+            return True
+
+
+class EarlyStopping:
+    """Early stops the training if validation loss doesn't improve after a given patience."""
+
+    def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pt'):
+        """
+        Args:
+            patience (int): How long to wait after last time validation loss improved.
+                            Default: 7
+            verbose (bool): If True, prints a message for each validation loss improvement.
+                            Default: False
+            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+                            Default: 0
+            path (str): Path for the checkpoint to be saved to.
+                            Default: 'checkpoint.pt'
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+        self.path = path
+
+    def __call__(self, val_loss, model):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            # print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model):
+        '''Saves model when validation loss decrease.'''
+        if self.verbose:
+            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model.state_dict(), self.path)
+        self.val_loss_min = val_loss
+
+
+# training loop
+def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path):
+    best_val_loss = float('inf')
+    train_losses, val_losses = [], []
+    early_stopping = EarlyStopping(patience=patience)
+
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for names, seqs, y in train_loader:
+            x = embedd(names, seqs, device=device, rep_layer=33) # (batch_size, seq_len, embedd_dim)
+            y = torch.unsqueeze(y, dim=1) # (batch_size, 1)
+
+            # train activity predictor
+            optimizer.zero_grad()
+            out = model(x.to(device)) # (batch_size, 1)
+            loss = loss_fn(out, y)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item() * batch_size
+
+        epoch_loss = running_loss / len(train_loader)
+        train_losses.append(epoch_loss / len(train_loader))
+
+        val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
+        with open('train_log', 'a') as f:
+            print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE: {val_rmse}, val pearson: {val_pearson}", file=f)
+
+        val_losses.append(val_loss / len(val_loader))
+        if val_loss < best_val_loss:
+            torch.save(model.state_dict(), os.path.join(save_path, 'activity_model'))
+            with open('train_log', 'a') as f:
+                print('Saved best model', file=f)
+            best_val_loss = val_loss
+
+        if invoke(early_stopping, val_losses[-1], model, implement=True):
+            model.load_state_dict(torch.load(os.path.join(save_path, 'activity_model'), map_location=device))
+            break
+
+    return model
