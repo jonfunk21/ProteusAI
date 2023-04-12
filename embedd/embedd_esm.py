@@ -1,7 +1,6 @@
 import torch
 import esm
 import os
-import time
 import argparse
 import sys
 sys.path.append('../')
@@ -80,7 +79,6 @@ def compute_representations(data: list, dest: str = None, device: str = 'cuda', 
             else:
                 _dest = os.path.join(dest, batch_labels[i])
                 torch.save(sequence_representations[i], _dest + '.pt')
-
 
     if seq_rep_only:
         return sequence_representations
