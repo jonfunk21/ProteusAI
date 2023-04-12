@@ -4,6 +4,7 @@ import esm
 import numpy as np
 from scipy.stats import pearsonr
 import os
+import matplotlib.pyplot as plt
 
 # pytorch device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -37,31 +38,6 @@ class CustomDataset(Dataset):
         y = torch.tensor(self.data['Data_normalized'].iloc[index], dtype=torch.float32).to(self.device)
         return names, x, y
 
-def validate(model, dataloader, criterion):
-    model.eval()  # set model to evaluation mode
-    total_loss = 0
-    total_rmse = 0
-    n_samples = 0
-    predicted_values = []
-    target_values = []
-    with torch.no_grad():
-        for names, seqs, y_target in dataloader:
-            x = embedd(names, seqs, device=device, rep_layer=33)
-            y_target = torch.unsqueeze(y_target, dim=1).to(device)
-            # Forward pass
-            out = model(x.to(device))
-            loss = criterion(out, y_target)
-            total_loss += loss.item() * x.size(0)
-            total_rmse += np.sqrt(((out - y_target) ** 2).mean().item()) * x.size(0)
-            predicted_values.extend(out.squeeze().cpu().numpy())
-            target_values.extend(y_target.squeeze().cpu().numpy())
-            n_samples += x.size(0)
-
-    avg_loss = total_loss / n_samples
-    avg_rmse = total_rmse / n_samples
-    r, _ = pearsonr(predicted_values, target_values)
-    model.train()
-    return avg_loss, avg_rmse, r
 
 def invoke(early_stopping, loss, model, implement=False):
     if implement == False:
@@ -122,6 +98,32 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
+def validate(model, dataloader, criterion):
+    model.eval()  # set model to evaluation mode
+    total_loss = 0
+    total_rmse = 0
+    n_samples = 0
+    predicted_values = []
+    target_values = []
+    with torch.no_grad():
+        for names, seqs, y_target in dataloader:
+            x = embedd(names, seqs, device=device, rep_layer=33)
+            y_target = torch.unsqueeze(y_target, dim=1).to(device)
+            # Forward pass
+            out = model(x.to(device))
+            loss = criterion(out, y_target)
+            total_loss += loss.item()
+            total_rmse += np.sqrt(((out - y_target) ** 2).mean().item()) * x.size(0)
+            predicted_values.extend(out.squeeze().cpu().numpy())
+            target_values.extend(y_target.squeeze().cpu().numpy())
+            n_samples += x.size(0)
+
+    avg_loss = total_loss / n_samples
+    avg_rmse = total_rmse / n_samples
+    r, _ = pearsonr(predicted_values, target_values)
+    model.train()
+    return avg_loss, avg_rmse, r
+
 # training loop
 def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path, train_log='train_log'):
     model.train()
@@ -130,7 +132,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, b
     best_val_loss = float('inf')
     train_losses, val_losses = [], []
     early_stopping = EarlyStopping(patience=patience)
-
+    n_samples = 0
     for epoch in range(epochs):
         running_loss = 0.0
         for names, seqs, y in train_loader:
@@ -144,14 +146,15 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, b
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item() * batch_size
+            running_loss += loss.item()
+            n_samples += x.size(0)
 
-        epoch_loss = running_loss / len(train_loader)
-        train_losses.append(epoch_loss / len(train_loader))
+        epoch_loss = running_loss / n_samples
+        train_losses.append(epoch_loss)
 
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
         with open(os.path.join(save_path, train_log), 'a') as f:
-            print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE: {val_rmse}, val pearson: {val_pearson}", file=f)
+            print(f"Epoch {epoch + 1}:: avg train loss: {epoch_loss:.4f}, avg val loss: {val_loss:.4f}, avg val RMSE: {val_rmse}, avg val pearson: {val_pearson}", file=f)
 
         val_losses.append(val_loss / len(val_loader))
         if val_loss < best_val_loss:
@@ -165,3 +168,19 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, b
             break
 
     return model
+
+# performance evaluation
+def plot_losses(fname, train_loss, test_loss, burn_in=20):
+    plt.figure(figsize=(15, 4))
+    plt.plot(list(range(burn_in, len(train_loss))), train_loss[burn_in:], label='Training loss')
+    plt.plot(list(range(burn_in, len(test_loss))), test_loss[burn_in:], label='Test loss')
+
+    # find position of lowest testation loss
+    minposs = test_loss.index(min(test_loss)) + 1
+    plt.axvline(minposs, linestyle='--', color='r', label='Minimum Test Loss')
+
+    plt.legend(frameon=False)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.savefig(fname)
+    plt.close()
