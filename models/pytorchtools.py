@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import esm
 import numpy as np
 from scipy.stats import pearsonr
+import os
 
 # pytorch device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
