@@ -105,16 +105,16 @@ def validate(model, dataloader, criterion):
     predicted_values = []
     target_values = []
     with torch.no_grad():
-        for names, seqs, y_target in dataloader:
+        for names, seqs, y in dataloader:
             x = embedd(names, seqs, device=device, rep_layer=33)
-            y_target = torch.unsqueeze(y_target, dim=1).to(device)
+            y = torch.unsqueeze(y, dim=1).to(device)
             # Forward pass
             out = model(x.to(device))
-            loss = criterion(out, y_target)
+            loss = criterion(out, y)
             total_loss += loss.item()
-            total_rmse += np.sqrt(((out - y_target) ** 2).mean().item()) * x.size(0)
+            total_rmse += np.sqrt(((out - y) ** 2).mean().item()) * x.size(0)
             predicted_values.extend(out.squeeze().cpu().numpy())
-            target_values.extend(y_target.squeeze().cpu().numpy())
+            target_values.extend(y.squeeze().cpu().numpy())
             n_samples += x.size(0)
 
     avg_loss = total_loss / n_samples
@@ -146,7 +146,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
 
             running_loss += loss.item()
             n_samples += x.size(0)
-            validate(model, val_loader, loss_fn)
+
 
         epoch_loss = running_loss / n_samples
         train_losses.append(epoch_loss)

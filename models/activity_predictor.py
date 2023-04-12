@@ -24,5 +24,4 @@ class FFNN(nn.Module):
             x = layer(x)
             x = nn.functional.relu(x)
         x = self.output_layer(x)
-        x = torch.sigmoid(x)
         return x
