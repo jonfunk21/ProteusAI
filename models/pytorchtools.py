@@ -99,7 +99,6 @@ class EarlyStopping:
 
 
 def validate(model, dataloader, criterion):
-    model.eval()  # set model to evaluation mode
     total_loss = 0
     total_rmse = 0
     n_samples = 0
@@ -121,7 +120,6 @@ def validate(model, dataloader, criterion):
     avg_loss = total_loss / n_samples
     avg_rmse = total_rmse / n_samples
     r, _ = pearsonr(predicted_values, target_values)
-    model.train()
     return avg_loss, avg_rmse, r
 
 # training loop
