@@ -49,6 +49,6 @@ model.to(device)
 
 # Define the loss function and optimizer
 loss_fn = nn.MSELoss()
-optimizer = optim.SGD(model.parameters(), lr=0.01)
+optimizer = optim.Adam(model.parameters)
 
-activity_model = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path)
+activity_model = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path)

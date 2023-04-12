@@ -99,6 +99,7 @@ class EarlyStopping:
 
 
 def validate(model, dataloader, criterion):
+    model.eval()
     total_loss = 0
     total_rmse = 0
     n_samples = 0
@@ -120,10 +121,11 @@ def validate(model, dataloader, criterion):
     avg_loss = total_loss / n_samples
     avg_rmse = total_rmse / n_samples
     r, _ = pearsonr(predicted_values, target_values)
+    model.train()
     return avg_loss, avg_rmse, r
 
 # training loop
-def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path, train_log='train_log'):
+def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, train_log='train_log'):
     model.train()
     with open(os.path.join(save_path, train_log), 'w') as f:
         print('Begin training:', file=f)
@@ -151,10 +153,11 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, b
         train_losses.append(epoch_loss)
 
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
+        print(val_loss)
         with open(os.path.join(save_path, train_log), 'a') as f:
             print(f"Epoch {epoch + 1}:: avg train loss: {epoch_loss:.4f}, avg val loss: {val_loss:.4f}, avg val RMSE: {val_rmse}, avg val pearson: {val_pearson}", file=f)
 
-        val_losses.append(val_loss / len(val_loader))
+        val_losses.append(val_loss)
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), os.path.join(save_path, 'activity_model'))
             with open(os.path.join(save_path, train_log), 'a') as f:
