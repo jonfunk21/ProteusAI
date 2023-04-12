@@ -122,7 +122,11 @@ class EarlyStopping:
 
 
 # training loop
-def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path):
+def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path, train_log='train_log'):
+
+    with open(os.path.join(save_path, train_log), 'w') as f:
+        print('Begin training:', file=f)
+
     best_val_loss = float('inf')
     train_losses, val_losses = [], []
     early_stopping = EarlyStopping(patience=patience)
@@ -147,13 +151,13 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, b
         train_losses.append(epoch_loss / len(train_loader))
 
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
-        with open('train_log', 'a') as f:
+        with open(os.path.join(save_path, train_log), 'a') as f:
             print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE: {val_rmse}, val pearson: {val_pearson}", file=f)
 
         val_losses.append(val_loss / len(val_loader))
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), os.path.join(save_path, 'activity_model'))
-            with open('train_log', 'a') as f:
+            with open(os.path.join(save_path, train_log), 'a') as f:
                 print('Saved best model', file=f)
             best_val_loss = val_loss
 
