@@ -60,6 +60,7 @@ def validate(model, dataloader, criterion):
     avg_loss = total_loss / n_samples
     avg_rmse = total_rmse / n_samples
     r, _ = pearsonr(predicted_values, target_values)
+    model.train()
     return avg_loss, avg_rmse, r
 
 def invoke(early_stopping, loss, model, implement=False):
@@ -123,16 +124,14 @@ class EarlyStopping:
 
 # training loop
 def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, batch_size, patience, save_path, train_log='train_log'):
-
+    model.train()
     with open(os.path.join(save_path, train_log), 'w') as f:
         print('Begin training:', file=f)
-
     best_val_loss = float('inf')
     train_losses, val_losses = [], []
     early_stopping = EarlyStopping(patience=patience)
 
     for epoch in range(epochs):
-        model.train()
         running_loss = 0.0
         for names, seqs, y in train_loader:
             x = embedd(names, seqs, device=device, rep_layer=33) # (batch_size, seq_len, embedd_dim)
