@@ -53,7 +53,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.01)
 # training loop
 def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, save_path):
     best_val_loss = float('inf')
-    train_loss, val_loss = [], []
+    train_losses, val_losses = [], []
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
@@ -71,13 +71,13 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, s
             running_loss += loss.item() * batch_size
 
         epoch_loss = running_loss / len(train_loader)
-        train_loss.append(epoch_loss / len(train_loader))
+        train_losses.append(epoch_loss / len(train_loader))
 
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
         with open('train_log', 'a') as f:
             print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE: {val_rmse}, val pearson: {val_pearson}", file=f)
 
-        val_loss.append(val_loss / len(val_loader))
+        val_losses.append(val_loss / len(val_loader))
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), os.path.join(save_path, 'activity_model'))
             with open('train_log', 'a') as f:
