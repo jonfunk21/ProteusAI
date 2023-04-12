@@ -41,7 +41,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 train_set = CustomDataset(train_df)
 val_set = CustomDataset(val_df)
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
+val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
 # load activity predictor model
 model = FFNN(input_size, output_size, hidden_layers)

@@ -155,7 +155,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
         print(val_loss)
         with open(os.path.join(save_path, train_log), 'a') as f:
-            print(f"Epoch {epoch + 1}:: avg train loss: {epoch_loss:.4f}, avg val loss: {val_loss:.4f}, avg val RMSE: {val_rmse}, avg val pearson: {val_pearson}", file=f)
+            print(f"Epoch {epoch + 1}:: avg train loss: {epoch_loss:.4f}, avg val loss: {val_loss:.4f}, avg val RMSE: {val_rmse:.4f}, avg val pearson: {val_pearson:.4f}", file=f)
 
         val_losses.append(val_loss)
         if val_loss < best_val_loss:
