@@ -6,10 +6,10 @@ from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.utils import CustomDataset, embedd, validate
+from models.pytorchtools import CustomDataset, embedd, validate
 import os
 
-# Hyper parameters
+# Hyper parameters (later all argparse)
 epochs = 10
 batch_size = 26
 rep_layer = 33

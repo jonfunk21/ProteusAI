@@ -52,8 +52,8 @@ def validate(model, dataloader, criterion):
             loss = criterion(out, y_target)
             total_loss += loss.item() * x.size(0)
             total_rmse += np.sqrt(((out - y_target) ** 2).mean().item()) * x.size(0)
-            predicted_values.extend(out.cpu().numpy())
-            target_values.extend(y_target.cpu().numpy())
+            predicted_values.extend(out.squeeze().cpu().numpy())
+            target_values.extend(y_target.squeeze().cpu().numpy())
             n_samples += x.size(0)
 
     avg_loss = total_loss / n_samples
