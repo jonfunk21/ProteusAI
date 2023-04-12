@@ -61,7 +61,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, s
 
             # train activity predictor
             optimizer.zero_grad()
-            out = model(x) # (batch_size, 1)
+            out = model(x.to(device)) # (batch_size, 1)
             loss = loss_fn(out, y)
             loss.backward()
             optimizer.step()
@@ -69,13 +69,14 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, s
             running_loss += loss.item() * batch_size
 
         epoch_loss = running_loss / len(train_loader)
-        val_loss, val_rmse, pearson = validate(model, val_loader, loss_fn)
-        print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE {val_rmse}, val pearson {pearson}")
+        val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
+        with open('train_log', 'a') as f:
+            print(f"Epoch {epoch + 1}:: train loss: {epoch_loss:.4f}, val loss: {val_loss:.4f}, val RMSE: {val_rmse}, val pearson: {val_pearson}", file=f)
 
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), save_path)
-            print('Saved best model')
+            with open('train_log', 'a') as f:
+                print('Saved best model', file=f)
             best_val_loss = val_loss
-
 
 train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, save_path)
