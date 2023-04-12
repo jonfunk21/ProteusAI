@@ -44,6 +44,7 @@ val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 # load activity predictor model
 model = FFNN(input_size, output_size, hidden_layers)
+model.to(device)
 
 # Define the loss function and optimizer
 loss_fn = nn.MSELoss()
