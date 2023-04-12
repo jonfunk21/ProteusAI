@@ -120,9 +120,9 @@ def validate(model, dataloader, criterion):
 
     avg_loss = total_loss / n_samples
     avg_rmse = total_rmse / n_samples
-    r, _ = pearsonr(predicted_values, target_values)
+    pearson, _ = pearsonr(predicted_values, target_values)
     model.train()
-    return avg_loss, avg_rmse, r
+    return avg_loss, avg_rmse, pearson
 
 # training loop
 def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, train_log='train_log'):
