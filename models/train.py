@@ -13,7 +13,7 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 
 # Hyper parameters (later all argparse)
-epochs = 100
+epochs = 10
 batch_size = 26
 rep_layer = 33
 input_size = 147 * 1280
@@ -43,8 +43,7 @@ distance_matrix = pd.DataFrame([[hamming_distance(seq1, seq2) for seq1 in df['Se
 # Perform Agglomerative Clustering
 cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=5)
 df['Cluster'] = cluster.fit_predict(distance_matrix)
-print(df.Cluster.to_list())
-asdf
+
 # Create stratified splits
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
@@ -93,3 +92,8 @@ avg_train_losses = np.mean(all_train_losses, axis=0)
 avg_val_losses = np.mean(all_val_losses, axis=0)
 avg_val_rmse = np.mean(all_val_rmse, axis=0)
 avg_val_pearson = np.mean(all_val_pearson, axis=0)
+with open('results', 'w') as f:
+    print('avg_train_losses:', avg_val_losses, file=f)
+    print('avg_val_losses:', avg_val_losses, file=f)
+    print('avg_val_rmse:', avg_val_rmse, file=f)
+    print('avg_val_pearson:', avg_val_pearson, file=f)
