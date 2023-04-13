@@ -125,8 +125,8 @@ def validate(model, dataloader, criterion):
 # training loop
 def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log='train_log'):
     model.train()
-    with open(os.path.join(save_path, train_log), 'w') as f:
-        print(f'Begin training fold {fold}:', file=f)
+    with open(os.path.join(save_path, train_log), 'a') as f:
+        print(f'Begin training fold {fold+1}:', file=f)
     best_val_loss = float('inf')
     train_losses, val_losses = [], []
     val_rmse_list, val_pearson_list = [], []

@@ -22,6 +22,8 @@ output_size = 1
 patience = 10
 save_path = 'checkpoints'
 data_path = '../example_data/directed_evolution/GB1/GB1.csv'
+train_log='train_log'
+n_folds = 5
 
 if not os.path.exists(save_path):
     os.mkdir(save_path)
@@ -45,7 +47,7 @@ cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linka
 df['Cluster'] = cluster.fit_predict(distance_matrix)
 
 # Create stratified splits
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
 
 # Initialize variables to store metrics for each fold
 all_train_losses = []
@@ -80,7 +82,10 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['Cluster'])):
     optimizer = optim.Adam(model.parameters())
 
     # Train the model and store the metrics for the current fold
-    fold_train_losses, fold_val_losses, fold_val_rmse, fold_val_pearson = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold)
+    with open(os.path.join(save_path, train_log), 'w') as f:
+        print(f'{n_folds}-fold cross validation:', file=f)
+
+    fold_train_losses, fold_val_losses, fold_val_rmse, fold_val_pearson = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log)
 
     all_train_losses.append(fold_train_losses)
     all_val_losses.append(fold_val_losses)
