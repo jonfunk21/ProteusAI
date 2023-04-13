@@ -164,8 +164,6 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
         val_losses.append(val_loss)
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), os.path.join(save_path, f'activity_model_{fold}'))
-            with open(os.path.join(save_path, train_log), 'a') as f:
-                print('Saved best model', file=f)
             best_val_loss = val_loss
 
         if invoke(early_stopping, val_losses[-1], model, implement=True):
