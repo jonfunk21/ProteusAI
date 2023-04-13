@@ -41,9 +41,10 @@ def hamming_distance(s1, s2):
 distance_matrix = pd.DataFrame([[hamming_distance(seq1, seq2) for seq1 in df['Sequence']] for seq2 in df['Sequence']])
 
 # Perform Agglomerative Clustering
-cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=10)
+cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=5)
 df['Cluster'] = cluster.fit_predict(distance_matrix)
-
+print(df.Cluster.to_list())
+asdf
 # Create stratified splits
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
