@@ -8,6 +8,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from models.pytorchtools import CustomDataset, train
 import os
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.cluster import AgglomerativeClustering
+import numpy as np
 
 # Hyper parameters (later all argparse)
 epochs = 100
@@ -23,32 +26,69 @@ data_path = '../example_data/directed_evolution/GB1/GB1.csv'
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 
+# pytorch device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # load data and split into train and val. first naive split, normalize activity
 df = pd.read_csv(data_path)
 df['Data_normalized'] = (df['Data'] - df['Data'].min()) / (df['Data'].max() - df['Data'].min())
 
-train_df = df.sample(frac=0.8, random_state=42)
-val_df = df.drop(index=train_df.index)
+# Perform clustering based on sequence similarity (using Hamming distance)
+def hamming_distance(s1, s2):
+    return sum(el1 != el2 for el1, el2 in zip(s1, s2))
 
-# reset indices
-train_df = train_df.reset_index(drop=True)
-val_df = val_df.reset_index(drop=True)
+# Create a distance matrix using the Hamming distance
+distance_matrix = pd.DataFrame([[hamming_distance(seq1, seq2) for seq1 in df['Sequence']] for seq2 in df['Sequence']])
 
-# pytorch device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Perform Agglomerative Clustering
+cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=10)
+df['Cluster'] = cluster.fit_predict(distance_matrix)
 
-# Dataloaders
-train_set = CustomDataset(train_df)
-val_set = CustomDataset(val_df)
-train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+# Create stratified splits
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-# load activity predictor model
-model = FFNN(input_size, output_size, hidden_layers)
-model.to(device)
+# Initialize variables to store metrics for each fold
+all_train_losses = []
+all_val_losses = []
+all_val_rmse = []
+all_val_pearson = []
 
-# Define the loss function and optimizer
-loss_fn = nn.MSELoss()
-optimizer = optim.Adam(model.parameters())
+# Perform 5-fold cross-validation
+for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['Cluster'])):
+    print(f"Fold {fold + 1}")
 
-activity_model = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path)
+    # Create train and validation DataFrames for the current fold
+    train_df = df.iloc[train_idx].drop(columns=['Cluster'])
+    val_df = df.iloc[val_idx].drop(columns=['Cluster'])
+
+    # Reset indices
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+
+    # Dataloaders
+    train_set = CustomDataset(train_df)
+    val_set = CustomDataset(val_df)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+
+    # Load activity predictor model
+    model = FFNN(input_size, output_size, hidden_layers)
+    model.to(device)
+
+    # Define the loss function and optimizer
+    loss_fn = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters())
+
+    # Train the model and store the metrics for the current fold
+    fold_train_losses, fold_val_losses, fold_val_rmse, fold_val_pearson = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold)
+
+    all_train_losses.append(fold_train_losses)
+    all_val_losses.append(fold_val_losses)
+    all_val_rmse.append(fold_val_rmse)
+    all_val_pearson.append(fold_val_pearson)
+
+# Calculate average metrics across all folds
+avg_train_losses = np.mean(all_train_losses, axis=0)
+avg_val_losses = np.mean(all_val_losses, axis=0)
+avg_val_rmse = np.mean(all_val_rmse, axis=0)
+avg_val_pearson = np.mean(all_val_pearson, axis=0)

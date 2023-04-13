@@ -123,12 +123,13 @@ def validate(model, dataloader, criterion):
     return avg_loss, avg_rmse, r
 
 # training loop
-def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, train_log='train_log'):
+def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log='train_log'):
     model.train()
     with open(os.path.join(save_path, train_log), 'w') as f:
         print('Begin training:', file=f)
     best_val_loss = float('inf')
     train_losses, val_losses = [], []
+    val_rmse_list, val_pearson_list = [], []
     early_stopping = EarlyStopping(patience=patience)
     n_samples = 0
     for epoch in range(epochs):
@@ -152,13 +153,17 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
         train_losses.append(epoch_loss)
 
         val_loss, val_rmse, val_pearson = validate(model, val_loader, loss_fn)
+        val_losses.append(val_loss)
+        val_rmse_list.append(val_rmse)
+        val_pearson_list.append(val_pearson)
+
         print(val_loss)
         with open(os.path.join(save_path, train_log), 'a') as f:
             print(f"Epoch {epoch + 1}:: avg train loss: {epoch_loss:.4f}, avg val loss: {val_loss:.4f}, avg val RMSE: {val_rmse:.4f}, avg val pearson: {val_pearson:.4f}", file=f)
 
         val_losses.append(val_loss)
         if val_loss < best_val_loss:
-            torch.save(model.state_dict(), os.path.join(save_path, 'activity_model'))
+            torch.save(model.state_dict(), os.path.join(save_path, f'activity_model_{fold}'))
             with open(os.path.join(save_path, train_log), 'a') as f:
                 print('Saved best model', file=f)
             best_val_loss = val_loss
@@ -167,7 +172,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
             model.load_state_dict(torch.load(os.path.join(save_path, 'activity_model'), map_location=device))
             break
 
-    return model
+    return train_losses, val_losses, val_rmse_list, val_pearson_list
 
 # performance evaluation
 def plot_losses(fname, train_loss, test_loss, burn_in=20):
