@@ -133,11 +133,12 @@ study = optuna.create_study(direction="minimize")
 study.optimize(objective, n_trials=50)
 
 # print the best hyperparameters and the corresponding best value
-print(f"Best trial: {study.best_trial.number}")
-print(f"Best value (average validation loss): {study.best_value}")
-print("Best hyperparameters:")
-for key, value in study.best_trial.params.items():
-    print(f"{key}: {value}")
+with open('hyperoptimization','w') as f:
+    print(f"Best trial: {study.best_trial.number}", file=f)
+    print(f"Best value (average validation loss): {study.best_value}", file=f)
+    print("Best hyperparameters:", file=f)
+    for key, value in study.best_trial.params.items():
+        print(f"{key}: {value}", file=f)
 
 # train the final model using the best hyperparameters and evaluate on the test set
 best_epochs = study.best_trial.params["epochs"]
