@@ -1,27 +1,20 @@
-import torch
 import torch.nn as nn
 
-# Define the network architecture
 class FFNN(nn.Module):
-    def __init__(self, input_size, output_size, hidden_layers):
-        super().__init__()
+    def __init__(self, input_size, output_size, hidden_layers, dropout_rate):
+        super(FFNN, self).__init__()
+        self.layers = []
+        self.layers.append(nn.Linear(input_size, hidden_layers[0]))
+        self.layers.append(nn.ReLU())
+        self.layers.append(nn.Dropout(dropout_rate))
 
-        # Create input and output layers
-        self.input_layer = nn.Linear(input_size, hidden_layers[0])
-        self.output_layer = nn.Linear(hidden_layers[-1], output_size)
+        for i in range(1, len(hidden_layers)):
+            self.layers.append(nn.Linear(hidden_layers[i - 1], hidden_layers[i]))
+            self.layers.append(nn.ReLU())
+            self.layers.append(nn.Dropout(dropout_rate))
 
-        # Create hidden layers
-        self.hidden_layers = nn.ModuleList()
-        for i in range(len(hidden_layers) - 1):
-            layer = nn.Linear(hidden_layers[i], hidden_layers[i + 1])
-            self.hidden_layers.append(layer)
+        self.layers.append(nn.Linear(hidden_layers[-1], output_size))
+        self.model = nn.Sequential(*self.layers)
 
     def forward(self, x):
-        batch_size = x.shape[0]
-        x = x.reshape(batch_size, -1)
-        x = self.input_layer(x)
-        for layer in self.hidden_layers:
-            x = layer(x)
-            x = nn.functional.relu(x)
-        x = self.output_layer(x)
-        return x
+        return self.model(x)

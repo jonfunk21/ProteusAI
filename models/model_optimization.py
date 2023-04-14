@@ -47,11 +47,13 @@ def objective(trial):
     epochs = trial.suggest_int("epochs", 10, 100)
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
     n_hidden_layers = trial.suggest_int("n_hidden_layers", 1, 3)
-    hidden_layers = [trial.suggest_int(f"hidden_layer_{i}", 256, 1024) for i in range(n_hidden_layers)]
+    hidden_layers = [trial.suggest_int(f"hidden_layer_{i}", 256, 1024, 1280) for i in range(n_hidden_layers)]
     patience = trial.suggest_int("patience", 5, 20)
+    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.0, 0.5, step=0.1)
 
     # Call the train_and_evaluate function with suggested hyperparameters
-    avg_val_loss = train_and_evaluate(epochs, batch_size, hidden_layers, patience)
+    avg_val_loss = train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rate, dropout_rate)
 
     return avg_val_loss
 
@@ -78,7 +80,7 @@ train_val_df, test_df = train_test_split(df, test_size=0.1, random_state=42, str
 train_val_df = train_val_df.reset_index(drop=True)
 test_df = test_df.reset_index(drop=True)
 
-def train_and_evaluate(epochs, batch_size, hidden_layers, patience):
+def train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rate, dropout_rate):
     # Create stratified splits
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
 
@@ -108,12 +110,12 @@ def train_and_evaluate(epochs, batch_size, hidden_layers, patience):
         val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
         # Load activity predictor model
-        model = FFNN(input_size, output_size, hidden_layers)
+        model = FFNN(input_size, output_size, hidden_layers, dropout_rate)
         model.to(device)
 
         # Define the loss function and optimizer
         loss_fn = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters())
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
         fold_train_losses, fold_val_losses, fold_val_rmse, fold_val_pearson = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log)
 
