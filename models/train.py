@@ -6,7 +6,7 @@ from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.pytorchtools import CustomDataset, train, evaluate_ensemble
+from models.pytorchtools import CustomDataset, train, evaluate_ensemble, plot_losses
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -47,7 +47,7 @@ cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linka
 df['Cluster'] = cluster.fit_predict(distance_matrix)
 
 # Split the data into train/val and test datasets
-train_val_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['Cluster'])
+train_val_df, test_df = train_test_split(df, test_size=0.1, random_state=42, stratify=df['Cluster'])
 
 # Reset indices
 train_val_df = train_val_df.reset_index(drop=True)
@@ -102,11 +102,7 @@ avg_val_losses = np.mean(all_val_losses, axis=0)
 avg_val_rmse = np.mean(all_val_rmse, axis=0)
 avg_val_pearson = np.mean(all_val_pearson, axis=0)
 
-with open('results', 'w') as f:
-    print('avg_train_losses:', avg_val_losses, file=f)
-    print('avg_val_losses:', avg_val_losses, file=f)
-    print('avg_val_rmse:', avg_val_rmse, file=f)
-    print('avg_val_pearson:', avg_val_pearson, file=f)
+plot_losses('ensemble_losses.png', all_train_losses, all_val_losses, n_folds)
 
 # Create a test DataLoader
 test_set = CustomDataset(test_df)
@@ -124,6 +120,6 @@ for fold in range(n_folds):
 
 # Evaluate the ensemble on the test dataset
 test_rmse, test_pearson = evaluate_ensemble(ensemble_models, test_loader, device)
-with open('results', 'a') as f:
+with open('results', 'w') as f:
     print('Test RMSE:', test_rmse, file=f)
     print('Test Pearson:', test_pearson, file=f)

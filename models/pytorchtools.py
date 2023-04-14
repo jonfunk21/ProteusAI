@@ -193,17 +193,22 @@ def evaluate_ensemble(models, test_loader, device):
     return rmse, r
 
 # performance evaluation
-def plot_losses(fname, train_loss, test_loss, burn_in=20):
-    plt.figure(figsize=(15, 4))
-    plt.plot(list(range(burn_in, len(train_loss))), train_loss[burn_in:], label='Training loss')
-    plt.plot(list(range(burn_in, len(test_loss))), test_loss[burn_in:], label='Test loss')
+def plot_losses(fname, train_losses, val_losses, n_folds, burn_in=20):
+    fig, axs = plt.subplots(n_folds, 1, figsize=(15, 4 * n_folds))
+    for i, (train_loss, val_loss) in enumerate(zip(train_losses, val_losses)):
+        ax = axs[i]
+        ax.plot(list(range(burn_in, len(train_loss))), train_loss[burn_in:], label='Training loss')
+        ax.plot(list(range(burn_in, len(val_loss))), val_loss[burn_in:], label='Validation loss')
 
-    # find position of lowest testation loss
-    minposs = test_loss.index(min(test_loss)) + 1
-    plt.axvline(minposs, linestyle='--', color='r', label='Minimum Test Loss')
+        # find position of lowest validation loss
+        minposs = val_loss.index(min(val_loss)) + 1
+        ax.axvline(minposs, linestyle='--', color='r', label='Minimum Validation Loss')
 
-    plt.legend(frameon=False)
+        ax.legend(frameon=False)
+        ax.set_title(f'Fold {i + 1}')
+        ax.set_ylabel('Loss')
+
     plt.xlabel('Epochs')
-    plt.ylabel('Loss')
+    plt.tight_layout()
     plt.savefig(fname)
     plt.close()
