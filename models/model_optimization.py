@@ -45,12 +45,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def objective(trial):
     # Hyperparameters to optimize
     epochs = trial.suggest_int("epochs", 10, 100)
-    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
+    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64, 128])
     n_hidden_layers = trial.suggest_int("n_hidden_layers", 1, 3)
-    hidden_layers = [trial.suggest_int(f"hidden_layer_{i}", 256, 1024, 1280) for i in range(n_hidden_layers)]
+    hidden_layers = [trial.suggest_int(f"hidden_layer_{i}", 256, 1280, 256) for i in range(n_hidden_layers)]
     patience = trial.suggest_int("patience", 5, 20)
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
-    dropout_rate = trial.suggest_float("dropout_rate", 0.0, 0.5, step=0.1)
+    learning_rate = trial.suggest_float("learning_rate",  1e-6, 1e-2, log=True)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.0, 0.5, step=0.05)
 
     # Call the train_and_evaluate function with suggested hyperparameters
     avg_val_loss = train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rate, dropout_rate)
