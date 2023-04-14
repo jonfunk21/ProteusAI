@@ -41,6 +41,7 @@ pip3 install biopython
 pip3 install biotite
 pip3 install seaborn
 pip3 install py3Dmol
+pip install optuna
 
 # additional requirements for folding
 pip install "fair-esm[esmfold]"
