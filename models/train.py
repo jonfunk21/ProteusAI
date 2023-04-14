@@ -11,19 +11,29 @@ import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np
+import argparse
 
 # Hyper parameters (later all argparse)
-epochs = 10
-batch_size = 26
-rep_layer = 33
-input_size = 147 * 1280
-hidden_layers = [1280]
-output_size = 1
-patience = 10
+parser = argparse.ArgumentParser(description='Hyperparameters')
+parser.add_argument('--epochs', type=int, default=10)
+parser.add_argument('--batch_size', type=int, default=26)
+parser.add_argument('--hidden_layers', type=int, nargs='+', default=[1280])
+parser.add_argument('--patience', type=int, default=10)
+args = parser.parse_args()
+
+epochs = args.epochs
+batch_size = args.batch_size
+hidden_layers = args.hidden_layers
+patience = args.patience
+
+
 save_path = 'checkpoints'
 data_path = '../example_data/directed_evolution/GB1/GB1.csv'
 train_log='train_log'
+input_size = 147 * 1280
+rep_layer = 33
 n_folds = 5
+output_size = 1
 
 if not os.path.exists(save_path):
     os.mkdir(save_path)
