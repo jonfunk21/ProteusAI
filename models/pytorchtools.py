@@ -166,7 +166,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
             best_val_loss = val_loss
 
         if invoke(early_stopping, val_losses[-1], model, implement=True):
-            model.load_state_dict(torch.load(os.path.join(save_path, 'activity_model'), map_location=device))
+            model.load_state_dict(torch.load(os.path.join(save_path, f'activity_model_{fold}'), map_location=device))
             break
 
     return train_losses, val_losses, val_rmse_list, val_pearson_list
