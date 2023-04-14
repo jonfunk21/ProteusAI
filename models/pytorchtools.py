@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import pearsonr
 import os
 import matplotlib.pyplot as plt
+from optuna.visualization import plot_optimization_history, plot_parallel_coordinate, plot_param_importances
 
 # pytorch device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -217,3 +218,27 @@ def plot_losses(fname, train_losses, val_losses, n_folds, burn_in=20):
     plt.tight_layout()
     plt.savefig(fname)
     plt.close()
+
+
+def create_optimization_report(study, output_dir="reports"):
+    # Create the output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    # Save the study's results as a DataFrame
+    results_df = study.trials_dataframe()
+
+    # Save the DataFrame to an HTML file
+    results_df.to_html(os.path.join(output_dir, "hyperparameter_optimization_report.html"))
+
+    # Plot optimization history
+    fig1 = plot_optimization_history(study)
+    fig1.write_html(os.path.join(output_dir, "optimization_history.html"))
+
+    # Plot parallel coordinates
+    fig2 = plot_parallel_coordinate(study)
+    fig2.write_html(os.path.join(output_dir, "parallel_coordinates.html"))
+
+    # Plot parameter importances
+    fig3 = plot_param_importances(study)
+    fig3.write_html(os.path.join(output_dir, "parameter_importances.html"))

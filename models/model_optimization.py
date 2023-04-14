@@ -7,7 +7,7 @@ from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.pytorchtools import CustomDataset, train, evaluate_ensemble, pad_arrays
+from models.pytorchtools import CustomDataset, train, evaluate_ensemble, pad_arrays, create_optimization_report
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -139,6 +139,7 @@ def train_and_evaluate(epochs, batch_size, hidden_layers, patience):
 # Create a study and run optimization
 study = optuna.create_study(direction="minimize")
 study.optimize(objective, n_trials=50)
+create_optimization_report(study)
 
 # print the best hyperparameters and the corresponding best value
 with open('hyperoptimization','w') as f:
