@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 import optuna
 import pandas as pd
 import torch
