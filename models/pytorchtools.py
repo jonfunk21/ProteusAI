@@ -24,6 +24,11 @@ def embedd(names, x, device, rep_layer=33):
 
     return token_representations
 
+def pad_arrays(arrays):
+    max_len = max([len(x) for x in arrays])
+    padded_arrays = [np.pad(x, (0, max_len - len(x)), 'constant', constant_values=np.nan) for x in arrays]
+    return padded_arrays
+
 class CustomDataset(Dataset):
     def __init__(self, data):
         self.data = data

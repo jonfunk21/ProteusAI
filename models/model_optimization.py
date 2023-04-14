@@ -7,7 +7,7 @@ from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.pytorchtools import CustomDataset, train, evaluate_ensemble
+from models.pytorchtools import CustomDataset, train, evaluate_ensemble, pad_arrays
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -122,13 +122,19 @@ def train_and_evaluate(epochs, batch_size, hidden_layers, patience):
         all_val_rmse.append(fold_val_rmse)
         all_val_pearson.append(fold_val_pearson)
 
-    # Calculate average metrics across all folds
-    avg_train_losses = np.mean(all_train_losses, axis=0)
-    avg_val_losses = np.mean(all_val_losses, axis=0)
-    avg_val_rmse = np.mean(all_val_rmse, axis=0)
-    avg_val_pearson = np.mean(all_val_pearson, axis=0)
+    # Pad the arrays with NaNs so that they have the same length
+    padded_train_losses = pad_arrays(all_train_losses)
+    padded_val_losses = pad_arrays(all_val_losses)
+    padded_val_rmse = pad_arrays(all_val_rmse)
+    padded_val_pearson = pad_arrays(all_val_pearson)
 
-    return np.mean(avg_val_losses)
+    # Calculate average metrics across all folds
+    avg_train_losses = np.nanmean(padded_train_losses, axis=0)
+    avg_val_losses = np.nanmean(padded_val_losses, axis=0)
+    avg_val_rmse = np.nanmean(padded_val_rmse, axis=0)
+    avg_val_pearson = np.nanmean(padded_val_pearson, axis=0)
+
+    return avg_val_losses
 
 # Create a study and run optimization
 study = optuna.create_study(direction="minimize")
