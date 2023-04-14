@@ -51,4 +51,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd models
 
-python3 train.py
+python3 model_optimization.py
