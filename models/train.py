@@ -6,7 +6,7 @@ from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.pytorchtools import CustomDataset, train
+from models.pytorchtools import CustomDataset, train, evaluate_ensemble
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -46,6 +46,13 @@ distance_matrix = pd.DataFrame([[hamming_distance(seq1, seq2) for seq1 in df['Se
 cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=5)
 df['Cluster'] = cluster.fit_predict(distance_matrix)
 
+# Split the data into train/val and test datasets
+train_val_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['Cluster'])
+
+# Reset indices
+train_val_df = train_val_df.reset_index(drop=True)
+test_df = test_df.reset_index(drop=True)
+
 # Create stratified splits
 skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
 
@@ -56,9 +63,10 @@ all_val_rmse = []
 all_val_pearson = []
 
 # Perform 5-fold cross-validation
-for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['Cluster'])):
-    print(f"Fold {fold + 1}")
+with open(os.path.join(save_path, train_log), 'w') as f:
+    print(f'{n_folds}-fold cross validation:', file=f)
 
+for fold, (train_idx, val_idx) in enumerate(skf.split(train_val_df, train_val_df['Cluster'])):
     # Create train and validation DataFrames for the current fold
     train_df = df.iloc[train_idx].drop(columns=['Cluster'])
     val_df = df.iloc[val_idx].drop(columns=['Cluster'])
@@ -81,10 +89,6 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['Cluster'])):
     loss_fn = nn.MSELoss()
     optimizer = optim.Adam(model.parameters())
 
-    # Train the model and store the metrics for the current fold
-    with open(os.path.join(save_path, train_log), 'w') as f:
-        print(f'{n_folds}-fold cross validation:', file=f)
-
     fold_train_losses, fold_val_losses, fold_val_rmse, fold_val_pearson = train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log)
 
     all_train_losses.append(fold_train_losses)
@@ -97,8 +101,29 @@ avg_train_losses = np.mean(all_train_losses, axis=0)
 avg_val_losses = np.mean(all_val_losses, axis=0)
 avg_val_rmse = np.mean(all_val_rmse, axis=0)
 avg_val_pearson = np.mean(all_val_pearson, axis=0)
+
 with open('results', 'w') as f:
     print('avg_train_losses:', avg_val_losses, file=f)
     print('avg_val_losses:', avg_val_losses, file=f)
     print('avg_val_rmse:', avg_val_rmse, file=f)
     print('avg_val_pearson:', avg_val_pearson, file=f)
+
+# Create a test DataLoader
+test_set = CustomDataset(test_df)
+test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+# Load the best models from each fold and store them in a list
+ensemble_models = []
+for fold in range(n_folds):
+    model_path = os.path.join(save_path, f'activity_model_{fold + 1}')
+    model = FFNN(input_size, output_size, hidden_layers)
+    model.load_state_dict(torch.load(model_path))
+    model.to(device)
+    model.eval()
+    ensemble_models.append(model)
+
+# Evaluate the ensemble on the test dataset
+test_rmse, test_pearson = evaluate_ensemble(ensemble_models, test_loader, device)
+with open('results', 'a') as f:
+    print('Test RMSE:', test_rmse, file=f)
+    print('Test Pearson:', test_pearson, file=f)

@@ -171,6 +171,27 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
 
     return train_losses, val_losses, val_rmse_list, val_pearson_list
 
+def evaluate_ensemble(models, test_loader, device):
+    predicted_values = []
+    target_values = []
+    with torch.no_grad():
+        for names, seqs, y in test_loader:
+            x = embedd(names, seqs, device=device, rep_layer=33)
+            y = torch.unsqueeze(y, dim=1).to(device)
+            out = torch.zeros_like(y)
+
+            for model in models:
+                out += model(x.to(device))
+
+            out /= len(models)
+            predicted_values.extend(out.squeeze().cpu().numpy())
+            target_values.extend(y.squeeze().cpu().numpy())
+
+    rmse = np.sqrt(np.mean((np.array(predicted_values) - np.array(target_values)) ** 2))
+    r, _ = pearsonr(predicted_values, target_values)
+
+    return rmse, r
+
 # performance evaluation
 def plot_losses(fname, train_loss, test_loss, burn_in=20):
     plt.figure(figsize=(15, 4))
