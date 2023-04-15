@@ -56,3 +56,20 @@ class AttentionModel(nn.Module):
         x = x.permute(1, 0, 2).reshape(x.shape[1], -1)
         x = self.fc(x)
         return x
+
+    def get_attentions_and_embeddings(self, x):
+        # Compute the input embeddings
+        embeddings = self.embedding(x)
+
+        # Initialize a list to store attention weights
+        attentions = []
+
+        # Pass the embeddings through each layer of the transformer, saving attention weights
+        for layer in self.transformer_layers:
+            embeddings, attn = layer(embeddings)
+            attentions.append(attn)
+
+        # Pass the final embeddings through the output layer
+        output = self.output_layer(embeddings)
+
+        return attentions, embeddings, output

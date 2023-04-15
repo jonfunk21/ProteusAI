@@ -126,7 +126,6 @@ def train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience,
         all_val_losses.append(fold_val_losses)
         all_val_rmse.append(fold_val_rmse)
         all_val_pearson.append(fold_val_pearson)
-        print('HERE')
 
     # Pad the arrays with NaNs so that they have the same length
     padded_train_losses = pad_arrays(all_train_losses)
