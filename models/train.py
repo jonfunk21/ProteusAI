@@ -2,7 +2,7 @@ import sys
 sys.path.append('../')
 import pandas as pd
 import torch
-from activity_predictor import FFNN
+from activity_predictor import AttentionModel
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -17,8 +17,15 @@ import argparse
 parser = argparse.ArgumentParser(description='Hyperparameters')
 parser.add_argument('--epochs', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=26)
-parser.add_argument('--hidden_layers', type=int, nargs='+', default=[1280])
 parser.add_argument('--patience', type=int, default=10)
+parser.add_argument('--num_layers', type=int, default=1)
+parser.add_argument('--nhead', type=int, default=8)
+parser.add_argument('--d_model', type=int, default=1280)
+args = parser.parse_args()
+
+num_layers = args.num_layers
+nhead = args.nhead
+d_model = args.d_model
 args = parser.parse_args()
 
 epochs = args.epochs
@@ -92,7 +99,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(train_val_df, train_val_df
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
     # Load activity predictor model
-    model = FFNN(input_size, output_size, hidden_layers)
+    model = AttentionModel(num_layers, nhead, d_model, input_size, output_size)
     model.to(device)
 
     # Define the loss function and optimizer
@@ -122,7 +129,7 @@ test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 ensemble_models = []
 for fold in range(n_folds):
     model_path = os.path.join(save_path, f'activity_model_{fold + 1}')
-    model = FFNN(input_size, output_size, hidden_layers)
+    model = AttentionModel(num_layers, nhead, d_model, input_size, output_size)
     model.load_state_dict(torch.load(model_path))
     model.to(device)
     model.eval()

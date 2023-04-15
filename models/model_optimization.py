@@ -3,8 +3,7 @@ sys.path.append('../')
 import optuna
 import pandas as pd
 import torch
-from activity_predictor import FFNN
-import torch.nn as nn
+from torch import nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from models.pytorchtools import CustomDataset, train, evaluate_ensemble, pad_arrays, create_optimization_report
@@ -13,26 +12,30 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import argparse
+from activity_predictor import AttentionModel
 
 # Hyper parameters (later all argparse)
 parser = argparse.ArgumentParser(description='Hyperparameters')
 parser.add_argument('--epochs', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=26)
-parser.add_argument('--hidden_layers', type=int, nargs='+', default=[1280])
+parser.add_argument('--nhead', type=int, default=8)
+parser.add_argument('--num_layers', type=int, default=3)
+parser.add_argument('--d_model', type=int, default=512)
 parser.add_argument('--patience', type=int, default=10)
 args = parser.parse_args()
 
 epochs = args.epochs
 batch_size = args.batch_size
-hidden_layers = args.hidden_layers
+nhead = args.nhead
+num_layers = args.num_layers
+d_model = args.d_model
 patience = args.patience
-
 
 save_path = 'checkpoints'
 data_path = '../example_data/directed_evolution/GB1/GB1.csv'
-train_log='train_log'
-input_size = 147 * 1280
-rep_layer = 33
+train_log = 'train_log'
+sequence_length = 147
+embedding_dimension = 1280
 n_folds = 5
 output_size = 1
 
@@ -46,14 +49,14 @@ def objective(trial):
     # Hyperparameters to optimize
     epochs = trial.suggest_int("epochs", 10, 100)
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64, 128])
-    n_hidden_layers = trial.suggest_int("n_hidden_layers", 1, 3)
-    hidden_layers = [trial.suggest_int(f"hidden_layer_{i}", 256, 1280, 256) for i in range(n_hidden_layers)]
+    num_layers = trial.suggest_int("num_layers", 1, 3)
+    nhead = trial.suggest_int("nhead", 2, 16, 2)
+    d_model = trial.suggest_int("d_model", 128, 1024, 128)
     patience = trial.suggest_int("patience", 5, 20)
-    learning_rate = trial.suggest_float("learning_rate",  1e-6, 1e-2, log=True)
-    dropout_rate = trial.suggest_float("dropout_rate", 0.0, 0.5, step=0.05)
+    learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2, log=True)
 
     # Call the train_and_evaluate function with suggested hyperparameters
-    avg_val_loss = train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rate, dropout_rate)
+    avg_val_loss = train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience, learning_rate)
 
     return avg_val_loss
 
@@ -80,7 +83,7 @@ train_val_df, test_df = train_test_split(df, test_size=0.1, random_state=42, str
 train_val_df = train_val_df.reset_index(drop=True)
 test_df = test_df.reset_index(drop=True)
 
-def train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rate, dropout_rate):
+def train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience, learning_rate):
     # Create stratified splits
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
 
@@ -110,7 +113,7 @@ def train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rat
         val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
         # Load activity predictor model
-        model = FFNN(input_size, output_size, hidden_layers, dropout_rate)
+        model = AttentionModel(embedding_dimension, sequence_length, d_model, nhead, num_layers)
         model.to(device)
 
         # Define the loss function and optimizer
@@ -123,6 +126,7 @@ def train_and_evaluate(epochs, batch_size, hidden_layers, patience, learning_rat
         all_val_losses.append(fold_val_losses)
         all_val_rmse.append(fold_val_rmse)
         all_val_pearson.append(fold_val_pearson)
+        print('HERE')
 
     # Pad the arrays with NaNs so that they have the same length
     padded_train_losses = pad_arrays(all_train_losses)
@@ -164,7 +168,7 @@ avg_val_loss = train_and_evaluate(best_epochs, best_batch_size, best_hidden_laye
 ensemble_models = []
 for fold in range(n_folds):
     model_path = os.path.join(save_path, f'activity_model_{fold + 1}')
-    model = FFNN(input_size, output_size, best_hidden_layers)
+    model = AttentionModel(embedding_dimension, sequence_length, d_model, nhead, num_layers)
     model.load_state_dict(torch.load(model_path))
     model.to(device)
     model.eval()
