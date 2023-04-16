@@ -54,7 +54,10 @@ def objective(trial):
 
     # Ensure nhead is a factor of d_model
     possible_nhead_values = [i for i in range(1, d_model+1) if d_model % i == 0]
-    nhead = trial.suggest_categorical("nhead", possible_nhead_values)
+
+    # Suggest a divisor index and calculate nhead based on the index and d_model
+    divisor_idx = trial.suggest_int("divisor_idx", 0, len(possible_nhead_values) - 1)
+    nhead = possible_nhead_values[divisor_idx]
 
     patience = trial.suggest_int("patience", 5, 20)
     learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2, log=True)
