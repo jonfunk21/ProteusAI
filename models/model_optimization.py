@@ -1,6 +1,5 @@
 import sys
 sys.path.append('../')
-import optuna
 import pandas as pd
 import torch
 from torch import nn
@@ -13,6 +12,8 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import argparse
 from activity_predictor import AttentionModel
+import optuna
+import json
 
 # Hyper parameters (later all argparse)
 parser = argparse.ArgumentParser(description='Hyperparameters')
@@ -44,6 +45,12 @@ if not os.path.exists(save_path):
 
 # pytorch device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def save_best_trial(study, trial):
+    if study.best_trial == trial:
+        best_hyperparams = study.best_trial.params
+        with open("best_hyperparams.json", "w") as f:
+            json.dump(best_hyperparams, f)
 
 def objective(trial):
     # Hyperparameters to optimize
@@ -151,7 +158,7 @@ def train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience,
 
 # Create a study and run optimization
 study = optuna.create_study(direction="minimize")
-study.optimize(objective, n_trials=50)
+study.optimize(objective, n_trials=100, callbacks=[save_best_trial])
 create_optimization_report(study)
 
 # print the best hyperparameters and the corresponding best value
