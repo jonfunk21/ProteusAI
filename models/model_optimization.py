@@ -47,7 +47,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def objective(trial):
     # Hyperparameters to optimize
-    epochs = trial.suggest_int("epochs", 10, 100)
+    epochs = trial.suggest_int("epochs", 100, 1000)
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
     num_layers = trial.suggest_int("num_layers", 1, 4)
     d_model = trial.suggest_int("d_model", 128, 1024, 64)
