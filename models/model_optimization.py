@@ -49,9 +49,13 @@ def objective(trial):
     # Hyperparameters to optimize
     epochs = trial.suggest_int("epochs", 10, 100)
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64, 128])
-    num_layers = trial.suggest_int("num_layers", 1, 3)
-    nhead = trial.suggest_int("nhead", 2, 16, 2)
-    d_model = trial.suggest_int("d_model", 128, 1024, 128)
+    num_layers = trial.suggest_int("num_layers", 1, 4)
+    d_model = trial.suggest_int("d_model", 128, 1024, 64)
+
+    # Ensure nhead is a factor of d_model
+    possible_nhead_values = [i for i in range(1, d_model+1) if d_model % i == 0]
+    nhead = trial.suggest_categorical("nhead", possible_nhead_values)
+
     patience = trial.suggest_int("patience", 5, 20)
     learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2, log=True)
 
@@ -59,6 +63,7 @@ def objective(trial):
     avg_val_loss = train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience, learning_rate)
 
     return avg_val_loss
+
 
 # Perform clustering based on sequence similarity (using Hamming distance)
 def hamming_distance(s1, s2):
