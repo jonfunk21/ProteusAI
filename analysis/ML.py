@@ -5,6 +5,8 @@ from sklearn.neighbors import KNeighborsRegressor
 import pandas as pd
 from sklearn.svm import SVR
 import numpy
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
     """
@@ -202,3 +204,28 @@ def one_hot_encoding(sequence: str):
             seq_one_hot[i, :] = 0.5
 
     return seq_one_hot
+
+
+def plot_attention(attention, layer, head, sequence):
+    """
+    Plot the attention weights for a specific layer and head.
+
+    :param attention: List of attention weights from the model
+    :param layer: Index of the layer to visualize
+    :param head: Index of the head to visualize
+    :param sequence: Input sequence as a list of tokens
+    """
+    # Get the attention weights for the specified layer and head
+    attn_weights = attention[layer][head].detach().cpu().numpy()
+
+    # Create a heatmap using seaborn
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(attn_weights, xticklabels=sequence, yticklabels=sequence, cmap="viridis")
+
+    # Set plot title and labels
+    plt.title(f'Attention weights - Layer {layer + 1}, Head {head + 1}')
+    plt.xlabel('Input tokens')
+    plt.ylabel('Output tokens')
+
+    # Show the plot
+    plt.show()
