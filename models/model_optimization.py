@@ -59,7 +59,7 @@ def objective(trial):
     divisor_idx = trial.suggest_int("divisor_idx", 0, len(possible_nhead_values) - 1)
     nhead = possible_nhead_values[divisor_idx]
 
-    patience = trial.suggest_int("patience", 15, 30)
+    patience = trial.suggest_int("patience", 50, 100)
     learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2, log=True)
 
     # Call the train_and_evaluate function with suggested hyperparameters
