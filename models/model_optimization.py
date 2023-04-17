@@ -47,6 +47,10 @@ if not os.path.exists(save_path):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def save_best_trial(study, trial):
+    # Check if there are any completed trials.
+    if len([t for t in study.get_trials() if t.state == optuna.trial.TrialState.COMPLETE]) == 0:
+        return
+
     if study.best_trial == trial:
         best_hyperparams = study.best_trial.params
         with open("best_hyperparams.json", "w") as f:
@@ -154,7 +158,13 @@ def train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience,
     avg_val_rmse = np.nanmean(padded_val_rmse, axis=0)
     avg_val_pearson = np.nanmean(padded_val_pearson, axis=0)
 
-    return avg_val_losses
+    # Calculate the minimum validation loss for each fold
+    min_val_losses = [np.min(fold_val_losses) for fold_val_losses in all_val_losses]
+
+    # Calculate the average of the minimum validation losses
+    avg_min_val_loss = np.mean(min_val_losses)
+
+    return avg_min_val_loss
 
 # Create a study and run optimization
 study = optuna.create_study(direction="minimize")
