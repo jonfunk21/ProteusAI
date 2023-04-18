@@ -38,19 +38,21 @@ class PositionalEncoding(nn.Module):
         return x
 
 class AttentionModel(nn.Module):
-    def __init__(self, input_size, sequence_length, d_model, nhead, num_layers, output_size=1):
+    def __init__(self, input_size, sequence_length, d_model, nhead, num_layers, dropout_rate, output_size=1):
         super(AttentionModel, self).__init__()
 
         self.embedding = nn.Linear(input_size, d_model)
+        self.dropout = nn.Dropout(dropout_rate)
         self.pos_encoder = PositionalEncoding(d_model, sequence_length)
         self.transformer_encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model, nhead),
+            nn.TransformerEncoderLayer(d_model, nhead, dropout=dropout_rate),
             num_layers=num_layers
         )
         self.fc = nn.Linear(d_model * sequence_length, output_size)
 
     def forward(self, x):
         x = self.embedding(x)
+        x = self.dropout(x)
         x = self.pos_encoder(x.permute(1, 0, 2))
         x = self.transformer_encoder(x)
         x = x.permute(1, 0, 2).reshape(x.shape[1], -1)
