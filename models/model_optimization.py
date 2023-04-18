@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from models.pytorchtools import CustomDataset, train, evaluate_ensemble, pad_arrays, create_optimization_report
+from models.pytorchtools import CustomDataset, train, evaluate_ensemble, create_optimization_report
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -203,8 +203,9 @@ best_divisor_idx = study.best_trial.params["divisor_idx"]
 possible_nhead_values = [i for i in range(1, d_model + 1) if d_model % i == 0]
 best_nhead = possible_nhead_values[best_divisor_idx]
 
+# 5 fold for evaluation
+n_folds = 5
 avg_val_loss = train_and_evaluate(best_epochs, best_batch_size, best_num_layers, best_nhead, best_d_model, patience, best_learning_rate, best_beta1, best_beta2, best_eps, best_dropout_rate)
-
 
 # load the best models from each fold and store them in a list
 ensemble_models = []
