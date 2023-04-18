@@ -7,7 +7,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from models.pytorchtools import CustomDataset, train, evaluate_ensemble, create_optimization_report
 import os
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, StratifiedShuffleSplit
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import argparse
@@ -107,7 +107,11 @@ test_df = test_df.reset_index(drop=True)
 
 def train_and_evaluate(epochs, batch_size, num_layers, nhead, d_model, patience, learning_rate, beta1, beta2, eps, dropout_rate):
     # Create stratified splits
-    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+    if n_folds > 1:
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+    else:
+        # Create stratified splits
+        skf = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=42)
 
     # Initialize variables to store metrics for each fold
     all_train_losses = []
