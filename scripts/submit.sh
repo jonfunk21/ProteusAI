@@ -8,7 +8,7 @@
 ### -- specify queue -- voltash cabgpu gpuv100
 #BSUB -q cabgpu
 ### -- set walltime limit: hh:mm --
-#BSUB -W 72:00
+#BSUB -W 48:00
 ### -- Select the resources: 1 gpu in exclusive process mode --:mode=exclusive_process
 #BSUB -gpu "num=1:mode=exclusive_process"
 ## --- select a GPU with 32gb----
