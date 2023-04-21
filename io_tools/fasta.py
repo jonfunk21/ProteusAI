@@ -1,6 +1,6 @@
 import os
 from biotite.sequence import ProteinSequence
-
+import numpy as np
 
 def load_all(path: str, file_type: str = '.fasta', biotite: bool = False) -> tuple:
     """
@@ -102,3 +102,33 @@ def write(names: list, sequences: list, dest: str = None):
             else:
                 f.writelines(sequences[i] + '\n')
 
+
+def one_hot_encoding(sequence: str):
+    '''
+    Returns one hot encoding for amino acid sequence. Unknown amino acids will be
+    encoded with 0.5 at in entire row.
+
+    Parameters:
+    -----------
+        sequence (str): Amino acid sequence
+
+    Returns:
+    --------
+        numpy.ndarray: One hot encoded sequence
+    '''
+    # Define amino acid alphabets and create dictionary
+    amino_acids = 'ACDEFGHIKLMNPQRSTVWY'
+    aa_dict = {aa: i for i, aa in enumerate(amino_acids)}
+
+    # Initialize empty numpy array for one-hot encoding
+    seq_one_hot = np.zeros((len(sequence), len(amino_acids)))
+
+    # Convert each amino acid in sequence to one-hot encoding
+    for i, aa in enumerate(sequence):
+        if aa in aa_dict:
+            seq_one_hot[i, aa_dict[aa]] = 1.0
+        else:
+            # Handle unknown amino acids with a default value of 0.5
+            seq_one_hot[i, :] = 0.5
+
+    return seq_one_hot

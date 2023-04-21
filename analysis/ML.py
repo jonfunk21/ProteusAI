@@ -7,6 +7,7 @@ from sklearn.svm import SVR
 import numpy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
     """
@@ -170,40 +171,6 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
         print("p-value: {:.4f}".format(p_value))
 
     return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_)
-
-
-import numpy as np
-
-
-def one_hot_encoding(sequence: str):
-    '''
-    Returns one hot encoding for amino acid sequence. Unknown amino acids will be
-    encoded with 0.5 at in entire row.
-
-    Parameters:
-    -----------
-        sequence (str): Amino acid sequence
-
-    Returns:
-    --------
-        numpy.ndarray: One hot encoded sequence
-    '''
-    # Define amino acid alphabets and create dictionary
-    amino_acids = 'ACDEFGHIKLMNPQRSTVWY'
-    aa_dict = {aa: i for i, aa in enumerate(amino_acids)}
-
-    # Initialize empty numpy array for one-hot encoding
-    seq_one_hot = np.zeros((len(sequence), len(amino_acids)))
-
-    # Convert each amino acid in sequence to one-hot encoding
-    for i, aa in enumerate(sequence):
-        if aa in aa_dict:
-            seq_one_hot[i, aa_dict[aa]] = 1.0
-        else:
-            # Handle unknown amino acids with a default value of 0.5
-            seq_one_hot[i, :] = 0.5
-
-    return seq_one_hot
 
 
 def plot_attention(attention, layer, head, sequence):
