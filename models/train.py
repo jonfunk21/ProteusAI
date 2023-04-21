@@ -15,32 +15,34 @@ import argparse
 
 # Hyper parameters (later all argparse)
 parser = argparse.ArgumentParser(description='Hyperparameters')
-parser.add_argument('--epochs', type=int, default=10)
-parser.add_argument('--batch_size', type=int, default=26)
-parser.add_argument('--patience', type=int, default=10)
-parser.add_argument('--num_layers', type=int, default=1)
-parser.add_argument('--nhead', type=int, default=8)
+parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--batch_size', type=int, default=64)
+parser.add_argument('--patience', type=int, default=100)
+parser.add_argument('--num_layers', type=int, default=4)
+parser.add_argument('--sequence_length', type=int, default=147)
+parser.add_argument('--embedding_dimension', type=int, default=1280)
+parser.add_argument('--nheads', type=int, default=8)
 parser.add_argument('--d_model', type=int, default=1280)
+parser.add_argument('--n_folds', type=int, default=1)
+parser.add_argument('--output_size', type=int, default=1)
 args = parser.parse_args()
 
 num_layers = args.num_layers
-nhead = args.nhead
+nheads = args.nheads
 d_model = args.d_model
-args = parser.parse_args()
-
 epochs = args.epochs
 batch_size = args.batch_size
-hidden_layers = args.hidden_layers
 patience = args.patience
-
+sequence_length = args.sequence_length
+embedding_dimension = args.embedding_dimension
+n_folds = args.n_folds
+output_size = args.output_size
 
 save_path = 'checkpoints'
 data_path = '../example_data/directed_evolution/GB1/GB1.csv'
-train_log='train_log'
-input_size = 147 * 1280
+train_log = 'train_log'
+input_size = sequence_length * embedding_dimension
 rep_layer = 33
-n_folds = 5
-output_size = 1
 
 if not os.path.exists(save_path):
     os.mkdir(save_path)
@@ -99,7 +101,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(train_val_df, train_val_df
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
     # Load activity predictor model
-    model = AttentionModel(num_layers, nhead, d_model, input_size, output_size)
+    model = AttentionModel(num_layers, nheads, d_model, input_size, output_size)
     model.to(device)
 
     # Define the loss function and optimizer
@@ -129,7 +131,7 @@ test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 ensemble_models = []
 for fold in range(n_folds):
     model_path = os.path.join(save_path, f'activity_model_{fold + 1}')
-    model = AttentionModel(num_layers, nhead, d_model, input_size, output_size)
+    model = AttentionModel(num_layers, nheads, d_model, input_size, output_size)
     model.load_state_dict(torch.load(model_path))
     model.to(device)
     model.eval()
