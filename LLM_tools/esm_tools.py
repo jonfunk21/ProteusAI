@@ -5,7 +5,7 @@ import sys
 sys.path.append('../')
 from io_tools import fasta
 
-def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm2"):
+def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
     """
     generate sequence representations using esm2 or esm1v.
 
@@ -71,7 +71,7 @@ def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm2"):
     return sequence_representations
 
 
-def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10):
+def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10):
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
