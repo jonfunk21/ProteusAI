@@ -1,0 +1,13 @@
+torch
+pandas
+numpy
+requests
+scipy
+fair-esm
+matplotlib
+biopython
+biotite
+scikit-learn
+optuna
+seaborn
+openpyxl
