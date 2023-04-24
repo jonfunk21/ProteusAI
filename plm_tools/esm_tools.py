@@ -109,5 +109,5 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
 with open('test', 'w') as f:
     seqs = ["AGAVCTGAKLI"]
     print(len(seqs[0]), file=f)
-    x = embedd(seqs=[seqs])
+    x = embedd(seqs=seqs)
     print(x.shape, file=f)
