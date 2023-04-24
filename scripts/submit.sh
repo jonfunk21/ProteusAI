@@ -51,4 +51,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd LLM_tools
 
-python3 esm.py
+python3 esm_tools.py
