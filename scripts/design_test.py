@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../')
 import re
-from design import MCMC
+from src.poteusAI.design import MCMC
 from analysis import pdb, interactions
 import os
 
@@ -11,8 +11,8 @@ ASMT_seq = pdb.to_fasta(ASMT_pdb).split('\n')[1]
 # determine best docking results
 pattern = r'rank[1]_'
 
-dock_results_path = '../example_data/docking/'
-dock_dirs = [os.path.join(dock_results_path, d) for d in os.listdir('../example_data/docking/') if d.endswith('sdf')]
+dock_results_path = '../Projects/example_data/docking/'
+dock_dirs = [os.path.join(dock_results_path, d) for d in os.listdir('../Projects/example_data/docking/') if d.endswith('sdf')]
 
 docked_ligands = []
 for d in dock_dirs:
@@ -54,7 +54,7 @@ Design = MCMC.ProteinDesign(native_seq=ASMT_seq,
                             constraints=res_constraints,
                             outdir=outdir,
                             M=0.1
-                           )
+                            )
 
 print('constraints on residues')
 print(res_constraints)
