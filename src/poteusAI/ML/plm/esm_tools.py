@@ -111,7 +111,7 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
         _ = embedd(seqs[i:i + batch_size], names[i:i + batch_size], dest=dest, model=model)
 
 
-with open('test', 'w') as f:
+with open('../../scripts/test', 'w') as f:
     seqs = ["AGAVCTGAKLI"]
     print(len(seqs[0]), file=f)
     x = embedd(seqs=seqs)
