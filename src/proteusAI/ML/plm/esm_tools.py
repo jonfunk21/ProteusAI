@@ -166,37 +166,37 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
-def plot_probability(probability_distribution, alphabet, dest: str=None, show: bool=False):
+def plot_heatmap(probability_distribution, alphabet, include=None, dest=None, show=True):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
-    Parameters:
-        probability_distribution (torch.Tensor): torch.Tensor with shape (1, sequence_length, alphabet_size)
-        alphabet (dictionary or esm.data.Alphabet): Dictionary mapping indices to characters or esm.data.Alphabet
-        dest (str): Optional path to save the plot as an image file (default: None)
-        show (bool): Boolean controlling whether the plot is shown (default: True)
-
-    Returns:
-         None
+    :param probability_distribution: torch.Tensor with shape (1, sequence_length, alphabet_size)
+    :param alphabet: Dictionary mapping indices to characters
+    :param include: List of characters to include in the heatmap (default: None, include only amino acids)
+    :param dest: Optional path to save the plot as an image file (default: None)
+    :param show: Boolean controlling whether the plot is shown (default: True)
+    :return: None
     """
-
-    if type(alphabet) == dict:
-        pass
-    else:
-        try:
-            alphabet = alphabet.to_dict()
-        except:
-            raise "alphabet has an unexpected format"
-
     # Convert the probability distribution tensor to a numpy array
     probability_distribution_np = probability_distribution.cpu().numpy().squeeze()
 
+    # Remove the start and end of sequence tokens
+    probability_distribution_np = probability_distribution_np[1:-1, :]
+
+    # If no characters are specified, include only amino acids by default
+    if include is None:
+        include = [char for char in alphabet.values() if char.isupper()]
+
+    # Filter the alphabet dictionary based on the 'include' list
+    filtered_alphabet = {i: char for i, char in alphabet.items() if char in include}
+
     # Create a pandas DataFrame with appropriate column and row labels
-    df = pd.DataFrame(probability_distribution_np, columns=[alphabet.get(i, f'Unknown_{i}') for i in range(len(alphabet))])
+    df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.keys())],
+                      columns=[filtered_alphabet[i] for i in range(len(filtered_alphabet))])
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
-    sns.heatmap(df.T, cmap="coolwarm_r", linewidths=0.5, annot=False, cbar=True)
+    sns.heatmap(df.T, cmap="Reds", linewidths=0.5, annot=False, cbar=True)
     plt.xlabel("Sequence Position")
     plt.ylabel("Character")
     plt.title("Per-Position Probability Distribution Heatmap")
