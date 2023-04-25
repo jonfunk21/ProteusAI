@@ -1,5 +1,9 @@
 from setuptools import setup, find_packages
 
+# Read the content of requirements.txt
+with open("requirements.txt") as f:
+    requirements = f.read().splitlines()
+
 setup(
     name="ProteusAI",
     version="0.1.0",
@@ -7,22 +11,9 @@ setup(
     author_email="funk.jonathan21@gmail.com",
     description="ProteusAI is a python package designed for AI driven protein engineering.",
     url="https://github.com/jonfunk21/ProteusAI",
-    packages=find_packages(),
-    install_requires=[
-        "torch",
-        "pandas",
-        "numpy",
-        "requests",
-        "scipy",
-        "fair-esm",
-        "matplotlib",
-        "biopython",
-        "biotite",
-        "scikit-learn",
-        "optuna",
-        "seaborn",
-        "openpyxl",
-    ],
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

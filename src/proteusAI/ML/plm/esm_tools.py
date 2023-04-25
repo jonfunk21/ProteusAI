@@ -9,6 +9,13 @@ import esm
 import os
 from proteusAI.io_tools import fasta
 
+# Quick fix remove later
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent))
+
+
 
 def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
     """
