@@ -197,7 +197,7 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
         include = [char for char in alphabet.keys() if char.isupper()]
 
     # Filter the alphabet dictionary based on the 'include' list
-    filtered_alphabet = {i: char for i, char in alphabet.items() if char in include}
+    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.keys())],
