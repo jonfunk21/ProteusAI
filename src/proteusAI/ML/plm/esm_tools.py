@@ -510,17 +510,14 @@ results, _, _, _ = esm_compute([seq])
 p = get_probability_distribution(results["logits"])
 #pred_seq = most_likely_sequence(p, alphabet)
 #mutations = find_mutations(seq, pred_seq)
-_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
+
 entropy = per_position_entropy(p)
 
-#with open('test', 'w') as f:
-    #print(results["logits"].shape, file=f)
-    #print(p.shape, file=f)
-    #print(seq, file=f)
-    #print(pred_seq, file=f)
-    #print(mutations, file=f)
-    #print(pdbs[0], file=f)
+with open('test', 'w') as f:
+    print(entropy, file=f)
+    print(entropy_to_bfactor(entropy), file=f)
 
+_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdbs[0].write('test.pdb')
 pdb = entropy_to_pdb_b_factor(pdbs[0], entropy)
 pdb.write('test_entrpy.pdb')
