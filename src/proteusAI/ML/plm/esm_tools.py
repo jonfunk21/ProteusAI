@@ -436,14 +436,85 @@ def structure_prediction(
 
     return all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
 
+
+def entropy_to_bfactor(entropy_values, trim=False):
+    """
+    Convert per-position entropy values to b-factors between 0 and 100.
+
+    Parameters:
+        entropy_values (list or numpy.ndarray): List of entropy values
+        trim (bool): If True, remove the start and end of sequence tokens (default: False)
+
+    Returns:
+        list: List of scaled b-factors
+    """
+
+    # Remove the start and end of sequence tokens, if requested
+    if trim:
+        entropy_values = entropy_values[1:-1]
+
+    # Define the range of the entropy values and b-factors
+    entropy_min, entropy_max = 0, 100
+    bfactor_min, bfactor_max = 100, 0
+
+    # Scale the entropy values to b-factors
+    scaled_bfactors = [bfactor_min + (bfactor_max - bfactor_min) * (entropy_value - entropy_min) / (entropy_max - entropy_min) for entropy_value in entropy_values]
+
+    return scaled_bfactors
+
+
+def format_float(float_value):
+    """
+    Format a float value to a string of length 5, rounded to two decimal places.
+
+    Parameters:
+        float_value (float): The float value to format
+
+    Returns:
+        str: The formatted string
+    """
+
+    # Round the float value to two decimal places
+    rounded_value = round(float_value, 2)
+
+    # Convert the rounded value to a string
+    value_str = str(rounded_value)
+
+    # Add spaces to the front of the string if needed
+    formatted_str = value_str.rjust(5, ' ')
+
+    return formatted_str
+
+
+def entropy_to_pdb_b_factor(pdb, per_position_entropy):
+
+    if type(pdb) != str:
+        try:
+            pdb = str(pdb)
+        except:
+            raise "invalid input type for pdb"
+
+    b_factors = entropy_to_pdb_b_factor(per_position_entropy)
+    b_factor_strings = [format_float(x) for x in b_factors]
+    lines = []
+    for i, line in enumerate(str(pdb).split('\n')):
+        if line.startswith('ATOM'):
+            res_id = int(line[23:26])
+            line = line[:60] + b_factor_strings[res_id] + line[66:]
+        lines.append(line)
+
+    pdb = string_to_tempfile("".join(lines))
+    return pdb
+
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
-#results, _, _, _ = esm_compute([seq])
-#p, alphabet = mut_prob(seq)
-#pred_seq = most_likely_sequence(p, alphabet)
-#mutations = find_mutations(seq, pred_seq)
+results, _, _, _ = esm_compute([seq])
+p, alphabet = mut_prob(seq)
+pred_seq = most_likely_sequence(p, alphabet)
+mutations = find_mutations(seq, pred_seq)
 _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
+entropy = per_position_entropy(p)
 
 #with open('test', 'w') as f:
     #print(results["logits"].shape, file=f)
@@ -454,5 +525,6 @@ _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
     #print(pdbs[0], file=f)
 
 pdbs[0].write('test.pdb')
-
+pdb = entropy_to_pdb_b_factor(pdbs[0], entropy)
+pdb.write('test_entrpy.pdb')
 #plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
