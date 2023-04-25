@@ -178,4 +178,4 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p, file=f)
     print(pp_entropy, file=f)
-    print(alphabet)
+    print(alphabet, file=f)
