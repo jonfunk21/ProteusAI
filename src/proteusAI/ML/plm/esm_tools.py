@@ -487,7 +487,7 @@ def entropy_to_pdb_b_factor(pdb, per_position_entropy, trim=True):
         except:
             raise "invalid input type for pdb"
 
-    b_factors = entropy_to_pdb_b_factor(per_position_entropy, trim=trim)
+    b_factors = entropy_to_bfactor(per_position_entropy, trim=trim)
     b_factor_strings = [format_float(x) for x in b_factors]
     lines = []
     for i, line in enumerate(str(pdb).split('\n')):
