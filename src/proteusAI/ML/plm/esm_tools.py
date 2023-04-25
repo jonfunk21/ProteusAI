@@ -200,8 +200,8 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
 
     # Create a pandas DataFrame with appropriate column and row labels
-    df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.keys())],
-                      columns=[filtered_alphabet[i] for i in range(len(filtered_alphabet))])
+    df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
+                      columns=[i for i in filtered_alphabet.keys()])
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
