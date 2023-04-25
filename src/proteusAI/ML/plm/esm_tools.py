@@ -197,12 +197,14 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
         probability_distribution_np = probability_distribution_np[1:-1, :]
 
     # If no characters are specified, include only amino acids by default
-    if include is "canonical":
+    if include is "cannonical":
         include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     elif include is "all":
         include = alphabet.keys()
-    else:
+    elif type(alphabet) == list:
         include = include
+    else:
+        raise "include must either be 'cannonical' 'all' or a list of valid elements"
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
@@ -210,6 +212,7 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
         print(include, file=f)
         print(alphabet, file=f)
         print(filtered_alphabet, file=f)
+
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
                       columns=[i for i in filtered_alphabet.keys()])
