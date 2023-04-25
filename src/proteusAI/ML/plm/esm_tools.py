@@ -229,7 +229,7 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
 seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
 results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
 
-seq_rep = get_seq_rep(results, batch_lens, batch_labels)
+seq_rep = get_seq_rep(results, batch_lens)
 logits = get_logits(results)
 p = get_probability_distribution(logits)
 pp_entropy = per_position_entropy(p)
