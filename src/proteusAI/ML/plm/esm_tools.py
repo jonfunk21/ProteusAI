@@ -194,7 +194,7 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
 
     # If no characters are specified, include only amino acids by default
     if include is None:
-        include = [char for char in alphabet.values() if char.isupper()]
+        include = [char for char in alphabet.keys() if char.isupper()]
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {i: char for i, char in alphabet.items() if char in include}
