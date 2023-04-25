@@ -166,6 +166,53 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
+def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
+    """
+    Compute mutation probabilities based on masked sequence modelling using esm1v or esm2.
+    Every position of a sequence will be masked and the probability for every amino acid at that
+    position will be stored. The probabilities for every position will be concatenated in a tensor.
+
+    Parameters:
+        seq (str): native protein sequence
+        model (str): choose either esm2 or esm1v
+        batch_size (int): batch size. Default 10
+        rep_layer (int): choose representation layer. Default 33.
+
+    Returns:
+        torch.Tensor: Logits for every position
+
+    Example:
+        1.
+        seq = "AGHRFLIKLKI"
+        logits = mut_prob(seq=seq)
+
+        2.
+        batch_embedd(fasta_path='file.fasta', dest='path')
+    """
+    masked_seqs = mask_positions(seq)
+    names = [f'seq{i}' for i in range(len(masked_seqs))]
+    sequence_length = len(seq)
+
+    # Initialize an empty tensor of the desired shape
+    logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
+
+    for i in range(0, len(masked_seqs), batch_size):
+        results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
+                                                                  names[i:i + batch_size], model=model,
+                                                                  rep_layer=rep_layer)
+        logits = results["logits"]
+
+        # Fill the logits_tensor with the logits for each masked position
+        for j in range(logits.shape[0]):
+            masked_position = i + j
+            if masked_position < sequence_length:
+                logits_tensor[0, masked_position] = logits[j, masked_position + 1]
+
+    p = get_probability_distribution(logits_tensor)
+
+    return p, alphabet
+
+
 def mask_positions(sequence: str, mask_char: str='<mask>'):
     """
     Mask every position of an amino acid sequence. Returns list of masked sequence:
@@ -255,23 +302,8 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
     if show:
         plt.show()
 
-seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
-results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
+seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
-seq_rep = get_seq_rep(results, batch_lens)
-logits = get_logits(results)
-p = get_probability_distribution(logits)
-pp_entropy = per_position_entropy(p)
-attn = get_attentions(results)
+p, alphabet = mut_prob(seq)
 
-with open('test', 'w') as f:
-    print(len(seqs[0]), file=f)
-    print(seq_rep[0].shape, file=f)
-    print(logits.shape, file=f)
-    print(p, file=f)
-    print(pp_entropy, file=f)
-    print(attn.shape, file=f)
-    print(mask_positions(seqs[0]), file=f)
-
-
-plot_probability(p=p, alphabet=alphabet, dest='heat.png')
+plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
