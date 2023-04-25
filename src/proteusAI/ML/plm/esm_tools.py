@@ -220,9 +220,9 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
         probability_distribution_np = probability_distribution_np[1:-1, :]
 
     # If no characters are specified, include only amino acids by default
-    if include is "canonical":
+    if include == "canonical":
         include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-    elif include is "all":
+    elif include == "all":
         include = alphabet.keys()
     elif type(alphabet) == list:
         include = include
@@ -270,9 +270,8 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p, file=f)
     print(pp_entropy, file=f)
-    print(mask_positions(seqs[0]))
-    print(attn, file=f)
-
+    print(attn.shape, file=f)
+    print(mask_positions(seqs[0]), file=f)
 
 
 plot_probability(p=p, alphabet=alphabet, dest='heat.png')
