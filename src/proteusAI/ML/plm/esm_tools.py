@@ -259,12 +259,12 @@ def most_likely_sequence(log_prob_tensor, alphabet):
     # Find the indices of the maximum log probabilities along the alphabet dimension
     max_indices = torch.argmax(log_prob_tensor, dim=-1).squeeze()
 
-    # Filter the alphabet dictionary to only include cannonical AAs
+    # Filter the alphabet dictionary to only include canonical AAs
     include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
+    filtered_alphabet = {i: char for char, i in alphabet.items() if char in include}
 
-    # Map the indices back to their corresponding amino acids using the alphabet dictionary
-    most_likely_seq = ''.join([filtered_alphabet[int(idx)] for idx in max_indices])
+    # Map the indices back to their corresponding amino acids using the filtered_alphabet dictionary
+    most_likely_seq = ''.join([filtered_alphabet[int(idx)] for idx in max_indices if int(idx) in filtered_alphabet])
 
     return most_likely_seq
 
@@ -359,9 +359,9 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
 
-
-
 with open('test', 'w') as f:
+    results, _, _, _ = esm_compute([seq])
+    print(results["logits"].shape, file=f)
     p, alphabet = mut_prob(seq)
     print(p.shape, file=f)
     print(seq, file=f)
