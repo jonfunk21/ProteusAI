@@ -88,7 +88,7 @@ def get_seq_rep(results, batch_lens, batch_labels, dest=None):
 
 def get_logits(results):
     """
-    Get sequence logits from esm_compute
+    Get logits from esm_compute
     """
     logits = results["logits"]
     return logits
@@ -96,11 +96,24 @@ def get_logits(results):
 
 def get_attentions(results):
     """
-    Get sequence representations from esm_compute
+    Get attentions from esm_compute
     """
     attn = results["attentions"]
     return attn
 
+def get_prob_dist(logits):
+    """
+    Get the probability distribution of amino acids per site from logits.
+    """
+    prob_dist = torch.nn.functional.softmax(logits)
+    return prob_dist
+
+def per_pos_entropy(p):
+    """
+    Compute the per position entropy from probability distribution
+    """
+    pp_entropy = (p * p.log()).sum(-1)
+    return pp_entropy
 
 def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
     """
@@ -148,9 +161,13 @@ results, batch_lens, batch_labels = esm_compute(seqs)
 
 seq_rep = get_seq_rep(results, batch_lens, batch_labels)
 logits = get_logits(results)
+p = get_prob_dist(logits)
+pp_entropy = per_pos_entropy(p)
 #attn = get_attentions(results)
 
 with open('test', 'w') as f:
     print(len(seqs[0]), file=f)
     print(seq_rep[0].shape, file=f)
-    print(logits, file=f)
+    print(logits.shape, file=f)
+    print(p, file=f)
+    print(pp_entropy, file=f)
