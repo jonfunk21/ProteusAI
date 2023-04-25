@@ -186,7 +186,7 @@ def plot_probability(probability_distribution, alphabet, dest: str=None, show: b
             raise "alphabet has an unexpected format"
 
     # Convert the probability distribution tensor to a numpy array
-    probability_distribution_np = probability_distribution.numpy().squeeze()
+    probability_distribution_np = probability_distribution.cpu().numpy().squeeze()
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np, columns=[alphabet[i] for i in range(len(alphabet))])
