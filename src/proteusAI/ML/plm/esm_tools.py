@@ -155,7 +155,7 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
         names, seqs = fasta.load_all(fasta_path)
 
     for i in range(0, len(seqs), batch_size):
-        results, batch_lens, batch_labels = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
+        results, batch_lens, batch_labels, alphabet = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
         sequence_representations = get_seq_rep(results)
         if dest is not None:
             for j in range(len(sequence_representations)):
