@@ -8,6 +8,8 @@ from biotite.structure.io.mol import MOLFile
 from biotite.structure.io.pdb import PDBFile
 import numpy as np
 import biotite.structure as struc
+import biotite.structure.io as strucio
+from Bio import SeqIO
 
 
 def get_atom_array(file_path):
