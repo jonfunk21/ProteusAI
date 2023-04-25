@@ -490,10 +490,13 @@ def entropy_to_pdb_b_factor(pdb, per_position_entropy, trim=True):
     b_factors = entropy_to_bfactor(per_position_entropy, trim=trim)
     b_factor_strings = [format_float(x) for x in b_factors]
     lines = []
+    id = 0
     for i, line in enumerate(str(pdb).split('\n')):
         if line.startswith('ATOM'):
             res_id = int(line[23:26])
-            line = line[:60] + b_factor_strings[res_id] + line[66:]
+            if res_id != id:
+                id += 1
+            line = line[:60] + b_factor_strings[id] + line[66:]
         lines.append(line)
 
     pdb = string_to_tempfile("".join(lines))
