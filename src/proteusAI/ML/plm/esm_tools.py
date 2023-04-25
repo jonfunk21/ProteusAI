@@ -170,11 +170,14 @@ def plot_probability(probability_distribution, alphabet, dest: str=None, show: b
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
-    :param probability_distribution: torch.Tensor with shape (1, sequence_length, alphabet_size)
-    :param alphabet: Dictionary mapping indices to characters or esm.data.Alphabet
-    :param dest: Optional path to save the plot as an image file (default: None)
-    :param show: Boolean controlling whether the plot is shown (default: True)
-    :return: None
+    Parameters:
+        probability_distribution (torch.Tensor): torch.Tensor with shape (1, sequence_length, alphabet_size)
+        alphabet (dictionary or esm.data.Alphabet): Dictionary mapping indices to characters or esm.data.Alphabet
+        dest (str): Optional path to save the plot as an image file (default: None)
+        show (bool): Boolean controlling whether the plot is shown (default: True)
+
+    Returns:
+         None
     """
 
     if type(alphabet) == dict:
@@ -189,7 +192,7 @@ def plot_probability(probability_distribution, alphabet, dest: str=None, show: b
     probability_distribution_np = probability_distribution.cpu().numpy().squeeze()
 
     # Create a pandas DataFrame with appropriate column and row labels
-    df = pd.DataFrame(probability_distribution_np, columns=[alphabet[i] for i in range(len(alphabet))])
+    df = pd.DataFrame(probability_distribution_np, columns=[alphabet.get(i, f'Unknown_{i}') for i in range(len(alphabet))])
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
