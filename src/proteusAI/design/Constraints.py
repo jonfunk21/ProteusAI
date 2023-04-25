@@ -13,7 +13,7 @@ from biotite.structure.io.pdb import PDBFile
 import biotite.structure as struc
 from biotite.structure import sasa
 import tempfile
-from poteusAI.data import pdb
+from proteusAI.data import pdb
 
 #_____Sequence Constraints_____
 def length_constraint(seqs: list, max_len: int = 200):

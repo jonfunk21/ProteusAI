@@ -7,7 +7,7 @@ __author__ = "Jonathan Funk"
 import os
 import random
 import numpy as np
-from poteusAI.design import Constraints
+from proteusAI.design import Constraints
 import pandas as pd
 
 

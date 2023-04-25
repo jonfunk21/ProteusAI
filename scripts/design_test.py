@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../')
 import re
-from src.poteusAI.design import MCMC
+from src.proteusAI.design import MCMC
 from analysis import pdb, interactions
 import os
 

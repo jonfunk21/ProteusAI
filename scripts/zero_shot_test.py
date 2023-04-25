@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../')
 import re
-from src.poteusAI.design import ZeroShot
+from src.proteusAI.design import ZeroShot
 from analysis import pdb, interactions
 import os
 

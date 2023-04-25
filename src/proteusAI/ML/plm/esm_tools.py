@@ -7,7 +7,7 @@ __author__ = "Jonathan Funk"
 import torch
 import esm
 import os
-from poteusAI.io_tools import fasta
+from proteusAI.io_tools import fasta
 
 
 def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
