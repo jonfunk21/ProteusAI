@@ -70,7 +70,7 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
     with torch.no_grad():
         results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
 
-    return results, batch_lens, batch_labels
+    return results, batch_lens, batch_labels, alphabet
 
 
 def get_seq_rep(results, batch_lens, batch_labels, dest=None):
@@ -101,6 +101,7 @@ def get_attentions(results):
     """
     attn = results["attentions"]
     return attn
+
 
 def get_probability_distribution(logits):
     """
@@ -163,7 +164,7 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
 
 
 seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
-results, batch_lens, batch_labels = esm_compute(seqs)
+results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
 
 seq_rep = get_seq_rep(results, batch_lens, batch_labels)
 logits = get_logits(results)
@@ -177,3 +178,4 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p, file=f)
     print(pp_entropy, file=f)
+    print(alphabet)
