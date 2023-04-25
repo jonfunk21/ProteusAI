@@ -479,7 +479,7 @@ def entropy_to_bfactor(entropy_values, trim=False):
     return scaled_bfactors
 
 
-def entropy_to_pdb_b_factor(pdb, per_position_entropy, trim=True):
+def entropy_to_pdb_b_factor(pdb, per_position_entropy, trim=False):
 
     if type(pdb) != str:
         try:
