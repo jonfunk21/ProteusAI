@@ -166,6 +166,30 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
+def mask_positions(sequence: str, mask_char: str='<mask>'):
+    """
+    Mask every position of an amino acid sequence. Returns list of masked sequence:
+
+    Parameters:
+        sequence (str): Amino acid sequence
+        mask_char (str): Character used for masking (default: <mask>)
+
+    Returns:
+        list: list of masked sequences
+
+    Examples:
+        sequence = 'AMGAT'
+        seqs = mask_positions(sequence)
+        ['<mask>MGAT', 'A<mask>GAT', ..., 'AMGA<mask>']
+    """
+    masked_sequences = []
+    for i in range(len(sequence)):
+        masked_seq = sequence[:i] + mask_char + sequence[i+1:]
+        masked_sequences.append(masked_seq)
+
+    return masked_sequences
+
+
 def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
     """
     Compute mutation probabilities based on masked sequence modelling using esm1v or esm2.
@@ -179,7 +203,7 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        torch.Tensor: Logits for every position
+        Logits torch.Tensor for every position and alphabet
 
     Example:
         1.
@@ -213,28 +237,62 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
     return p, alphabet
 
 
-def mask_positions(sequence: str, mask_char: str='<mask>'):
+def most_likely_sequence(log_prob_tensor, alphabet):
     """
-    Mask every position of an amino acid sequence. Returns list of masked sequence:
+    Get the most likely amino acid sequence based on log probabilities.
 
     Parameters:
-        sequence (str): Amino acid sequence
-        mask_char (str): Character used for masking (default: <mask>)
+        log_prob_tensor (torch.Tensor): Tensor of shape (1, sequence_length, alphabet_size) containing log probabilities
+        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
 
     Returns:
-        list: list of masked sequences
-
-    Examples:
-        sequence = 'AMGAT'
-        seqs = mask_positions(sequence)
-        ['<mask>MGAT', 'A<mask>GAT', ..., 'AMGA<mask>']
+        str: Most likely amino acid sequence
     """
-    masked_sequences = []
-    for i in range(len(sequence)):
-        masked_seq = sequence[:i] + mask_char + sequence[i+1:]
-        masked_sequences.append(masked_seq)
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise "alphabet has an unexpected format"
 
-    return masked_sequences
+    # Find the indices of the maximum log probabilities along the alphabet dimension
+    max_indices = torch.argmax(log_prob_tensor, dim=-1).squeeze()
+
+    # Filter the alphabet dictionary to only include cannonical AAs
+    include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
+
+    # Map the indices back to their corresponding amino acids using the alphabet dictionary
+    most_likely_seq = ''.join([filtered_alphabet[int(idx)] for idx in max_indices])
+
+    return most_likely_seq
+
+
+def find_mutations(native_seq, predicted_seq):
+    """
+    Find the mutations between the native protein sequence and the predicted most likely sequence.
+
+    Parameters:
+        native_seq (str): Native protein sequence
+        predicted_seq (str): Predicted most likely protein sequence
+
+    Returns:
+        list: List of mutations in the format ['G2A', 'F4H']
+    """
+
+    if len(native_seq) != len(predicted_seq):
+        raise ValueError("Native and predicted sequences must have the same length")
+
+    mutations = []
+
+    for i, (native_aa, predicted_aa) in enumerate(zip(native_seq, predicted_seq)):
+        if native_aa != predicted_aa:
+            mutation = f"{native_aa}{i+1}{predicted_aa}"
+            mutations.append(mutation)
+
+    return mutations
+
 
 def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=None, show=True):
     """
@@ -278,10 +336,6 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
-    with open('alphabet', 'w') as f:
-        print(include, file=f)
-        print(alphabet, file=f)
-        print(filtered_alphabet, file=f)
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
@@ -305,5 +359,13 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
 p, alphabet = mut_prob(seq)
+pred_seq = most_likely_sequence(p, alphabet)
+mutations = find_mutations(seq, pred_seq)
+
+with open('test', 'w') as f:
+    print(p, file=f)
+    print(seq, file=f)
+    print(pred_seq, file=f)
+    print(mutations, file=f)
 
 plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
