@@ -177,6 +177,15 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
     :param show: Boolean controlling whether the plot is shown (default: True)
     :return: None
     """
+
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise "alphabet has an unexpected format"
+
     # Convert the probability distribution tensor to a numpy array
     probability_distribution_np = probability_distribution.cpu().numpy().squeeze()
 
@@ -208,7 +217,6 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
     # Show the plot, if the 'show' argument is True
     if show:
         plt.show()
-
 
 seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
 results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
