@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import torch
+import torch.nn.functional as F
 import esm
 import os
 from proteusAI.io_tools import fasta
@@ -101,19 +102,24 @@ def get_attentions(results):
     attn = results["attentions"]
     return attn
 
-def get_prob_dist(logits):
+def get_probability_distribution(logits):
     """
-    Get the probability distribution of amino acids per site from logits.
+    Convert logits to probability distribution for each position in the sequence.
     """
-    prob_dist = torch.nn.functional.softmax(logits)
-    return prob_dist
+    # Apply softmax function to the logits along the alphabet dimension (dim=2)
+    probability_distribution = F.softmax(logits, dim=-1)
 
-def per_pos_entropy(p):
+    return probability_distribution
+
+
+def per_position_entropy(probability_distribution):
     """
-    Compute the per position entropy from probability distribution
+    Compute the per-position entropy from a probability distribution tensor.
     """
-    pp_entropy = (p * p.log()).sum(-1)
-    return pp_entropy
+    # Calculate per-position entropy using the formula: H(x) = -sum(p(x) * log2(p(x)))
+    entropy = -torch.sum(probability_distribution * torch.log2(probability_distribution + 1e-9), dim=-1)
+
+    return entropy
 
 def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
     """
@@ -161,8 +167,8 @@ results, batch_lens, batch_labels = esm_compute(seqs)
 
 seq_rep = get_seq_rep(results, batch_lens, batch_labels)
 logits = get_logits(results)
-p = get_prob_dist(logits)
-pp_entropy = per_pos_entropy(p)
+p = get_probability_distribution(logits)
+pp_entropy = per_position_entropy(p)
 #attn = get_attentions(results)
 
 with open('test', 'w') as f:
