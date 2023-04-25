@@ -358,13 +358,15 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
 
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
-p, alphabet = mut_prob(seq)
-pred_seq = most_likely_sequence(p, alphabet)
-mutations = find_mutations(seq, pred_seq)
+
+
 
 with open('test', 'w') as f:
-    print(p, file=f)
+    p, alphabet = mut_prob(seq)
+    print(p.shape, file=f)
     print(seq, file=f)
+    pred_seq = most_likely_sequence(p, alphabet)
+    mutations = find_mutations(seq, pred_seq)
     print(pred_seq, file=f)
     print(mutations, file=f)
 
