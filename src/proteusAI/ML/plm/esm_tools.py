@@ -166,7 +166,7 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
-def plot_heatmap(probability_distribution, alphabet, include=None, dest=None, show=True):
+def plot_probability(probability_distribution, alphabet, include=None, dest=None, show=True):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
