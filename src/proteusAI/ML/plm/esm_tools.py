@@ -439,18 +439,20 @@ def structure_prediction(
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
-results, _, _, _ = esm_compute([seq])
-p, alphabet = mut_prob(seq)
-pred_seq = most_likely_sequence(p, alphabet)
-mutations = find_mutations(seq, pred_seq)
+#results, _, _, _ = esm_compute([seq])
+#p, alphabet = mut_prob(seq)
+#pred_seq = most_likely_sequence(p, alphabet)
+#mutations = find_mutations(seq, pred_seq)
 _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
-with open('test', 'w') as f:
-    print(results["logits"].shape, file=f)
-    print(p.shape, file=f)
-    print(seq, file=f)
-    print(pred_seq, file=f)
-    print(mutations, file=f)
-    print(pdbs[0], file=f)
+#with open('test', 'w') as f:
+    #print(results["logits"].shape, file=f)
+    #print(p.shape, file=f)
+    #print(seq, file=f)
+    #print(pred_seq, file=f)
+    #print(mutations, file=f)
+    #print(pdbs[0], file=f)
 
-plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
+pdbs[0].write('test.pdb')
+
+#plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
