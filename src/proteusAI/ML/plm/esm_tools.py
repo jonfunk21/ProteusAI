@@ -166,14 +166,37 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
-def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest=None, show=True):
+def mask_positions(sequence: str, mask_char: str='<mask>'):
+    """
+    Mask every position of an amino acid sequence. Returns list of masked sequence:
+
+    Parameters:
+        sequence (str): Amino acid sequence
+        mask_char (str): Character used for masking (default: <mask>)
+
+    Returns:
+        list: list of masked sequences
+
+    Examples:
+        sequence = 'AMGAT'
+        seqs = mask_positions(sequence)
+        ['<mask>MGAT', 'A<mask>GAT', ..., 'AMGA<mask>']
+    """
+    masked_sequences = []
+    for i in range(len(sequence)):
+        masked_seq = sequence[:i] + mask_char + sequence[i+1:]
+        masked_sequences.append(masked_seq)
+
+    return masked_sequences
+
+def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=None, show=True):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
     Parameters:
         p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
-        include (str or list): List of characters to include in the heatmap (default: cannonical, include only cannonical amino acids)
+        include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
         dest (str): Optional path to save the plot as an image file (default: None)
         show (bool): Boolean controlling whether the plot is shown (default: True)
 
@@ -197,14 +220,14 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
         probability_distribution_np = probability_distribution_np[1:-1, :]
 
     # If no characters are specified, include only amino acids by default
-    if include is "cannonical":
+    if include is "canonical":
         include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     elif include is "all":
         include = alphabet.keys()
     elif type(alphabet) == list:
         include = include
     else:
-        raise "include must either be 'cannonical' 'all' or a list of valid elements"
+        raise "include must either be 'canonical' 'all' or a list of valid elements"
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
@@ -219,7 +242,7 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
-    sns.heatmap(df.T, cmap="Reds_r", linewidths=0.5, annot=False, cbar=True)
+    sns.heatmap(df.T, cmap="Reds", linewidths=0.5, annot=False, cbar=True)
     plt.xlabel("Sequence Position")
     plt.ylabel("Character")
     plt.title("Per-Position Probability Distribution Heatmap")
@@ -239,7 +262,7 @@ seq_rep = get_seq_rep(results, batch_lens)
 logits = get_logits(results)
 p = get_probability_distribution(logits)
 pp_entropy = per_position_entropy(p)
-#attn = get_attentions(results)
+attn = get_attentions(results)
 
 with open('test', 'w') as f:
     print(len(seqs[0]), file=f)
@@ -247,6 +270,9 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p, file=f)
     print(pp_entropy, file=f)
+    print(mask_positions(seqs[0]))
+    print(attn, file=f)
+
 
 
 plot_probability(p=p, alphabet=alphabet, dest='heat.png')
