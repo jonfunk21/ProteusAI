@@ -4,16 +4,16 @@
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import torch
-import esm
-import os
-from proteusAI.io_tools import fasta
-
 # Quick fix remove later
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent))
+
+import torch
+import esm
+import os
+from proteusAI.io_tools import fasta
 
 
 
