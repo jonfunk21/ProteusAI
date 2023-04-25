@@ -15,6 +15,9 @@ import torch.nn.functional as F
 import esm
 import os
 from proteusAI.io_tools import fasta
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
@@ -163,6 +166,47 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
+def plot_probability(probability_distribution, alphabet, dest: str=None, show: bool=False):
+    """
+    Plot a heatmap of the probability distribution for each position in the sequence.
+
+    :param probability_distribution: torch.Tensor with shape (1, sequence_length, alphabet_size)
+    :param alphabet: Dictionary mapping indices to characters or esm.data.Alphabet
+    :param dest: Optional path to save the plot as an image file (default: None)
+    :param show: Boolean controlling whether the plot is shown (default: True)
+    :return: None
+    """
+
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise "alphabet has an unexpected format"
+
+    # Convert the probability distribution tensor to a numpy array
+    probability_distribution_np = probability_distribution.numpy().squeeze()
+
+    # Create a pandas DataFrame with appropriate column and row labels
+    df = pd.DataFrame(probability_distribution_np, columns=[alphabet[i] for i in range(len(alphabet))])
+
+    # Create a heatmap using seaborn
+    plt.figure(figsize=(20, 6))
+    sns.heatmap(df.T, cmap="coolwarm_r", linewidths=0.5, annot=False, cbar=True)
+    plt.xlabel("Sequence Position")
+    plt.ylabel("Character")
+    plt.title("Per-Position Probability Distribution Heatmap")
+
+    # Save the plot to the specified destination, if provided
+    if dest is not None:
+        plt.savefig(dest, dpi=300, bbox_inches='tight')
+
+    # Show the plot, if the 'show' argument is True
+    if show:
+        plt.show()
+
+
 seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
 results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
 
@@ -178,4 +222,6 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p, file=f)
     print(pp_entropy, file=f)
-    print(alphabet, file=f)
+
+
+plot_probability(probability_distribution=p, alphabet=alphabet, dest='heat.png')
