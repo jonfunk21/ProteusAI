@@ -16,22 +16,22 @@ import os
 from proteusAI.io_tools import fasta
 
 
-
-def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
+def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
     """
-    generate sequence representations using esm2 or esm1v.
+    Compute the of esm models for a list of sequences.
 
     Parameters:
-        seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence
-        names (list, default None): list of names/labels for protein sequences
-        dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
-        model (str): choose either esm2 or esm1v
+        seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence.
+        names (list, default None): list of names/labels for protein sequences.
+            If None sequences will be named seq1, seq2, ...
+        model (str): choose either esm2 or esm1v.
+        rep_layer (int): choose representation layer. Default 33.
 
-    Returns: representations (list) of sequence representation.
+    Returns: representations (list) of sequence representation, batch lens and batch labels
 
     Example:
         seqs = ["AGAVCTGAKLI", "AGHRFLIKLKI"]
-        representations = get_sequence_representations(seqs)
+        results, batch_lens, batch_labels = esm_compute(seqs)
     """
     # detect device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,7 +67,15 @@ def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
 
     # Extract per-residue representations (on CPU)
     with torch.no_grad():
-        results = model(batch_tokens.to(device), repr_layers=[33], return_contacts=True)
+        results = model(batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True)
+
+    return results, batch_lens, batch_labels
+
+
+def get_seq_rep(results, batch_lens, batch_labels, dest=None):
+    """
+    Get sequence representations from esm_compute
+    """
     token_representations = results["representations"][33]
 
     # Generate per-sequence representations via averaging
@@ -75,15 +83,26 @@ def embedd(seqs: list, names: list=None, dest: str=None, model: str="esm1v"):
     for i, tokens_len in enumerate(batch_lens):
         sequence_representations.append(token_representations[i, 1: tokens_len - 1].mean(0))
 
-    if dest is not None:
-        for i in range(len(sequence_representations)):
-            _dest = os.path.join(dest, batch_labels[i])
-            torch.save(sequence_representations[i], _dest + '.pt')
-
     return sequence_representations
 
 
-def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10):
+def get_logits(results):
+    """
+    Get sequence logits from esm_compute
+    """
+    logits = results["logits"]
+    return logits
+
+
+def get_attentions(results):
+    """
+    Get sequence representations from esm_compute
+    """
+    attn = results["attentions"]
+    return attn
+
+
+def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
@@ -94,6 +113,7 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
         dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
+        rep_layer (int): choose representation layer. Default 33.
 
     Returns: representations (list) of sequence representation.
 
@@ -115,11 +135,22 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
         names, seqs = fasta.load_all(fasta_path)
 
     for i in range(0, len(seqs), batch_size):
-        _ = embedd(seqs[i:i + batch_size], names[i:i + batch_size], dest=dest, model=model)
+        results, batch_lens, batch_labels = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
+        sequence_representations = get_seq_rep(results)
+        if dest is not None:
+            for j in range(len(sequence_representations)):
+                _dest = os.path.join(dest, names[i:i + batch_size][j])
+                torch.save(sequence_representations[j], _dest + '.pt')
 
+
+seqs = ["GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"]
+results, batch_lens, batch_labels = esm_compute(seqs)
+
+seq_rep = get_seq_rep(results, batch_lens, batch_labels)
+logits = get_logits(results)
+#attn = get_attentions(results)
 
 with open('test', 'w') as f:
-    seqs = ["AGAVCTGAKLI"]
     print(len(seqs[0]), file=f)
-    x = embedd(seqs=seqs)
-    print(x[0].shape, file=f)
+    print(seq_rep[0].shape, file=f)
+    print(logits, file=f)
