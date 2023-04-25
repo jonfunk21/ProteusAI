@@ -13,7 +13,6 @@ from biotite.structure.io.pdb import PDBFile
 import biotite.structure as struc
 from biotite.structure import sasa
 import tempfile
-from proteusAI.data import pdb
 
 #_____Sequence Constraints_____
 def length_constraint(seqs: list, max_len: int = 200):
@@ -101,6 +100,7 @@ def structure_prediction(
         max_tokens_per_batch: int = 1024, num_recycles: int = None):
     """
     Predict the structure of proteins.
+
     Parameters:
         sequences (list): all sequences for structure prediction
         names (list): names of the sequences
@@ -108,7 +108,8 @@ def structure_prediction(
         max_tokens_per_batch (int): Maximum number of tokens per gpu forward-pass. This will group shorter sequences together.
         num_recycles (int): Number of recycles to run. Defaults to number used in training 4.
 
-
+    Returns:
+        all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
     """
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()

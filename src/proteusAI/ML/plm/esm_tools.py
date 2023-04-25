@@ -18,7 +18,9 @@ from proteusAI.io_tools import fasta
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from biotite.structure.io.pdb import PDBFile
+import tempfile
+import typing as T
 
 def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
     """
@@ -56,7 +58,7 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
     model.to(device)
 
     if names == None:
-        names = [str(i) for i in range(len(seqs))]
+        names = names = [f'seq{i}' for i in range(len(seqs))]
 
     data = list(zip(names, seqs))
 
@@ -356,18 +358,99 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
     if show:
         plt.show()
 
+### Protein structure
+def string_to_tempfile(data):
+    """
+    Take a string and return a temporary file object with string as content
+    """
+    # create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        # write the string to the file
+        temp_file.write(data.encode('utf-8'))
+        # flush the file to make sure the data is written
+        temp_file.flush()
+        # return the file object
+        return temp_file
+
+
+def create_batched_sequence_datasest(
+    sequences: T.List[T.Tuple[str, str]], max_tokens_per_batch: int = 1024
+) -> T.Generator[T.Tuple[T.List[str], T.List[str]], None, None]:
+    """
+    Code taken from https://github.com/facebookresearch/esm/blob/main/scripts/esmfold_inference.py
+    """
+    batch_headers, batch_sequences, num_tokens = [], [], 0
+    for header, seq in sequences:
+        if (len(seq) + num_tokens > max_tokens_per_batch) and num_tokens > 0:
+            yield batch_headers, batch_sequences
+            batch_headers, batch_sequences, num_tokens = [], [], 0
+        batch_headers.append(header)
+        batch_sequences.append(seq)
+        num_tokens += len(seq)
+
+    yield batch_headers, batch_sequences
+
+
+def structure_prediction(
+        seqs: list, names: list=None, chunk_size: int = 124,
+        max_tokens_per_batch: int = 1024, num_recycles: int = None):
+    """
+    Predict the structure of proteins.
+
+    Parameters:
+        sequences (list): all sequences for structure prediction
+        names (list): names of the sequences
+        chunck_size (int): Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). Recommended values: 128, 64, 32.
+        max_tokens_per_batch (int): Maximum number of tokens per gpu forward-pass. This will group shorter sequences together.
+        num_recycles (int): Number of recycles to run. Defaults to number used in training 4.
+
+    Returns:
+        all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
+    """
+    model = esm.pretrained.esmfold_v1()
+    model = model.eval().cuda()
+    model.set_chunk_size(chunk_size)
+
+    if names == None:
+        names = [f'seq{i}' for i in range(len(seqs))]
+
+    all_sequences = list(zip(names, seqs))
+    batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
+    all_headers = []
+    all_sequences = []
+    all_pdbs = []
+    pTMs = []
+    mean_pLDDTs = []
+    for headers, sequences in batched_sequences:
+        output = model.infer(sequences, num_recycles=num_recycles)
+        output = {key: value.cpu() for key, value in output.items()}
+        pdbs = model.output_to_pdb(output)
+        for header, seq, pdb_string, mean_plddt, ptm in zip(
+                headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
+        ):
+            all_headers.append(header)
+            all_sequences.append(seq)
+            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name))  # biotite pdb file name
+            mean_pLDDTs.append(mean_plddt.item())
+            pTMs.append(ptm.item())
+
+    return all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
+
+name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 
+results, _, _, _ = esm_compute([seq])
+p, alphabet = mut_prob(seq)
+pred_seq = most_likely_sequence(p, alphabet)
+mutations = find_mutations(seq, pred_seq)
+_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
 with open('test', 'w') as f:
-    results, _, _, _ = esm_compute([seq])
     print(results["logits"].shape, file=f)
-    p, alphabet = mut_prob(seq)
     print(p.shape, file=f)
     print(seq, file=f)
-    pred_seq = most_likely_sequence(p, alphabet)
-    mutations = find_mutations(seq, pred_seq)
     print(pred_seq, file=f)
     print(mutations, file=f)
+    print(pdbs[0], file=f)
 
 plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
