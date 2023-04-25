@@ -76,7 +76,7 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
     return results, batch_lens, batch_labels, alphabet
 
 
-def get_seq_rep(results, batch_lens, batch_labels, dest=None):
+def get_seq_rep(results, batch_lens):
     """
     Get sequence representations from esm_compute
     """
@@ -166,16 +166,19 @@ def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: 
                 torch.save(sequence_representations[j], _dest + '.pt')
 
 
-def plot_probability(probability_distribution, alphabet, include=None, dest=None, show=True):
+def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest=None, show=True):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
-    :param probability_distribution: torch.Tensor with shape (1, sequence_length, alphabet_size)
-    :param alphabet: Dictionary mapping indices to characters
-    :param include: List of characters to include in the heatmap (default: None, include only amino acids)
-    :param dest: Optional path to save the plot as an image file (default: None)
-    :param show: Boolean controlling whether the plot is shown (default: True)
-    :return: None
+    Parameters:
+        p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
+        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
+        include (str or list): List of characters to include in the heatmap (default: cannonical, include only cannonical amino acids)
+        dest (str): Optional path to save the plot as an image file (default: None)
+        show (bool): Boolean controlling whether the plot is shown (default: True)
+
+    Returns:
+        None
     """
 
     if type(alphabet) == dict:
@@ -187,14 +190,19 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
             raise "alphabet has an unexpected format"
 
     # Convert the probability distribution tensor to a numpy array
-    probability_distribution_np = probability_distribution.cpu().numpy().squeeze()
+    probability_distribution_np = p.cpu().numpy().squeeze()
 
     # Remove the start and end of sequence tokens
-    probability_distribution_np = probability_distribution_np[1:-1, :]
+    if remove_tokens:
+        probability_distribution_np = probability_distribution_np[1:-1, :]
 
     # If no characters are specified, include only amino acids by default
-    if include is None:
-        include = [char for char in alphabet.keys() if char.isupper()]
+    if include is "canonical":
+        include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    elif include is "all":
+        include = alphabet.keys()
+    else:
+        include = include
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
@@ -205,7 +213,7 @@ def plot_probability(probability_distribution, alphabet, include=None, dest=None
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
-    sns.heatmap(df.T, cmap="Reds", linewidths=0.5, annot=False, cbar=True)
+    sns.heatmap(df.T, cmap="Reds_r", linewidths=0.5, annot=False, cbar=True)
     plt.xlabel("Sequence Position")
     plt.ylabel("Character")
     plt.title("Per-Position Probability Distribution Heatmap")
@@ -235,4 +243,4 @@ with open('test', 'w') as f:
     print(pp_entropy, file=f)
 
 
-plot_probability(probability_distribution=p, alphabet=alphabet, dest='heat.png')
+plot_probability(p=p, alphabet=alphabet, dest='heat.png')
