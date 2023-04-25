@@ -206,7 +206,10 @@ def plot_probability(p, alphabet, include="cannonical", remove_tokens=True, dest
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
-
+    with open('alphabet', 'w') as f:
+        print(include, file=f)
+        print(alphabet, file=f)
+        print(filtered_alphabet, file=f)
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
                       columns=[i for i in filtered_alphabet.keys()])
