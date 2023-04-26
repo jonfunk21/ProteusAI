@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from biotite.structure.io.pdb import PDBFile
 import tempfile
 import typing as T
+import math
 
 def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
     """
@@ -453,7 +454,7 @@ def format_float(float_value: float, str_len: int=5, round_val: int=2):
     return formatted_str
 
 # TODO: fix the entropy fucntions and also think of better names for them
-def entropy_to_bfactor(pdb, entropy_values, trim=False):
+def entropy_to_bfactor(pdb, entropy_values, trim=True, alphabet_size=33):
     """
     Convert per-position entropy values to b-factors between 0 and 100.
 
@@ -472,49 +473,31 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False):
 
     # Remove the start and end of sequence tokens, if requested
     if trim:
-        entropy_values = entropy_values[1:-1]
+        entropy_values = entropy_values[:, 1:-1]
 
-    # Define the range of the entropy values and b-factors
-    entropy_min, entropy_max = 0, 100
-    bfactor_min, bfactor_max = 100, 0
+    scaled_entropy = 100 * (1 - entropy_values / math.log2(alphabet_size))
+    scaled_entropy_list = scaled_entropy.tolist()
 
-    # Scale the entropy values to b-factors
-    scaled_bfactors = [bfactor_min + (bfactor_max - bfactor_min) * (entropy_value - entropy_min) / (entropy_max - entropy_min) for entropy_value in entropy_values]
-
-    b_factor_strings = [format_float(x.item().cpu()) for x in scaled_bfactors]
+    b_factor_strings = [[format(x, '.2f').rjust(6) for x in row] for row in scaled_entropy_list][0]
     lines = []
-    id = 0
+    id = -1
+    count = -1
     for i, line in enumerate(str(pdb).split('\n')):
         if line.startswith('ATOM'):
             res_id = int(line[23:26])
             if res_id != id:
-                id += 1
-            line = line[:60] + b_factor_strings[id] + line[66:]
-        lines.append(line)
-
-    pdb = string_to_tempfile("".join(lines))
+                id = res_id
+                count += 1
+            line = line[:60] + b_factor_strings[count] + line[66:]
+        lines.append(line + '\n')
+    pdb = PDBFile.read(string_to_tempfile("".join(lines)).name)
     return pdb
 
+# test
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
-
-results, _, _, _ = esm_compute([seq])
-#p, alphabet = mut_prob(seq)
-p = get_probability_distribution(results["logits"])
-#pred_seq = most_likely_sequence(p, alphabet)
-#mutations = find_mutations(seq, pred_seq)
-
+p, alphabet = mut_prob(seq)
 entropy = per_position_entropy(p)
-
-with open('test', 'w') as f:
-    print(p.shape, file=f)
-    #print(entropy, file=f)
-    #print(entropy_to_bfactor(entropy), file=f)
-    torch.save(p, 'tensor.pt')
-
-#_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
-#pdbs[0].write('test.pdb')
-pdb = PDBFile.read('test.pdb')
-pdb = entropy_to_bfactor(pdb, entropy)
-#pdb.write('test_entrpy.pdb')
-#plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
+_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
+pdb = entropy_to_bfactor(pdbs[0], entropy)
+pdb.write('test_entropy.pdb')
