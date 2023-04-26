@@ -14,7 +14,13 @@ from Bio import SeqIO
 
 def get_atom_array(file_path):
     """
-    returns atom array of file.
+    Returns atom array for a pdb file.
+
+    Parameters:
+        file_path (str): path to pdb file
+
+    Returns:
+        atom array
     """
     if file_path.endswith('pdb'):
         atom_mol = PDBFile.read(file_path)
@@ -31,7 +37,7 @@ def get_atom_array(file_path):
 
 def mol_contacts(mols, protein, dist=4.0):
     """
-    Get residue ids of contacts of small molecule(s) to a protein.
+    Get residue ids of contacts of small molecule(s) to protein.
 
     Parameters:
         mols (str, list of strings): path to molecule file
@@ -42,11 +48,9 @@ def mol_contacts(mols, protein, dist=4.0):
         set: res_ids of protein residues which are in contact with molecules
     """
     if isinstance(mols, list) or isinstance(mols, tuple):
-        single_element = False
         mols = [get_atom_array(m) for m in mols]
     else:
         mols = [get_atom_array(mols)]
-        single_element = True
 
     protein = get_atom_array(protein)
 

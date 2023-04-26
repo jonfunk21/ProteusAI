@@ -125,7 +125,6 @@ def per_position_entropy(probability_distribution):
     """
     # Calculate per-position entropy using the formula: H(x) = -sum(p(x) * log2(p(x)))
     entropy = -torch.sum(probability_distribution * torch.log2(probability_distribution + 1e-9), dim=-1)
-
     return entropy
 
 def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
@@ -453,8 +452,8 @@ def format_float(float_value: float, str_len: int=5, round_val: int=2):
     formatted_str = value_str.rjust(str_len, ' ')
     return formatted_str
 
-# TODO: fix the entropy fucntions and also think of better names for them
-def entropy_to_bfactor(pdb, entropy_values, trim=True, alphabet_size=33):
+
+def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     """
     Convert per-position entropy values to b-factors between 0 and 100.
 
