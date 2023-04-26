@@ -128,7 +128,7 @@ def per_position_entropy(probability_distribution):
     return entropy
 
 
-def log_odds(p: torch.Tensor, alphabet: esm.data.Alphabet, native_seq: str, canonical: bool = True):
+def calculate_log_odds(p: torch.Tensor, alphabet: esm.data.Alphabet, native_seq: str, canonical: bool = True):
     """
     Calculculate the log odds from a probability distribution.
 
@@ -153,7 +153,7 @@ def log_odds(p: torch.Tensor, alphabet: esm.data.Alphabet, native_seq: str, cano
     # Filter the alphabet dictionary to only include canonical AAs
     if canonical:
         include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-        alphabet = {i: char for char, i in alphabet.items() if char in include}
+        alphabet = {char: i for char, i in alphabet.items() if char in include}
 
     # Convert native sequence to its index representation
     native_seq_indices = torch.tensor([alphabet[c] for c in native_seq], dtype=torch.long)
@@ -548,7 +548,7 @@ p, alphabet = mut_prob(seq)
 entropy = per_position_entropy(p)
 _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = entropy_to_bfactor(pdbs[0], entropy)
-l_odds = log_odds(p, alphabet, seq)
+l_odds = calculate_log_odds(p, alphabet, seq)
 with open('test', 'w') as f:
     print(l_odds, file=f)
 plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False)
