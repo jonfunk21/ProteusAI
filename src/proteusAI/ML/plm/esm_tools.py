@@ -48,7 +48,7 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
 
     # load model
     if model == "esm2":
-        model, alphabet = esm.pretrained.esm2_t48_15B_UR50D()
+        model, alphabet = esm.pretrained.esm2_t36_3B_UR50D()
     elif model == "esm1v":
         model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
     else:
@@ -126,6 +126,50 @@ def per_position_entropy(probability_distribution):
     # Calculate per-position entropy using the formula: H(x) = -sum(p(x) * log2(p(x)))
     entropy = -torch.sum(probability_distribution * torch.log2(probability_distribution + 1e-9), dim=-1)
     return entropy
+
+
+def log_odds(p: torch.Tensor, alphabet: esm.data.Alphabet, native_seq: str, canonical: bool = True):
+    """
+    Calculculate the log odds from a probability distribution.
+
+    Parameters:
+        p (torch.Tensor): Torch tensor of probability distribution (batch_size, sequence_length, alphabet_size)
+        alphabet (esm.data.Alphabet): Alphabet used for logits
+        native_seq (str): Native sequence
+        canonical (bool): only use canonical amino acids
+
+    Return:
+        torch.Tensor of log-odds ratio
+    """
+
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise ValueError("alphabet has an unexpected format")
+
+    # Filter the alphabet dictionary to only include canonical AAs
+    if canonical:
+        include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+        alphabet = {i: char for char, i in alphabet.items() if char in include}
+
+    # Convert native sequence to its index representation
+    native_seq_indices = torch.tensor([alphabet[c] for c in native_seq], dtype=torch.long)
+
+    # Expand native_seq_indices to match the batch_size of the input probability tensor
+    batch_size = p.shape[0]
+    native_seq_indices_expanded = native_seq_indices.unsqueeze(0).expand(batch_size, -1)
+
+    # Calculate wildtype probabilities for each position
+    wildtype_probabilities = p.gather(dim=-1, index=native_seq_indices_expanded.unsqueeze(-1)).expand_as(p)
+
+    # Calculate log odds ratios
+    log_odds_ratios = torch.log(p) - torch.log(wildtype_probabilities)
+
+    return log_odds_ratios
+
 
 def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
     """
@@ -205,7 +249,7 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        Logits torch.Tensor for every position and alphabet
+        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data.Alphabet
 
     Example:
         1.
@@ -215,7 +259,7 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
         2.
         batch_embedd(fasta_path='file.fasta', dest='path')
     """
-    masked_seqs = mask_positions(seq)
+    masked_seqs = mask_positions(seq) # list of sequences where every position has been masked once
     names = [f'seq{i}' for i in range(len(masked_seqs))]
     sequence_length = len(seq)
 
@@ -296,7 +340,7 @@ def find_mutations(native_seq, predicted_seq):
     return mutations
 
 
-def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=None, show=True):
+def plot_heat(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens=False, show=True):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
@@ -305,7 +349,9 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
         include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
         dest (str): Optional path to save the plot as an image file (default: None)
-        show (bool): Boolean controlling whether the plot is shown (default: True)
+        title (str): title of plot
+        remove_tokens (bool): Remove start of sequence and end of sequence tokens
+        show (bool): Display plot if True (default: True)
 
     Returns:
         None
@@ -348,7 +394,10 @@ def plot_probability(p, alphabet, include="canonical", remove_tokens=True, dest=
     sns.heatmap(df.T, cmap="Reds", linewidths=0.5, annot=False, cbar=True)
     plt.xlabel("Sequence Position")
     plt.ylabel("Character")
-    plt.title("Per-Position Probability Distribution Heatmap")
+    if title == None:
+        plt.title("Per-Position Probability Distribution Heatmap")
+    else:
+        plt.title(title)
 
     # Save the plot to the specified destination, if provided
     if dest is not None:
@@ -499,4 +548,8 @@ p, alphabet = mut_prob(seq)
 entropy = per_position_entropy(p)
 _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = entropy_to_bfactor(pdbs[0], entropy)
+l_odds = log_odds(p, alphabet, seq)
+with open('test', 'w') as f:
+    print(l_odds, file=f)
+plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False)
 pdb.write('test_entropy.pdb')
