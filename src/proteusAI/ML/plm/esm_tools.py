@@ -452,8 +452,8 @@ def format_float(float_value: float, str_len: int=5, round_val: int=2):
     formatted_str = value_str.rjust(str_len, ' ')
     return formatted_str
 
-
-def entropy_to_bfactor(entropy_values, trim=False):
+# TODO: fix the entropy fucntions and also think of better names for them
+def entropy_to_bfactor(pdb, entropy_values, trim=False):
     """
     Convert per-position entropy values to b-factors between 0 and 100.
 
@@ -464,6 +464,11 @@ def entropy_to_bfactor(entropy_values, trim=False):
     Returns:
         list: List of scaled b-factors
     """
+    if type(pdb) != str:
+        try:
+            pdb = str(pdb)
+        except:
+            raise "invalid input type for pdb"
 
     # Remove the start and end of sequence tokens, if requested
     if trim:
@@ -476,19 +481,7 @@ def entropy_to_bfactor(entropy_values, trim=False):
     # Scale the entropy values to b-factors
     scaled_bfactors = [bfactor_min + (bfactor_max - bfactor_min) * (entropy_value - entropy_min) / (entropy_max - entropy_min) for entropy_value in entropy_values]
 
-    return scaled_bfactors
-
-
-def entropy_to_pdb_b_factor(pdb, per_position_entropy, trim=False):
-
-    if type(pdb) != str:
-        try:
-            pdb = str(pdb)
-        except:
-            raise "invalid input type for pdb"
-
-    b_factors = entropy_to_bfactor(per_position_entropy, trim=trim)
-    b_factor_strings = [format_float(x) for x in b_factors]
+    b_factor_strings = [format_float(x.item().cpu()) for x in scaled_bfactors]
     lines = []
     id = 0
     for i, line in enumerate(str(pdb).split('\n')):
@@ -514,11 +507,14 @@ p = get_probability_distribution(results["logits"])
 entropy = per_position_entropy(p)
 
 with open('test', 'w') as f:
-    print(entropy, file=f)
-    print(entropy_to_bfactor(entropy), file=f)
+    print(p.shape, file=f)
+    #print(entropy, file=f)
+    #print(entropy_to_bfactor(entropy), file=f)
+    torch.save(p, 'tensor.pt')
 
-_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
-pdbs[0].write('test.pdb')
-pdb = entropy_to_pdb_b_factor(pdbs[0], entropy)
-pdb.write('test_entrpy.pdb')
+#_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
+#pdbs[0].write('test.pdb')
+pdb = PDBFile.read('test.pdb')
+pdb = entropy_to_bfactor(pdb, entropy)
+#pdb.write('test_entrpy.pdb')
 #plot_probability(p=p, alphabet=alphabet, dest='heat.png', remove_tokens=False)
