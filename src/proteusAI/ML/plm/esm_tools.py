@@ -552,4 +552,5 @@ l_odds = calculate_log_odds(p, alphabet, seq)
 with open('test', 'w') as f:
     print(l_odds, file=f)
 plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False)
+plot_heat(p=l_odds, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
