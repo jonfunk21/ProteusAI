@@ -118,16 +118,6 @@ def get_probability_distribution(logits):
 
     return probability_distribution
 
-def get_log_prob(logits):
-    """
-    Convert logits to log-probability distribution for each position in the sequence.
-    """
-    # Apply softmax function to the logits along the alphabet dimension (dim=2)
-    probability_distribution = F.log_softmax(logits, dim=-1)
-
-    return probability_distribution
-
-
 def per_position_entropy(probability_distribution):
     """
     Compute the per-position entropy from a probability distribution tensor.
@@ -247,6 +237,54 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
 
     return logits_tensor, alphabet
 
+def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data.Alphabet):
+    """
+    Get the masked marginal probabilities for every mutation vs the wildtype.
+
+    Parameters:
+        p (torch.Tensor): probability distribution.
+        wt_seq (str): wildtype sequence
+        alphabet (esm.data.Alphabet): alphabet
+
+    Returns:
+        torch.Tensor: masked marginal probability for every position
+
+    Examples:
+        seq = 'SEQVENCE'
+        logits, alphabet = get_mutant_logits(seq)
+        p = get_probability_distribution(logits)
+        mmp = masked_marginal_probability(p, logits, alphabet)
+    """
+
+    assert type(wt_seq) == str
+
+    if p.shape[1] == len(wt_seq):
+        assert p.shape[1] == len(wt_seq)
+    else:
+        p = p[:, 1:-1]
+        assert p.shape[1] == len(wt_seq)
+
+    # esm alphabet to dict and only keep cannonical amino acids
+    include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    alphabet = {i: char for char, i in alphabet.items() if char in include}
+
+    wt_tensor = torch.Tensor(1,len(wt_seq), len(alphabet))
+
+    for i, aa in enumerate(wt_seq):
+        wt_ind = alphabet[aa]
+        x_wt = logits[0,i,wt_ind]
+        wt_tensor[0,i] = torch.Tensor([x_wt] * len(alphabet))
+
+    log_wt_tensor = torch.log(wt_tensor)
+    log_p = torch.log(p)
+
+    mmp = log_p - log_wt_tensor
+
+    return mmp
+
+        #for mt_ind in alphabet.keys():
+        #    x_mt = logits[1, i, mt_ind]
+        #    mmp[1, i, mt_ind] = math.log(x_wt) - math.log(x_mt)
 
 def most_likely_sequence(log_prob_tensor, alphabet):
     """
@@ -510,8 +548,8 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 logits, alphabet = get_mutant_logits(seq)
-p = get_log_prob(logits)
-log_prob = get_log_prob(logits)
+p = get_probability_distribution(logits)
+mmp = masked_marginal_probability(p, logits, alphabet)
 entropy = per_position_entropy(p)
 #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = PDBFile.read('test_entropy.pdb')
@@ -519,7 +557,6 @@ pdb = entropy_to_bfactor(pdb, entropy)
 with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p.shape, file=f)
-    print(log_prob.shape, file=f)
-plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
-plot_heat(p=log_prob, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
+#plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
+plot_heat(p=mmp, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
