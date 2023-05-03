@@ -239,11 +239,11 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
 
         # Fill the logits_tensor with the logits for each masked position
         for j in range(logits.shape[0]):
-            masked_position = i + j
-            if masked_position < sequence_length:
-                logits_tensor[0, masked_position] = logits[j, masked_position + 1]
+            masked_position = i * batch_size + j
+            if masked_position <= sequence_length + 2:
+                logits_tensor[0, masked_position] = logits[j, masked_position]
 
-    return logits, alphabet
+    return logits_tensor, alphabet
 
 
 def most_likely_sequence(log_prob_tensor, alphabet):
