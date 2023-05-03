@@ -518,6 +518,6 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p.shape, file=f)
     print(log_prob.shape, file=f)
-plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False)
-plot_heat(p=log_prob, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False, title='Per position log-odds')
+plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False)
+plot_heat(p=log_prob, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
