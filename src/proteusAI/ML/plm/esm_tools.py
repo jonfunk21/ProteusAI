@@ -274,7 +274,7 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
 
     # esm alphabet to dict and only keep cannonical amino acids
     include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-    alphabet = {i: char for char, i in alphabet.items() if char in include}
+    alphabet = {char: i for char, i in alphabet.items() if char in include}
 
     wt_tensor = torch.Tensor(1,len(wt_seq), len(alphabet))
     cannonical_probs = torch.Tensor(1,len(wt_seq), len(alphabet))
@@ -283,7 +283,7 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         wt_ind = alphabet[aa]
         x_wt = logits[0,i,wt_ind]
         wt_tensor[0,i] = torch.Tensor([x_wt] * len(alphabet))
-        cannonical_probs[0,i] = torch.Tensor([p[0,i,key] for key, val in alphabet.items()])
+        cannonical_probs[0,i] = torch.Tensor([p[0,i,val] for key, val in alphabet.items()])
 
     log_wt_tensor = torch.log(wt_tensor)
     log_p = torch.log(cannonical_probs)
