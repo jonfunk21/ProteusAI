@@ -209,6 +209,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     Every position of a sequence will be masked and the logits for the masked position
     will be calculated. The probabilities for every position will be concatenated in a
     combined logits tensor, which will be returned together with the alphabet.
+    Keep in mind: the returned logits have start of sequence and end of sequence tokens attached
 
     Parameters:
         seq (str): native protein sequence
@@ -217,7 +218,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data.Alphabet
+        tuple: torch.Tensor (1, sequence_length + 2, alphabet_size) and alphabet esm.data.Alphabet
 
     Example:
         1.
@@ -519,6 +520,6 @@ with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p.shape, file=f)
     print(log_prob.shape, file=f)
-plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False)
+plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
 plot_heat(p=log_prob, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
