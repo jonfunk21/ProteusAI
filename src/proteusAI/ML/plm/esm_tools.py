@@ -224,6 +224,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         seq = "AGHRFLIKLKI"
         logits = get_mutant_logits(seq=seq)
     """
+    assert type(seq) == str
     masked_seqs = mask_positions(seq) # list of sequences where every position has been masked once
     names = [f'seq{i}' for i in range(len(masked_seqs))]
     sequence_length = len(seq)
@@ -239,7 +240,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
 
         # Fill the logits_tensor with the logits for each masked position
         for j in range(logits.shape[0]):
-            masked_position = i * batch_size + j
+            masked_position = i * logits.shape[0] + j
             if masked_position <= sequence_length + 2:
                 logits_tensor[0, masked_position] = logits[j, masked_position]
 
