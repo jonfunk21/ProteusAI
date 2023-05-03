@@ -118,6 +118,15 @@ def get_probability_distribution(logits):
 
     return probability_distribution
 
+def get_log_prob(logits):
+    """
+    Convert logits to log-probability distribution for each position in the sequence.
+    """
+    # Apply softmax function to the logits along the alphabet dimension (dim=2)
+    probability_distribution = F.log_softmax(logits, dim=-1)
+
+    return probability_distribution
+
 
 def per_position_entropy(probability_distribution):
     """
@@ -127,48 +136,6 @@ def per_position_entropy(probability_distribution):
     entropy = -torch.sum(probability_distribution * torch.log2(probability_distribution + 1e-9), dim=-1)
     return entropy
 
-
-def calculate_log_odds(p: torch.Tensor, alphabet: esm.data.Alphabet, native_seq: str, canonical: bool = True):
-    """
-    Calculculate the log odds from a probability distribution.
-
-    Parameters:
-        p (torch.Tensor): Torch tensor of probability distribution (batch_size, sequence_length, alphabet_size)
-        alphabet (esm.data.Alphabet): Alphabet used for logits
-        native_seq (str): Native sequence
-        canonical (bool): only use canonical amino acids
-
-    Return:
-        torch.Tensor of log-odds ratio
-    """
-
-    if type(alphabet) == dict:
-        pass
-    else:
-        try:
-            alphabet = alphabet.to_dict()
-        except:
-            raise ValueError("alphabet has an unexpected format")
-
-    # Filter the alphabet dictionary to only include canonical AAs
-    if canonical:
-        include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-        alphabet = {char: i for char, i in alphabet.items() if char in include}
-
-    # Convert native sequence to its index representation
-    native_seq_indices = torch.tensor([alphabet[c] for c in native_seq], dtype=torch.long)
-
-    # Expand native_seq_indices to match the batch_size of the input probability tensor
-    batch_size = p.shape[0]
-    native_seq_indices_expanded = native_seq_indices.unsqueeze(0).expand(batch_size, -1)
-
-    # Calculate wildtype probabilities for each position
-    wildtype_probabilities = p.gather(dim=-1, index=native_seq_indices_expanded.unsqueeze(-1)).expand_as(p)
-
-    # Calculate log odds ratios
-    log_odds_ratios = torch.log(p) - torch.log(wildtype_probabilities)
-
-    return log_odds_ratios
 
 
 def batch_embedd(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm1v", batch_size: int=10, rep_layer: int=33):
@@ -236,11 +203,12 @@ def mask_positions(sequence: str, mask_char: str='<mask>'):
     return masked_sequences
 
 
-def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
+def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
     """
-    Compute mutation probabilities based on masked sequence modelling using esm1v or esm2.
-    Every position of a sequence will be masked and the probability for every amino acid at that
-    position will be stored. The probabilities for every position will be concatenated in a tensor.
+    Exhaustively compute the logits for every position in a sequence using esm1v or esm2.
+    Every position of a sequence will be masked and the logits for the masked position
+    will be calculated. The probabilities for every position will be concatenated in a
+    combined logits tensor, which will be returned together with the alphabet.
 
     Parameters:
         seq (str): native protein sequence
@@ -254,10 +222,7 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
     Example:
         1.
         seq = "AGHRFLIKLKI"
-        logits = mut_prob(seq=seq)
-
-        2.
-        batch_embedd(fasta_path='file.fasta', dest='path')
+        logits = get_mutant_logits(seq=seq)
     """
     masked_seqs = mask_positions(seq) # list of sequences where every position has been masked once
     names = [f'seq{i}' for i in range(len(masked_seqs))]
@@ -278,9 +243,7 @@ def mut_prob(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33
             if masked_position < sequence_length:
                 logits_tensor[0, masked_position] = logits[j, masked_position + 1]
 
-    p = get_probability_distribution(logits_tensor)
-
-    return p, alphabet
+    return logits, alphabet
 
 
 def most_likely_sequence(log_prob_tensor, alphabet):
@@ -544,13 +507,14 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
 # test
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
-p, alphabet = mut_prob(seq)
+logits, alphabet = get_mutant_logits(seq)
+p = get_log_prob(logits)
+log_prob = get_log_prob(logits)
 entropy = per_position_entropy(p)
 _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = entropy_to_bfactor(pdbs[0], entropy)
-l_odds = calculate_log_odds(p, alphabet, seq)
 with open('test', 'w') as f:
-    print(l_odds, file=f)
+    print(log_prob, file=f)
 plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False)
-plot_heat(p=l_odds, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False, title='Per position log-odds')
+plot_heat(p=log_prob, alphabet=alphabet, include="canonical", remove_tokens=False, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
