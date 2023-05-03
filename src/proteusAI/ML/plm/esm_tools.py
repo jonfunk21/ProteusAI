@@ -264,9 +264,17 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         p = p[:, 1:-1]
         assert p.shape[1] == len(wt_seq)
 
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise "alphabet has an unexpected format"
+
     # esm alphabet to dict and only keep cannonical amino acids
     include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-    alphabet = {i: char for char, i in alphabet.items() if char in include}
+    alphabet = {char: i for char, i in alphabet.items() if char in include}
 
     wt_tensor = torch.Tensor(1,len(wt_seq), len(alphabet))
 
@@ -281,10 +289,6 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
     mmp = log_p - log_wt_tensor
 
     return mmp
-
-        #for mt_ind in alphabet.keys():
-        #    x_mt = logits[1, i, mt_ind]
-        #    mmp[1, i, mt_ind] = math.log(x_wt) - math.log(x_mt)
 
 def most_likely_sequence(log_prob_tensor, alphabet):
     """
