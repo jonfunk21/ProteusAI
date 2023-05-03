@@ -276,8 +276,8 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
     include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     alphabet = {char: i for char, i in alphabet.items() if char in include}
 
-    wt_tensor = torch.Tensor(1,len(wt_seq), len(alphabet))
-    cannonical_probs = torch.Tensor(1,len(wt_seq), len(alphabet))
+    wt_tensor = torch.zeros(1,len(wt_seq), len(alphabet))
+    cannonical_probs = torch.zeros(1,len(wt_seq), len(alphabet))
 
     for i, aa in enumerate(wt_seq):
         wt_ind = alphabet[aa]
