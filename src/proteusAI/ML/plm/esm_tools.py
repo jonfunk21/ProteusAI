@@ -229,7 +229,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     sequence_length = len(seq)
 
     # Initialize an empty tensor of the desired shape
-    logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
+    logits_tensor = torch.zeros(1, sequence_length + 2, alphabet_size)
 
     for i in range(0, len(masked_seqs), batch_size):
         results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
