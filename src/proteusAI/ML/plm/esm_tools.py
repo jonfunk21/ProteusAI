@@ -272,23 +272,22 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         except:
             raise "alphabet has an unexpected format"
 
-    # esm alphabet to dict and only keep cannonical amino acids
-    include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    # Filter the alphabet to only include canonical amino acids
+    include = set('ARNDCQEGHILKMFPSTWYV')
     alphabet = {char: i for char, i in alphabet.items() if char in include}
 
-    wt_tensor = torch.zeros(1,len(wt_seq), len(alphabet))
-    cannonical_probs = torch.zeros(1,len(wt_seq), len(alphabet))
+    # Create tensors for the wildtype sequence and canonical amino acid probabilities
+    wt_tensor = torch.zeros(1, len(wt_seq), len(alphabet))
+    canonical_probs = torch.zeros(1, len(wt_seq), len(alphabet))
 
+    # Populate the tensors with the wildtype logits and canonical probabilities
     for i, aa in enumerate(wt_seq):
         wt_ind = alphabet[aa]
-        x_wt = logits[0,i,wt_ind]
-        wt_tensor[0,i] = torch.Tensor([x_wt] * len(alphabet))
-        cannonical_probs[0,i] = torch.Tensor([p[0,i,val] for key, val in alphabet.items()])
+        wt_tensor[0, i] = p[0, i, wt_ind]
+        canonical_probs[0, i] = p[0, i, list(alphabet.values())]
 
-    log_wt_tensor = torch.log(wt_tensor)
-    log_p = torch.log(cannonical_probs)
-
-    mmp = log_p - log_wt_tensor
+    # Compute the masked marginal probabilities
+    mmp = torch.log(canonical_probs) - torch.log(wt_tensor)
 
     return mmp
 
@@ -563,6 +562,7 @@ pdb = entropy_to_bfactor(pdb, entropy)
 with open('test', 'w') as f:
     print(logits.shape, file=f)
     print(p.shape, file=f)
+    print(mmp.shape, file=f)
 #plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
 plot_heat(p=mmp, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
 pdb.write('test_entropy.pdb')
