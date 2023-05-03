@@ -549,7 +549,7 @@ name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 logits, alphabet = get_mutant_logits(seq)
 p = get_probability_distribution(logits)
-mmp = masked_marginal_probability(p, logits, alphabet)
+mmp = masked_marginal_probability(p, seq, alphabet)
 entropy = per_position_entropy(p)
 #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = PDBFile.read('test_entropy.pdb')
