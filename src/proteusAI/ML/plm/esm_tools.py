@@ -566,10 +566,10 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         None
     """
     # Check if the length of the per_position_entropy and sequence match
-    if len(per_position_entropy) != len(sequence):
+    if per_position_entropy.shape[1] != len(sequence):
         # handle start of sequence and end of sequence tokens
         per_position_entropy = per_position_entropy[:, 1:-1]
-        if len(per_position_entropy) != len(sequence):
+        if per_position_entropy.shape[1] != len(sequence):
             raise ValueError("The length of per_position_entropy and sequence must be the same.")
 
 
