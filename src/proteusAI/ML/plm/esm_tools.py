@@ -23,6 +23,7 @@ from biotite.structure.io.pdb import PDBFile
 import tempfile
 import typing as T
 import math
+import numpy as np
 
 def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
     """
@@ -553,6 +554,43 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     if show:
         plt.show()
 
+def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, show: bool=False, dest: str=None):
+    """
+    Plot the per position entropy for a given sequence.
+
+    Parameters:
+        per_position_entropy (list or numpy.array): List or array of per position entropy values.
+        sequence (str): Protein sequence.
+
+    Returns:
+        None
+    """
+    # Check if the length of the per_position_entropy and sequence match
+    if len(per_position_entropy) != len(sequence):
+        raise ValueError("The length of per_position_entropy and sequence must be the same.")
+
+    # Create an array of positions for the x-axis
+    positions = np.arange(len(sequence))
+
+    # Create a bar plot of per position entropy
+    plt.figure(figsize=(20, 6))
+    plt.bar(positions, per_position_entropy)
+
+    # Set the x-axis labels to the sequence
+    plt.xticks(positions, sequence)
+
+    # Set the labels and title
+    plt.xlabel("Sequence")
+    plt.ylabel("Per Position Entropy")
+    plt.title("Per Position Entropy of Sequence")
+
+    if dest is not None:
+        plt.savefig(dest, dpi=300)
+
+    # Show the plot
+    if show:
+        plt.show()
+
 # test
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
@@ -566,6 +604,7 @@ entropy = per_position_entropy(p)
 #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = PDBFile.read('test_entropy.pdb')
 pdb = entropy_to_bfactor(pdb, entropy)
-plot_heatmap(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=True)
+plot_heatmap(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
 plot_heatmap(p=mmp, alphabet=alphabet, dest="log_odds.png", show=True, title='Per position log-odds', color_sheme="rwb")
+plot_per_position_entropy(entropy, seq, show=False, dest='per_pos_entropy.png')
 pdb.write('test_entropy.pdb')
