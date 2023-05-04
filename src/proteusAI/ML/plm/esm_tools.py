@@ -580,7 +580,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
 
     # Create a bar plot of per position entropy
     plt.figure(figsize=(20, 6))
-    plt.bar(positions, per_position_entropy_np)
+    plt.bar(positions, per_position_entropy_np.squeeze())
 
     # Set the x-axis labels to the sequence
     plt.xticks(positions, sequence)
