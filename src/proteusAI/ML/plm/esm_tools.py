@@ -559,7 +559,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     Plot the per position entropy for a given sequence.
 
     Parameters:
-        per_position_entropy (torch.Tensor): Tensor of per position entropy values with shape (batch_size, sequence_length+2).
+        per_position_entropy (torch.Tensor): Tensor of per position entropy values with shape (batch_size, sequence_length).
         sequence (str): Protein sequence.
         show (bool): Display the plot if True (default: False).
         dest (str): Optional path to save the plot as an image file (default: None).
@@ -572,11 +572,8 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     per_position_entropy_np = per_position_entropy.cpu().numpy()
 
     # Check if the length of the per_position_entropy and sequence match
-    if per_position_entropy_np.shape[1] - 2 != len(sequence):
+    if per_position_entropy_np.shape[1] != len(sequence):
         raise ValueError("The length of per_position_entropy and sequence must be the same.")
-
-    # Handle start of sequence and end of sequence tokens
-    per_position_entropy_np = per_position_entropy_np[:, 1:-1].squeeze()
 
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
