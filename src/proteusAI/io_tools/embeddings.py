@@ -7,7 +7,7 @@ __author__ = "Jonathan Funk"
 import os
 import torch
 
-def load(path: str, names: list = None, map_location: str = 'cpu') -> tuple:
+def load_embeddings(path: str, names: list = None, map_location: str = 'cpu') -> tuple:
     """
     Loads all representations files from a directory, returns the names/ids and sequences as lists.
 
