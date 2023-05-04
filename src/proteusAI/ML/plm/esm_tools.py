@@ -18,6 +18,7 @@ from proteusAI.io_tools import fasta
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from biotite.structure.io.pdb import PDBFile
 import tempfile
 import typing as T
@@ -229,11 +230,10 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
                                                                   rep_layer=rep_layer)
         logits = results["logits"]
 
-        # Fill the logits_tensor with the logits for each masked position
-        for j in range(logits.shape[0]):
-            masked_position = i * logits.shape[0] + j
-            if masked_position <= sequence_length + 2:
-                logits_tensor[0, masked_position] = logits[j, masked_position]
+        # Extract the logits corresponding to the masked position for each sequence in the batch
+        for j, masked_seq_name in enumerate(names[i:i + batch_size]):
+            masked_position = int(masked_seq_name[3:])
+            logits_tensor[0, masked_position + 1] = logits[j, masked_position + 1]
 
     return logits_tensor, alphabet
 
@@ -272,22 +272,16 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         except:
             raise "alphabet has an unexpected format"
 
-    # Filter the alphabet to only include canonical amino acids
-    include = set('ARNDCQEGHILKMFPSTWYV')
-    alphabet = {char: i for char, i in alphabet.items() if char in include}
-
     # Create tensors for the wildtype sequence and canonical amino acid probabilities
     wt_tensor = torch.zeros(1, len(wt_seq), len(alphabet))
-    canonical_probs = torch.zeros(1, len(wt_seq), len(alphabet))
 
     # Populate the tensors with the wildtype logits and canonical probabilities
     for i, aa in enumerate(wt_seq):
         wt_ind = alphabet[aa]
         wt_tensor[0, i] = p[0, i, wt_ind]
-        canonical_probs[0, i] = p[0, i, list(alphabet.values())]
 
     # Compute the masked marginal probabilities
-    mmp = torch.log(canonical_probs) - torch.log(wt_tensor)
+    mmp = torch.log(p) - torch.log(wt_tensor)
 
     return mmp
 
@@ -347,73 +341,6 @@ def find_mutations(native_seq, predicted_seq):
 
     return mutations
 
-
-def plot_heat(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens=False, show=True):
-    """
-    Plot a heatmap of the probability distribution for each position in the sequence.
-
-    Parameters:
-        p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
-        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
-        include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
-        dest (str): Optional path to save the plot as an image file (default: None)
-        title (str): title of plot
-        remove_tokens (bool): Remove start of sequence and end of sequence tokens
-        show (bool): Display plot if True (default: True)
-
-    Returns:
-        None
-    """
-
-    if type(alphabet) == dict:
-        pass
-    else:
-        try:
-            alphabet = alphabet.to_dict()
-        except:
-            raise "alphabet has an unexpected format"
-
-    # Convert the probability distribution tensor to a numpy array
-    probability_distribution_np = p.cpu().numpy().squeeze()
-
-    # Remove the start and end of sequence tokens
-    if remove_tokens:
-        probability_distribution_np = probability_distribution_np[1:-1, :]
-
-    # If no characters are specified, include only amino acids by default
-    if include == "canonical":
-        include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-    elif include == "all":
-        include = alphabet.keys()
-    elif type(alphabet) == list:
-        include = include
-    else:
-        raise "include must either be 'canonical' 'all' or a list of valid elements"
-
-    # Filter the alphabet dictionary based on the 'include' list
-    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
-
-    # Create a pandas DataFrame with appropriate column and row labels
-    df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
-                      columns=[i for i in filtered_alphabet.keys()])
-
-    # Create a heatmap using seaborn
-    plt.figure(figsize=(20, 6))
-    sns.heatmap(df.T, cmap="Reds", linewidths=0.5, annot=False, cbar=True)
-    plt.xlabel("Sequence Position")
-    plt.ylabel("Character")
-    if title == None:
-        plt.title("Per-Position Probability Distribution Heatmap")
-    else:
-        plt.title(title)
-
-    # Save the plot to the specified destination, if provided
-    if dest is not None:
-        plt.savefig(dest, dpi=300, bbox_inches='tight')
-
-    # Show the plot, if the 'show' argument is True
-    if show:
-        plt.show()
 
 ### Protein structure
 def string_to_tempfile(data):
@@ -549,21 +476,96 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     pdb = PDBFile.read(string_to_tempfile("".join(lines)).name)
     return pdb
 
+# Visualization
+def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b"):
+    """
+    Plot a heatmap of the probability distribution for each position in the sequence.
+
+    Parameters:
+        p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
+        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
+        include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
+        dest (str): Optional path to save the plot as an image file (default: None)
+        title (str): title of plot
+        remove_tokens (bool): Remove start of sequence and end of sequence tokens
+        show (bool): Display plot if True (default: True)
+
+    Returns:
+        None
+    """
+
+    if type(alphabet) == dict:
+        pass
+    else:
+        try:
+            alphabet = alphabet.to_dict()
+        except:
+            raise "alphabet has an unexpected format"
+
+    # Convert the probability distribution tensor to a numpy array
+    probability_distribution_np = p.cpu().numpy().squeeze()
+
+    # Remove the start and end of sequence tokens
+    if remove_tokens:
+        probability_distribution_np = probability_distribution_np[1:-1, :]
+
+    # If no characters are specified, include only amino acids by default
+    if include == "canonical":
+        include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    elif include == "all":
+        include = alphabet.keys()
+    elif type(alphabet) == list:
+        include = include
+    else:
+        raise "include must either be 'canonical' 'all' or a list of valid elements"
+
+    # Filter the alphabet dictionary based on the 'include' list
+    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
+
+    # Create a pandas DataFrame with appropriate column and row labels
+    df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
+                      columns=[i for i in filtered_alphabet.keys()])
+
+    # colors
+    if color_sheme == 'rwb':
+        colors = ["red", "white", "blue"]
+        cmap = LinearSegmentedColormap.from_list("red_white_blue", colors)
+    elif color_sheme == 'r':
+        cmap = "Reds"
+    else:
+        cmap = "Blues"
+
+    # Create a heatmap using seaborn
+    plt.figure(figsize=(20, 6))
+    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True)
+    plt.xlabel("Sequence Position")
+    plt.ylabel("Character")
+    if title == None:
+        plt.title("Per-Position Probability Distribution Heatmap")
+    else:
+        plt.title(title)
+
+    # Save the plot to the specified destination, if provided
+    if dest is not None:
+        plt.savefig(dest, dpi=300, bbox_inches='tight')
+
+    # Show the plot, if the 'show' argument is True
+    if show:
+        plt.show()
+
 # test
 name = "1HY2"
 seq = "GAAEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS"
 logits, alphabet = get_mutant_logits(seq)
 p = get_probability_distribution(logits)
-torch.save(p, 'prob.pt')
+#torch.save(p, 'prob.pt')
+#p = torch.load('../../../../prob.pt')
+model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
 mmp = masked_marginal_probability(p, seq, alphabet)
 entropy = per_position_entropy(p)
 #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = PDBFile.read('test_entropy.pdb')
 pdb = entropy_to_bfactor(pdb, entropy)
-with open('test', 'w') as f:
-    print(logits.shape, file=f)
-    print(p.shape, file=f)
-    print(mmp.shape, file=f)
-#plot_heat(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=False)
-plot_heat(p=mmp, alphabet=alphabet, include="canonical", remove_tokens=True, dest="log_odds.png", show=False, title='Per position log-odds')
+plot_heatmap(p=p, alphabet=alphabet, include="canonical", remove_tokens=True, dest="prob_dist.png", show=True)
+plot_heatmap(p=mmp, alphabet=alphabet, dest="log_odds.png", show=True, title='Per position log-odds', color_sheme="rwb")
 pdb.write('test_entropy.pdb')
