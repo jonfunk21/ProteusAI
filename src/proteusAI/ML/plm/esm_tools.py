@@ -209,7 +209,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        tuple: torch.Tensor (1, sequence_length + 2, alphabet_size) and alphabet esm.data.Alphabet
+        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data.Alphabet
 
     Example:
         1.
@@ -222,7 +222,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     sequence_length = len(seq)
 
     # Initialize an empty tensor of the desired shape
-    logits_tensor = torch.zeros(1, sequence_length + 2, alphabet_size)
+    logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
 
     for i in range(0, len(masked_seqs), batch_size):
         results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
@@ -233,7 +233,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         # Extract the logits corresponding to the masked position for each sequence in the batch
         for j, masked_seq_name in enumerate(names[i:i + batch_size]):
             masked_position = int(masked_seq_name[3:])
-            logits_tensor[0, masked_position + 1] = logits[j, masked_position + 1]
+            logits_tensor[0, masked_position] = logits[j, masked_position + 1]
 
     return logits_tensor, alphabet
 
