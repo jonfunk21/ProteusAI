@@ -567,7 +567,11 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     """
     # Check if the length of the per_position_entropy and sequence match
     if len(per_position_entropy) != len(sequence):
-        raise ValueError("The length of per_position_entropy and sequence must be the same.")
+        # handle start of sequence and end of sequence tokens
+        per_position_entropy = per_position_entropy[:, 1:-1]
+        if len(per_position_entropy) != len(sequence):
+            raise ValueError("The length of per_position_entropy and sequence must be the same.")
+
 
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
@@ -601,6 +605,7 @@ p = get_probability_distribution(logits)
 model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
 mmp = masked_marginal_probability(p, seq, alphabet)
 entropy = per_position_entropy(p)
+#torch.save(entropy,'entropy.pt')
 #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 pdb = PDBFile.read('test_entropy.pdb')
 pdb = entropy_to_bfactor(pdb, entropy)
