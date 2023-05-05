@@ -627,7 +627,12 @@ for name, seq in zip(names, seqs):
     entropy = per_position_entropy(p)
     pdb = entropy_to_bfactor(pdb, entropy)
 
-    # visualizations
+    # save tensors
+    torch.save(p, os.path.join(dest, f"{name}_prob_dist.pt"))
+    torch.save(mmp, os.path.join(dest, f"{name}_masked_marginal_probability.pt"))
+    torch.save(entropy, os.path.join(dest, f"{name}_per_position_entropy.pt"))
+
+    # save visualizations
     prb_dist_path = os.path.join(dest, f"{name}_prob_dist.png")
     log_odds_path = os.path.join(dest, f"{name}_log_odds.png")
     per_pos_entropy_path = os.path.join(dest, f"{name}_per_pos_entropy.png")
