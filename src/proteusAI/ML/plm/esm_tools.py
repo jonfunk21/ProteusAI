@@ -600,8 +600,8 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
 # test
 import re
 
-data_path = "../../../../Projects/ALE_DB/ind_chem_tol_ai-master/"
-dest = "../../../../Projects/ALE_DB/results"
+data_path = "../Projects/ALE_DB/ind_chem_tol_ai-master/"
+dest = "../Projects/ALE_DB/results"
 
 data = pd.read_csv(os.path.join(data_path, "aledb_snp_df.csv"))
 gene_set = set(data.gene.to_list())
