@@ -625,7 +625,7 @@ for name, seq in zip(names, seqs):
     p = get_probability_distribution(logits)
     mmp = masked_marginal_probability(p, seq, alphabet)
     entropy = per_position_entropy(p)
-    pdb = entropy_to_bfactor(pdb, entropy)
+    pdb = entropy_to_bfactor(pdbs[0], entropy)
 
     # save tensors
     torch.save(p, os.path.join(dest, f"{name}_prob_dist.pt"))
