@@ -1,0 +1,3 @@
+TODO: 4_10_with_uniq_midpts.pkl is an intermediate file from another project. Using it in the short term to quickly get some data put together for testing. Need to build this from scratch within this repo to ensure data provenance and reproducibility.
+
+Full AA sequence for genes can be found in ./data/fastas, where the mapping between files and genes are P0AG30=rho, P0A8U6=metJ, P0A7Z4=rpoA, P0A9X4=mreB, and P0AG24=spoT.
