@@ -21,7 +21,7 @@ for name, seq in zip(names, seqs):
         os.mkdir(dest)
 
     # LLM major computations
-    logits, alphabet = get_mutant_logits(seq)
+    logits, alphabet = get_mutant_logits(seq, batch_size=1)
     _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
     # calculations
