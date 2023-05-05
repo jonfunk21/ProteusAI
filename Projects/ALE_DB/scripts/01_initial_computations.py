@@ -16,8 +16,8 @@ names = [gene_name_pattern.search(n).group(1) for n in names if gene_name_patter
 
 for name, seq in zip(names, seqs):
     # create a folder for every gene
-    dest = os.path.join(dest, name)
-    if not os.path.exists(_dest):
+    dest = os.path.join(_dest, name)
+    if not os.path.exists(dest):
         os.mkdir(dest)
 
     # LLM major computations
