@@ -24,6 +24,9 @@ import tempfile
 import typing as T
 import math
 import numpy as np
+import matplotlib.patches as patches
+
+alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
 def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
     """
@@ -478,7 +481,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     return pdb
 
 # Visualization
-def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b"):
+def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b", highlight_positions: list=None):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
@@ -538,7 +541,16 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     # Create a heatmap using seaborn
     plt.figure(figsize=(20, 6))
-    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True)
+    ax = plt.gca()
+    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax)
+
+    # Highlight the mutated positions with a green box
+    if highlight_positions is not None:
+        for pos, mutated_residue in highlight_positions.items():
+            residue_index = filtered_alphabet[mutated_residue]
+            rect = patches.Rectangle((pos, residue_index), 1, 1, linewidth=1, edgecolor='lime', facecolor='none')
+            ax.add_patch(rect)
+
     plt.xlabel("Sequence Position")
     plt.ylabel("Character")
     if title == None:
@@ -554,15 +566,17 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     if show:
         plt.show()
 
-def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, show: bool=False, dest: str=None):
+def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None):
     """
     Plot the per position entropy for a given sequence.
 
     Parameters:
         per_position_entropy (torch.Tensor): Tensor of per position entropy values with shape (batch_size, sequence_length).
         sequence (str): Protein sequence.
+        highlight_positions (list): List of positions to highlight in red (0-indexed) (default: None).
         show (bool): Display the plot if True (default: False).
         dest (str): Optional path to save the plot as an image file (default: None).
+        title (str): title of plot
 
     Returns:
         None
@@ -580,7 +594,12 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
 
     # Create a bar plot of per position entropy
     plt.figure(figsize=(20, 6))
-    plt.bar(positions, per_position_entropy_np.squeeze())
+
+    if highlight_positions is None:
+        plt.bar(positions, per_position_entropy_np.squeeze())
+    else:
+        colors = ["red" if pos in highlight_positions else "blue" for pos in positions]
+        plt.bar(positions, per_position_entropy_np.squeeze(), color=colors)
 
     # Set the x-axis labels to the sequence
     plt.xticks(positions, sequence)
@@ -588,7 +607,10 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     # Set the labels and title
     plt.xlabel("Sequence")
     plt.ylabel("Per Position Entropy")
-    plt.title("Per Position Entropy of Sequence")
+    if title is None:
+        plt.title("Per Position Entropy of Sequence")
+    else:
+        plt.title(title)
 
     if dest is not None:
         plt.savefig(dest, dpi=300)
