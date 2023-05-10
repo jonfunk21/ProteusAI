@@ -481,7 +481,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     return pdb
 
 # Visualization
-def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b", highlight_positions: list=None):
+def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b", highlight_positions: dict=None):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
