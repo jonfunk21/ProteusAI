@@ -39,8 +39,8 @@ for name, seq in zip(names, seqs):
     #torch.save(p, os.path.join(dest, f"prob_dist.pt"))
     #torch.save(mmp, os.path.join(dest, f"masked_marginal_probability.pt"))
     #torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
-    torch.save(logits, os.path.join(dest, f"logits.pt"))
-    torch.save(seq_rep, os.path.join(dest, f"seq_rep.pt"))
+    torch.save(results, os.path.join(dest, f"results.pt"))
+    torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
 
     # save visualizations
     prb_dist_path = os.path.join(dest, f"prob_dist.png")
