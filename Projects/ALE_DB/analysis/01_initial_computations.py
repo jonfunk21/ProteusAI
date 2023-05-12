@@ -5,6 +5,8 @@ from proteusAI.ML.plm import *
 
 data_path = "../ind_chem_tol_ai-master/"
 _dest = "../results/01"
+if not os.path.exists(_dest):
+    os.mkdir(_dest)
 
 data = pd.read_csv(os.path.join(data_path, "aledb_snp_df.csv"))
 gene_set = set(data.gene.to_list())
