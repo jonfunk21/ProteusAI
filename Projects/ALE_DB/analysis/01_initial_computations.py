@@ -4,7 +4,7 @@ sys.path.append('../../../src')
 from proteusAI.ML.plm import *
 
 data_path = "../ind_chem_tol_ai-master/"
-_dest = "../results"
+_dest = "../results/01"
 
 data = pd.read_csv(os.path.join(data_path, "aledb_snp_df.csv"))
 gene_set = set(data.gene.to_list())
@@ -20,8 +20,11 @@ for name, seq in zip(names, seqs):
     if not os.path.exists(dest):
         os.mkdir(dest)
 
+    results, batch_lens, batch_labels, alphabet = esm_compute([seq])
+    seq_rep = get_seq_rep(results, batch_lens)
+
     # LLM major computations
-    logits, alphabet = get_mutant_logits(seq, batch_size=1)
+    logits, alphabet = get_mutant_logits(seq, batch_size=5)
     _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
     # calculations
@@ -31,14 +34,16 @@ for name, seq in zip(names, seqs):
     pdb = entropy_to_bfactor(pdbs[0], entropy)
 
     # save tensors
-    torch.save(p, os.path.join(dest, f"{name}_prob_dist.pt"))
-    torch.save(mmp, os.path.join(dest, f"{name}_masked_marginal_probability.pt"))
-    torch.save(entropy, os.path.join(dest, f"{name}_per_position_entropy.pt"))
+    #torch.save(p, os.path.join(dest, f"prob_dist.pt"))
+    #torch.save(mmp, os.path.join(dest, f"masked_marginal_probability.pt"))
+    #torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
+    torch.save(logits, os.path.join(dest, f"logits.pt"))
+    torch.save(seq_rep, os.path.join(dest, f"seq_rep.pt"))
 
     # save visualizations
-    prb_dist_path = os.path.join(dest, f"{name}_prob_dist.png")
-    log_odds_path = os.path.join(dest, f"{name}_log_odds.png")
-    per_pos_entropy_path = os.path.join(dest, f"{name}_per_pos_entropy.png")
+    prb_dist_path = os.path.join(dest, f"prob_dist.png")
+    log_odds_path = os.path.join(dest, f"log_odds.png")
+    per_pos_entropy_path = os.path.join(dest, f"per_pos_entropy.png")
     pdb_path = os.path.join(dest, f"{name}.pdb")
 
     plot_heatmap(p=p, alphabet=alphabet, remove_tokens=True, dest=prb_dist_path, show=False, title=f"{name} probability distribution", color_sheme="b")
