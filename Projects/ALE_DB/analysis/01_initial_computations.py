@@ -26,7 +26,7 @@ for name, seq in zip(names, seqs):
     seq_rep = get_seq_rep(results, batch_lens)
 
     # LLM major computations
-    logits, alphabet = get_mutant_logits(seq, batch_size=5)
+    logits, alphabet = get_mutant_logits(seq, batch_size=1)
     _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
     # calculations
