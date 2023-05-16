@@ -61,7 +61,7 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
         else:
             raise ValueError(f"{model} is not a valid model")
     elif isinstance(model, torch.nn.Module):
-        alphabet = esm.data.Alphabet.from_dict(model.alphabet)  # assuming the model object has an 'alphabet' attribute
+        alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
     else:
         raise TypeError("Model should be either a string or a torch.nn.Module object")
 
