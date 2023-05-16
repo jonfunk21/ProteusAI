@@ -40,5 +40,5 @@ for i in range(0, len(fasta_files), batch_size):
     results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
     sequence_representations = get_seq_rep(results, batch_lens)
     for i in range(len(batch_lens)):
-        torch.save(sequence_representations[i], f'../data/embeddings/proteins{n}.pt')
+        torch.save(sequence_representations[i], f'../data/embeddings/proteins/{n}.pt')
 
