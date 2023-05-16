@@ -15,7 +15,7 @@ fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if f.en
 names = [n.split('/')[-1][:-6] for n in fasta_files]
 
 for i, fasta in enumerate(fasta_files):
-    _, seq = fasta.load_fasta(fasta)
+    _, seq = load_fasta(fasta)
 
     # drop if sequence is to long
     if len(seq[0]) > 1024:
