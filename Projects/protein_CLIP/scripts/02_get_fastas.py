@@ -41,8 +41,7 @@ cIDs = data.protein.to_list()
 
 for i in range(1):
     # multiple attempts of downloading all files in case of server errors
-    downloaded = os.listdir(dest)
-    downloaded = [file[:-6] for file in downloaded]
+    downloaded = [file[:-6] for file in os.listdir(dest)]
     cIDs = [x for x in cIDs if x not in downloaded]
     for cID in tqdm(cIDs):
         if cID not in downloaded:
@@ -52,7 +51,7 @@ for i in range(1):
                 pass
 
 data = data[~data['protein'].isin(cIDs)]
-data.to_csv(f'{processed_data_dir}/02_enzyme_dat_reduced.csv', index=None, sep=',')
+data.to_csv(os.path.join(processed_data_dir,'02_enzyme_dat_reduced.csv'), index=None, sep=',')
 
 print(f'downloaded sequences: {len(downloaded)}')
 print(f'sequences failed to download: {len(cIDs)}')
