@@ -11,7 +11,7 @@ gpt2.eval()
 
 script_path = os.path.dirname(__file__)
 data_dir = os.path.join(script_path, '../data')
-df_path = os.path.join(data_dir, 'processed/01_uniprotID_and_EC_raw-checkpoint.csv')
+df_path = os.path.join(data_dir, 'processed/02_enzyme_dat_reduced.csv')
 fasta_dir = os.path.join(data_dir, 'fastas')
 
 df = pd.read_csv(df_path)
