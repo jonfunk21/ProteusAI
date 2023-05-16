@@ -18,7 +18,7 @@ df = pd.read_csv(df_path)
 
 fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if f.endswith('.fasta')]
 
-batch_size=10
+batch_size = 1
 for i in range(0, len(fasta_files), batch_size):
     names = [n.split('/')[-1][:-6] for n in fasta_files[i:i + batch_size]]
     seqs = []
