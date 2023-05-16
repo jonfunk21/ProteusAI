@@ -28,7 +28,7 @@ for i in range(0, len(fasta_files), batch_size):
 
     # calculate embeddings of name
     text_embeddings = []
-    for j, n in enumerate(names):
+    for n in names:
         row = df[df['protein'] == n]
         text = '; '.join(f'{key}: {value}' for key, value in row.items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
         encoded_input = tokenizer(text, return_tensors='pt')
@@ -39,6 +39,7 @@ for i in range(0, len(fasta_files), batch_size):
 
     results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
     sequence_representations = get_seq_rep(results, batch_lens)
-    for k in range(len(batch_lens)):
-        torch.save(sequence_representations[k], f'../data/embeddings/proteins/{n}.pt')
+    for j in range(len(batch_lens)):
+        torch.save(sequence_representations[j], f'../data/embeddings/proteins/{n}.pt')
 
+df.to_csv(os.path.join(data_dir, 'processed/03_filtered_enzyme_dat.csv'), index=None, sep=',')
