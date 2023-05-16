@@ -35,10 +35,10 @@ for i in range(0, len(fasta_files), batch_size):
         output = gpt2(**encoded_input)
         text_embedding = output['last_hidden_state'][i, :].mean(0)
         text_embeddings.append(text_embedding)
-        torch.save(text_embedding, f'../data/embeddings/descriptions{n}.pt')
+        torch.save(text_embedding, f'../data/embeddings/descriptions/{n}.pt')
 
     results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
     sequence_representations = get_seq_rep(results, batch_lens)
     for i in range(len(batch_lens)):
-        torch.save(sequence_representations[i,:], f'../data/embeddings/proteins{n}.pt')
-    asdf
+        torch.save(sequence_representations[i], f'../data/embeddings/proteins{n}.pt')
+
