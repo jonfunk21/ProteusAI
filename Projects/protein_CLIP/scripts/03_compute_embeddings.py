@@ -33,7 +33,7 @@ for i in range(0, len(fasta_files), batch_size):
         text = '; '.join(f'{key}: {value}' for key, value in row.items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
         encoded_input = tokenizer(text, return_tensors='pt')
         output = gpt2(**encoded_input)
-        text_embedding = output['last_hidden_state'][j, :].mean(0)
+        text_embedding = output['last_hidden_state'][0, :].mean(0)
         text_embeddings.append(text_embedding)
         torch.save(text_embedding, f'../data/embeddings/descriptions/{n}.pt')
 
