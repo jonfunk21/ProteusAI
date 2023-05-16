@@ -54,4 +54,4 @@ pip install transformers
 
 cd ~/projects/proteusAI/Projects/protein_CLIP/scripts
 
-python3 03_filter_data.py
+python3 04_compute_embeddings.py

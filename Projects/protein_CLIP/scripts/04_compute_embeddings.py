@@ -11,14 +11,14 @@ gpt2.eval()
 
 script_path = os.path.dirname(__file__)
 data_dir = os.path.join(script_path, '../data')
-df_path = os.path.join(data_dir, 'processed/02_enzyme_dat_reduced.csv')
+df_path = os.path.join(data_dir, 'processed/03_filtered_enzyme_dat.csv')
 fasta_dir = os.path.join(data_dir, 'fastas')
 
 df = pd.read_csv(df_path)
+filtered = df['protein'].to_list()
+fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if (f.endswith('.fasta') and f[:-6] in filtered)]
 
-fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if f.endswith('.fasta')]
-
-batch_size = 2
+batch_size = 10
 for i in range(0, len(fasta_files), batch_size):
     names = [n.split('/')[-1][:-6] for n in fasta_files[i:i + batch_size]]
     seqs = []
