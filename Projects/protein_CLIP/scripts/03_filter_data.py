@@ -23,3 +23,5 @@ for i, fasta in enumerate(fasta_files):
 
 max_entries_per_ec = 100
 df = df.groupby('EC').head(max_entries_per_ec)
+
+df.to_csv(os.path.join(data_dir, 'processed/03_filtered_enzyme_dat.csv'), index=None, sep=',')

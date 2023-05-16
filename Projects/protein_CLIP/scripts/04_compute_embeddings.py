@@ -41,5 +41,3 @@ for i in range(0, len(fasta_files), batch_size):
     sequence_representations = get_seq_rep(results, batch_lens)
     for j in range(len(batch_lens)):
         torch.save(sequence_representations[j], f'../data/embeddings/proteins/{n}.pt')
-
-df.to_csv(os.path.join(data_dir, 'processed/03_filtered_enzyme_dat.csv'), index=None, sep=',')
