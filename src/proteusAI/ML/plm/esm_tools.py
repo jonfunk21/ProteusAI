@@ -25,6 +25,7 @@ import typing as T
 import math
 import numpy as np
 import matplotlib.patches as patches
+from typing import Union
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
