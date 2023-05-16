@@ -5,9 +5,13 @@ import os
 import pandas as pd
 from transformers import GPT2Tokenizer, GPT2Model
 
+# natural language model
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 gpt2 = GPT2Model.from_pretrained('gpt2-large')
 gpt2.eval()
+
+# protein language model
+model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
 
 script_path = os.path.dirname(__file__)
 data_dir = os.path.join(script_path, '../data')
@@ -29,15 +33,19 @@ for i in range(0, len(fasta_files), batch_size):
     # calculate embeddings of name
     text_embeddings = []
     for n in names:
-        row = df[df['protein'] == n]
-        text = '; '.join(f'{key}: {value}' for key, value in row.items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
-        encoded_input = tokenizer(text, return_tensors='pt')
-        output = gpt2(**encoded_input)
-        text_embedding = output['last_hidden_state'][0, :].mean(0)
-        text_embeddings.append(text_embedding)
-        torch.save(text_embedding, f'../data/embeddings/descriptions/{n}.pt')
+        text_embedding_path = f'../data/embeddings/descriptions/{n}.pt'
+        if not os.path.exists(text_embedding_path):  # check if file already exists
+            row = df[df['protein'] == n]
+            text = '; '.join(f'{key}: {value}' for key, value in row.items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
+            encoded_input = tokenizer(text, return_tensors='pt')
+            output = gpt2(**encoded_input)
+            text_embedding = output['last_hidden_state'][0, :].mean(0)
+            text_embeddings.append(text_embedding)
+            torch.save(text_embedding, text_embedding_path)
 
-    results, batch_lens, batch_labels, alphabet = esm_compute(seqs)
+    results, batch_lens, batch_labels, alphabet = esm_compute(seqs, model=model)
     sequence_representations = get_seq_rep(results, batch_lens)
-    for j in range(len(batch_lens)):
-        torch.save(sequence_representations[j], f'../data/embeddings/proteins/{n}.pt')
+    for j, n in enumerate(names):  # we need to use enumerate here to get the correct name for each sequence representation
+        seq_rep_path = f'../data/embeddings/proteins/{n}.pt'
+        if not os.path.exists(seq_rep_path):  # check if file already exists
+            torch.save(sequence_representations[j], seq_rep_path)

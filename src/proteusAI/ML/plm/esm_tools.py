@@ -28,7 +28,7 @@ import matplotlib.patches as patches
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
-def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int=33):
+def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33):
     """
     Compute the of esm models for a list of sequences.
 
@@ -36,7 +36,7 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
         seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence.
         names (list, default None): list of names/labels for protein sequences.
             If None sequences will be named seq1, seq2, ...
-        model (str): choose either esm2 or esm1v.
+        model (str, torch.nn.Module): choose either esm2, esm1v or a pretrained model object.
         rep_layer (int): choose representation layer. Default 33.
 
     Returns: representations (list) of sequence representation, batch lens and batch labels
@@ -52,12 +52,18 @@ def esm_compute(seqs: list, names: list=None, model: str="esm1v", rep_layer: int
         device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
     # load model
-    if model == "esm2":
-        model, alphabet = esm.pretrained.esm2_t36_3B_UR50D()
-    elif model == "esm1v":
-        model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+    if isinstance(model, str):
+        if model == "esm2":
+            model, alphabet = esm.pretrained.esm2_t36_3B_UR50D()
+        elif model == "esm1v":
+            model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
+        else:
+            raise ValueError(f"{model} is not a valid model")
+    elif isinstance(model, torch.nn.Module):
+        alphabet = esm.data.Alphabet.from_dict(model.alphabet)  # assuming the model object has an 'alphabet' attribute
     else:
-        raise f"{model} is not a valid model"
+        raise TypeError("Model should be either a string or a torch.nn.Module object")
+
 
     batch_converter = alphabet.get_batch_converter()
     model.eval()
