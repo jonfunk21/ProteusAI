@@ -33,17 +33,17 @@ for ec in df['EC'].to_list():
         text_embedding = output['last_hidden_state'][0, :].mean(0)
         torch.save(text_embedding, text_embedding_path)
 
-batch_size = 1
-for i in range(0, len(fasta_files), batch_size):
-    names = [n.split('/')[-1][:-6] for n in fasta_files[i:i + batch_size]]
-    seqs = []
-    for f in fasta_files[i:i + batch_size]:
-        _, s = fasta.load_fasta(f)
-        seqs.append(s[0])
-
-    results, batch_lens, batch_labels, alphabet = esm_compute(seqs, model=model)
-    sequence_representations = get_seq_rep(results, batch_lens)
-    for j, n in enumerate(names):  # we need to use enumerate here to get the correct name for each sequence representation
-        seq_rep_path = f'../data/embeddings/proteins/{n}.pt'
-        if not os.path.exists(seq_rep_path):  # check if file already exists
-            torch.save(sequence_representations[j], seq_rep_path)
+# batch_size = 1
+# for i in range(0, len(fasta_files), batch_size):
+#     names = [n.split('/')[-1][:-6] for n in fasta_files[i:i + batch_size]]
+#     seqs = []
+#     for f in fasta_files[i:i + batch_size]:
+#         _, s = fasta.load_fasta(f)
+#         seqs.append(s[0])
+#
+#     results, batch_lens, batch_labels, alphabet = esm_compute(seqs, model=model)
+#     sequence_representations = get_seq_rep(results, batch_lens)
+#     for j, n in enumerate(names):  # we need to use enumerate here to get the correct name for each sequence representation
+#         seq_rep_path = f'../data/embeddings/proteins/{n}.pt'
+#         if not os.path.exists(seq_rep_path):  # check if file already exists
+#             torch.save(sequence_representations[j], seq_rep_path)
