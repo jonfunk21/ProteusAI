@@ -22,6 +22,17 @@ df = pd.read_csv(df_path)
 filtered = df['protein'].to_list()
 fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if (f.endswith('.fasta') and f[:-6] in filtered)]
 
+# calculate embeddings of name
+for ec in df['EC'].to_list():
+    text_embedding_path = f'../data/embeddings/descriptions/EC_{ec.replace(".","_")}.pt'
+    if not os.path.exists(text_embedding_path):  # check if file already exists
+        rows = df[df['EC']==ec]
+        text = '; '.join(f'{key}: {value}' for key, value in rows.iloc[0].items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
+        encoded_input = tokenizer(text, return_tensors='pt')
+        output = gpt2(**encoded_input)
+        text_embedding = output['last_hidden_state'][0, :].mean(0)
+        torch.save(text_embedding, text_embedding_path)
+
 batch_size = 1
 for i in range(0, len(fasta_files), batch_size):
     names = [n.split('/')[-1][:-6] for n in fasta_files[i:i + batch_size]]
@@ -29,19 +40,6 @@ for i in range(0, len(fasta_files), batch_size):
     for f in fasta_files[i:i + batch_size]:
         _, s = fasta.load_fasta(f)
         seqs.append(s[0])
-
-    # calculate embeddings of name
-    text_embeddings = []
-    for n in names:
-        text_embedding_path = f'../data/embeddings/descriptions/{n}.pt'
-        if not os.path.exists(text_embedding_path):  # check if file already exists
-            row = df[df['protein'] == n]
-            text = '; '.join(f'{key}: {value}' for key, value in row.items() if key in ['EC', 'DE', 'AN', 'CA', 'CF', 'CC'])
-            encoded_input = tokenizer(text, return_tensors='pt')
-            output = gpt2(**encoded_input)
-            text_embedding = output['last_hidden_state'][0, :].mean(0)
-            text_embeddings.append(text_embedding)
-            torch.save(text_embedding, text_embedding_path)
 
     results, batch_lens, batch_labels, alphabet = esm_compute(seqs, model=model)
     sequence_representations = get_seq_rep(results, batch_lens)
