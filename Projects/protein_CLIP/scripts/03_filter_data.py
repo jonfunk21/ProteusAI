@@ -18,7 +18,7 @@ for i, fasta in enumerate(fasta_files):
     _, seq = load_fasta(fasta)
 
     # drop if sequence is to long
-    if len(seq[0]) > 1023:
+    if len(seq[0]) > 1024:
         df = df[df['protein'] != names[i]]
 
 max_entries_per_ec = 100
