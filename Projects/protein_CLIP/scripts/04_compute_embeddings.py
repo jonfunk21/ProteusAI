@@ -32,10 +32,13 @@ for ec in set(df['EC'].to_list()):
         if len(text) > 1024:
             drop_ec.append(ec)
         else:
-            encoded_input = tokenizer(text, return_tensors='pt')
-            output = gpt2(**encoded_input)
-            text_embedding = output['last_hidden_state'][0, :].mean(0)
-            torch.save(text_embedding, text_embedding_path)
+            try:
+                encoded_input = tokenizer(text, return_tensors='pt')
+                output = gpt2(**encoded_input)
+                text_embedding = output['last_hidden_state'][0, :].mean(0)
+                torch.save(text_embedding, text_embedding_path)
+            except:
+                drop_ec.append(ec)
 
 df = df[~df['EC'].isin(drop_ec)]
 
