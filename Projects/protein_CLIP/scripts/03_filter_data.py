@@ -14,13 +14,15 @@ df = pd.read_csv(df_path)
 fasta_files = [os.path.join(fasta_dir, f) for f in os.listdir(fasta_dir) if f.endswith('.fasta')]
 names = [n.split('/')[-1][:-6] for n in fasta_files]
 
+drop_names = []
 for i, fasta in enumerate(fasta_files):
     _, seq = load_fasta(fasta)
 
     # drop if sequence is to long
-    if len(seq[0]) > 1023:
-        df = df[df['protein'] != names[i]]
+    if len(seq[0]) > 1024:
+        drop_names.append(names[i])
 
+df = df[~df['protein'].isin(drop_names)]
 max_entries_per_ec = 100
 df = df.groupby('EC').head(max_entries_per_ec)
 
