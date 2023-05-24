@@ -19,7 +19,7 @@ for i, fasta in enumerate(fasta_files):
     _, seq = load_fasta(fasta)
 
     # drop if sequence is to long
-    if len(seq[0]) > 1024:
+    if len(seq[0]) > 1022:
         drop_names.append(names[i])
 
 df = df[~df['protein'].isin(drop_names)]
