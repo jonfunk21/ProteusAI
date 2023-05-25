@@ -8,7 +8,7 @@ import torch
 
 script_path = '.'
 data_dir = os.path.join(script_path, '../data')
-df_path = os.path.join(data_dir, 'processed/03_filtered_enzyme_dat.csv')
+df_path = os.path.join(data_dir, 'processed/04_dataset.csv')
 fasta_dir = os.path.join(data_dir, 'fastas')
 
 df = pd.read_csv(df_path)
@@ -39,8 +39,8 @@ class CustomDataset(Dataset):
     def __getitem__(self, index):
         n = self.data['protein'].iloc[index]
         ec = self.data['EC'].iloc[index]
-        x = torch.load(f'../data/embeddings/proteins/{n}.pt', map_location=self.device).detach()
-        y = torch.load(f'../data/embeddings/descriptions/EC_{ec.replace(".","_")}.pt', map_location=self.device).detach()
+        x = torch.load(f'../data/embeddings/proteins/{n}.pt', map_location=self.device)
+        y = torch.load(f'../data/embeddings/descriptions/EC_{ec.replace(".","_")}.pt', map_location=self.device)
         return x, y
 
 train_data = CustomDataset(train_df)
