@@ -41,15 +41,15 @@ class CustomDataset(Dataset):
     def __getitem__(self, index):
         n = self.data['protein'].iloc[index]
         ec = self.data['EC'].iloc[index]
-        x = torch.load(f'../data/embeddings/proteins/{n}.pt')
-        y = torch.load(f'../data/embeddings/descriptions/EC_{ec.replace(".","_")}.pt')
+        x = torch.load(f'../data/embeddings/proteins/{n}.pt', map_location=self.device)
+        y = torch.load(f'../data/embeddings/descriptions/EC_{ec.replace(".","_")}.pt', map_location=self.device)
         return x, y
 
 train_data = CustomDataset(train_df)
 val_data = CustomDataset(val_df)
 
-train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
-val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=4)
+train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
 
 class CFG:
@@ -171,15 +171,13 @@ def cross_entropy(preds, targets, reduction='none'):
 
 
 # train
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 def train_epoch(model, train_loader, optimizer, lr_scheduler):
     loss_meter = AvgMeter()
     tqdm_object = tqdm(train_loader, total=len(train_loader))
     for batch in tqdm_object:
         x = batch[0]
         y = batch[1]
-        loss = model(x.to(device),y.to(device))
+        loss = model(x,y)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -198,7 +196,7 @@ def val_epoch(model, val_loader):
     for batch in tqdm_object:
         x = batch[0]
         y = batch[1]
-        loss = model(x.to(device),y.to(device))
+        loss = model(x,y)
 
         count = x.size(0)
         loss_meter.update(loss.item(), count)
