@@ -2,11 +2,11 @@ import sys
 sys.path.append('../../')
 import pandas as pd
 import torch
-from activity_predictor import AttentionModel
+from activity_predictor import FFNN
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from Projects.activity_prediction.pytorchtools import CustomDataset, train, evaluate_ensemble, plot_losses
+from Projects.activity_prediction.pytorchtools import CustomDataset, RepresentationDataset, train, evaluate_ensemble, plot_losses
 import os
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.cluster import AgglomerativeClustering
@@ -23,8 +23,10 @@ parser.add_argument('--sequence_length', type=int, default=147)
 parser.add_argument('--embedding_dimension', type=int, default=1280)
 parser.add_argument('--nheads', type=int, default=8)
 parser.add_argument('--d_model', type=int, default=1280)
-parser.add_argument('--n_folds', type=int, default=1)
+parser.add_argument('--n_folds', type=int, default=4)
 parser.add_argument('--output_size', type=int, default=1)
+parser.add_argument('--hidden_layers', type=list, default=[1280, 1280])
+parser.add_argument('--dropout_rate', type=float, default=0.2)
 args = parser.parse_args()
 
 num_layers = args.num_layers
@@ -37,11 +39,13 @@ sequence_length = args.sequence_length
 embedding_dimension = args.embedding_dimension
 n_folds = args.n_folds
 output_size = args.output_size
+hidden_layers = args.hidden_layers
+dropout_rate = args.dropout_rate
 
 save_path = 'checkpoints'
 data_path = '../example_data/directed_evolution/GB1/GB1.csv'
 train_log = 'train_log'
-input_size = sequence_length * embedding_dimension
+input_size = embedding_dimension
 rep_layer = 33
 
 if not os.path.exists(save_path):
@@ -95,13 +99,13 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(train_val_df, train_val_df
     val_df = val_df.reset_index(drop=True)
 
     # Dataloaders
-    train_set = CustomDataset(train_df)
-    val_set = CustomDataset(val_df)
+    train_set = RepresentationDataset(train_df)
+    val_set = RepresentationDataset(val_df)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
     # Load activity predictor model
-    model = AttentionModel(num_layers, nheads, d_model, input_size, output_size)
+    model = FFNN(input_size, output_size, hidden_layers, dropout_rate)
     model.to(device)
 
     # Define the loss function and optimizer
@@ -124,14 +128,14 @@ avg_val_pearson = np.mean(all_val_pearson, axis=0)
 plot_losses('ensemble_losses.png', all_train_losses, all_val_losses, n_folds)
 
 # Create a test DataLoader
-test_set = CustomDataset(test_df)
+test_set = RepresentationDataset(test_df)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
 # Load the best activity_prediction from each fold and store them in a list
 ensemble_models = []
 for fold in range(n_folds):
     model_path = os.path.join(save_path, f'activity_model_{fold + 1}')
-    model = AttentionModel(num_layers, nheads, d_model, input_size, output_size)
+    model = FFNN(input_size, output_size, hidden_layers, dropout_rate)
     model.load_state_dict(torch.load(model_path))
     model.to(device)
     model.eval()

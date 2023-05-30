@@ -44,6 +44,22 @@ class CustomDataset(Dataset):
         y = torch.tensor(self.data['Data_normalized'].iloc[index], dtype=torch.float32).to(self.device)
         return names, x, y
 
+class RepresentationDataset(Dataset):
+    def __init__(self, data, path='../example_data/directed_evolution/GB1/representations'):
+        self.data = data
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.path = path
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        names = self.data['Description'].iloc[index]
+        d = self.data['Description'].iloc[index]
+        x = torch.load(os.path.join(self.path, d.replace('+', '_') + '.pt'), map_location=self.device)
+        y = torch.tensor(self.data['Data_normalized'].iloc[index], dtype=torch.float32).to(self.device)
+        return names, x, y
+
 
 def invoke(early_stopping, loss, model, implement=False):
     if implement == False:
@@ -104,7 +120,7 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
-def validate(model, dataloader, criterion):
+def validate(model, dataloader, criterion, use_rep=True):
     total_loss = 0
     total_rmse = 0
     n_samples = 0
@@ -112,7 +128,10 @@ def validate(model, dataloader, criterion):
     target_values = []
     with torch.no_grad():
         for names, seqs, y in dataloader:
-            x = embedd(names, seqs, device=device, rep_layer=33)
+            if use_rep:
+                x = seqs
+            else:
+                x = embedd(names, seqs, device=device, rep_layer=33)  # (batch_size, seq_len, embedd_dim)
             y = torch.unsqueeze(y, dim=1).to(device)
             # Forward pass
             out = model(x.to(device))
@@ -129,7 +148,7 @@ def validate(model, dataloader, criterion):
     return avg_loss, avg_rmse, r
 
 # training loop
-def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log='train_log'):
+def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, patience, save_path, fold, train_log='train_log', use_rep=True):
     model.train()
     with open(os.path.join(save_path, train_log), 'a') as f:
         print(f'Begin training fold {fold+1}:', file=f)
@@ -141,7 +160,10 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, device, epochs, p
     for epoch in range(epochs):
         running_loss = 0.0
         for names, seqs, y in train_loader:
-            x = embedd(names, seqs, device=device, rep_layer=33) # (batch_size, seq_len, embedd_dim)
+            if use_rep:
+                x = seqs
+            else:
+                x = embedd(names, seqs, device=device, rep_layer=33) # (batch_size, seq_len, embedd_dim)
             y = torch.unsqueeze(y, dim=1) # (batch_size, 1)
 
             # train activity predictor
