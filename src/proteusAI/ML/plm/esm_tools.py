@@ -49,8 +49,8 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
     # detect device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # on M1 if mps available
-    if device == torch.device(type='cpu'):
-        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+    #if device == torch.device(type='cpu'):
+    #    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
     # load model
     if isinstance(model, str):
