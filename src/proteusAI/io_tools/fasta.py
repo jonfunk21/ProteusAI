@@ -83,7 +83,7 @@ def load_fasta(file: str, biotite: bool = False) -> tuple:
     return names, sequences
 
 
-def write(names: list, sequences: list, dest: str = None):
+def write_fasta(names: list, sequences: list, dest: str = None):
     """
     Takes a list of names and sequences and writes a single
     fasta file containing all the names and sequences. The
