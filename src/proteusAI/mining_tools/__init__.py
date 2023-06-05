@@ -2,11 +2,12 @@
 # under the MIT License.
 
 """
-A subpackage for data engineering, visualization and analysis.
+A subpackage for mining_tools.
 """
 
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .pdb import *
-from .MSA import *
+from .alphafoldDB import *
+from .blast import *
+from .uniprot import *

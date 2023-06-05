@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../')
 import re
-from src.proteusAI.design import ZeroShot
+from src.proteusAI.design_tools import ZeroShot
 from analysis import pdb, interactions
 import os
 
@@ -31,7 +31,7 @@ transition_state = [f for f in transition_states if 'transition' in f and 'rank1
 
 contacts = interactions.mol_contacts([melatonin, SAM, transition_state], ASMT_pdb)
 
-# constrain the design to not change the contacts to ligands
+# constrain the design_tools to not change the contacts to ligands
 ASMT_atms = interactions.get_atom_array(ASMT_pdb)
 contact_indices = []
 for res_id in contacts:

@@ -20,7 +20,7 @@ df = df[df['protein'].isin(keep)]
 keep = [f[3:-3].replace('_','.') for f in os.listdir(os.path.join(data_dir, 'embeddings/descriptions')) if f.endswith('.pt')]
 df = df[df['EC'].isin(keep)]
 
-# Split the data into train/val and test datasets
+# Split the data_tools into train/val and test datasets
 train_df = df.sample(frac=0.8, random_state=42)
 val_df = df.drop(index=train_df.index)
 

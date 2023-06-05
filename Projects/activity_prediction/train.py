@@ -54,7 +54,7 @@ if not os.path.exists(save_path):
 # pytorch device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# load data and split into train and val. first naive split, normalize activity
+# load data_tools and split into train and val. first naive split, normalize activity
 df = pd.read_csv(data_path)
 df['Data_normalized'] = (df['Data'] - df['Data'].min()) / (df['Data'].max() - df['Data'].min())
 
@@ -69,7 +69,7 @@ distance_matrix = pd.DataFrame([[hamming_distance(seq1, seq2) for seq1 in df['Se
 cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=5)
 df['Cluster'] = cluster.fit_predict(distance_matrix)
 
-# Split the data into train/val and test datasets
+# Split the data_tools into train/val and test datasets
 train_val_df, test_df = train_test_split(df, test_size=0.1, random_state=42, stratify=df['Cluster'])
 
 # Reset indices

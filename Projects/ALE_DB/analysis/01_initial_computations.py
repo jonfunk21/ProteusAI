@@ -1,7 +1,7 @@
 import re
 import sys
 sys.path.append('../../../src')
-from proteusAI.ML.plm import *
+from proteusAI.ml_tools.esm import *
 
 data_path = "../ind_chem_tol_ai-master/"
 _dest = "../results/01"
@@ -10,7 +10,7 @@ if not os.path.exists(_dest):
 
 data = pd.read_csv(os.path.join(data_path, "aledb_snp_df.csv"))
 gene_set = set(data.gene.to_list())
-fasta_path = os.path.join(data_path, 'data/fastas')
+fasta_path = os.path.join(data_path, 'data_tools/fastas')
 gene_name_pattern = re.compile(r"GN=([^ ]*)")
 
 names, seqs = fasta.load_all_fastas(fasta_path)

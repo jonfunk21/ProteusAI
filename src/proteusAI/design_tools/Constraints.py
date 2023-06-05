@@ -72,7 +72,7 @@ def string_to_tempfile(data):
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         # write the string to the file
         temp_file.write(data.encode('utf-8'))
-        # flush the file to make sure the data is written
+        # flush the file to make sure the data_tools is written
         temp_file.flush()
         # return the file object
         return temp_file

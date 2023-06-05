@@ -86,7 +86,7 @@ def hamming_distance(s1, s2):
     """
     return sum(el1 != el2 for el1, el2 in zip(s1, s2))
 
-# load data and split into train and val. first naive split, normalize activity
+# load data_tools and split into train and val. first naive split, normalize activity
 df = pd.read_csv(data_path)
 df['Data_normalized'] = (df['Data'] - df['Data'].min()) / (df['Data'].max() - df['Data'].min())
 
@@ -98,7 +98,7 @@ distance_matrix = pd.DataFrame(
 cluster = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=5)
 df['Cluster'] = cluster.fit_predict(distance_matrix)
 
-# Split the data into train/val and test datasets
+# Split the data_tools into train/val and test datasets
 train_val_df, test_df = train_test_split(df, test_size=0.1, random_state=42, stratify=df['Cluster'])
 
 # Reset indices

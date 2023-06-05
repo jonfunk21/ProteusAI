@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../../../src/')
-from proteusAI.ML.plm.esm_tools import *
+from proteusAI.ml_tools.esm.esm_tools import *
 import os
 import pandas as pd
 from transformers import GPT2Tokenizer, GPT2Model

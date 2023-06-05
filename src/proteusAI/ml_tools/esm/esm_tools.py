@@ -220,7 +220,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data.Alphabet
+        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data_tools.Alphabet
 
     Example:
         1.
@@ -362,7 +362,7 @@ def string_to_tempfile(data):
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         # write the string to the file
         temp_file.write(data.encode('utf-8'))
-        # flush the file to make sure the data is written
+        # flush the file to make sure the data_tools is written
         temp_file.flush()
         # return the file object
         return temp_file

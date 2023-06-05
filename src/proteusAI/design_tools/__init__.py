@@ -2,7 +2,7 @@
 # under the MIT License.
 
 """
-A subpackage for protein design.
+A subpackage for protein design_tools.
 """
 
 __name__ = "proteusAI"

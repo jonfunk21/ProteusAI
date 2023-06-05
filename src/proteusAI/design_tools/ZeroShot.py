@@ -6,7 +6,7 @@ __author__ = "Jonathan Funk"
 
 import os
 import numpy as np
-from proteusAI.design import Constraints
+from proteusAI.design_tools import Constraints
 import pandas as pd
 
 
@@ -21,7 +21,7 @@ class ZeroShot:
         seq (str): native sequence to be optimized
         constraints (dict): constraints on sequence.
             Keys describe the kind of constraint and values the position on which they act.
-        sampler (str): choose between simulated_annealing and substitution design.
+        sampler (str): choose between simulated_annealing and substitution design_tools.
             Default 'simulated annealing'
         batch_size (int): number of independent trajectories per sampling step. Lowest energy mutant will be selected when
             multiple are viable. Default 16
@@ -225,7 +225,7 @@ class ZeroShot:
         mutate = self.mutate
         pdb_out = os.path.join(outdir, 'pdbs')
         png_out = os.path.join(outdir, 'pngs')
-        data_out = os.path.join(outdir, 'data')
+        data_out = os.path.join(outdir, 'data_tools')
 
         if outdir != None:
             if not os.path.exists(outdir):

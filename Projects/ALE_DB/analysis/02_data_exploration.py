@@ -1,15 +1,12 @@
 import sys
 sys.path.append('../../../src/')
 import re
-import pandas as pd
-import os
-import torch
-import esm
-from proteusAI.ML.plm import *
+from proteusAI.ml_tools.esm import *
 from proteusAI.io_tools import *
-from scipy.stats import pearsonr
-from proteusAI.data.pdb import show_pdb
+from proteusAI.data_tools.pdb import show_pdb
 import seaborn as sns
+import numpy as np
+from scipy.stats import mannwhitneyu, pearsonr
 
 # Initialize a dictionary to map amino acids to their index in the alphabet
 alphabet = alphabet.to_dict()
@@ -41,7 +38,7 @@ def calculate_entropy_correlation(name: str, seq: str, data: pd.DataFrame):
     return correlation_entropy_occurrence
 
 
-def calculate_mmp_correlation(name: str, seq: str, data: pd.DataFrame, vs="average"):
+def calculate_mmp_correlation(name: str, data: pd.DataFrame, vs="average"):
     mmp = torch.load(f"../results/01_initial_computations/{name}/{name}_masked_marginal_probability.pt", map_location="cpu")
 
     # Create lists to store the mmp values of the substituted amino acids and the sum of mmp values of all other amino acids
@@ -164,20 +161,108 @@ def plot_entropy_density(name: str, data: pd.DataFrame, show: bool=False, save: 
         dest = f"../results/02_data_exploration/{name}/{name}_heatmap_highlighted.png"
         plt.savefig(dest)
 
-# Load the data
+def perform_statistical_test(name: str, data: pd.DataFrame, num_random_samples: int = None,
+                             replace: bool = True, verbose: bool=False):
+    # Load the entropy tensor
+    entropy = torch.load(f"../results/01_initial_computations/{name}/{name}_per_position_entropy.pt", map_location="cpu")
+
+    # Find the mutated positions for the given gene
+    mutated_positions = []
+    for index, row in data.iterrows():
+        if row["gene"] == name:
+            position = int(row["substitution"][1:-1]) - 1  # 0-indexed
+            mutated_positions.append(position)
+
+    mutated_positions_tensor = torch.tensor(mutated_positions, dtype=torch.long)
+    mutated_entropies = entropy[0, mutated_positions_tensor].numpy()
+    all_entropies = entropy[0].numpy()
+
+    # Select random positions
+    if num_random_samples == None:
+        num_random_samples = len(mutated_positions)
+
+    random_positions = np.random.choice(len(all_entropies), num_random_samples, replace=replace)
+    random_entropies = all_entropies[random_positions]
+
+    # Perform Mann-Whitney U test
+    stat, p_value = mannwhitneyu(mutated_entropies, random_entropies)
+
+    if verbose:
+        print(f"Mann-Whitney U test results:")
+        print(f"Statistic: {stat}")
+        print(f"P-value: {p_value}")
+
+    if p_value < 0.05:
+        text = "The mutated positions are statistically different from randomly drawn positions (p < 0.05)."
+        if verbose:
+            print(f"\033[1;32;40m{text}\033[0m")
+
+    else:
+        text = "The mutated positions are not statistically different from randomly drawn positions (p >= 0.05)."
+        if verbose:
+            print(f"\033[1;31;40m{text}\033[0m")
+
+    return stat, p_value
+
+
+def permutation_test(name, data, substituted_mmp_values, other_mmp_values_sum, n_permutations=1000,
+                     verbose: bool=False):
+    # Calculate the observed correlation using your function
+    observed_correlation, _, _ = calculate_mmp_correlation(name, data)
+
+    # Create a list to store the correlations from the permutations
+    permuted_correlations = []
+
+    # Perform permutations
+    for _ in range(n_permutations):
+        # Shuffle the substituted_mmp_values
+        permuted_substituted_mmp = np.random.permutation(substituted_mmp_values)
+
+        # Calculate the correlation between the permuted mmp values and other_mmp_values_sum
+        permuted_correlation, _ = pearsonr(permuted_substituted_mmp, other_mmp_values_sum)
+
+        # Store the permuted correlation
+        permuted_correlations.append(permuted_correlation)
+
+    # Calculate the p-value as the proportion of permuted correlations at least as extreme as the observed correlation
+    p_value = (np.abs(permuted_correlations) >= np.abs(observed_correlation)).sum() / n_permutations
+
+    if verbose:
+        print(f"Permutation test results:")
+        print(f"Observed correlation: {observed_correlation}")
+        print(f"P-value: {p_value}")
+
+    if p_value < 0.05:
+        text = "The chosen mutations are significantly influenced by their masked marginal probability (p < 0.05)."
+        if verbose:
+            print(f"\033[1;32;40m{text}\033[0m")
+    else:
+        text = "The chosen mutations are not significantly influenced by their masked marginal probability (p >= 0.05)."
+        if verbose:
+            print(f"\033[1;31;40m{text}\033[0m")
+
+    return permuted_correlations, p_value
+
+# Load the data_tools
 data_path = "../ind_chem_tol_ai-master/"
 data = pd.read_csv(os.path.join(data_path, "aledb_snp_df.csv"))
-fasta_path = os.path.join(data_path, 'data/fastas')
+fasta_path = os.path.join(data_path, 'data_tools/fastas')
 gene_name_pattern = re.compile(r"GN=([^ ]*)")
 
 names, seqs = load_all_fastas(fasta_path)
 names = [gene_name_pattern.search(n).group(1) for n in names if gene_name_pattern.search(n)]
 
+entropy_correlations = []
+
 for name, seq in zip(names, seqs):
     print(name)
     correlation_entropy_occurrence = calculate_entropy_correlation(name, seq, data)
-    correlation_mmp_occurrence, _, _ = calculate_mmp_correlation(name, seq, data)
-    print(f"Pearson correlation for the occurence of mutations based on entropy: {correlation_entropy_occurrence}")
-    print(f"Pearson for of the substituted amino acid being chosen at the mutated position: {correlation_mmp_occurrence}")
     plot_entropy_with_highlighted_mutations(name, seq, data, show=False)
     plot_heatmap_with_highlighted_mutations(name, data, alphabet, heatmap_type="mmp", show=False)
+    perform_statistical_test(name, data, num_random_samples=1000)
+    print()
+    observed_correlation, substituted_mmp_values, other_mmp_values_sum = calculate_mmp_correlation(name, data)
+    permuted_correlations, p_value = permutation_test(name, data, substituted_mmp_values, other_mmp_values_sum, n_permutations=1000, verbose=True)
+    print(sum(permuted_correlations)/len(permuted_correlations))
+
+    print(f"Pearson correlation for the occurence of mutations based on entropy: {correlation_entropy_occurrence}")
