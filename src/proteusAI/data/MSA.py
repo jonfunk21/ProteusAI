@@ -13,9 +13,9 @@ from Bio.Align.Applications import ClustalwCommandline
 from Bio import AlignIO
 from Bio import SeqIO
 from collections import Counter
+from biotite.sequence import ProteinSequence
 
 
-# Perform a multiple sequence alignment using MUSCLE
 def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_range: tuple = (0, 200), muscle_version: str = '5',
         save_fig: str = None, save_fasta:str = None, figsize: tuple = (10.0, 8.0)):
     """
@@ -35,12 +35,15 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
         dict: MSA results of sequence names/ids and gapped sequences
     """
 
+    # Convert sequences to ProteinSequence objects if they are strings
+    seqs = [ProteinSequence(seq) if isinstance(seq, str) else seq for seq in seqs]
+
     if muscle_version == '5':
         app = muscle.Muscle5App(seqs)
     elif muscle_version == '3':
         app = muscle.MuscleApp(seqs)
     else:
-        raise 'Muscle version must be either 3 or 5'
+        raise ValueError('Muscle version must be either 3 or 5')
 
     app.start()
     app.join()
@@ -63,9 +66,13 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
     )
     fig.tight_layout()
 
-    if save_fig != None: plt.savefig(save_fig)
+    if save_fig != None:
+        plt.savefig(save_fig)
 
-    if plot_results: plt.show()
+    if plot_results:
+        plt.show()
+    else:
+        plt.close()
 
     if save_fasta != None:
         with open(save_fasta, 'w') as f:
@@ -80,6 +87,27 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
 
     return MSA_results
 
+
+def MSA_results_to_fasta(MSA_results: dict, fname: str):
+    """
+    Takes MSA results from the align proteins function and writes then into a fasta format.
+
+    Parameters:
+        MSA_results (dict): Dictionary of MSA results.
+        fname (str): file name.
+
+    Returns:
+        None
+    """
+    with open(fname, 'w') as f:
+        for i, key in enumerate(MSA_results.keys()):
+            s = MSA_results[key]
+            if i < len(MSA_results) - 1:
+                f.writelines(f'>{key}\n')
+                f.writelines(f'{s}\n')
+            else:
+                f.writelines(f'>{key}\n')
+                f.writelines(f'{s}')
 
 def align_dna(dna_sequences: list, verbose: bool = False):
     """
