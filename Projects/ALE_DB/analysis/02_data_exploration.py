@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../../../src/')
 import re
-from proteusAI.ml_tools.esm import *
+from proteusAI.ml_tools.esm_tools import *
 from proteusAI.io_tools import *
 from proteusAI.data_tools.pdb import show_pdb
 import seaborn as sns

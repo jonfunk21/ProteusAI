@@ -31,7 +31,7 @@ alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
 def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33):
     """
-    Compute the of esm models for a list of sequences.
+    Compute the of esm_tools models for a list of sequences.
 
     Parameters:
         seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence.
@@ -220,7 +220,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         rep_layer (int): choose representation layer. Default 33.
 
     Returns:
-        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm.data_tools.Alphabet
+        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm_tools.data_tools.Alphabet
 
     Example:
         1.

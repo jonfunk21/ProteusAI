@@ -1,7 +1,7 @@
 import re
 import sys
 sys.path.append('../../../src')
-from proteusAI.ml_tools.esm import *
+from proteusAI.ml_tools.esm_tools import *
 
 data_path = "../ind_chem_tol_ai-master/"
 _dest = "../results/01"

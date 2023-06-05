@@ -7,6 +7,3 @@ A subpackage for machine learning
 
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
-
-from esm import *
-from sklearn import *

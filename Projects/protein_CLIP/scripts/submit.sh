@@ -35,7 +35,7 @@ pip3 install torch torchvision torchaudio
 pip3 install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
 python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
 
-pip3 install fair-esm
+pip3 install fair-esm_tools
 pip3 install matplotlib
 pip3 install biopython
 pip3 install biotite

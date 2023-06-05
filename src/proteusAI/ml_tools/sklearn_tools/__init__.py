@@ -2,7 +2,7 @@
 # under the MIT License.
 
 """
-A subpackage for sklearn activity_prediction.
+A subpackage for sklearn_tools activity_prediction.
 """
 
 __name__ = "proteusAI"
