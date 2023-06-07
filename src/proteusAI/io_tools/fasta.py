@@ -18,16 +18,18 @@ def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False)
         biotite (bool): returns sequences as biotite.sequence.ProteinSequence object
 
     Returns:
-        tuple: two lists containing the names and sequences
+        dict: dictionary of file_names and tuple (names, sequences)
 
     Example:
-        names, sequences = load_fastas('/path/to/fastas')
+        results = load_fastas('/path/to/fastas')
     """
-    files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(file_type)]
+    file_names = [f for f in os.listdir(path) if f.endswith(file_type)]
+    files = [os.path.join(path, f) for f in file_names if f.endswith(file_type)]
 
-    names = []
-    sequences = []
-    for file in files:
+    results = {}
+    for i, file in enumerate(files):
+        names = []
+        sequences = []
         with open(file, 'r') as f:
             current_sequence = ""
             for line in f:
@@ -44,7 +46,8 @@ def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False)
             else:
                 sequences.append(current_sequence)
 
-    return names, sequences
+        results[file_names[i]] = (names, sequences)
+    return results
 
 
 def load_fasta(file: str, biotite: bool = False) -> tuple:
