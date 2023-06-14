@@ -129,5 +129,9 @@ dmypy.json
 .pyre/
 
 # biodata
-.pdb
-.fasta
+*.pdb
+*.fasta
+*.xml
+*.pt
+*.png
+.DS_Store
