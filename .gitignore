@@ -134,4 +134,17 @@ dmypy.json
 *.xml
 *.pt
 *.png
+*.sdf
+*.pth
+*.zip
+*.gif
+*.pml
+*.dat
+*.csv
+*.txt
+*.pse
 .DS_Store
+
+# from server
+*.err
+*.out
