@@ -148,3 +148,5 @@ dmypy.json
 # from server
 *.err
 *.out
+4a6d.cif
+.idea/ProteusAI.iml
