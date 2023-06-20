@@ -1,4 +1,6 @@
 import torch
+import os
+import numpy as np
 
 def one_hot_encoder(sequences: list, alphabet: dict):
     """
