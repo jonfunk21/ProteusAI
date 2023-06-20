@@ -10,9 +10,15 @@ from utils import *
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, random_split
+import argparse
+
+# Argument parsing
+parser = argparse.ArgumentParser(description="Process some strings.")
+parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
+args = parser.parse_args()
 
 # encoding type ohe, BLOSUM62 or BLOSUM50
-encoding_type = 'OHE'
+encoding_type = args.encoder
 assert encoding_type in ['OHE', 'BLOSUM62', 'BLOSUM50']
 
 # script path
