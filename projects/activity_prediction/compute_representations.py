@@ -4,13 +4,22 @@ import sys
 sys.path.append('../../../src/')
 from proteusAI.ml_tools.esm_tools.esm_tools import *
 
+# script path
+script_path = os.path.dirname(os.path.realpath(__file__))
+dataset_path = os.path.join(script_path, 'datasets')
+representation_path = os.path.join(script_path, 'representations')
+
+# model for embedding computation
+model = 'esm1v'
+
 # collect all datasets
-mutant_datasets = [f for f in os.listdir('../datasets/')]
+mutant_datasets = [f for f in os.listdir(dataset_path) if f.endswith('.csv')]
 
 # create directories for all datasets
 for dataset in mutant_datasets:
     study_name = dataset.split('.')[0]
-    os.makedirs(f'representations/{study_name}', exist_ok=True)
+    study_path = os.path.join(representation_path, study_name)
+    os.makedirs(study_path, exist_ok=True)
 
 
 # compute embeddings for all datasets
@@ -18,7 +27,8 @@ batch_size = 10
 for dataset in mutant_datasets:
     
     # get names and sequences from dataframe
-    df = pd.read_csv(f'representations/{study_name}.csv')
+    df_path = os.path.join(dataset_path, dataset)
+    df = pd.read_csv(df_path)
     sequences = df['mutated_sequence'].to_list()
     names = df['mutant'].to_list()
     
