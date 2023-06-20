@@ -32,40 +32,14 @@ def one_hot_encoder(sequences: list, alphabet: dict):
     return tensor
 
 
-def one_hot_decoder(tensor: torch.Tensor, alphabet: dict):
-    """
-    Decodes one-hot encoded sequences back to their original sequences.
-
-    Parameters:
-        tensor (torch.Tensor): one-hot encodings
-        alphabet (dict): alphabet
-
-    Returns:
-        list: list of sequences
-    """
-    # Get the inverse of the alphabet (from indices to characters)
-    inverse_alphabet = {v: k for k, v in alphabet.items()}
-
-    # Convert the tensor to a list of indices
-    sequences = torch.argmax(tensor, dim=2).tolist()
-
-    # Convert the list of indices to a list of sequences
-    decoded_sequences = []
-    for sequence in sequences:
-        decoded_sequence = [inverse_alphabet[index] for index in sequence if index != 0]
-        decoded_sequences.append(''.join(decoded_sequence))
-
-    return decoded_sequences
-
-
-def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
+def blosum_encoding(sequences: list, matrix='BLOSUM62', canonical=True):
     '''
     Returns BLOSUM encoding for amino acid sequence. Unknown amino acids will be
     encoded with 0.5 at in entire row.
 
     Parameters:
     -----------
-        sequence (str): Amino acid sequence
+        sequences (list): List of amino acid sequences
         blosum_matrix_choice (str): Choice of BLOSUM matrix. Can be 'BLOSUM50' or 'BLOSUM62'
         canonical (bool): only use canonical amino acids
 
@@ -99,19 +73,22 @@ def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
             blosum_matrix[letter_1] = matrix[i][:20]
         else:
             blosum_matrix[letter_1] = matrix[i]
-    
-    # create empty encoding vector
-    encoding = np.zeros((len(sequence), len(blosum_matrix['A'])))
-    
+
+    # Get the maximum sequence length
+    max_sequence_length = max(len(sequence) for sequence in sequences)
+    n_sequences = len(sequences)
+    alphabet_size = len(blosum_matrix['A'])
+
+    # Create an empty tensor of the right size
+    tensor = torch.zeros((n_sequences, max_sequence_length, alphabet_size))
+
     # Convert each amino acid in sequence to BLOSUM encoding
-    for i, aa in enumerate(sequence):
-        if aa in alphabet:
-            encoding[i, :] = blosum_matrix[aa]
-        else:
-            # Handle unknown amino acids with a default value of 0.5
-            encoding[i, :] = 0.5
+    for i, sequence in enumerate(sequences):
+        for j, aa in enumerate(sequence):
+            if aa in alphabet:
+                tensor[i, j, :] = torch.tensor(blosum_matrix[aa])
+            else:
+                # Handle unknown amino acids with a default value of 0.5
+                tensor[i, j, :] = 0.5
 
-    # Convert numpy array to torch tensor
-    encoding = torch.from_numpy(encoding)
-
-    return encoding
+    return tensor
