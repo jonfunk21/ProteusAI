@@ -1,0 +1,4216 @@
+BLASTP 2.12.0+
+
+
+Reference: Stephen F. Altschul, Thomas L. Madden, Alejandro A.
+Schaffer, Jinghui Zhang, Zheng Zhang, Webb Miller, and David J.
+Lipman (1997), "Gapped BLAST and PSI-BLAST: a new generation of
+protein database search programs", Nucleic Acids Res. 25:3389-3402.
+
+
+Reference for composition-based statistics: Alejandro A. Schaffer,
+L. Aravind, Thomas L. Madden, Sergei Shavirin, John L. Spouge, Yuri
+I. Wolf, Eugene V. Koonin, and Stephen F. Altschul (2001),
+"Improving the accuracy of PSI-BLAST protein database searches with
+composition-based statistics and other refinements", Nucleic Acids
+Res. 29:2994-3005.
+
+
+
+Database: uniref100
+           350,950,053 sequences; 133,486,060,660 total letters
+
+
+
+Query= CCDB_ECOLI
+
+Length=101
+                                                                      Score     E
+Sequences producing significant alignments:                          (Bits)  Value
+
+UR100:UniRef100_Q52042 Toxin CcdB n=73 Tax=root TaxID=1 RepID=CCDB...  203     6e-66
+UR100:UniRef100_B1VC45 Toxin CcdB n=4 Tax=Enterobacteriaceae TaxID...  203     7e-66
+UR100:UniRef100_UPI000931C251 type II toxin-antitoxin system toxin...  203     8e-66
+UR100:UniRef100_A0A979H5R5 Toxin CcdB n=2 Tax=Escherichia coli Tax...  203     1e-65
+UR100:UniRef100_Q0H052 Toxin CcdB n=94 Tax=root TaxID=1 RepID=Q0H0...  203     1e-65
+UR100:UniRef100_UPI000743B62C type II toxin-antitoxin system toxin...  202     1e-65
+UR100:UniRef100_UPI00073DEDB5 type II toxin-antitoxin system toxin...  202     1e-65
+UR100:UniRef100_D6IDF4 Toxin CcdB n=3 Tax=Escherichia coli TaxID=5...  202     2e-65
+UR100:UniRef100_UPI0015E5142D type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI000743CB1B type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI001119BDA1 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI00202BBB27 Toxin CcdB n=1 Tax=Escherichia coli ...  202     2e-65
+UR100:UniRef100_A0A6L6ZNQ5 Toxin CcdB n=1 Tax=Escherichia coli Tax...  202     2e-65
+UR100:UniRef100_A0A0L1BNN5 Toxin CcdB n=1 Tax=Escherichia coli Tax...  202     2e-65
+UR100:UniRef100_A0A8S7XU12 Toxin CcdB n=1 Tax=Escherichia coli Tax...  202     2e-65
+UR100:UniRef100_A0A853WMN3 Toxin CcdB n=1 Tax=Escherichia coli Tax...  202     2e-65
+UR100:UniRef100_UPI00045364E4 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI0004D5A234 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI001302C85E type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI0002A1B02D type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI000CF784D1 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI000335E573 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI0011169047 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI001DEA27E0 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI0010D34B66 type II toxin-antitoxin system toxin...  202     2e-65
+UR100:UniRef100_UPI00202BBADB Toxin CcdB n=1 Tax=Escherichia coli ...  202     2e-65
+UR100:UniRef100_UPI0016AB87D2 Toxin CcdB n=1 Tax=Escherichia coli ...  202     2e-65
+UR100:UniRef100_A0A8S7GQS5 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     3e-65
+UR100:UniRef100_A0A8E0IUQ4 Toxin CcdB n=1 Tax=Escherichia coli HVH...  201     3e-65
+UR100:UniRef100_A0A8S7F3J2 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     3e-65
+UR100:UniRef100_A0A828LNI1 Toxin CcdB n=2 Tax=Enterobacteriaceae T...  201     3e-65
+UR100:UniRef100_A0A621W907 Toxin CcdB n=7 Tax=Enterobacteriaceae T...  201     3e-65
+UR100:UniRef100_A0A742K3E4 Toxin CcdB n=1 Tax=Salmonella enterica ...  201     3e-65
+UR100:UniRef100_UPI00128DA24A type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000BDF8760 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI0010AC0736 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI0015DCE586 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI0004931B9E type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000A2DAF35 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI0017578B3E type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000390F560 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI001696FBAD type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000BE34219 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000F972C31 type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_UPI000D13820F type II toxin-antitoxin system toxin...  201     3e-65
+UR100:UniRef100_A0A8S7NRU4 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     5e-65
+UR100:UniRef100_A0A7U9H9L4 Toxin CcdB n=1 Tax=Escherichia sp. KTE1...  201     5e-65
+UR100:UniRef100_A0A748EY43 Toxin CcdB n=2 Tax=Enterobacteriaceae T...  201     5e-65
+UR100:UniRef100_A0A739XY04 Toxin CcdB n=1 Tax=Salmonella enterica ...  201     5e-65
+UR100:UniRef100_UPI001F339C39 type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI0021CA4F90 type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI001303D00C type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000CA16BBC type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI0003B9BE7F type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI001A2A35CD type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000B7CDACB type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI0009445394 type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000DF1537F type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000B7D0F1C type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000CFA96D0 type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI002307394F type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000B7CAF78 type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_UPI000BE25C2C type II toxin-antitoxin system toxin...  201     5e-65
+UR100:UniRef100_A0A3Z8YDN8 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     7e-65
+UR100:UniRef100_A0A403D720 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     7e-65
+UR100:UniRef100_A0A8S7BI63 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     7e-65
+UR100:UniRef100_A0A137CP88 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     7e-65
+UR100:UniRef100_A0A827FZD1 Toxin CcdB n=1 Tax=Escherichia coli Tax...  201     7e-65
+UR100:UniRef100_UPI001CBB9CA7 type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI00107F0B1E type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI00136F59C3 type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI0002A12FD3 type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI000D16D7CC type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI0015F7062C type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI00092DBC4F type II toxin-antitoxin system toxin...  201     7e-65
+UR100:UniRef100_UPI002248E81F type II toxin-antitoxin system toxin...  201     8e-65
+UR100:UniRef100_T2HS38 Toxin CcdB n=1 Tax=Escherichia coli TaxID=5...  200     9e-65
+UR100:UniRef100_A0A0F6YRT4 Toxin CcdB n=1 Tax=Escherichia coli O10...  200     9e-65
+UR100:UniRef100_UPI000FAD8299 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI0002C948C4 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI000BE8069E type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI0020250F85 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI0015D93063 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI0017B05675 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI0007A0C9D6 type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_UPI00094A551F type II toxin-antitoxin system toxin...  200     9e-65
+UR100:UniRef100_A0A7H9M0U3 Toxin CcdB n=1 Tax=Escherichia coli Tax...  200     1e-64
+UR100:UniRef100_A0A2H3M621 Toxin CcdB n=2 Tax=Escherichia coli Tax...  200     1e-64
+UR100:UniRef100_A0A743FUV7 Toxin CcdB n=1 Tax=Salmonella enterica ...  200     1e-64
+UR100:UniRef100_UPI00187EC3CA type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI001075BCFF type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0022470642 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI000D16AD6D type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0006831215 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI000CFDE606 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0004461564 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI00126FD1BB type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0005AAB352 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0004D7FD7E type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_UPI0010CB3C14 type II toxin-antitoxin system toxin...  200     1e-64
+UR100:UniRef100_A0A828HT67 Toxin CcdB n=1 Tax=Escherichia coli Tax...  199     2e-64
+UR100:UniRef100_UPI0013D57B30 type II toxin-antitoxin system toxin...  199     2e-64
+UR100:UniRef100_UPI000A18866A type II toxin-antitoxin system toxin...  199     2e-64
+UR100:UniRef100_UPI00079FE608 type II toxin-antitoxin system toxin...  199     2e-64
+UR100:UniRef100_Q46996 Toxin CcdB n=1 Tax=Escherichia coli TaxID=5...  199     2e-64
+UR100:UniRef100_UPI000BE5A766 type II toxin-antitoxin system toxin...  199     3e-64
+UR100:UniRef100_UPI000CFC2E4D type II toxin-antitoxin system toxin...  199     3e-64
+UR100:UniRef100_UPI0013024CE4 type II toxin-antitoxin system toxin...  199     3e-64
+UR100:UniRef100_UPI001282BEF2 type II toxin-antitoxin system toxin...  199     4e-64
+UR100:UniRef100_UPI00093D657C type II toxin-antitoxin system toxin...  199     4e-64
+UR100:UniRef100_UPI001D192563 type II toxin-antitoxin system toxin...  199     5e-64
+UR100:UniRef100_A0A0M1UIW4 Toxin CcdB n=25 Tax=cellular organisms ...  198     5e-64
+UR100:UniRef100_A0A600Z065 Toxin CcdB n=34 Tax=Salmonella TaxID=59...  198     5e-64
+UR100:UniRef100_UPI0021C5AC84 type II toxin-antitoxin system toxin...  198     5e-64
+UR100:UniRef100_UPI002301EE40 type II toxin-antitoxin system toxin...  198     5e-64
+UR100:UniRef100_A0A5I4QKT4 Toxin CcdB n=1 Tax=Salmonella oranienbe...  198     8e-64
+UR100:UniRef100_A0A078LMP8 Toxin CcdB n=1 Tax=Citrobacter koseri T...  198     8e-64
+UR100:UniRef100_A0A744IJ35 Toxin CcdB n=3 Tax=Salmonella enterica ...  198     8e-64
+UR100:UniRef100_UPI0002C9A239 type II toxin-antitoxin system toxin...  198     8e-64
+UR100:UniRef100_UPI00033F71F2 type II toxin-antitoxin system toxin...  198     8e-64
+UR100:UniRef100_UPI000BE618FC type II toxin-antitoxin system toxin...  198     8e-64
+UR100:UniRef100_UPI00197BDE26 type II toxin-antitoxin system toxin...  198     8e-64
+UR100:UniRef100_A0A7D6F2K9 Toxin CcdB n=1 Tax=Escherichia coli Tax...  197     1e-63
+UR100:UniRef100_UPI00195CCE5F type II toxin-antitoxin system toxin...  197     1e-63
+UR100:UniRef100_UPI00056ECD0C type II toxin-antitoxin system toxin...  197     1e-63
+UR100:UniRef100_UPI00047FEDF3 type II toxin-antitoxin system toxin...  197     1e-63
+UR100:UniRef100_A0A809SZU1 Toxin CcdB n=1 Tax=Escherichia coli Tax...  197     2e-63
+UR100:UniRef100_A0A5X3P681 Toxin CcdB n=2 Tax=Salmonella enterica ...  197     2e-63
+UR100:UniRef100_A0A5J1SSZ4 Toxin CcdB n=5 Tax=Salmonella enterica ...  197     2e-63
+UR100:UniRef100_UPI001C405C85 type II toxin-antitoxin system toxin...  197     2e-63
+UR100:UniRef100_UPI000BE54E59 type II toxin-antitoxin system toxin...  197     2e-63
+UR100:UniRef100_A0A823BB99 Toxin CcdB n=2 Tax=Shigella boydii TaxI...  197     2e-63
+UR100:UniRef100_A0A6Y2KPS2 Toxin CcdB n=6 Tax=Salmonella enterica ...  197     2e-63
+UR100:UniRef100_A0A626M2A7 Toxin CcdB n=4 Tax=Salmonella enterica ...  197     2e-63
+UR100:UniRef100_UPI000D5EA850 type II toxin-antitoxin system toxin...  197     2e-63
+UR100:UniRef100_UPI000E65D800 type II toxin-antitoxin system toxin...  197     2e-63
+UR100:UniRef100_A0A639WJV9 Toxin CcdB n=2 Tax=Salmonella enterica ...  196     3e-63
+UR100:UniRef100_UPI0009AEFFF5 type II toxin-antitoxin system toxin...  196     3e-63
+UR100:UniRef100_A0A7T2JNS9 Toxin CcdB n=1 Tax=Escherichia coli Tax...  196     4e-63
+UR100:UniRef100_A0A5Y3V2N9 Toxin CcdB n=2 Tax=Salmonella enterica ...  196     4e-63
+UR100:UniRef100_A0A635CMY2 Toxin CcdB n=2 Tax=Salmonella enterica ...  196     4e-63
+UR100:UniRef100_UPI0009AF04D6 type II toxin-antitoxin system toxin...  196     4e-63
+UR100:UniRef100_UPI0007EEB347 type II toxin-antitoxin system toxin...  196     4e-63
+UR100:UniRef100_UPI002101613D type II toxin-antitoxin system toxin...  196     4e-63
+UR100:UniRef100_A0A379YLA8 Toxin CcdB n=1 Tax=Salmonella enterica ...  196     6e-63
+UR100:UniRef100_A0A763XKI4 Toxin CcdB n=2 Tax=Salmonella enterica ...  196     6e-63
+UR100:UniRef100_A0A5J0SI03 Toxin CcdB n=1 Tax=Salmonella enterica ...  196     6e-63
+UR100:UniRef100_A0A633LE01 Toxin CcdB n=2 Tax=Salmonella enterica ...  195     9e-63
+UR100:UniRef100_A0A763SWV8 Toxin CcdB n=1 Tax=Salmonella enterica ...  195     9e-63
+UR100:UniRef100_A0A8E6XYI0 Toxin CcdB n=2 Tax=Salmonella enterica ...  195     9e-63
+UR100:UniRef100_A0A624B7R0 Toxin CcdB n=1 Tax=Salmonella montevide...  195     9e-63
+UR100:UniRef100_A0A379SE77 Toxin CcdB n=2 Tax=Salmonella enterica ...  195     1e-62
+UR100:UniRef100_A0A760BHN2 Toxin CcdB n=1 Tax=Salmonella enterica ...  195     1e-62
+UR100:UniRef100_A0A708T3D6 Toxin CcdB n=1 Tax=Salmonella typhimuri...  195     1e-62
+UR100:UniRef100_A0A486V8W2 Toxin CcdB n=4 Tax=Klebsiella TaxID=570...  195     1e-62
+UR100:UniRef100_UPI000B8D733E type II toxin-antitoxin system toxin...  195     1e-62
+UR100:UniRef100_UPI0003EDB6EB type II toxin-antitoxin system toxin...  195     1e-62
+UR100:UniRef100_UPI001CA471A9 type II toxin-antitoxin system toxin...  195     1e-62
+UR100:UniRef100_A0A379YLR2 Toxin CcdB n=1 Tax=Salmonella enterica ...  194     2e-62
+UR100:UniRef100_A0A7G6KFD2 Toxin CcdB n=1 Tax=Shigella boydii TaxI...  194     2e-62
+UR100:UniRef100_A0A5W7F1Q5 Toxin CcdB n=6 Tax=Salmonella enterica ...  194     2e-62
+UR100:UniRef100_A0A3Y5WTI6 Toxin CcdB n=3 Tax=Salmonella enterica ...  194     3e-62
+UR100:UniRef100_A0A736PJB7 Toxin CcdB n=1 Tax=Salmonella enterica ...  194     3e-62
+UR100:UniRef100_UPI0011572532 type II toxin-antitoxin system toxin...  194     4e-62
+UR100:UniRef100_A0A0K5KET6 Toxin CcdB n=2 Tax=Escherichia TaxID=56...  193     7e-62
+UR100:UniRef100_A0A8S7QDY8 Toxin CcdB n=1 Tax=Escherichia coli Tax...  193     7e-62
+UR100:UniRef100_UPI0009AFD1D3 type II toxin-antitoxin system toxin...  193     7e-62
+UR100:UniRef100_UPI000FB5714F type II toxin-antitoxin system toxin...  193     7e-62
+UR100:UniRef100_UPI000C79EA57 type II toxin-antitoxin system toxin...  193     7e-62
+UR100:UniRef100_A0A741TK00 Toxin CcdB n=1 Tax=Salmonella montevide...  192     1e-61
+UR100:UniRef100_UPI001B8B7BE8 type II toxin-antitoxin system toxin...  192     1e-61
+UR100:UniRef100_UPI00106E69EC type II toxin-antitoxin system toxin...  192     1e-61
+UR100:UniRef100_UPI000FFC3710 type II toxin-antitoxin system toxin...  192     1e-61
+UR100:UniRef100_UPI001C569C36 type II toxin-antitoxin system toxin...  192     1e-61
+UR100:UniRef100_UPI001033A1AD type II toxin-antitoxin system toxin...  192     1e-61
+UR100:UniRef100_A0A612C6T3 Toxin CcdB n=2 Tax=Salmonella enterica ...  192     2e-61
+UR100:UniRef100_UPI0009ACB6C6 type II toxin-antitoxin system toxin...  192     2e-61
+UR100:UniRef100_UPI001C601698 type II toxin-antitoxin system toxin...  192     2e-61
+UR100:UniRef100_UPI000513610A type II toxin-antitoxin system toxin...  192     2e-61
+UR100:UniRef100_UPI001F1EBE61 type II toxin-antitoxin system toxin...  191     5e-61
+UR100:UniRef100_UPI001120BC33 type II toxin-antitoxin system toxin...  190     9e-61
+UR100:UniRef100_UPI000929369C type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_A0A142EBB8 Toxin CcdB n=24 Tax=Enterobacterales Ta...  189     2e-60
+UR100:UniRef100_UPI0012ABD95B type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_UPI001302E812 type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_UPI001F37B989 type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_A0A2S4RRL5 Toxin CcdB n=1 Tax=Citrobacter amalonat...  189     2e-60
+UR100:UniRef100_A0A660HK18 Toxin CcdB n=12 Tax=Enterobacteriaceae ...  189     2e-60
+UR100:UniRef100_A0A753AJS6 Toxin CcdB n=1 Tax=Salmonella enterica ...  189     2e-60
+UR100:UniRef100_UPI001E2AEC3E type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_UPI000BE2FC0C type II toxin-antitoxin system toxin...  189     2e-60
+UR100:UniRef100_A0A2S4Q7J2 Toxin CcdB n=1 Tax=Citrobacter freundii...  189     4e-60
+UR100:UniRef100_A0A443XCG4 Toxin CcdB n=4 Tax=Enterobacteriaceae T...  189     4e-60
+UR100:UniRef100_A0A5H6RAW1 Toxin CcdB n=1 Tax=Salmonella oranienbe...  189     4e-60
+UR100:UniRef100_A0A290FT81 Toxin CcdB n=8 Tax=Klebsiella TaxID=570...  188     5e-60
+UR100:UniRef100_UPI00126CCD9A type II toxin-antitoxin system toxin...  188     5e-60
+UR100:UniRef100_A0A7H9K2T5 Toxin CcdB n=1 Tax=Enterobacter cloacae...  188     7e-60
+UR100:UniRef100_A0A6F8QKT0 Toxin CcdB n=1 Tax=Escherichia coli Tax...  188     7e-60
+UR100:UniRef100_A0A8F4GLR9 Toxin CcdB n=2 Tax=Klebsiella sp. PL-20...  188     9e-60
+UR100:UniRef100_A0A624IVG6 Toxin CcdB n=2 Tax=Salmonella enterica ...  187     1e-59
+UR100:UniRef100_UPI000DA54DD5 type II toxin-antitoxin system toxin...  187     2e-59
+UR100:UniRef100_A0A853HKH8 Toxin CcdB n=2 Tax=Enterobacteriaceae T...  187     2e-59
+UR100:UniRef100_UPI0007CC1A04 type II toxin-antitoxin system toxin...  187     2e-59
+UR100:UniRef100_UPI00215B76DD type II toxin-antitoxin system toxin...  187     2e-59
+UR100:UniRef100_UPI000DE62FAE type II toxin-antitoxin system toxin...  187     2e-59
+UR100:UniRef100_UPI000E2AF9CF type II toxin-antitoxin system toxin...  187     2e-59
+UR100:UniRef100_A0A192EZX1 Toxin CcdB n=9 Tax=Enterobacteriaceae T...  186     3e-59
+UR100:UniRef100_A0A7D5FY56 Toxin CcdB n=7 Tax=Enterobacteriaceae T...  186     3e-59
+UR100:UniRef100_UPI00226E869A type II toxin-antitoxin system toxin...  186     3e-59
+UR100:UniRef100_UPI000C2AADBB type II toxin-antitoxin system toxin...  186     3e-59
+UR100:UniRef100_UPI000F0B6616 type II toxin-antitoxin system toxin...  186     3e-59
+UR100:UniRef100_UPI0015E7AF03 type II toxin-antitoxin system toxin...  186     3e-59
+UR100:UniRef100_UPI001F51B3B9 type II toxin-antitoxin system toxin...  186     4e-59
+UR100:UniRef100_UPI00095258B4 type II toxin-antitoxin system toxin...  186     4e-59
+UR100:UniRef100_A0A2F0P5X7 Toxin CcdB n=1 Tax=Serratia marcescens ...  186     6e-59
+UR100:UniRef100_A0A2P9E5F9 Toxin CcdB n=10 Tax=Enterobacteriaceae ...  185     8e-59
+UR100:UniRef100_UPI001A921EDE type II toxin-antitoxin system toxin...  185     8e-59
+UR100:UniRef100_A0A747AMX3 Toxin CcdB n=2 Tax=Enterobacteriaceae T...  185     1e-58
+UR100:UniRef100_UPI001FAF5EDE type II toxin-antitoxin system toxin...  185     1e-58
+UR100:UniRef100_A0A5U6SYN9 Toxin CcdB n=1 Tax=Salmonella enterica ...  184     2e-58
+UR100:UniRef100_UPI000CF74CBD type II toxin-antitoxin system toxin...  184     2e-58
+UR100:UniRef100_UPI00050E8429 type II toxin-antitoxin system toxin...  184     3e-58
+UR100:UniRef100_UPI001BD0E5B0 type II toxin-antitoxin system toxin...  183     5e-58
+UR100:UniRef100_UPI0019190725 type II toxin-antitoxin system toxin...  182     1e-57
+UR100:UniRef100_UPI0021698623 type II toxin-antitoxin system toxin...  182     1e-57
+UR100:UniRef100_UPI00132FCD63 type II toxin-antitoxin system toxin...  181     2e-57
+UR100:UniRef100_A0A381KU96 Toxin CcdB n=1 Tax=Citrobacter freundii...  181     3e-57
+UR100:UniRef100_UPI0015E70AF6 type II toxin-antitoxin system toxin...  181     4e-57
+UR100:UniRef100_UPI001FFFF812 type II toxin-antitoxin system toxin...  181     6e-57
+UR100:UniRef100_UPI0010773358 type II toxin-antitoxin system toxin...  180     8e-57
+UR100:UniRef100_UPI0012888CA9 type II toxin-antitoxin system toxin...  180     8e-57
+UR100:UniRef100_A0A765NSA8 Toxin CcdB n=3 Tax=Enterobacteriaceae T...  179     2e-56
+UR100:UniRef100_A0A742UHW9 Toxin CcdB n=1 Tax=Salmonella enterica ...  179     2e-56
+UR100:UniRef100_UPI001BAD00BF type II toxin-antitoxin system toxin...  179     3e-56
+UR100:UniRef100_A0A5W5VZB2 Toxin CcdB n=4 Tax=Salmonella enterica ...  179     3e-56
+UR100:UniRef100_UPI0014703B5F type II toxin-antitoxin system toxin...  178     5e-56
+UR100:UniRef100_UPI000FBCD307 type II toxin-antitoxin system toxin...  178     7e-56
+UR100:UniRef100_UPI0021BFDCE4 type II toxin-antitoxin system toxin...  178     7e-56
+UR100:UniRef100_D2TV56 Toxin CcdB n=1 Tax=Citrobacter rodentium (s...  177     9e-56
+UR100:UniRef100_UPI0007C69744 type II toxin-antitoxin system toxin...  177     9e-56
+UR100:UniRef100_UPI00234D7655 type II toxin-antitoxin system toxin...  177     1e-55
+UR100:UniRef100_UPI0014441739 type II toxin-antitoxin system toxin...  177     2e-55
+UR100:UniRef100_A0A761SA85 Toxin CcdB n=1 Tax=Salmonella enterica ...  176     3e-55
+UR100:UniRef100_U3U6Q8 Toxin CcdB n=1 Tax=Plautia stali symbiont T...  176     4e-55
+UR100:UniRef100_S5NNW5 Toxin CcdB n=1 Tax=Salmonella bongori N268-...  176     4e-55
+UR100:UniRef100_A0A742ZKS6 Toxin CcdB n=2 Tax=Salmonella enterica ...  176     5e-55
+UR100:UniRef100_UPI0012756565 type II toxin-antitoxin system toxin...  175     8e-55
+UR100:UniRef100_UPI0021B312AE type II toxin-antitoxin system toxin...  175     8e-55
+UR100:UniRef100_UPI000FA1D999 type II toxin-antitoxin system toxin...  175     1e-54
+UR100:UniRef100_A0A5U0HF18 Toxin CcdB n=1 Tax=Salmonella enterica ...  174     2e-54
+
+
+>UR100:UniRef100_Q52042 Toxin CcdB n=73 Tax=root TaxID=1 RepID=CCDB3_ECOLX
+Length=101
+
+ Score = 203 bits (517),  Expect = 6e-66
+ Identities = 101/101 (100%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_B1VC45 Toxin CcdB n=4 Tax=Enterobacteriaceae TaxID=543 RepID=B1VC45_ECOLX
+Length=110
+
+ Score = 203 bits (517),  Expect = 7e-66
+ Identities = 101/101 (100%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  10   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  69
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  70   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  110
+
+
+>UR100:UniRef100_UPI000931C251 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+albertii TaxID=208962 RepID=UPI000931C251
+Length=102
+
+ Score = 203 bits (516),  Expect = 8e-66
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A979H5R5 Toxin CcdB n=2 Tax=Escherichia coli TaxID=562 RepID=A0A979H5R5_ECOSE
+Length=110
+
+ Score = 203 bits (516),  Expect = 1e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  10   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  69
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  70   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  110
+
+
+>UR100:UniRef100_Q0H052 Toxin CcdB n=94 Tax=root TaxID=1 RepID=Q0H052_ECOLX
+Length=110
+
+ Score = 203 bits (516),  Expect = 1e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  10   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  69
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  70   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  110
+
+
+>UR100:UniRef100_UPI000743B62C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI000743B62C
+Length=101
+
+ Score = 202 bits (515),  Expect = 1e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPISVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00073DEDB5 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00073DEDB5
+Length=101
+
+ Score = 202 bits (515),  Expect = 1e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIP+ASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPMASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_D6IDF4 Toxin CcdB n=3 Tax=Escherichia coli TaxID=562 RepID=D6IDF4_ECOLX
+Length=110
+
+ Score = 202 bits (515),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFK+YTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  10   MQFKIYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  69
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  70   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  110
+
+
+>UR100:UniRef100_UPI0015E5142D type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0015E5142D
+Length=101
+
+ Score = 202 bits (514),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARL+SDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLMSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000743CB1B type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+albertii TaxID=208962 RepID=UPI000743CB1B
+Length=101
+
+ Score = 202 bits (514),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEV+DLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVSDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001119BDA1 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001119BDA1
+Length=101
+
+ Score = 202 bits (514),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDM+SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMSSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00202BBB27 Toxin CcdB n=1 Tax=Escherichia coli (strain K12) TaxID=83333 
+RepID=UPI00202BBB27
+Length=101
+
+ Score = 202 bits (514),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDK+SRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKLSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A6L6ZNQ5 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A6L6ZNQ5_ECOLX
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRM+IPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMMIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A0L1BNN5 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A0L1BNN5_ECOLX
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEV+DLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVSDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8S7XU12 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7XU12_ECOLX
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDM SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMTSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A853WMN3 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A853WMN3_ECOLX
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLA+ARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLATARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00045364E4 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00045364E4
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSR+LYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRDLYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0004D5A234 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0004D5A234
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRR+VIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRLVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001302C85E type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001302C85E
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDE+
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0002A1B02D type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0002A1B02D
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDI+NAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIRNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CF784D1 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI000CF784D1
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGE+VADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEDVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000335E573 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI000335E573
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDE+
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDET  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0011169047 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0011169047
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKN INLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNVINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001DEA27E0 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001DEA27E0
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDM SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMVSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0010D34B66 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0010D34B66
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEE+ADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEMADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00202BBADB Toxin CcdB n=1 Tax=Escherichia coli (strain K12) TaxID=83333 
+RepID=UPI00202BBADB
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDE 
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDEE  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0016AB87D2 Toxin CcdB n=1 Tax=Escherichia coli (strain K12) TaxID=83333 
+RepID=UPI0016AB87D2
+Length=101
+
+ Score = 202 bits (513),  Expect = 2e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRE RYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKREGRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8S7GQS5 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7GQS5_ECOLX
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEV DLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVVDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8E0IUQ4 Toxin CcdB n=1 Tax=Escherichia coli HVH 70 (4-2963531) TaxID=1281011 
+RepID=A0A8E0IUQ4_ECOLX
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDM SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMVSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8S7F3J2 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7F3J2_ECOLX
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A828LNI1 Toxin CcdB n=2 Tax=Enterobacteriaceae TaxID=543 RepID=A0A828LNI1_ECOLX
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQS+IIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSEIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A621W907 Toxin CcdB n=7 Tax=Enterobacteriaceae TaxID=543 RepID=A0A621W907_SALER
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMT+DMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTSDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A742K3E4 Toxin CcdB n=1 Tax=Salmonella enterica subsp. enterica serovar 
+Heidelberg TaxID=611 RepID=A0A742K3E4_SALET
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLTSARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00128DA24A type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00128DA24A
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLS+KVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSNKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BDF8760 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BDF8760
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLAS RLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASVRLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0010AC0736 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0010AC0736
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGR+MVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRQMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0015DCE586 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0015DCE586
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINL+FWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLVFWGI  101
+
+
+>UR100:UniRef100_UPI0004931B9E type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacteriaceae 
+TaxID=543 RepID=UPI0004931B9E
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPV VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVPVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000A2DAF35 type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacteriaceae 
+TaxID=543 RepID=UPI000A2DAF35
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRR+VIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRIVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0017578B3E type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0017578B3E
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFV+VQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVNVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000390F560 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000390F560
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAHLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001696FBAD type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001696FBAD
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRM+TTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMITTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE34219 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE34219
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEV DLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVGDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000F972C31 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000F972C31
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIG+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGKEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000D13820F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000D13820F
+Length=101
+
+ Score = 201 bits (512),  Expect = 3e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVAD SHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADFSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8S7NRU4 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7NRU4_ECOLX
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+G+ES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGNES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7U9H9L4 Toxin CcdB n=1 Tax=Escherichia sp. KTE159 TaxID=1182732 RepID=A0A7U9H9L4_9ESCH
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRE+DIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRESDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A748EY43 Toxin CcdB n=2 Tax=Enterobacteriaceae TaxID=543 RepID=A0A748EY43_SALTI
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAHLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A739XY04 Toxin CcdB n=1 Tax=Salmonella enterica subsp. enterica serovar 
+Heidelberg TaxID=611 RepID=A0A739XY04_SALET
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLRHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001F339C39 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001F339C39
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLA ARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLACARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0021CA4F90 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0021CA4F90
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLAS RLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASXRLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001303D00C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001303D00C
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 100/101 (99%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLS+RENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSYRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CA16BBC type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000CA16BBC
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQ DIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQRDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0003B9BE7F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0003B9BE7F
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMA VPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMACVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001A2A35CD type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001A2A35CD
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            M FKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MPFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000B7CDACB type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000B7CDACB
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSD VSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDNVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0009445394 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0009445394
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIK AINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKKAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000DF1537F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000DF1537F
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLM WGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMLWGI  101
+
+
+>UR100:UniRef100_UPI000B7D0F1C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000B7D0F1C
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLCHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CFA96D0 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000CFA96D0
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT+KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTHKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI002307394F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI002307394F
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPV VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVPVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000B7CAF78 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000B7CAF78
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVA+LSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVANLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE25C2C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE25C2C
+Length=101
+
+ Score = 201 bits (511),  Expect = 5e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A3Z8YDN8 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A3Z8YDN8_ECOLX
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYP VH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPEVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A403D720 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A403D720_ECOLX
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAR LSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARQLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8S7BI63 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7BI63_ECOLX
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASASLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A137CP88 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A137CP88_ECOLX
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLS+RENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSYRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A827FZD1 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A827FZD1_ECOLX
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAHLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPISVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001CBB9CA7 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001CBB9CA7
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDV SDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVLSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00107F0B1E type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00107F0B1E
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSSELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00136F59C3 type II toxin-antitoxin system toxin CcdB n=2 Tax=Enterobacteriaceae 
+TaxID=543 RepID=UPI00136F59C3
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAR LSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARRLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0002A12FD3 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0002A12FD3
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFV VQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVGVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000D16D7CC type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000D16D7CC
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRE YPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSREPYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0015F7062C type II toxin-antitoxin system toxin CcdB n=2 Tax=Escherichia 
+fergusonii TaxID=564 RepID=UPI0015F7062C
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKV RELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVYRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00092DBC4F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00092DBC4F
+Length=101
+
+ Score = 201 bits (510),  Expect = 7e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEE ADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEEADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI002248E81F type II toxin-antitoxin system toxin CcdB n=1 Tax=Pseudomonas 
+sp. DCB_AW TaxID=2993596 RepID=UPI002248E81F
+Length=107
+
+ Score = 201 bits (510),  Expect = 8e-65
+ Identities = 99/100 (99%), Positives = 100/100 (100%), Gaps = 0/100 (0%)
+
+Query  2    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESW  61
+            QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDESW
+Sbjct  8    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHLGDESW  67
+
+Query  62   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  68   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  107
+
+
+>UR100:UniRef100_T2HS38 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=T2HS38_ECOLX
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN+MFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINMMFWGI  101
+
+
+>UR100:UniRef100_A0A0F6YRT4 Toxin CcdB n=1 Tax=Escherichia coli O104:H21 TaxID=1335302 RepID=A0A0F6YRT4_ECOLX
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQS IIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSGIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000FAD8299 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000FAD8299
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTP RRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPRRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0002C948C4 type II toxin-antitoxin system toxin CcdB n=2 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0002C948C4
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSLELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE8069E type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE8069E
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLS KVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSGKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0020250F85 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0020250F85
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHI DES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIRDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0015D93063 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0015D93063
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPV H+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVGHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0017B05675 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0017B05675
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSCELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0007A0C9D6 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0007A0C9D6
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDV SDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVLSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00094A551F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00094A551F
+Length=101
+
+ Score = 200 bits (509),  Expect = 9e-65
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFW I
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWRI  101
+
+
+>UR100:UniRef100_A0A7H9M0U3 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A7H9M0U3_ECOLX
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAHLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMA+VPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMANVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A2H3M621 Toxin CcdB n=2 Tax=Escherichia coli TaxID=562 RepID=A0A2H3M621_ECOLX
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A743FUV7 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A743FUV7_SALER
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00187EC3CA type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00187EC3CA
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+G ES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGAES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001075BCFF type II toxin-antitoxin system toxin CcdB n=2 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001075BCFF
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRES YRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESCYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0022470642 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0022470642
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLS KVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSAKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000D16AD6D type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000D16AD6D
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKR+SRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYVYKRDSRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0006831215 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0006831215
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVV +GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVRVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CFDE606 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000CFDE606
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSCELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0004461564 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0004461564
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASACLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00126FD1BB type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI00126FD1BB
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASV VSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVSVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0005AAB352 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0005AAB352
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDT GRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTSGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0004D7FD7E type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0004D7FD7E
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTP RRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPERRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0010CB3C14 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0010CB3C14
+Length=101
+
+ Score = 200 bits (508),  Expect = 1e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHCENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A828HT67 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A828HT67_ECOLX
+Length=101
+
+ Score = 199 bits (507),  Expect = 2e-64
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYP VH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPEVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGE+VADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEDVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0013D57B30 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0013D57B30
+Length=101
+
+ Score = 199 bits (507),  Expect = 2e-64
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVI LASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVILLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000A18866A type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000A18866A
+Length=101
+
+ Score = 199 bits (507),  Expect = 2e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQS IIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSYIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00079FE608 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00079FE608
+Length=101
+
+ Score = 199 bits (507),  Expect = 2e-64
+ Identities = 98/101 (97%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+G+ES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGNES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMM+TDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMSTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_Q46996 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=CCDB2_ECOLX
+Length=101
+
+ Score = 199 bits (507),  Expect = 2e-64
+ Identities = 99/101 (98%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTT M SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTQMVSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE5A766 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE5A766
+Length=101
+
+ Score = 199 bits (506),  Expect = 3e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASV VSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVLVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CFC2E4D type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000CFC2E4D
+Length=101
+
+ Score = 199 bits (506),  Expect = 3e-64
+ Identities = 99/101 (98%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDT GRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTLGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0013024CE4 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI0013024CE4
+Length=101
+
+ Score = 199 bits (506),  Expect = 3e-64
+ Identities = 98/101 (97%), Positives = 101/101 (100%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDII+TPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIINTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRE+DIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRESDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001282BEF2 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI001282BEF2
+Length=101
+
+ Score = 199 bits (505),  Expect = 4e-64
+ Identities = 97/101 (96%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDI+DTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIVDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVA+LSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVAELSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00093D657C type II toxin-antitoxin system toxin CcdB n=1 Tax=Shigella boydii 
+TaxID=621 RepID=UPI00093D657C
+Length=101
+
+ Score = 199 bits (505),  Expect = 4e-64
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPV VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVFVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001D192563 type II toxin-antitoxin system toxin CcdB n=1 Tax=Acinetobacter 
+nosocomialis TaxID=106654 RepID=UPI001D192563
+Length=107
+
+ Score = 199 bits (505),  Expect = 5e-64
+ Identities = 99/100 (99%), Positives = 99/100 (99%), Gaps = 0/100 (0%)
+
+Query  2    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESW  61
+            QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPV HIGDESW
+Sbjct  8    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVGHIGDESW  67
+
+Query  62   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  68   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  107
+
+
+>UR100:UniRef100_A0A0M1UIW4 Toxin CcdB n=25 Tax=cellular organisms TaxID=131567 RepID=A0A0M1UIW4_ECOLX
+Length=101
+
+ Score = 198 bits (504),  Expect = 5e-64
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+ VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPIFVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A600Z065 Toxin CcdB n=34 Tax=Salmonella TaxID=590 RepID=A0A600Z065_SALNE
+Length=101
+
+ Score = 198 bits (504),  Expect = 5e-64
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0021C5AC84 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0021C5AC84
+Length=101
+
+ Score = 198 bits (504),  Expect = 5e-64
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYK  SRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKXXSRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI002301EE40 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI002301EE40
+Length=101
+
+ Score = 198 bits (504),  Expect = 5e-64
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQS+IIDT GRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSEIIDTSGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A5I4QKT4 Toxin CcdB n=1 Tax=Salmonella oranienberg TaxID=28147 RepID=A0A5I4QKT4_SALON
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFK+YTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKIYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A078LMP8 Toxin CcdB n=1 Tax=Citrobacter koseri TaxID=545 RepID=A0A078LMP8_CITKO
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIID PGRRMVIPL SARLLSD+VSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDPPGRRMVIPLVSARLLSDRVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A744IJ35 Toxin CcdB n=3 Tax=Salmonella enterica TaxID=28901 RepID=A0A744IJ35_SALER
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDK+SRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKISRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0002C9A239 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0002C9A239
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLDSARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN+MFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINMMFWGI  101
+
+
+>UR100:UniRef100_UPI00033F71F2 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00033F71F2
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTP RRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPRRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRE+DIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRESDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE618FC type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE618FC
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASACLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00197BDE26 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00197BDE26
+Length=101
+
+ Score = 198 bits (503),  Expect = 8e-64
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLA ARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLACARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7D6F2K9 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A7D6F2K9_ECOLX
+Length=101
+
+ Score = 197 bits (502),  Expect = 1e-63
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKV RELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVYRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVA LSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVAALSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00195CCE5F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+albertii TaxID=208962 RepID=UPI00195CCE5F
+Length=101
+
+ Score = 197 bits (502),  Expect = 1e-63
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVV +GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVLVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDM+SVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMSSVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00056ECD0C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+marmotae TaxID=1499973 RepID=UPI00056ECD0C
+Length=101
+
+ Score = 197 bits (502),  Expect = 1e-63
+ Identities = 97/101 (96%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+ DES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVWDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+SVIGEEVADL+HRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPLSVIGEEVADLNHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00047FEDF3 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00047FEDF3
+Length=99
+
+ Score = 197 bits (501),  Expect = 1e-63
+ Identities = 98/98 (100%), Positives = 98/98 (100%), Gaps = 0/98 (0%)
+
+Query  4    KVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRM  63
+            KVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRM
+Sbjct  2    KVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRM  61
+
+Query  64   MTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            MTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  62   MTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  99
+
+
+>UR100:UniRef100_A0A809SZU1 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A809SZU1_ECOLX
+Length=100
+
+ Score = 197 bits (501),  Expect = 2e-63
+ Identities = 100/101 (99%), Positives = 100/101 (99%), Gaps = 1/101 (1%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIP ASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIP-ASARLLSDKVSRELYPVVHIGDES  59
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  60   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  100
+
+
+>UR100:UniRef100_A0A5X3P681 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A5X3P681_SALET
+Length=101
+
+ Score = 197 bits (501),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIG+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGQEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A5J1SSZ4 Toxin CcdB n=5 Tax=Salmonella enterica TaxID=28901 RepID=A0A5J1SSZ4_SALET
+Length=101
+
+ Score = 197 bits (501),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYK+ESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKKESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001C405C85 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001C405C85
+Length=101
+
+ Score = 197 bits (501),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDII+TPGRRMVIPLA ARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIINTPGRRMVIPLACARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVPVSVIGEEVADLSHRE+DIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPVSVIGEEVADLSHRESDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE54E59 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000BE54E59
+Length=101
+
+ Score = 197 bits (501),  Expect = 2e-63
+ Identities = 98/101 (97%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+G+ES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGNES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASV VSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVLVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A823BB99 Toxin CcdB n=2 Tax=Shigella boydii TaxID=621 RepID=A0A823BB99_SHIBO
+Length=101
+
+ Score = 197 bits (500),  Expect = 2e-63
+ Identities = 96/101 (95%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLA ARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLAGARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+ VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPIFVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A6Y2KPS2 Toxin CcdB n=6 Tax=Salmonella enterica TaxID=28901 RepID=A0A6Y2KPS2_SALDZ
+Length=101
+
+ Score = 197 bits (500),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLTSARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A626M2A7 Toxin CcdB n=4 Tax=Salmonella enterica TaxID=28901 RepID=A0A626M2A7_SALMU
+Length=101
+
+ Score = 197 bits (500),  Expect = 2e-63
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDI+DTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIVDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP S IGEEVA+LSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASFIGEEVAELSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000D5EA850 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000D5EA850
+Length=101
+
+ Score = 197 bits (500),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQ DIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQGDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000E65D800 type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacteriaceae 
+TaxID=543 RepID=UPI000E65D800
+Length=101
+
+ Score = 197 bits (500),  Expect = 2e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A639WJV9 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A639WJV9_SALER
+Length=101
+
+ Score = 196 bits (499),  Expect = 3e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0009AEFFF5 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0009AEFFF5
+Length=101
+
+ Score = 196 bits (499),  Expect = 3e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRES Y LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESHYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7T2JNS9 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A7T2JNS9_ECOLX
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 96/101 (95%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+ VIGEEVADLSHRENDIKNAINLM WGI
+Sbjct  61   WRMMTTDMASVPIFVIGEEVADLSHRENDIKNAINLMLWGI  101
+
+
+>UR100:UniRef100_A0A5Y3V2N9 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A5Y3V2N9_SALER
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLS+RENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSYRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A635CMY2 Toxin CcdB n=2 Tax=Salmonella enterica I TaxID=59201 RepID=A0A635CMY2_SALTM
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRR VIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRKVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0009AF04D6 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0009AF04D6
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYK+ESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKKESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIG+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGQEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0007EEB347 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0007EEB347
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 97/101 (96%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASV VSVIGEEVADLS++ENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVQVSVIGEEVADLSYQENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI002101613D type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI002101613D
+Length=101
+
+ Score = 196 bits (498),  Expect = 4e-63
+ Identities = 97/101 (96%), Positives = 100/101 (99%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRM+IPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMMIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRM+TTDMASVPVSVIGEEVADLS RENDIKNAINLMFWGI
+Sbjct  61   WRMITTDMASVPVSVIGEEVADLSCRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A379YLA8 Toxin CcdB n=1 Tax=Salmonella enterica subsp. indica TaxID=59207 
+RepID=A0A379YLA8_SALER
+Length=101
+
+ Score = 196 bits (497),  Expect = 6e-63
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLS+KVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSEKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSH+ENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHQENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A763XKI4 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A763XKI4_SALER
+Length=101
+
+ Score = 196 bits (497),  Expect = 6e-63
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDI+DTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIVDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP S IGEEVA+LSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPDSFIGEEVAELSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A5J0SI03 Toxin CcdB n=1 Tax=Salmonella enterica subsp. enterica serovar 
+Kottbus TaxID=224727 RepID=A0A5J0SI03_SALET
+Length=101
+
+ Score = 196 bits (497),  Expect = 6e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDV SDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVLSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A633LE01 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A633LE01_SALER
+Length=101
+
+ Score = 195 bits (496),  Expect = 9e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDT GRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTSGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A763SWV8 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A763SWV8_SALER
+Length=101
+
+ Score = 195 bits (496),  Expect = 9e-63
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASACLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A8E6XYI0 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A8E6XYI0_SALNE
+Length=101
+
+ Score = 195 bits (496),  Expect = 9e-63
+ Identities = 96/101 (95%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLAS RLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASVRLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR++TTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLITTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A624B7R0 Toxin CcdB n=1 Tax=Salmonella montevideo TaxID=115981 RepID=A0A624B7R0_SALMO
+Length=101
+
+ Score = 195 bits (496),  Expect = 9e-63
+ Identities = 96/101 (95%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADLSHRENDIKNAINL+FWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLSHRENDIKNAINLLFWGI  101
+
+
+>UR100:UniRef100_A0A379SE77 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A379SE77_SALER
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTCKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A760BHN2 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A760BHN2_SALER
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYTLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A708T3D6 Toxin CcdB n=1 Tax=Salmonella typhimurium TaxID=90371 RepID=A0A708T3D6_SALTM
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVH GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHAGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVPVSVIGEE+ADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPVSVIGEEIADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A486V8W2 Toxin CcdB n=4 Tax=Klebsiella TaxID=570 RepID=A0A486V8W2_KLEPN
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLRHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000B8D733E type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacter 
+cloacae TaxID=550 RepID=UPI000B8D733E
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 95/101 (94%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL +A LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLTNAHLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP +VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPATVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0003EDB6EB type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+TaxID=561 RepID=UPI0003EDB6EB
+Length=101
+
+ Score = 195 bits (495),  Expect = 1e-62
+ Identities = 98/101 (97%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+ DES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVRDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+             RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   CRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001CA471A9 type II toxin-antitoxin system toxin CcdB n=1 Tax=Pseudomonas 
+aeruginosa TaxID=287 RepID=UPI001CA471A9
+Length=113
+
+ Score = 195 bits (496),  Expect = 1e-62
+ Identities = 95/100 (95%), Positives = 98/100 (98%), Gaps = 0/100 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDI+DTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIVDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWG  100
+           WR+MTTDMASVP S IGEEVA+LSHRENDIKNAINLMFWG
+Sbjct  61  WRLMTTDMASVPASFIGEEVAELSHRENDIKNAINLMFWG  100
+
+
+>UR100:UniRef100_A0A379YLR2 Toxin CcdB n=1 Tax=Salmonella enterica subsp. indica TaxID=59207 
+RepID=A0A379YLR2_SALER
+Length=101
+
+ Score = 194 bits (494),  Expect = 2e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYSLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7G6KFD2 Toxin CcdB n=1 Tax=Shigella boydii TaxID=621 RepID=A0A7G6KFD2_SHIBO
+Length=101
+
+ Score = 194 bits (494),  Expect = 2e-62
+ Identities = 95/101 (94%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLA ARLL DKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLAGARLLLDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WRMMTTDMASVP+ VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRMMTTDMASVPIFVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A5W7F1Q5 Toxin CcdB n=6 Tax=Salmonella enterica TaxID=28901 RepID=A0A5W7F1Q5_SALTM
+Length=101
+
+ Score = 194 bits (494),  Expect = 2e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHIGDE 
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLTSARLLSDKVSRELYPVVHIGDEI  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A3Y5WTI6 Toxin CcdB n=3 Tax=Salmonella enterica TaxID=28901 RepID=A0A3Y5WTI6_SALET
+Length=101
+
+ Score = 194 bits (493),  Expect = 3e-62
+ Identities = 96/101 (95%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASV  SVIG+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVTASVIGQEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A736PJB7 Toxin CcdB n=1 Tax=Salmonella enterica subsp. enterica serovar 
+Javiana TaxID=363569 RepID=A0A736PJB7_SALET
+Length=101
+
+ Score = 194 bits (493),  Expect = 3e-62
+ Identities = 96/101 (95%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPATVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0011572532 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI0011572532
+Length=101
+
+ Score = 194 bits (492),  Expect = 4e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A0K5KET6 Toxin CcdB n=2 Tax=Escherichia TaxID=561 RepID=A0A0K5KET6_ECOLX
+Length=108
+
+ Score = 193 bits (491),  Expect = 7e-62
+ Identities = 97/101 (96%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            +QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+ DES
+Sbjct  8    IQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVRDES  67
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+             RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  68   CRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  108
+
+
+>UR100:UniRef100_A0A8S7QDY8 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A8S7QDY8_ECOLX
+Length=101
+
+ Score = 193 bits (490),  Expect = 7e-62
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+ DES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVRDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+             RMMTTDMA VPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   CRMMTTDMACVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0009AFD1D3 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0009AFD1D3
+Length=101
+
+ Score = 193 bits (490),  Expect = 7e-62
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI000FB5714F type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000FB5714F
+Length=101
+
+ Score = 193 bits (490),  Expect = 7e-62
+ Identities = 95/101 (94%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVH GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHAGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVPVSVIGEE+ADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPVSVIGEEIADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000C79EA57 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+TaxID=570 RepID=UPI000C79EA57
+Length=101
+
+ Score = 193 bits (490),  Expect = 7e-62
+ Identities = 96/101 (95%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A741TK00 Toxin CcdB n=1 Tax=Salmonella montevideo TaxID=115981 RepID=A0A741TK00_SALMO
+Length=101
+
+ Score = 192 bits (489),  Expect = 1e-61
+ Identities = 94/101 (93%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V G+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPAAVTGDEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001B8B7BE8 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI001B8B7BE8
+Length=101
+
+ Score = 192 bits (489),  Expect = 1e-61
+ Identities = 95/101 (94%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVV+IGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVYIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLRHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00106E69EC type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacter 
+hormaechei TaxID=158836 RepID=UPI00106E69EC
+Length=101
+
+ Score = 192 bits (489),  Expect = 1e-61
+ Identities = 95/101 (94%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SV GEEVADL HRENDIK AINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVTGEEVADLRHRENDIKTAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000FFC3710 type II toxin-antitoxin system toxin CcdB n=1 Tax=Shigella flexneri 
+TaxID=623 RepID=UPI000FFC3710
+Length=100
+
+ Score = 192 bits (488),  Expect = 1e-61
+ Identities = 94/98 (96%), Positives = 96/98 (98%), Gaps = 0/98 (0%)
+
+Query  4    KVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRM  63
+            KVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDESWRM
+Sbjct  3    KVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDESWRM  62
+
+Query  64   MTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            MTTDMASVP+ VIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  63   MTTDMASVPIFVIGEEVADLSHRENDIKNAINLMFWGI  100
+
+
+>UR100:UniRef100_UPI001C569C36 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI001C569C36
+Length=101
+
+ Score = 192 bits (488),  Expect = 1e-61
+ Identities = 94/101 (93%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMV+PLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVVPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001033A1AD type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI001033A1AD
+Length=101
+
+ Score = 192 bits (488),  Expect = 1e-61
+ Identities = 95/101 (94%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQ KVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHIGDE 
+Sbjct  1    MQLKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLTSARLLSDKVSRELYPVVHIGDEI  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A612C6T3 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A612C6T3_SALMO
+Length=101
+
+ Score = 192 bits (487),  Expect = 2e-61
+ Identities = 94/101 (93%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLF+DVQSDIIDTPGRRMVIPLAS+RLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYTYKRESRYRLFMDVQSDIIDTPGRRMVIPLASSRLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0009ACB6C6 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0009ACB6C6
+Length=101
+
+ Score = 192 bits (487),  Expect = 2e-61
+ Identities = 95/101 (94%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLAS RLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASDRLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASV  SVIG+EVADLSHRENDIKNAINLMFWGI
+Sbjct  61   WRLMTTDMASVTASVIGQEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001C601698 type II toxin-antitoxin system toxin CcdB n=1 Tax=Citrobacter 
+sp. On28M TaxID=2678565 RepID=UPI001C601698
+Length=101
+
+ Score = 192 bits (487),  Expect = 2e-61
+ Identities = 93/101 (92%), Positives = 99/101 (98%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFRVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP SV GEEVADLSHRENDIKNAIN+MFWG+
+Sbjct  61   YRLMTTDMASVPASVTGEEVADLSHRENDIKNAINMMFWGV  101
+
+
+>UR100:UniRef100_UPI000513610A type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000513610A
+Length=101
+
+ Score = 192 bits (487),  Expect = 2e-61
+ Identities = 97/101 (96%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTCKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR+MTTDMASVP SVIGEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   WRLMTTDMASVPASVIGEEVADLSHRENDIKNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI001F1EBE61 type II toxin-antitoxin system toxin CcdB n=3 Tax=Bacteria TaxID=2 
+RepID=UPI001F1EBE61
+Length=103
+
+ Score = 191 bits (485),  Expect = 5e-61
+ Identities = 96/96 (100%), Positives = 96/96 (100%), Gaps = 0/96 (0%)
+
+Query  2    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESW  61
+            QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESW
+Sbjct  8    QFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESW  67
+
+Query  62   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLM  97
+            RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLM
+Sbjct  68   RMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLM  103
+
+
+>UR100:UniRef100_UPI001120BC33 type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacteriaceae 
+TaxID=543 RepID=UPI001120BC33
+Length=101
+
+ Score = 190 bits (483),  Expect = 9e-61
+ Identities = 95/101 (94%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000929369C type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000929369C
+Length=99
+
+ Score = 189 bits (481),  Expect = 2e-60
+ Identities = 94/96 (98%), Positives = 96/96 (100%), Gaps = 0/96 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYR+FVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1   MQFKVYTYKRESRYRVFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINL  96
+           WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINL
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINL  96
+
+
+>UR100:UniRef100_A0A142EBB8 Toxin CcdB n=24 Tax=Enterobacterales TaxID=91347 RepID=A0A142EBB8_ECOLX
+Length=101
+
+ Score = 189 bits (481),  Expect = 2e-60
+ Identities = 95/101 (94%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0012ABD95B type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+oxytoca TaxID=571 RepID=UPI0012ABD95B
+Length=101
+
+ Score = 189 bits (481),  Expect = 2e-60
+ Identities = 93/101 (92%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSD+IDTPGRRMVIPL SA LLSDKVSRELYPVVH GDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDMIDTPGRRMVIPLISAHLLSDKVSRELYPVVHAGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +RMMTTDMASVPVSVIGEE+ADLSHRENDIKNAINLMFWG+
+Sbjct  61   YRMMTTDMASVPVSVIGEEMADLSHRENDIKNAINLMFWGV  101
+
+
+>UR100:UniRef100_UPI001302E812 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001302E812
+Length=97
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 94/95 (99%), Positives = 95/95 (100%), Gaps = 0/95 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN  95
+           WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN  95
+
+
+>UR100:UniRef100_UPI001F37B989 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI001F37B989
+Length=112
+
+ Score = 189 bits (481),  Expect = 2e-60
+ Identities = 95/95 (100%), Positives = 95/95 (100%), Gaps = 0/95 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN  95
+           WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN  95
+
+
+>UR100:UniRef100_A0A2S4RRL5 Toxin CcdB n=1 Tax=Citrobacter amalonaticus TaxID=35703 RepID=A0A2S4RRL5_CITAM
+Length=101
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 93/101 (92%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VY+YKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFRVYSYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SVIGEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   YRLITTDMASVPASVIGEEVADLSHSENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A660HK18 Toxin CcdB n=12 Tax=Enterobacteriaceae TaxID=543 RepID=A0A660HK18_ECOLX
+Length=101
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 94/101 (93%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A753AJS6 Toxin CcdB n=1 Tax=Salmonella enterica subsp. enterica serovar 
+Miami TaxID=286780 RepID=A0A753AJS6_SALET
+Length=101
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 93/101 (92%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SV GEEVADLS+RENDIKNAINLMFWG+
+Sbjct  61   YRLITTDMASVPASVTGEEVADLSYRENDIKNAINLMFWGV  101
+
+
+>UR100:UniRef100_UPI001E2AEC3E type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI001E2AEC3E
+Length=101
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 94/101 (93%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMV+PLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVVPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000BE2FC0C type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000BE2FC0C
+Length=101
+
+ Score = 189 bits (480),  Expect = 2e-60
+ Identities = 93/101 (92%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V GEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPAAVTGEEVADLRHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A2S4Q7J2 Toxin CcdB n=1 Tax=Citrobacter freundii TaxID=546 RepID=A0A2S4Q7J2_CITFR
+Length=101
+
+ Score = 189 bits (479),  Expect = 4e-60
+ Identities = 94/101 (93%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V GEEVADLSHRENDIKNAI+LMFW I
+Sbjct  61   YRLMTTDMASVPATVTGEEVADLSHRENDIKNAISLMFWVI  101
+
+
+>UR100:UniRef100_A0A443XCG4 Toxin CcdB n=4 Tax=Enterobacteriaceae TaxID=543 RepID=A0A443XCG4_ENTCL
+Length=101
+
+ Score = 189 bits (479),  Expect = 4e-60
+ Identities = 93/101 (92%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMV+PLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVVPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A5H6RAW1 Toxin CcdB n=1 Tax=Salmonella oranienberg TaxID=28147 RepID=A0A5H6RAW1_SALON
+Length=101
+
+ Score = 189 bits (479),  Expect = 4e-60
+ Identities = 93/101 (92%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SV GEEVADLS+RENDIKNAINLMFWG+
+Sbjct  61   YRLITTDMASVPASVTGEEVADLSYRENDIKNAINLMFWGV  101
+
+
+>UR100:UniRef100_A0A290FT81 Toxin CcdB n=8 Tax=Klebsiella TaxID=570 RepID=A0A290FT81_KLEPN
+Length=101
+
+ Score = 188 bits (478),  Expect = 5e-60
+ Identities = 94/101 (93%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00126CCD9A type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI00126CCD9A
+Length=101
+
+ Score = 188 bits (478),  Expect = 5e-60
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKVS ELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYSLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSHELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVPVSVIGEE+AD SHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPVSVIGEEMADFSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7H9K2T5 Toxin CcdB n=1 Tax=Enterobacter cloacae TaxID=550 RepID=A0A7H9K2T5_ENTCL
+Length=101
+
+ Score = 188 bits (477),  Expect = 7e-60
+ Identities = 93/101 (92%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSR+LYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRDLYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A6F8QKT0 Toxin CcdB n=1 Tax=Escherichia coli TaxID=562 RepID=A0A6F8QKT0_ECOLX
+Length=113
+
+ Score = 188 bits (478),  Expect = 7e-60
+ Identities = 94/95 (99%), Positives = 95/95 (100%), Gaps = 0/95 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAIN  95
+           WRMMTTDMASVPVSVIGEEVADLSHRENDIKNA+N
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAMN  95
+
+
+>UR100:UniRef100_A0A8F4GLR9 Toxin CcdB n=2 Tax=Klebsiella sp. PL-2018 TaxID=2851540 RepID=A0A8F4GLR9_9ENTR
+Length=110
+
+ Score = 188 bits (477),  Expect = 9e-60
+ Identities = 93/101 (92%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPL SA LLSDKVSRELYPVV+ GDES
+Sbjct  10   MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLISAHLLSDKVSRELYPVVNAGDES  69
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +RMMTTDMASVPVSVIGEE+ADLSHRENDIKNAINLMFWG+
+Sbjct  70   YRMMTTDMASVPVSVIGEEMADLSHRENDIKNAINLMFWGV  110
+
+
+>UR100:UniRef100_A0A624IVG6 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A624IVG6_SALER
+Length=101
+
+ Score = 187 bits (475),  Expect = 1e-59
+ Identities = 92/101 (91%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLS+KVSRELYPVVHIG ES
+Sbjct  1    MQFRVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLTSARLLSEKVSRELYPVVHIGGES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPATVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000DA54DD5 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI000DA54DD5
+Length=98
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 93/94 (99%), Positives = 94/94 (100%), Gaps = 0/94 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAI  94
+           WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAI
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAI  94
+
+
+>UR100:UniRef100_A0A853HKH8 Toxin CcdB n=2 Tax=Enterobacteriaceae TaxID=543 RepID=A0A853HKH8_CROSK
+Length=101
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 92/101 (91%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPL+SARLLSDKVSR+LYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLSSARLLSDKVSRDLYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0007CC1A04 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+TaxID=570 RepID=UPI0007CC1A04
+Length=101
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YK ESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKSESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00215B76DD type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI00215B76DD
+Length=101
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 94/101 (93%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVV+IGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVNIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000DE62FAE type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI000DE62FAE
+Length=101
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLAS RLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASTRLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000E2AF9CF type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI000E2AF9CF
+Length=101
+
+ Score = 187 bits (474),  Expect = 2e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLM WGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMLWGI  101
+
+
+>UR100:UniRef100_A0A192EZX1 Toxin CcdB n=9 Tax=Enterobacteriaceae TaxID=543 RepID=A0A192EZX1_ECOLX
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 94/101 (93%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAWLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A7D5FY56 Toxin CcdB n=7 Tax=Enterobacteriaceae TaxID=543 RepID=A0A7D5FY56_KLEPN
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 94/101 (93%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSCELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00226E869A type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacter 
+cloacae complex sp. 2022EL-00787 TaxID=2998098 RepID=UPI00226E869A
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 93/93 (100%), Positives = 93/93 (100%), Gaps = 0/93 (0%)
+
+Query  9    KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDM  68
+            KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDM
+Sbjct  9    KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDM  68
+
+Query  69   ASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            ASVPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  69   ASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000C2AADBB type II toxin-antitoxin system toxin CcdB n=1 Tax=unclassified 
+Klebsiella TaxID=2608929 RepID=UPI000C2AADBB
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSR LYPVVHIGD+S
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRALYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV   V GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTALVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI000F0B6616 type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacter 
+TaxID=547 RepID=UPI000F0B6616
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 90/101 (89%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VYTYKRESRYRLFVDVQSDI+DTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFRVYTYKRESRYRLFVDVQSDIVDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  +V GEEVADLSHREN+IKNAINLMFWG+
+Sbjct  61   YRLMTTDMASVTAAVTGEEVADLSHRENEIKNAINLMFWGV  101
+
+
+>UR100:UniRef100_UPI0015E7AF03 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI0015E7AF03
+Length=101
+
+ Score = 186 bits (473),  Expect = 3e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQS IIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSGIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001F51B3B9 type II toxin-antitoxin system toxin CcdB n=1 Tax=Enterobacter 
+kobei TaxID=208224 RepID=UPI001F51B3B9
+Length=101
+
+ Score = 186 bits (472),  Expect = 4e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDT GRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTAGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00095258B4 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI00095258B4
+Length=101
+
+ Score = 186 bits (472),  Expect = 4e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A2F0P5X7 Toxin CcdB n=1 Tax=Serratia marcescens TaxID=615 RepID=A0A2F0P5X7_SERMA
+Length=101
+
+ Score = 186 bits (471),  Expect = 6e-59
+ Identities = 92/101 (91%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMV+PLASARLLSDKVSRELYPVV IGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVVPLASARLLSDKVSRELYPVVRIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A2P9E5F9 Toxin CcdB n=10 Tax=Enterobacteriaceae TaxID=543 RepID=A0A2P9E5F9_ECOLX
+Length=101
+
+ Score = 185 bits (470),  Expect = 8e-59
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVS ELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSCELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001A921EDE type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+michiganensis TaxID=1134687 RepID=UPI001A921EDE
+Length=101
+
+ Score = 185 bits (470),  Expect = 8e-59
+ Identities = 92/101 (91%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV   V GEEV DLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTALVTGEEVTDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A747AMX3 Toxin CcdB n=2 Tax=Enterobacteriaceae TaxID=543 RepID=A0A747AMX3_SALER
+Length=101
+
+ Score = 185 bits (469),  Expect = 1e-58
+ Identities = 92/101 (91%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRES YRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSR+LYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESCYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRDLYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001FAF5EDE type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI001FAF5EDE
+Length=101
+
+ Score = 185 bits (469),  Expect = 1e-58
+ Identities = 92/101 (91%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDT GRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTLGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWG+
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFWGV  101
+
+
+>UR100:UniRef100_A0A5U6SYN9 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A5U6SYN9_SALER
+Length=101
+
+ Score = 184 bits (467),  Expect = 2e-58
+ Identities = 92/101 (91%), Positives = 97/101 (96%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY  KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYACKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SV GEEVADLS+RENDIKNAI+LMFWGI
+Sbjct  61   YRLITTDMASVPASVTGEEVADLSYRENDIKNAISLMFWGI  101
+
+
+>UR100:UniRef100_UPI000CF74CBD type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI000CF74CBD
+Length=101
+
+ Score = 184 bits (467),  Expect = 2e-58
+ Identities = 93/101 (92%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGD+S
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   YRLMTTDMASVTASVTGEEVADLSHRENDIKNAINLMFLGI  101
+
+
+>UR100:UniRef100_UPI00050E8429 type II toxin-antitoxin system toxin CcdB n=1 Tax=Citrobacter 
+farmeri TaxID=67824 RepID=UPI00050E8429
+Length=101
+
+ Score = 184 bits (466),  Expect = 3e-58
+ Identities = 88/101 (87%), Positives = 98/101 (97%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VYTYKRESRY LFVDVQS+IIDTPGRRM+IPL SARLLSDK++RELYPVVHIGD+S
+Sbjct  1    MQFRVYTYKRESRYSLFVDVQSNIIDTPGRRMMIPLVSARLLSDKITRELYPVVHIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SVIGEEV+DLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLVTTDMASVPASVIGEEVSDLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001BD0E5B0 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+aerogenes TaxID=548 RepID=UPI001BD0E5B0
+Length=101
+
+ Score = 183 bits (465),  Expect = 5e-58
+ Identities = 92/101 (91%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLA   LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLAGGCLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0019190725 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0019190725
+Length=98
+
+ Score = 182 bits (462),  Expect = 1e-57
+ Identities = 90/91 (99%), Positives = 91/91 (100%), Gaps = 0/91 (0%)
+
+Query  11   ESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDMAS  70
+            ESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDESWRMMTTDMAS
+Sbjct  8    ESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDESWRMMTTDMAS  67
+
+Query  71   VPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            VPVSVIGEEVADLSHRENDIKNAINLMFWGI
+Sbjct  68   VPVSVIGEEVADLSHRENDIKNAINLMFWGI  98
+
+
+>UR100:UniRef100_UPI0021698623 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+variicola TaxID=244366 RepID=UPI0021698623
+Length=101
+
+ Score = 182 bits (462),  Expect = 1e-57
+ Identities = 91/101 (90%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQF+VYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL  ARLLSDKVSRELYPVV IGD+S
+Sbjct  1    MQFRVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLTCARLLSDKVSRELYPVVQIGDDS  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP  VIGEEVADLS RENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPAPVIGEEVADLSVRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI00132FCD63 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI00132FCD63
+Length=93
+
+ Score = 181 bits (460),  Expect = 2e-57
+ Identities = 90/92 (98%), Positives = 91/92 (99%), Gaps = 0/92 (0%)
+
+Query  9   KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDM  68
+           KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDESWRMMTTDM
+Sbjct  1   KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDESWRMMTTDM  60
+
+Query  69  ASVPVSVIGEEVADLSHRENDIKNAINLMFWG  100
+           ASVPVSVIGEEVADLSHRENDIKNAINLM WG
+Sbjct  61  ASVPVSVIGEEVADLSHRENDIKNAINLMCWG  92
+
+
+>UR100:UniRef100_A0A381KU96 Toxin CcdB n=1 Tax=Citrobacter freundii TaxID=546 RepID=A0A381KU96_CITFR
+Length=101
+
+ Score = 181 bits (460),  Expect = 3e-57
+ Identities = 90/101 (89%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY+YKRESRY LFVDVQSDIIDTPGRRMVIPL SA LLS+KVSRELYPVVHIGDES
+Sbjct  1    MQFKVYSYKRESRYSLFVDVQSDIIDTPGRRMVIPLVSAGLLSEKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            WR++TTDMASVP +VIGEEVADLSHRENDI+NAINLMF GI
+Sbjct  61   WRLITTDMASVPATVIGEEVADLSHRENDIQNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI0015E70AF6 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+pneumoniae TaxID=573 RepID=UPI0015E70AF6
+Length=101
+
+ Score = 181 bits (459),  Expect = 4e-57
+ Identities = 92/101 (91%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYAYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAWLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRE DIKNAI LMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHREKDIKNAIYLMFWGI  101
+
+
+>UR100:UniRef100_UPI001FFFF812 type II toxin-antitoxin system toxin CcdB n=1 Tax=Hafnia paralvei 
+TaxID=546367 RepID=UPI001FFFF812
+Length=101
+
+ Score = 181 bits (458),  Expect = 6e-57
+ Identities = 89/101 (88%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQ++VYTYKR+SRY LFVDVQSDIIDTPGRRMVIPL SARLLSDKV+RELYPVV IGDE+
+Sbjct  1    MQYRVYTYKRDSRYSLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVTRELYPVVPIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP SVIGEEVADLSH ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPASVIGEEVADLSHCENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0010773358 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0010773358
+Length=101
+
+ Score = 180 bits (457),  Expect = 8e-57
+ Identities = 90/101 (89%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLS+KVSRELYPVVHIGDE+
+Sbjct  1    MQFKVYTYKRESRYSLFVDVQSDIIDTPGRRMVIPLVSARLLSEKVSRELYPVVHIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP +V GEEVADLS  ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPTTVTGEEVADLSLWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0012888CA9 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+sp. 32020501-2019-00050 TaxID=2819766 RepID=UPI0012888CA9
+Length=101
+
+ Score = 180 bits (457),  Expect = 8e-57
+ Identities = 90/101 (89%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SARLLSD+VSRELYPVVHIGDE+
+Sbjct  1    MQFKVYTYKRESRYSLFVDVQSDIIDTPGRRMVIPLVSARLLSDRVSRELYPVVHIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDM SVP SV GEEVADLS  ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMVSVPTSVTGEEVADLSLWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A765NSA8 Toxin CcdB n=3 Tax=Enterobacteriaceae TaxID=543 RepID=A0A765NSA8_SALER
+Length=101
+
+ Score = 179 bits (455),  Expect = 2e-56
+ Identities = 90/101 (89%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SA LLSD+VSRELYPVVHIGDE+
+Sbjct  1    MQFKVYTYKRESRYSLFVDVQSDIIDTPGRRMVIPLVSASLLSDRVSRELYPVVHIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP SV GEEVADLS  ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPTSVTGEEVADLSLWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A742UHW9 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A742UHW9_SALER
+Length=101
+
+ Score = 179 bits (454),  Expect = 2e-56
+ Identities = 89/101 (88%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY+YKRESRYRLFVDVQSDIIDTPGRRMVIPL S RLLS+KVSRELYPVVHIGDE+
+Sbjct  1    MQFKVYSYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSTRLLSEKVSRELYPVVHIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTT+MASVP SV GEEVADLS  ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTEMASVPTSVTGEEVADLSLWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI001BAD00BF type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+quasipneumoniae TaxID=1463165 RepID=UPI001BAD00BF
+Length=93
+
+ Score = 179 bits (453),  Expect = 3e-56
+ Identities = 88/93 (95%), Positives = 90/93 (97%), Gaps = 0/93 (0%)
+
+Query  9    KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDESWRMMTTDM  68
+            KRESRYRLFVDVQSDIIDTPGRRMVIPLA+ARLLSDKVSRELYPVVHIGDESWR+MTTDM
+Sbjct  1    KRESRYRLFVDVQSDIIDTPGRRMVIPLANARLLSDKVSRELYPVVHIGDESWRLMTTDM  60
+
+Query  69   ASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            ASVP SV GEEVADL HRENDIKNAINLMFWGI
+Sbjct  61   ASVPASVTGEEVADLRHRENDIKNAINLMFWGI  93
+
+
+>UR100:UniRef100_A0A5W5VZB2 Toxin CcdB n=4 Tax=Salmonella enterica TaxID=28901 RepID=A0A5W5VZB2_SALNE
+Length=101
+
+ Score = 179 bits (453),  Expect = 3e-56
+ Identities = 90/101 (89%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKV R+LYPV+HIGDE 
+Sbjct  1    MQFKVYTCKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVPRDLYPVMHIGDEP  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SVIGEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   YRLLTTDMASVPASVIGEEVADLSHRENDIKNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI0014703B5F type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0014703B5F
+Length=93
+
+ Score = 178 bits (451),  Expect = 5e-56
+ Identities = 88/89 (99%), Positives = 89/89 (100%), Gaps = 0/89 (0%)
+
+Query  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+           MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVH+GDES
+Sbjct  1   MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHVGDES  60
+
+Query  61  WRMMTTDMASVPVSVIGEEVADLSHREND  89
+           WRMMTTDMASVPVSVIGEEVADLSHREND
+Sbjct  61  WRMMTTDMASVPVSVIGEEVADLSHREND  89
+
+
+>UR100:UniRef100_UPI000FBCD307 type II toxin-antitoxin system toxin CcdB n=3 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000FBCD307
+Length=101
+
+ Score = 178 bits (451),  Expect = 7e-56
+ Identities = 89/101 (88%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY  KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYACKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +V GEEVADLSHRENDI+NAI+LMF G+
+Sbjct  61   YRLITTDMASVPAAVTGEEVADLSHRENDIQNAISLMFRGV  101
+
+
+>UR100:UniRef100_UPI0021BFDCE4 type II toxin-antitoxin system toxin CcdB n=1 Tax=Escherichia 
+coli TaxID=562 RepID=UPI0021BFDCE4
+Length=101
+
+ Score = 178 bits (451),  Expect = 7e-56
+ Identities = 87/101 (86%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY+YKRESRYRLFVDVQSDIIDTP RRMVIPL SARLLSDKVSRELYPVV+IGDES
+Sbjct  1    MQFKVYSYKRESRYRLFVDVQSDIIDTPERRMVIPLVSARLLSDKVSRELYPVVYIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  +V G+E+ADLSH+EN+IKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTAAVTGDEIADLSHQENEIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_D2TV56 Toxin CcdB n=1 Tax=Citrobacter rodentium (strain ICC168) TaxID=637910 
+RepID=D2TV56_CITRI
+Length=101
+
+ Score = 177 bits (450),  Expect = 9e-56
+ Identities = 87/101 (86%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVV+IGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVYIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  +V G+E+ADL  +EN+IKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTATVTGDEIADLRRQENEIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0007C69744 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0007C69744
+Length=101
+
+ Score = 177 bits (450),  Expect = 9e-56
+ Identities = 89/101 (88%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKV R+LYPV+HIGDE 
+Sbjct  1    MQFKVYTCKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVPRDLYPVMHIGDEP  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +VIGEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   YRLLTTDMASVPATVIGEEVADLSHRENDIKNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI00234D7655 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI00234D7655
+Length=101
+
+ Score = 177 bits (449),  Expect = 1e-55
+ Identities = 89/101 (88%), Positives = 93/101 (92%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDIIDTPGRRMVIPL SA LLSD+VSRELYPVVHI DE+
+Sbjct  1    MQFKVYTYKRESRYTLFVDVQSDIIDTPGRRMVIPLVSASLLSDRVSRELYPVVHIADEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASVP SV GEEVADLS  ENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVPTSVTGEEVADLSLWENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_UPI0014441739 type II toxin-antitoxin system toxin CcdB n=1 Tax=Klebsiella 
+variicola TaxID=244366 RepID=UPI0014441739
+Length=101
+
+ Score = 177 bits (448),  Expect = 2e-55
+ Identities = 89/101 (88%), Positives = 93/101 (92%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            M  + + YKRESRYRLFVDVQSDIIDTPGRRMVIPLASA LLSDKVSRELYPVVHIGDES
+Sbjct  1    MLIRTFPYKRESRYRLFVDVQSDIIDTPGRRMVIPLASAWLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  SV GEEVADLSHRENDIKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTSSVTGEEVADLSHRENDIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_A0A761SA85 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A761SA85_SALER
+Length=101
+
+ Score = 176 bits (447),  Expect = 3e-55
+ Identities = 86/101 (85%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY YK+ESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVV+IGDES
+Sbjct  1    MQFKVYAYKKESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVYIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  +V G+E+A LSH+EN+IKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTATVTGDEIAALSHQENEIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_U3U6Q8 Toxin CcdB n=1 Tax=Plautia stali symbiont TaxID=891974 RepID=U3U6Q8_9ENTR
+Length=101
+
+ Score = 176 bits (446),  Expect = 4e-55
+ Identities = 85/101 (84%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRY LFVDVQSDI+DTPGRRMVIPL SARLLSDKVSRELYPVV IGDE+
+Sbjct  1    MQFKVYTYKRESRYSLFVDVQSDIVDTPGRRMVIPLVSARLLSDKVSRELYPVVRIGDEN  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R+MTTDMASV  +V G+EV D+SH+EN+IKNAINLMFWGI
+Sbjct  61   YRLMTTDMASVTAAVTGDEVTDVSHKENEIKNAINLMFWGI  101
+
+
+>UR100:UniRef100_S5NNW5 Toxin CcdB n=1 Tax=Salmonella bongori N268-08 TaxID=1197719 RepID=S5NNW5_SALBN
+Length=101
+
+ Score = 176 bits (446),  Expect = 4e-55
+ Identities = 86/101 (85%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRM +PL SARLLSD+V R+LYPV+HIGDES
+Sbjct  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMAVPLVSARLLSDRVPRDLYPVMHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +VIGEEVADLS RENDIKNAINLMF G+
+Sbjct  61   YRLLTTDMASVPATVIGEEVADLSLRENDIKNAINLMFRGV  101
+
+
+>UR100:UniRef100_A0A742ZKS6 Toxin CcdB n=2 Tax=Salmonella enterica TaxID=28901 RepID=A0A742ZKS6_SALER
+Length=101
+
+ Score = 176 bits (445),  Expect = 5e-55
+ Identities = 89/101 (88%), Positives = 94/101 (93%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRY LFVDVQSDIIDTPGRRMVIPLASARLLSDKV  +LYPV+HIGDE 
+Sbjct  1    MQFKVYTCKRESRYTLFVDVQSDIIDTPGRRMVIPLASARLLSDKVPCDLYPVMHIGDEP  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP SVIGEEVADLSHRENDIKNAINLMF GI
+Sbjct  61   YRLLTTDMASVPASVIGEEVADLSHRENDIKNAINLMFRGI  101
+
+
+>UR100:UniRef100_UPI0012756565 type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0012756565
+Length=101
+
+ Score = 175 bits (444),  Expect = 8e-55
+ Identities = 88/101 (87%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVYT KRESRYRLFVDVQSDIIDTPGRRMVIPL SARLLSDKVSRELYPVVHI DES
+Sbjct  1    MQFKVYTCKRESRYRLFVDVQSDIIDTPGRRMVIPLVSARLLSDKVSRELYPVVHIRDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +V GEEVADLSHRENDI+NAI+LMF G+
+Sbjct  61   YRLITTDMASVPAAVTGEEVADLSHRENDIQNAISLMFRGV  101
+
+
+>UR100:UniRef100_UPI0021B312AE type II toxin-antitoxin system toxin CcdB n=1 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI0021B312AE
+Length=101
+
+ Score = 175 bits (444),  Expect = 8e-55
+ Identities = 88/101 (87%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY  KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHI DES
+Sbjct  1    MQFKVYACKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIXDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +V GEEVADLSHRENDI+NAI+LMF G+
+Sbjct  61   YRLITTDMASVPAAVTGEEVADLSHRENDIQNAISLMFRGV  101
+
+
+>UR100:UniRef100_UPI000FA1D999 type II toxin-antitoxin system toxin CcdB n=2 Tax=Salmonella 
+enterica TaxID=28901 RepID=UPI000FA1D999
+Length=101
+
+ Score = 175 bits (443),  Expect = 1e-54
+ Identities = 88/101 (87%), Positives = 95/101 (94%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY  KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHI DES
+Sbjct  1    MQFKVYACKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIRDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVP +V GEEVADLSHRENDI+NAI+LMF G+
+Sbjct  61   YRLITTDMASVPAAVTGEEVADLSHRENDIQNAISLMFRGV  101
+
+
+>UR100:UniRef100_A0A5U0HF18 Toxin CcdB n=1 Tax=Salmonella enterica TaxID=28901 RepID=A0A5U0HF18_SALER
+Length=101
+
+ Score = 174 bits (442),  Expect = 2e-54
+ Identities = 88/101 (87%), Positives = 96/101 (95%), Gaps = 0/101 (0%)
+
+Query  1    MQFKVYTYKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+            MQFKVY  KRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES
+Sbjct  1    MQFKVYACKRESRYRLFVDVQSDIIDTPGRRMVIPLASARLLSDKVSRELYPVVHIGDES  60
+
+Query  61   WRMMTTDMASVPVSVIGEEVADLSHRENDIKNAINLMFWGI  101
+            +R++TTDMASVPV+V GEEVADLS+R NDI+NAI+LMF G+
+Sbjct  61   YRLITTDMASVPVAVTGEEVADLSYRGNDIQNAISLMFRGV  101
+
+
+
+Lambda      K        H
+   0.322    0.136    0.399 
+
+Gapped
+Lambda      K        H
+   0.267   0.0410    0.140 
+
+Effective search space used: 3257058206910
+
+
+  Database: uniref100
+    Posted date:  May 4, 2023  11:40 PM
+  Number of letters in database: 133,486,060,660
+  Number of sequences in database:  350,950,053
+
+
+
+Matrix: BLOSUM62
+Gap Penalties: Existence: 11, Extension: 1
+Neighboring words threshold: 11
+Window for multiple hits: 40
