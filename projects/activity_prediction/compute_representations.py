@@ -9,8 +9,8 @@ mutant_datasets = [f for f in os.listdir('../datasets/')]
 
 # create directories for all datasets
 for dataset in mutant_datasets:
-    study = dataset.split('.')[0]
-    os.makedirs(f'representations/{study}', exist_ok=True)
+    study_name = dataset.split('.')[0]
+    os.makedirs(f'representations/{study_name}', exist_ok=True)
 
 
 # compute embeddings for all datasets
@@ -18,7 +18,7 @@ batch_size = 10
 for dataset in mutant_datasets:
     
     # get names and sequences from dataframe
-    df = pd.read_csv(f'representations/{study}')
+    df = pd.read_csv(f'representations/{study_name}.csv')
     sequences = df['mutated_sequence'].to_list()
     names = df['mutant'].to_list()
     
