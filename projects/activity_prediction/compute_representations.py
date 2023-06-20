@@ -1,11 +1,11 @@
 import os
 import pandas as pd
 import sys
-sys.path.append('../../../src/')
+script_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(script_path, '../../../src/'))
 from proteusAI.ml_tools.esm_tools.esm_tools import *
 
 # script path
-script_path = os.path.dirname(os.path.realpath(__file__))
 dataset_path = os.path.join(script_path, 'datasets')
 representation_path = os.path.join(script_path, 'representations')
 
