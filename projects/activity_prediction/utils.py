@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 script_path = os.path.dirname(os.path.realpath(__file__))
-plots_path = os.path.join(script_path, 'plots')
+plots_path = os.path.join(script_path, 'plots/train')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 
 class VAEDataset(Dataset):
