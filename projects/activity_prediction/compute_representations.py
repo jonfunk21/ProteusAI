@@ -10,7 +10,7 @@ model = 'esm1v'
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
 dataset_path = os.path.join(script_path, 'datasets')
-representation_path = os.path.join(script_path, f'{model}/representations')
+representation_path = os.path.join(script_path, f'representations/{model}')
 
 os.makedirs(dataset_path, exist_ok=True)
 os.makedirs(representation_path, exist_ok=True)
