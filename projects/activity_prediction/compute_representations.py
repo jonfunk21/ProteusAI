@@ -10,7 +10,7 @@ model = 'esm1v'
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
 dataset_path = os.path.join(script_path, 'datasets')
-representation_path = os.path.join(script_path, f'representations/{model}')
+representation_path = os.path.join(script_path, f'{model}/representations')
 
 os.makedirs(dataset_path, exist_ok=True)
 os.makedirs(representation_path, exist_ok=True)
@@ -28,6 +28,9 @@ for dataset in mutant_datasets:
 # compute embeddings for all datasets
 batch_size = 5
 for dataset in mutant_datasets:
+    # study path
+    study_name = dataset.split('.')[0]
+    study_path = os.path.join(representation_path, study_name)
     
     # get names and sequences from dataframe
     df_path = os.path.join(dataset_path, dataset)
@@ -46,6 +49,6 @@ for dataset in mutant_datasets:
         
         # save representations
         for j, n in enumerate(batch_names):  # we need to use enumerate here to get the correct name for each sequence representation
-            seq_rep_path = f'representations/{n}.pt'
+            seq_rep_path = os.path.join(study_path, n)
             if not os.path.exists(seq_rep_path):  # check if file already exists
                 torch.save(sequence_representations[j], seq_rep_path)
