@@ -9,6 +9,9 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 dataset_path = os.path.join(script_path, 'datasets')
 representation_path = os.path.join(script_path, 'representations')
 
+os.makedirs(dataset_path, exist_ok=True)
+os.makedirs(representation_path, exist_ok=True)
+
 # model for embedding computation
 model = 'esm1v'
 
