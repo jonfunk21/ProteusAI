@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import sys
-sys.path.append('../../../src/')
+sys.path.insert(0, '../../src')
 import proteusAI.io_tools as io_tools
 import proteusAI.ml_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools

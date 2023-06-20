@@ -55,4 +55,4 @@ cd ~/projects/proteusAI/projects/activity_prediction
 python3 train_VAE.py --encoder OHE --epochs 1000 
 python3 train_VAE.py --encoder BLOSUM62 --epochs 1000 
 python3 train_VAE.py --encoder BLOSUM50 --epochs 1000 
-python3 compute_representations.py
+#python3 compute_representations.py
