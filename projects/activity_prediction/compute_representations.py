@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import sys
-sys.path.append('../../../src/')
+sys.path.insert(0, '../../src')
 from proteusAI.ml_tools.esm_tools.esm_tools import *
 
 # script path
