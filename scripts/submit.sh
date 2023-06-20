@@ -51,4 +51,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 cd ~/projects/proteusAI/scripts
 
-python3 ../src/proteusAI/ML/plm/esm_tools.py
+python3 ../src/proteusAI/projects/activity_prediction/compute_representations.py
