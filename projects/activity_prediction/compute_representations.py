@@ -49,6 +49,6 @@ for dataset in mutant_datasets:
         
         # save representations
         for j, n in enumerate(batch_names):  # we need to use enumerate here to get the correct name for each sequence representation
-            seq_rep_path = os.path.join(study_path, n)
+            seq_rep_path = os.path.join(study_path, n + '.pt')
             if not os.path.exists(seq_rep_path):  # check if file already exists
                 torch.save(sequence_representations[j], seq_rep_path)
