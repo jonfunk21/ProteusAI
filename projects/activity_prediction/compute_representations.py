@@ -26,7 +26,7 @@ for dataset in mutant_datasets:
 
 
 # compute embeddings for all datasets
-batch_size = 5
+batch_size = 1
 for dataset in mutant_datasets:
     # study path
     study_name = dataset.split('.')[0]
