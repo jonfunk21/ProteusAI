@@ -15,7 +15,10 @@ import argparse
 # Argument parsing
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
+parser.add_argument('--epochs', type=int, default=1000, help='number or epochs')
 args = parser.parse_args()
+
+epochs = 1000
 
 # encoding type ohe, BLOSUM62 or BLOSUM50
 encoding_type = args.encoder
@@ -77,7 +80,6 @@ for i, dat in enumerate(datasets):
     model = Autoencoders.VAE(input_dim=seq_len * alphabet_size, hidden_dims=[2048, 1024, 256], z_dim=64, dropout=0.1).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=100, gamma=0.1)
-    epochs = 200
     
     # Train the model on the dataset
     print(f"Training {model_name} model...")
