@@ -59,7 +59,7 @@ for key in encodings.keys():
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-batch_size = 512
+batch_size = 256
 
 for i, dat in enumerate(datasets):
     # define model name for saving
