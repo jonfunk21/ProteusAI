@@ -22,10 +22,15 @@ class VAEDataset(Dataset):
         x = self.data['x'].iloc[index]
         return x
     
-def criterion(recon_x, x, mu, logvar):
+def criterion_BCE(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD
+
+def criterion_MSE(recon_x, x, mu, logvar):
+    MSE = F.mse_loss(recon_x, x, reduction='sum')
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return MSE + KLD
 
 def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
               device, model_name, verbose=False, script_path=script_path, plots_path=plots_path,
