@@ -78,8 +78,8 @@ for i, dat in enumerate(datasets):
     
     # Initialize model, optimizer and epochs
     model = Autoencoders.VAE(input_dim=seq_len * alphabet_size, hidden_dims=[2048, 1024, 256], z_dim=64, dropout=0.1).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
-    scheduler = StepLR(optimizer, step_size=100, gamma=0.1)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+    scheduler = StepLR(optimizer, step_size=1000, gamma=0.1)
     
     # Train the model on the dataset
     print(f"Training {model_name} model...")
