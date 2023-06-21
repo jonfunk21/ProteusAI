@@ -27,17 +27,18 @@ def criterion(recon_x, x, mu, logvar):
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD
 
-def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, steps, 
+def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
               device, model_name, verbose=False, script_path=script_path, plots_path=plots_path,
               checkpoints_path=checkpoints_path):
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
 
-    pbar = tqdm(range(steps), desc='Training')
-    step = 0
-    while step < steps:
+    pbar = tqdm(range(epochs), desc='Training')
+    for epoch in pbar:
         model.train()
+        train_loss = 0
+        num_examples = 0
         for batch in train_data:
             # Move the batch tensors to the right device
             batch = batch.to(device)
@@ -50,54 +51,55 @@ def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, step
             loss.backward()
             optimizer.step()
             
-            train_loss = loss.item()
-            train_losses.append(train_loss)
+            train_loss += loss.item()
+            num_examples += batch.size(0)
             
-            if step % 100 == 0:
-                if verbose:
-                    print(f"Step {step+1}, Train Loss: {train_loss:.4f}")
+        average_train_loss = train_loss / num_examples
+        train_losses.append(average_train_loss)
+    
+        if epoch % 100 == 0:
+            if verbose:
+                print(f"Epoch {epoch+1}, Train Loss: {average_train_loss:.4f}")
 
-            # Validation
-            model.eval()
-            with torch.no_grad():
-                val_loss = 0
-                num_examples = 0
-                for batch in val_data:
-                    # flatten the batch
-                    batch = batch.view(batch.size(0), -1)
-                    batch = batch.to(device)
-                    recon, mu, logvar = model(batch)
-                    loss = criterion(recon, batch, mu, logvar)
-                    val_loss = loss.item()
-                    val_losses.append(val_loss)
-                    if step % 100 == 0:
-                        if verbose:
-                            print(f"Step {step+1}, Val Loss: {val_loss:.4f}")
+        # Validation
+        model.eval()
+        with torch.no_grad():
+            val_loss = 0
+            num_examples = 0
+            for batch in val_data:
+                 # flatten the batch
+                batch = batch.view(batch.size(0), -1)
+                batch = batch.to(device)
+                recon, mu, logvar = model(batch)
+                loss = criterion(recon, batch, mu, logvar)
+                val_loss += loss.item()
+                num_examples += batch.size(0)
+
+            average_val_loss = val_loss / num_examples
+            val_losses.append(average_val_loss)
+            if epoch % 100 == 0:
+                if verbose:
+                    print(f"Epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
                     
-            current_lr = optimizer.param_groups[0]['lr']
-            pbar.set_postfix({'Train Loss': train_loss, 'Val Loss': val_loss, 'LR': current_lr})
+        current_lr = optimizer.param_groups[0]['lr']
+        pbar.set_postfix({'Train Loss': average_train_loss, 'Val Loss': average_val_loss, 'LR': current_lr})
 
-            # Save model if it's the best so far
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                model_dest = os.path.join(checkpoints_path, model_name + '.pt')
-                torch.save(model.state_dict(), model_dest)
-                if verbose:
-                    print(f"Model saved at step {step+1}, Val Loss: {val_loss:.4f}")
-                best_step = step
-            
-            scheduler.step()
-            
-            step += 1
-            if step >= steps:
-                break
+        # Save model if it's the best so far
+        if average_val_loss < best_val_loss:
+            best_val_loss = average_val_loss
+            model_dest = os.path.join(checkpoints_path, model_name + '.pt')
+            torch.save(model.state_dict(), model_dest)
+            if verbose:
+                print(f"Model saved at epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
+            best_epoch = epoch
+    
+        scheduler.step()
     
     plot_dest = os.path.join(plots_path, model_name + '.png')
     os.makedirs(plots_path, exist_ok=True)
-    plot_losses(train_losses, val_losses, best_step, fname=plot_dest)
+    plot_losses(train_losses, val_losses, best_epoch, fname=plot_dest)
 
     return model
-
 
 def plot_losses(train_losses, val_losses, best_epoch, fname=None):
     plt.figure(figsize=(10, 5))
