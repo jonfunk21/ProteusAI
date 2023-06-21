@@ -28,7 +28,7 @@ def criterion(recon_x, x, mu, logvar):
     return BCE + KLD
 
 def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
-              device, model_name, verbose=False, script_path=script_path, 
+              device, model_name, verbose=False, script_path=script_path, plots_path=plots_path,
               checkpoints_path=checkpoints_path):
     best_val_loss = float('inf')
     train_losses = []
@@ -96,6 +96,7 @@ def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epoc
         scheduler.step()
     
     plot_dest = os.path.join(plots_path, model_name + '.png')
+    os.makedirs(plots_path, exist_ok=True)
     plot_losses(train_losses, val_losses, best_epoch, fname=plot_dest)
 
     return model

@@ -16,6 +16,7 @@ import argparse
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
 parser.add_argument('--epochs', type=int, default=1000, help='number or epochs')
+parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 args = parser.parse_args()
 
 epochs = 1000
@@ -29,7 +30,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 msa_path = os.path.join(script_path, 'MSA')
 alphabet = esm_tools.alphabet.to_dict()
 
-plots_path = os.path.join(script_path, 'plots')
+plots_path = os.path.join(script_path, 'plots/train')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 os.makedirs(plots_path, exist_ok=True)
 os.makedirs(checkpoints_path, exist_ok=True)
@@ -78,7 +79,7 @@ for i, dat in enumerate(datasets):
     
     # Initialize model, optimizer and epochs
     model = Autoencoders.VAE(input_dim=seq_len * alphabet_size, hidden_dims=[2048, 1024, 256], z_dim=64, dropout=0.1).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=1000, gamma=0.1)
     
     # Train the model on the dataset
