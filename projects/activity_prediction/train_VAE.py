@@ -82,6 +82,12 @@ for i, dat in enumerate(datasets):
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=1000, gamma=0.1)
     
+    # choose MSE or BCE loss
+    if encoding_type in ['BLOSUM62', 'BLOSUM50']:
+        criterion = criterion_MSE
+    elif encoding_type == 'OHE':
+        criterion = criterion_BCE
+
     # Train the model on the dataset
     print(f"Training {model_name} model...")
     model = train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name)
