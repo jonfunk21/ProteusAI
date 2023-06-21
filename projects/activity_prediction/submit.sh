@@ -52,7 +52,7 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 cd ~/projects/proteusAI/projects/activity_prediction
 
 
-python3 train_VAE.py --encoder OHE --epochs 1000 
-python3 train_VAE.py --encoder BLOSUM62 --epochs 1000 
-python3 train_VAE.py --encoder BLOSUM50 --epochs 1000 
+python3 train_VAE.py --encoder OHE --steps 10000
+python3 train_VAE.py --encoder BLOSUM62 --steps 10000 
+python3 train_VAE.py --encoder BLOSUM50 --steps 10000 
 #python3 compute_representations.py
