@@ -11,8 +11,18 @@ plots_path = os.path.join(script_path, 'plots/train')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 
 class VAEDataset(Dataset):
-    def __init__(self, data):
+    def __init__(self, data, encoding_type='OHE'):
         self.data = data
+
+        assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
+
+        if encoding_type == 'OHE':
+            self.min_val, self.max_val = (0, 1) 
+        if encoding_type == 'BLOSUM50':
+            self.min_val, self.max_val = (-5.0, 15.0)
+        if encoding_type == 'BLOSUM62':
+            self.min_val, self.max_val = (-4.0, 11.0)
+        
 
     def __len__(self):
         return len(self.data)
@@ -20,17 +30,14 @@ class VAEDataset(Dataset):
     def __getitem__(self, index):
         label = self.data['label'].iloc[index]
         x = self.data['x'].iloc[index]
+        if self.min_val is not 0 and self.max_val is not 1:
+            x = (x - self.min_val) / (self.max_val - self.min_val)
         return x
     
-def criterion_BCE(recon_x, x, mu, logvar):
+def criterion(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD
-
-def criterion_MSE(recon_x, x, mu, logvar):
-    MSE = F.mse_loss(recon_x, x, reduction='sum')
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return MSE + KLD
 
 def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
               device, model_name, verbose=False, script_path=script_path, plots_path=plots_path,

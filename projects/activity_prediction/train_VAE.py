@@ -55,7 +55,7 @@ names = []
 datasets = []
 for key in encodings.keys():
     names.append(str(key)[:-6])
-    datasets.append(VAEDataset(encodings[key]))
+    datasets.append(VAEDataset(encodings[key], encoding_type=encoding_type))
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -81,12 +81,6 @@ for i, dat in enumerate(datasets):
     model = Autoencoders.VAE(input_dim=seq_len * alphabet_size, hidden_dims=[2048, 1024, 256], z_dim=64, dropout=0.1).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=1000, gamma=0.1)
-    
-    # choose MSE or BCE loss
-    if encoding_type in ['BLOSUM62', 'BLOSUM50']:
-        criterion = criterion_MSE
-    elif encoding_type == 'OHE':
-        criterion = criterion_BCE
 
     # Train the model on the dataset
     print(f"Training {model_name} model...")
