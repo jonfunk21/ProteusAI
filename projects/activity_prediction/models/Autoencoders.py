@@ -55,10 +55,13 @@ class VAE(nn.Module):
         self.encoder = Encoder(input_dim, hidden_dims, z_dim, dropout)
         self.decoder = Decoder(z_dim, hidden_dims, input_dim, dropout)
 
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
+        return mu + eps*std
+
     def forward(self, x):
         z_mu, z_var = self.encoder(x)
-        std = torch.exp(z_var / 2)
-        eps = torch.randn_like(std)
-        x_sample = eps.mul(std).add_(z_mu)
+        x_sample = self.reparameterize(z_mu, z_var)
         predicted = self.decoder(x_sample)
         return predicted, z_mu, z_var
