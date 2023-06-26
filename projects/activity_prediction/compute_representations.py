@@ -37,18 +37,19 @@ for dataset in mutant_datasets:
     df = pd.read_csv(df_path)
     sequences = df['mutated_sequence'].to_list()
     names = df['mutant'].to_list()
+
+    batch_paths = []
+    batch_seqs = []
+
+    for i in range(0, len(names)):
+        n = names[i]
+        seq_rep_path = os.path.join(study_path, n + '.pt')
+        if not os.path.exists(seq_rep_path): 
+            batch_paths.append(seq_rep_path)
+            batch_seqs.append(sequences[i])  # corrected line
     
-    for i in range(0, len(names), batch_size):
-        # batch sequences and names
-        batch_names = names[i:i+batch_size]
-        batch_seqs = sequences[i:i+batch_size]
-        
-        for j, n in enumerate(batch_names):  # we need to use enumerate here to get the correct name for each sequence representation
-            seq_rep_path = os.path.join(study_path, n + '.pt')
-            if not os.path.exists(seq_rep_path):  # check if file already exists
-                # compute representations
-                results, batch_lens, batch_labels, alphabet = esm_compute([batch_seqs[j]], model=model)
-                sequence_representations = get_seq_rep(results, batch_lens)
-                
-                # save representations
-                torch.save(sequence_representations[0], seq_rep_path)
+        if len(batch_paths) == batch_size:
+            results, batch_lens, batch_labels, alphabet = esm_compute(batch_seqs, model=model)
+            sequence_representations = get_seq_rep(results, batch_lens)
+            for j in range(len(batch_paths)):
+                torch.save(sequence_representations[j], batch_paths[j])
