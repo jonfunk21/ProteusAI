@@ -53,6 +53,7 @@ cd ~/projects/proteusAI/projects/activity_prediction
 
 
 python3 compute_representations.py
+python3 train_esm_regressor.py
 #python3 train_VAE.py --encoder OHE --epochs 10000 
 #python3 train_VAE.py --encoder BLOSUM62 --epochs 10000
 #python3 train_VAE.py --encoder BLOSUM50 --epochs 10000
