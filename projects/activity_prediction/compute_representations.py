@@ -26,7 +26,7 @@ for dataset in mutant_datasets:
 
 
 # compute embeddings for all datasets
-batch_size = 1
+batch_size = 5
 for dataset in mutant_datasets:
     # study path
     study_name = dataset.split('.')[0]
@@ -43,12 +43,12 @@ for dataset in mutant_datasets:
         batch_names = names[i:i+batch_size]
         batch_seqs = sequences[i:i+batch_size]
         
-        # compute representations
-        results, batch_lens, batch_labels, alphabet = esm_compute(batch_seqs, model=model)
-        sequence_representations = get_seq_rep(results, batch_lens)
-        
-        # save representations
         for j, n in enumerate(batch_names):  # we need to use enumerate here to get the correct name for each sequence representation
             seq_rep_path = os.path.join(study_path, n + '.pt')
             if not os.path.exists(seq_rep_path):  # check if file already exists
-                torch.save(sequence_representations[j], seq_rep_path)
+                # compute representations
+                results, batch_lens, batch_labels, alphabet = esm_compute([batch_seqs[j]], model=model)
+                sequence_representations = get_seq_rep(results, batch_lens)
+                
+                # save representations
+                torch.save(sequence_representations[0], seq_rep_path)
