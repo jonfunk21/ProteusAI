@@ -53,3 +53,6 @@ for dataset in mutant_datasets:
             sequence_representations = get_seq_rep(results, batch_lens)
             for j in range(len(batch_paths)):
                 torch.save(sequence_representations[j], batch_paths[j])
+            
+            batch_paths = []
+            batch_seqs = []
