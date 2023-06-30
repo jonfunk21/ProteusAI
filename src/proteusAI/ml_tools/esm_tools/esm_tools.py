@@ -55,7 +55,7 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
     # load model
     if isinstance(model, str):
         if model == "esm2":
-            model, alphabet = esm.pretrained.esm2_t36_3B_UR50D()
+            model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
         elif model == "esm1v":
             model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
         else:
