@@ -47,8 +47,8 @@ for dataset in mutant_datasets:
         if not os.path.exists(seq_rep_path): 
             batch_paths.append(seq_rep_path)
             batch_seqs.append(sequences[i])  # corrected line
-
-            # compute representations
+    
+        if len(batch_paths) == batch_size:
             results, batch_lens, batch_labels, alphabet = esm_compute(batch_seqs, model=model)
             sequence_representations = get_seq_rep(results, batch_lens)
             for j in range(len(batch_paths)):
