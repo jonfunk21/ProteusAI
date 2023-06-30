@@ -33,7 +33,7 @@ for dataset in mutant_datasets:
 
 
 # compute embeddings for all datasets
-batch_size = 5
+batch_size = 2
 batch_paths = []
 batch_seqs = []
 for dataset in mutant_datasets:
