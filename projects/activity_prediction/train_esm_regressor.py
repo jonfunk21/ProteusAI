@@ -9,14 +9,21 @@ from torch import optim
 import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, random_split
+import argparse
 
 # args
-batch_size = 256
-epochs = 1000
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+parser = argparse.ArgumentParser(description='Hyperparameters')
+parser.add_argument('--model', type=str, default='esm1v', help='Choose model either esm2 or esm1v')
+parser.add_argument('--batch_size', type=int, default=256)
+parser.add_argument('--epochs', type=int, default=1000)
+args = parser.parse_args()
 
-# esm model
-esm_model = 'esm1v'
+# model for embedding computation esm1v or esm2
+model = args.model
+
+batch_size = args.batch_size
+epochs = args.epochs
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))

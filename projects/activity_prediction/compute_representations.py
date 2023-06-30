@@ -3,9 +3,16 @@ import pandas as pd
 import sys
 sys.path.insert(0, '../../src')
 from proteusAI.ml_tools.esm_tools.esm_tools import *
+import argparse
 
-# model for embedding computation
-model = 'esm1v'
+# Hyper parameters (later all argparse)
+parser = argparse.ArgumentParser(description='Hyperparameters')
+parser.add_argument('--model', type=str, default='esm1v', help='Choose model either esm2 or esm1v')
+parser.add_argument('--batch_size', type=int, default=5)
+args = parser.parse_args()
+
+# model for embedding computation esm1v or esm2
+model = args.model
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
