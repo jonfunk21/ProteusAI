@@ -43,15 +43,19 @@ for dataset in mutant_datasets:
     for i in range(0, len(names)):
         n = names[i]
         seq_rep_path = os.path.join(study_path, n + '.pt')
+
+        # check if representations are already computed
         if not os.path.exists(seq_rep_path): 
             batch_paths.append(seq_rep_path)
             batch_seqs.append(sequences[i])  # corrected line
     
+        # compute representations
         if len(batch_paths) == batch_size:
             results, batch_lens, batch_labels, alphabet = esm_compute(batch_seqs, model=model)
             sequence_representations = get_seq_rep(results, batch_lens)
             for j in range(len(batch_paths)):
                 torch.save(sequence_representations[j], batch_paths[j])
             
+            # empty batches
             batch_paths = []
             batch_seqs = []
