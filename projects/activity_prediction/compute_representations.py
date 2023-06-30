@@ -27,6 +27,8 @@ for dataset in mutant_datasets:
 
 # compute embeddings for all datasets
 batch_size = 5
+batch_paths = []
+batch_seqs = []
 for dataset in mutant_datasets:
     # study path
     study_name = dataset.split('.')[0]
@@ -37,9 +39,6 @@ for dataset in mutant_datasets:
     df = pd.read_csv(df_path)
     sequences = df['mutated_sequence'].to_list()
     names = df['mutant'].to_list()
-
-    batch_paths = []
-    batch_seqs = []
 
     for i in range(0, len(names)):
         n = names[i]
