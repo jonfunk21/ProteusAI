@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 script_path = os.path.dirname(os.path.realpath(__file__))
-plots_path = os.path.join(script_path, 'plots/train')
+train_plots_path = os.path.join(script_path, 'plots/train')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 
 class RegDataset(Dataset):
@@ -52,14 +52,16 @@ class VAEDataset(Dataset):
             x = (x - self.min_val) / (self.max_val - self.min_val)
         return x
     
+# TODO: create custom datasets for OHE and BLOSUM encoding
+    
 def criterion(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD
 
 def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
-              device, model_name, verbose=False, script_path=script_path, plots_path=plots_path,
-              checkpoints_path=checkpoints_path):
+              device, model_name, verbose=False, script_path=script_path, plots_path=train_plots_path,
+              checkpoints_path=checkpoints_path, save_checkpoints=False):
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
@@ -117,10 +119,11 @@ def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epoc
         # Save model if it's the best so far
         if average_val_loss < best_val_loss:
             best_val_loss = average_val_loss
-            model_dest = os.path.join(checkpoints_path, model_name + '.pt')
-            torch.save(model.state_dict(), model_dest)
-            if verbose:
-                print(f"Model saved at epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
+            if save_checkpoints:
+                model_dest = os.path.join(checkpoints_path, model_name + '.pt')
+                torch.save(model.state_dict(), model_dest)
+                if verbose:
+                    print(f"Model saved at epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
             best_epoch = epoch
     
         scheduler.step()
@@ -133,7 +136,8 @@ def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epoc
 
 def train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
                      device, model_name, verbose=False, script_path=script_path, 
-                     plots_path=plots_path, checkpoints_path=checkpoints_path):
+                     plots_path=train_plots_path, checkpoints_path=checkpoints_path,
+                     save_checkpoints=False):
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
@@ -189,10 +193,11 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
         # Save model if it's the best so far
         if average_val_loss < best_val_loss:
             best_val_loss = average_val_loss
-            model_dest = os.path.join(checkpoints_path, model_name + '.pt')
-            torch.save(model.state_dict(), model_dest)
-            if verbose:
-                print(f"Model saved at epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
+            if save_checkpoints:
+                model_dest = os.path.join(checkpoints_path, model_name + '.pt')
+                torch.save(model.state_dict(), model_dest)
+                if verbose:
+                    print(f"Model saved at epoch {epoch+1}, Val Loss: {average_val_loss:.4f}")
             best_epoch = epoch
     
         scheduler.step()
@@ -214,6 +219,35 @@ def plot_losses(train_losses, val_losses, best_epoch, fname=None):
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
+    if fname is not None:
+        plt.savefig(fname)
+    else:
+        plt.show()
+
+def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
+    model.eval() # Set the model to evaluation mode
+
+    predictions = []
+    groundtruth = []
+
+    with torch.no_grad(): # No need to track gradients
+        for batch, targets in val_data:
+            batch = batch.to(device)
+            targets = targets.to(device)
+            
+            # Obtain model predictions
+            outputs = model(batch).squeeze(1)
+            predictions.extend(outputs.tolist())
+            groundtruth.extend(targets.tolist())
+
+    plt.figure(figsize=(10, 5))
+    plt.scatter(groundtruth, predictions, alpha=0.5)
+    plt.title('Predicted vs. True Activity Levels')
+    plt.xlabel('True Activity Levels')
+    plt.ylabel('Predicted Activity Levels')
+    plt.plot([min(groundtruth), max(groundtruth)], [min(groundtruth), max(groundtruth)], color='red', linewidth=2)  # diagonal line
+    plt.grid(True)
+
     if fname is not None:
         plt.savefig(fname)
     else:

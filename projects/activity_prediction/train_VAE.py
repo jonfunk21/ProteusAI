@@ -9,17 +9,20 @@ from models import Autoencoders
 from utils import *
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 import argparse
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
-parser.add_argument('--epochs', type=int, default=1000, help='number or epochs')
+parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--save_checkpoint', dest='save_checkpoint', action='store_true', help='Save checkpoint during the process')
+parser.set_defaults(save_checkpoint=False)
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 args = parser.parse_args()
 
-epochs = 1000
+epochs = args.epochs
+save_checkpoint = args.save_checkpoint
 
 # encoding type ohe, BLOSUM62 or BLOSUM50
 encoding_type = args.encoder
@@ -35,42 +38,28 @@ checkpoints_path = os.path.join(script_path, 'checkpoints')
 os.makedirs(plots_path, exist_ok=True)
 os.makedirs(checkpoints_path, exist_ok=True)
 
-msa_results = io_tools.load_all_fastas(msa_path)
+# Training and validation data paths
+train_dir = os.path.join(script_path, 'datasets/train')
+val_dir = os.path.join(script_path, 'datasets/validate')
+test_dir = os.path.join(script_path, 'datasets/test')
 
-encodings = {}
-for key, value in msa_results.items():
-    sequences = value[1]
-    if 'BLOSUM' in encoding_type:
-        e = torch_tools.blosum_encoding(sequences, matrix=encoding_type)
-    elif encoding_type == 'OHE':
-        e = torch_tools.one_hot_encoder(sequences, alphabet)
-
-    encoded_sequences = [encoding for encoding in e]
-    encodings[key] = pd.DataFrame({
-        'label':value[0], 
-        'x':encoded_sequences
-    })
-
-names = []
-datasets = []
-for key in encodings.keys():
-    names.append(str(key)[:-6])
-    datasets.append(VAEDataset(encodings[key], encoding_type=encoding_type))
-
+names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 batch_size = 256
 
-for i, dat in enumerate(datasets):
+for name in names:
     # define model name for saving
-    model_name = names[i] + f'_{encoding_type}_VAE'
+    model_name = name + f'_{encoding_type}_VAE'
     
-    # Split the dataset into training and validation sets
-    train_size = int(0.8 * len(dat))  # 80% for training
-    val_size = len(dat) - train_size
-    train_dataset, val_dataset = random_split(dat, [train_size, val_size])
+    # Load training and validation sets
+    train_df = pd.read_csv(os.path.join(train_dir, name + '.csv'))
+    val_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
     
+    train_dataset = VAEDataset(train_df, encoding_type=encoding_type)
+    val_dataset = VAEDataset(val_df, encoding_type=encoding_type)
+
     train_data = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_data = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     
@@ -84,4 +73,4 @@ for i, dat in enumerate(datasets):
 
     # Train the model on the dataset
     print(f"Training {model_name} model...")
-    model = train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name)
+    model = train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoint=save_checkpoint)
