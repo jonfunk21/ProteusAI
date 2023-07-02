@@ -66,3 +66,13 @@ for dataset in mutant_datasets:
             # empty batches
             batch_paths = []
             batch_seqs = []
+
+# compute representations which might have been skipped at the end
+results, batch_lens, batch_labels, alphabet = esm_compute(batch_seqs, model=model)
+sequence_representations = get_seq_rep(results, batch_lens)
+for j in range(len(batch_paths)):
+    torch.save(sequence_representations[j], batch_paths[j])
+    
+# empty batches
+batch_paths = []
+batch_seqs = []
