@@ -4,7 +4,6 @@ import sys
 sys.path.insert(0, '../../src')
 import proteusAI.io_tools as io_tools
 import proteusAI.ml_tools.esm_tools as esm_tools
-import proteusAI.ml_tools.torch_tools as torch_tools
 from models import Autoencoders
 from utils import *
 from torch import optim
