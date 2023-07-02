@@ -15,16 +15,16 @@ parser = argparse.ArgumentParser(description='Hyperparameters')
 parser.add_argument('--model', type=str, default='esm1v', help='Choose model either esm2 or esm1v')
 parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=1000)
-parser.add_argument('--save_checkpoint', dest='save_checkpoint', action='store_true', help='Save checkpoint during the process')
+parser.add_argument('--save_checkpoints', dest='save_checkpoints', action='store_true', help='Save checkpoint during the process')
 parser.set_defaults(save_checkpoint=False)
 args = parser.parse_args()
 
 # model for embedding computation esm1v or esm2
 esm_model = args.model
-
+model_dim = 1280
 batch_size = args.batch_size
 epochs = args.epochs
-save_checkpoint = args.save_checkpoint
+save_checkpoints = args.save_checkpoints
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # script path
@@ -62,10 +62,6 @@ for name in names:
     train_data = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_data = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_data = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-    # embedding dimension
-    if esm_model == 'esm1v':
-        model_dim = 1280
     
     # Initialize model, optimizer and epochs
     model = Regressors.FFNN(input_dim=model_dim, hidden_layers=[1000, 1000], output_dim=1, dropout_p=0.1).to(device)
@@ -75,7 +71,7 @@ for name in names:
 
     # Train the model on the dataset
     print(f"Training {model_name} model...")
-    model = train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoint=save_checkpoint)
+    model = train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoints=save_checkpoints)
 
     # Plot predictions against ground truth for test data
     plot_predictions_vs_groundtruth(test_data, model, device, fname=f'{results_plots_path}/{name}_pred_vs_true.png')

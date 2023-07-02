@@ -46,7 +46,6 @@ class VAEDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        label = self.data['label'].iloc[index]
         x = self.data['x'].iloc[index]
         if self.min_val != 0 and self.max_val != 1:
             x = (x - self.min_val) / (self.max_val - self.min_val)

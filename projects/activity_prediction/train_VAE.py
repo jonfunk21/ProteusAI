@@ -16,13 +16,13 @@ import argparse
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
 parser.add_argument('--epochs', type=int, default=1000)
-parser.add_argument('--save_checkpoint', dest='save_checkpoint', action='store_true', help='Save checkpoint during the process')
+parser.add_argument('--save_checkpoints', dest='save_checkpoints', action='store_true', help='Save checkpoint during the process')
 parser.set_defaults(save_checkpoint=False)
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 args = parser.parse_args()
 
 epochs = args.epochs
-save_checkpoint = args.save_checkpoint
+save_checkpoints = args.save_checkpoints
 
 # encoding type ohe, BLOSUM62 or BLOSUM50
 encoding_type = args.encoder
@@ -73,4 +73,4 @@ for name in names:
 
     # Train the model on the dataset
     print(f"Training {model_name} model...")
-    model = train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoint=save_checkpoint)
+    model = train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoints=save_checkpoints)
