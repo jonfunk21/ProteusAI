@@ -6,6 +6,9 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import Dataset
 import pandas as pd
+import sys
+sys.path.insert(0, '../../src')
+import proteusAI.ml_tools.torch_tools as torch_tools
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 train_plots_path = os.path.join(script_path, 'plots/train')
@@ -31,24 +34,32 @@ class RegDataset(Dataset):
 class VAEDataset(Dataset):
     def __init__(self, data, encoding_type='OHE'):
         self.data = data
+        self.encoding_type = encoding_type
 
         assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
 
         if encoding_type == 'OHE':
-            self.min_val, self.max_val = (0, 1) 
+            self.min_val, self.max_val = (0, 1)
+            self.encoder = torch_tools.one_hot_encoder
         if encoding_type == 'BLOSUM50':
             self.min_val, self.max_val = (-5.0, 15.0)
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM50')
         if encoding_type == 'BLOSUM62':
             self.min_val, self.max_val = (-4.0, 11.0)
-        
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM62')
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        x = self.data['x'].iloc[index]
+        sequence = self.data['mutated_sequence'].iloc[index]
+
+        # Encode the sequence using the assigned encoder
+        x = self.encoder(sequence)
+
         if self.min_val != 0 and self.max_val != 1:
             x = (x - self.min_val) / (self.max_val - self.min_val)
+
         return x
     
 # TODO: create custom datasets for OHE and BLOSUM encoding
