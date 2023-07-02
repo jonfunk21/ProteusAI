@@ -2,13 +2,14 @@ import torch
 import os
 import numpy as np
 
-def one_hot_encoder(sequences, alphabet: dict):
+def one_hot_encoder(sequences, alphabet=None, canonical=True):
     """
     Encodes sequences provided an alphabet.
 
     Parameters:
         sequences (list or str): list of amino acid sequences or a single sequence.
-        alphabet (dict): alphabet as dictionary.
+        alphabet (list or None): list of characters in the alphabet or None to load from file.
+        canonical (bool): only use canonical amino acids.
 
     Returns:
         torch.Tensor: (number of sequences, maximum sequence length, size of the alphabet) for list input
@@ -18,6 +19,22 @@ def one_hot_encoder(sequences, alphabet: dict):
     if isinstance(sequences, str):
         singular = True
         sequences = [sequences]  # Make it a list to use the same code below
+
+    # Load the alphabet from a file if it's not provided
+    if alphabet is None:
+        # Get the directory of the current script
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+
+        ### Amino Acid codes
+        alphabet_file = os.path.join(script_dir, "matrices/alphabet")
+        alphabet = np.loadtxt(alphabet_file, dtype=str)
+
+    # If canonical is True, only use the first 20 characters of the alphabet
+    if canonical:
+        alphabet = alphabet[:20]
+
+    # Create a dictionary to map each character in the alphabet to its index
+    alphabet_dict = {char: i for i, char in enumerate(alphabet)}
 
     # Get the maximum sequence length
     max_sequence_length = max(len(sequence) for sequence in sequences)
@@ -31,15 +48,17 @@ def one_hot_encoder(sequences, alphabet: dict):
     for i, sequence in enumerate(sequences):
         for j, character in enumerate(sequence):
             # Get the index of the character in the alphabet
-            char_index = alphabet[character]
-            # Set the corresponding element of the tensor to 1
-            tensor[i, j, char_index] = 1.0
+            char_index = alphabet_dict.get(character, -1)  # Return -1 if character is not in the alphabet
+            if char_index != -1:
+                # Set the corresponding element of the tensor to 1
+                tensor[i, j, char_index] = 1.0
 
     # If the input was a string, return a tensor of shape (max_sequence_length, alphabet_size)
     if singular:
         tensor = tensor.squeeze(0)
 
     return tensor
+
 
 
 def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
