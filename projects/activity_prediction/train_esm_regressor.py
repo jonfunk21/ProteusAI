@@ -34,10 +34,12 @@ representations_path = os.path.join(script_path, f'representations/{esm_model}')
 train_plots_path = os.path.join(script_path, 'plots/train')
 results_plots_path = os.path.join(script_path, 'plots/results')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
+results_path = os.path.join(script_path, 'results')
 os.makedirs(train_plots_path, exist_ok=True)
 os.makedirs(results_plots_path, exist_ok=True)
 os.makedirs(checkpoints_path, exist_ok=True)
 os.makedirs(checkpoints_path, exist_ok=True)
+os.makedirs(results_path, exist_ok=True)
 
 # Training, validation, and test data paths
 train_dir = os.path.join(script_path, 'datasets/train')
@@ -74,4 +76,8 @@ for name in names:
     model = train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoints=save_checkpoints)
 
     # Plot predictions against ground truth for test data
-    plot_predictions_vs_groundtruth(test_data, model, device, fname=f'{results_plots_path}/{name}_pred_vs_true.png')
+    predictions = plot_predictions_vs_groundtruth(test_data, model, device, fname=f'{results_plots_path}/{name}_pred_vs_true.png')
+
+    # Append predictions to test_df and save
+    test_df['predictions'] = predictions
+    test_df.to_csv(f'results/{name}_predictions.csv', index=False)

@@ -262,3 +262,5 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
         plt.savefig(fname)
     else:
         plt.show()
+
+    return predictions
