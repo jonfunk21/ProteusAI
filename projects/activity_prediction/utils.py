@@ -225,7 +225,7 @@ def plot_losses(train_losses, val_losses, best_epoch, fname=None):
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Validation Loss')
     plt.axvline(x=best_epoch, color='r', linestyle='--', label='Best Model')
-    plt.title('Train and Validation Losses {name}')
+    plt.title(f'Train and Validation Losses {name}')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
@@ -252,7 +252,14 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
 
     plt.figure(figsize=(10, 5))
     plt.scatter(groundtruth, predictions, alpha=0.5)
-    plt.title('Predicted vs. True Activity Levels')
+    
+    # Extract model name from fname and use it in the plot title
+    if fname is not None:
+        name = fname.split('/')[-1].split('.')[0].replace('_', ' ')
+        plt.title(f'Predicted vs. True Activity Levels for {name}')
+    else:
+        plt.title('Predicted vs. True Activity Levels')
+        
     plt.xlabel('True Activity Levels')
     plt.ylabel('Predicted Activity Levels')
     plt.plot([min(groundtruth), max(groundtruth)], [min(groundtruth), max(groundtruth)], color='red', linewidth=2)  # diagonal line
