@@ -2,17 +2,23 @@ import torch
 import os
 import numpy as np
 
-def one_hot_encoder(sequences: list, alphabet: dict):
+def one_hot_encoder(sequences, alphabet: dict):
     """
     Encodes sequences provided an alphabet.
 
     Parameters:
-        sequences (list): list of amino acid sequences.
+        sequences (list or str): list of amino acid sequences or a single sequence.
         alphabet (dict): alphabet as dictionary.
 
     Returns:
-        torch.Tensor: (number of sequences, maximum sequence length, size of the alphabet)
+        torch.Tensor: (number of sequences, maximum sequence length, size of the alphabet) for list input
+                      (maximum sequence length, size of the alphabet) for string input
     """
+    # Check if sequences is a string
+    if isinstance(sequences, str):
+        singular = True
+        sequences = [sequences]  # Make it a list to use the same code below
+
     # Get the maximum sequence length
     max_sequence_length = max(len(sequence) for sequence in sequences)
     n_sequences = len(sequences)
@@ -29,17 +35,21 @@ def one_hot_encoder(sequences: list, alphabet: dict):
             # Set the corresponding element of the tensor to 1
             tensor[i, j, char_index] = 1.0
 
+    # If the input was a string, return a tensor of shape (max_sequence_length, alphabet_size)
+    if singular:
+        tensor = tensor.squeeze(0)
+
     return tensor
 
 
-def blosum_encoding(sequences: list, matrix='BLOSUM62', canonical=True):
+def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
     '''
     Returns BLOSUM encoding for amino acid sequence. Unknown amino acids will be
     encoded with 0.5 at in entire row.
 
     Parameters:
     -----------
-        sequences (list): List of amino acid sequences
+        sequences (list or str): List of amino acid sequences or a single sequence
         blosum_matrix_choice (str): Choice of BLOSUM matrix. Can be 'BLOSUM50' or 'BLOSUM62'
         canonical (bool): only use canonical amino acids
 
@@ -47,6 +57,11 @@ def blosum_encoding(sequences: list, matrix='BLOSUM62', canonical=True):
     --------
         torch.Tensor: BLOSUM encoded sequence
     '''
+
+    # Check if sequences is a string
+    if isinstance(sequences, str):
+        singular = True
+        sequences = [sequences]  # Make it a list to use the same code below
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -90,5 +105,9 @@ def blosum_encoding(sequences: list, matrix='BLOSUM62', canonical=True):
             else:
                 # Handle unknown amino acids with a default value of 0.5
                 tensor[i, j, :] = 0.5
+
+    # If the input was a string, return a tensor of shape (max_sequence_length, alphabet_size)
+    if singular:
+        tensor = tensor.squeeze(0)
 
     return tensor
