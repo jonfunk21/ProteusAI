@@ -1,6 +1,7 @@
 import os
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
+import seaborn as sns
 from tqdm import tqdm
 import torch
 from torch.nn import functional as F
@@ -222,13 +223,13 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
 def plot_losses(train_losses, val_losses, best_epoch, fname=None):
     name = fname.split('/')[-1].split('.')[0].replace('.', ' ')
     plt.figure(figsize=(10, 5))
-    plt.plot(train_losses, label='Train Loss')
-    plt.plot(val_losses, label='Validation Loss')
+    sns.lineplot(range(len(train_losses)), train_losses, label='Train Loss', color='blue')
+    sns.lineplot(range(len(val_losses)), val_losses, label='Validation Loss', color='orange')
     plt.axvline(x=best_epoch, color='r', linestyle='--', label='Best Model')
     plt.title(f'Train and Validation Losses {name}')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.legend()
+    plt.legend(loc='upper right')
     if fname is not None:
         plt.savefig(fname)
     else:
@@ -251,7 +252,7 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
             groundtruth.extend(targets.tolist())
 
     plt.figure(figsize=(10, 5))
-    plt.scatter(groundtruth, predictions, alpha=0.5)
+    sns.scatterplot(groundtruth, predictions, alpha=0.5, color='orange')
     
     # Extract model name from fname and use it in the plot title
     if fname is not None:
@@ -262,7 +263,7 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
         
     plt.xlabel('True Activity Levels')
     plt.ylabel('Predicted Activity Levels')
-    plt.plot([min(groundtruth), max(groundtruth)], [min(groundtruth), max(groundtruth)], color='red', linewidth=2)  # diagonal line
+    plt.plot([min(groundtruth), max(groundtruth)], [min(groundtruth), max(groundtruth)], color='grey', linestyle='dotted', linewidth=2)  # diagonal line
     plt.grid(True)
 
     if fname is not None:
