@@ -15,15 +15,27 @@ parser = argparse.ArgumentParser(description='Hyperparameters')
 parser.add_argument('--model', type=str, default='esm1v', help='Choose model either esm2 or esm1v')
 parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--dropout_p', type=float, default=0.1)
+parser.add_argument('--hidden_layers', type=str, default='1000,1000', help='Comma-separated list of hidden layer sizes')
 parser.add_argument('--save_checkpoints', dest='save_checkpoints', action='store_true', help='Save checkpoint during the process')
+parser.add_argument('--weight_decay', type=float, default=1e-5)
+parser.add_argument('--lr', type=float, default=1e-4)
+parser.add_argument('--step_size', type=int, default=1000, help='Stepsize for learning rate scheduler')
+parser.add_argument('--gamma', type=float, default=0.1, help='Gamma value for learning rate scheduler')
 parser.set_defaults(save_checkpoint=False)
 args = parser.parse_args()
 
 # model for embedding computation esm1v or esm2
+model_dim = 1280 # right now all available models have this dim
 esm_model = args.model
-model_dim = 1280
+hidden_layers = [int(x) for x in args.hidden_layers.split(',')]
 batch_size = args.batch_size
 epochs = args.epochs
+lr = args.lr
+gamma = args.gamma
+step_size = args.step_size
+weight_decay = args.weight_decay
+dropout_p = args.dropout_p
 save_checkpoints = args.save_checkpoints
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -66,9 +78,9 @@ for name in names:
     test_data = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
     # Initialize model, optimizer and epochs
-    model = Regressors.FFNN(input_dim=model_dim, hidden_layers=[1000, 1000], output_dim=1, dropout_p=0.1).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-    scheduler = StepLR(optimizer, step_size=1000, gamma=0.1)
+    model = Regressors.FFNN(input_dim=model_dim, hidden_layers=hidden_layers, output_dim=1, dropout_p=dropout_p).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = StepLR(optimizer, step_size=step_size, gamma=gamma)
     criterion = nn.MSELoss()
 
     # Train the model on the dataset

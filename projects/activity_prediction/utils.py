@@ -223,8 +223,8 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
 def plot_losses(train_losses, val_losses, best_epoch, fname=None):
     name = fname.split('/')[-1].split('.')[0].replace('.', ' ')
     plt.figure(figsize=(10, 5))
-    sns.lineplot(x=range(len(train_losses)), y=train_losses, label='Train Loss', color='blue')
-    sns.lineplot(x=range(len(val_losses)), y=val_losses, label='Validation Loss', color='orange')
+    sns.lineplot(x=range(len(train_losses)), y=train_losses, label='Train Loss')
+    sns.lineplot(x=range(len(val_losses)), y=val_losses, label='Validation Loss')
     plt.axvline(x=best_epoch, color='r', linestyle='--', label='Best Model')
     plt.title(f'Train and Validation Losses {name}')
     plt.xlabel('Epochs')
@@ -252,7 +252,7 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
             groundtruth.extend(targets.tolist())
 
     plt.figure(figsize=(10, 5))
-    sns.scatterplot(x=groundtruth, y=predictions, alpha=0.5, color='orange')
+    sns.scatterplot(x=groundtruth, y=predictions, alpha=0.5)
     
     # Extract model name from fname and use it in the plot title
     if fname is not None:
