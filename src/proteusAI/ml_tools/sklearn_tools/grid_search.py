@@ -13,6 +13,7 @@ from sklearn.svm import SVR
 import numpy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import json
 
 def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
     """
@@ -177,6 +178,34 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
 
     return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_)
 
+
+def plot_predictions_vs_groundtruth(y_true, y_pred, fname=None):
+    plt.figure(figsize=(10, 5))
+    sns.scatterplot(x=y_true, y=y_pred, alpha=0.5)
+    
+    # Extract model name from fname and use it in the plot title
+    if fname is not None:
+        name = fname.split('/')[-1].split('.')[0].replace('_', ' ')
+        plt.title(f'Predicted vs. True Activity Levels for {name}')
+    else:
+        plt.title('Predicted vs. True Activity Levels')
+        
+    plt.xlabel('True Activity Levels')
+    plt.ylabel('Predicted Activity Levels')
+    plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], color='grey', linestyle='dotted', linewidth=2)  # diagonal line
+    plt.grid(True)
+
+    if fname is not None:
+        plt.savefig(fname)
+    else:
+        plt.show()
+
+    return y_pred
+
+def save_best_params_to_json(model, fname):
+    best_params = model.best_params_
+    with open(fname, 'w') as f:
+        json.dump(best_params, f)
 
 def plot_attention(attention, layer, head, sequence):
     """
