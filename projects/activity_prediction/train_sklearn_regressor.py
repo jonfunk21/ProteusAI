@@ -88,14 +88,14 @@ for name in names:
     predictions = best_model.predict(X_test)
 
     # Save the best parameters to a JSON file
-    sklearn_tools.save_best_params_to_json(best_model, f'results/SVR_{name}_best_params.json')
+    sklearn_tools.save_best_params_to_json(best_model, f'results/{name}_best_params.json')
 
     # Save the best model to a file
     dump(best_model, f'{checkpoints_path}/SVR_{name}_best_model.joblib')
 
     # plot best predictions
-    sklearn_tools.plot_predictions_vs_groundtruth(y_test, predictions, fname=f'{results_plots_path}/SVR_{name}_pred_vs_true.png')
+    sklearn_tools.plot_predictions_vs_groundtruth(y_test, predictions, fname=f'{results_plots_path}/{name}_pred_vs_true.png')
 
     # Append predictions to test_df and save
     test_df['predictions'] = predictions
-    test_df.to_csv(f'results/SVR_{name}_predictions.csv', index=False)
+    test_df.to_csv(f'results/{name}_predictions.csv', index=False)

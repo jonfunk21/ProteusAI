@@ -55,8 +55,9 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 prepare_datasets.py
 #python3 compute_representations.py --model esm1v
 #python3 compute_representations.py --model esm2
-python3 train_VAE.py --encoder OHE --epochs 1000 --save_checkpoints
-python3 train_VAE.py --encoder BLOSUM62 --epochs 1000 --save_checkpoints
-python3 train_VAE.py --encoder BLOSUM50 --epochs 1000 --save_checkpoints
-python3 train_esm_regressor.py --model esm1v --epochs 5000 --save_checkpoints
-python3 train_esm_regressor.py --model esm2 --epochs 5000 --save_checkpoints
+#python3 train_VAE.py --encoder OHE --epochs 1000 --save_checkpoints
+#python3 train_VAE.py --encoder BLOSUM62 --epochs 1000 --save_checkpoints
+#python3 train_VAE.py --encoder BLOSUM50 --epochs 1000 --save_checkpoints
+#python3 train_esm_regressor.py --model esm1v --epochs 5000 --save_checkpoints
+#python3 train_esm_regressor.py --model esm2 --epochs 5000 --save_checkpoints
+python3 train_sklearn_regressor.py --encoder OHE
