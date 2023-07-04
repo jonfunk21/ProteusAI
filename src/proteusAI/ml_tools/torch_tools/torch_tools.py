@@ -19,6 +19,8 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True):
     if isinstance(sequences, str):
         singular = True
         sequences = [sequences]  # Make it a list to use the same code below
+    else:
+        singular = False
 
     # Load the alphabet from a file if it's not provided
     if alphabet is None:
@@ -81,6 +83,8 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
     if isinstance(sequences, str):
         singular = True
         sequences = [sequences]  # Make it a list to use the same code below
+    else:
+        singular = False
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.realpath(__file__))
