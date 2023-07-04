@@ -52,37 +52,35 @@ for name in names:
     val_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
     test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
     
+    # Combine train and validation sets for grid search
+    train_val_df = pd.concat([train_df, val_df])
+    
     # Split features and targets
-    X_train = train_df['mutated_sequence'].to_list()
-    y_train = train_df['y'].to_list()
-    X_val = val_df['mutated_sequence'].to_list()
-    y_val = val_df['y'].to_list()
+    X_train_val = train_val_df['mutated_sequence'].to_list()
+    y_train_val = train_val_df['y'].to_list()
     X_test = test_df['mutated_sequence'].to_list()
     y_test = test_df['y'].to_list()
     
     # to numpy arra
-    X_train = encoder(X_train).numpy()
-    X_val = encoder(X_val).numpy()
+    X_train_val = encoder(X_train_val).numpy()
     X_test = encoder(X_test).numpy()
     
     # flatten X
-    X_train = X_train.reshape(X_train.shape[0], -1)
-    X_val = X_val.reshape(X_val.shape[0], -1)
+    X_train_val = X_train_val.reshape(X_train_val.shape[0], -1)
     X_test = X_test.reshape(X_test.shape[0], -1)
     
     # Scale X from 1 to 0
     if min_val != 0 and max_val != 1:
         X_train_val = (X_train_val - min_val) / (max_val - min_val)
-        X_val = (X_val - min_val) / (max_val - min_val)
         X_test = (X_test - min_val) / (max_val - min_val)
     
     # Initialize and train the SVR model using grid search
     print(f"Training {model_name} model...")
     best_model, test_r2, corr_coef, p_value, cv_results_df = sklearn_tools.svr_grid_search(
-        Xs_train=X_train,
-        Xs_test=X_val,
-        ys_train=y_train,
-        ys_test=y_val,
+        Xs_train=X_train_val,
+        Xs_test=X_test,
+        ys_train=y_train_val,
+        ys_test=y_test,
         verbose=2
     )
 
