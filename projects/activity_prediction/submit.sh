@@ -8,7 +8,7 @@
 ### -- specify queue -- voltash cabgpu gpuv100
 #BSUB -q cabgpu
 ### -- set walltime limit: hh:mm --
-#BSUB -W 15:00
+#BSUB -W 70:00
 ### -- Select the resources: 1 gpu in exclusive process mode --:mode=exclusive_process
 #BSUB -gpu "num=1:mode=exclusive_process"
 ## --- select a GPU with 32gb----
@@ -55,8 +55,8 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 prepare_datasets.py
 #python3 compute_representations.py --model esm1v
 #python3 compute_representations.py --model esm2
-python3 train_esm_regressor.py --model esm1v --epochs 1000 --save_checkpoints
-python3 train_esm_regressor.py --model esm2 --epochs 1000 --save_checkpoints
 python3 train_VAE.py --encoder OHE --epochs 1000 --save_checkpoints
 python3 train_VAE.py --encoder BLOSUM62 --epochs 1000 --save_checkpoints
 python3 train_VAE.py --encoder BLOSUM50 --epochs 1000 --save_checkpoints
+python3 train_esm_regressor.py --model esm1v --epochs 5000 --save_checkpoints
+python3 train_esm_regressor.py --model esm2 --epochs 5000 --save_checkpoints
