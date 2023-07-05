@@ -88,8 +88,8 @@ for name in names:
     model = train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, device, model_name, save_checkpoints=save_checkpoints)
 
     # Plot predictions against ground truth for test data
-    predictions = plot_predictions_vs_groundtruth(test_data, model, device, fname=f'{results_plots_path}/{name}_pred_vs_true.png')
+    predictions = plot_predictions_vs_groundtruth(test_data, model, device, fname=f'{results_plots_path}/{model_name}_pred_vs_true.png')
 
     # Append predictions to test_df and save
     test_df['predictions'] = predictions
-    test_df.to_csv(f'results/{name}_predictions.csv', index=False)
+    test_df.to_csv(f'results/{model_name}_predictions.csv', index=False)

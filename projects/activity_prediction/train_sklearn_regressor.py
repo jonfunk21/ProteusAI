@@ -101,9 +101,9 @@ for name in names:
 
 
     # Save the best parameters to a JSON file
-    with open(f'{results_path}/{name}_best_params.json', 'w') as f:
+    with open(f'{results_path}/{model_name}_best_params.json', 'w') as f:
         json.dump(best_params_, f)
 
     # Append predictions to test_df and save
     test_df['predictions'] = predictions
-    test_df.to_csv(f'{results_path}/{name}_predictions.csv', index=False)
+    test_df.to_csv(f'{results_path}/{model_name}_predictions.csv', index=False)
