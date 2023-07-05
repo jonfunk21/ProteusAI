@@ -8,7 +8,7 @@
 ### -- specify queue -- voltash cabgpu gpuv100
 #BSUB -q cabgpu
 ### -- set walltime limit: hh:mm --
-#BSUB -W 24:00
+#BSUB -W 60:00
 ### -- Select the resources: 1 gpu in exclusive process mode --:mode=exclusive_process
 #BSUB -gpu "num=1:mode=exclusive_process"
 ## --- select a GPU with 32gb----
@@ -21,12 +21,6 @@
 #BSUB -e sklearn.err
 
 # here follow the commands you want to execute
-
-# submit with bsub < submit.sh
->test.out
->test.err
-
-
 module load cuda/11.7
 module load python3/3.8.14
 
