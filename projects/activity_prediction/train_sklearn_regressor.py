@@ -6,6 +6,7 @@ sys.path.insert(0, '../../src')
 import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.ml_tools.sklearn_tools as sklearn_tools
 from joblib import dump
+import json
 
 # arguments
 encoding_type = 'OHE'
@@ -76,26 +77,33 @@ for name in names:
     
     # Initialize and train the SVR model using grid search
     print(f"Training {model_name} model...")
-    best_model, test_r2, corr_coef, p_value, cv_results_df = sklearn_tools.svr_grid_search(
+    best_model, test_r2, corr_coef, p_value, cv_results_df, best_params_ = sklearn_tools.svr_grid_search(
         Xs_train=X_train_val,
         Xs_test=X_test,
         ys_train=y_train_val,
         ys_test=y_test,
         verbose=2
     )
-
+    
     # Predict on the test set
     predictions = best_model.predict(X_test)
-
-    # Save the best parameters to a JSON file
-    sklearn_tools.save_best_params_to_json(best_model, f'results/{name}_best_params.json')
-
-    # Save the best model to a file
-    dump(best_model, f'{checkpoints_path}/SVR_{name}_best_model.joblib')
 
     # plot best predictions
     sklearn_tools.plot_predictions_vs_groundtruth(y_test, predictions, fname=f'{results_plots_path}/{name}_pred_vs_true.png')
 
+    # Save the best model to a file
+    dump(best_model, f'{checkpoints_path}/{name}_best_model.joblib')
+
+    # save results
+    resutls = {'name':model_name, 'test_r2':test_r2, 'corr_coef':corr_coef}
+    with open(f'{results_path}/{model_name}_results.json', 'w') as f:
+        json.dump(resutls, f)
+
+
+    # Save the best parameters to a JSON file
+    with open(f'{results_path}/{name}_best_params.json', 'w') as f:
+        json.dump(best_params_, f)
+
     # Append predictions to test_df and save
     test_df['predictions'] = predictions
-    test_df.to_csv(f'results/{name}_predictions.csv', index=False)
+    test_df.to_csv(f'{results_path}/{name}_predictions.csv', index=False)

@@ -13,7 +13,7 @@ from sklearn.svm import SVR
 import numpy
 import matplotlib.pyplot as plt
 import seaborn as sns
-import json
+
 
 def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
     """
@@ -176,7 +176,7 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
         print("Correlation coefficient: {:.2f}".format(corr_coef))
         print("p-value: {:.4f}".format(p_value))
 
-    return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_)
+    return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_), grid_search.best_params_
 
 
 def plot_predictions_vs_groundtruth(y_true, y_pred, fname=None):
@@ -201,11 +201,7 @@ def plot_predictions_vs_groundtruth(y_true, y_pred, fname=None):
         plt.show()
 
     return y_pred
-
-def save_best_params_to_json(model, fname):
-    best_params = model.best_params_
-    with open(fname, 'w') as f:
-        json.dump(best_params, f)
+    
 
 def plot_attention(attention, layer, head, sequence):
     """
