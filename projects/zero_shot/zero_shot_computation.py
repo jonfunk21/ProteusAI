@@ -6,7 +6,7 @@ import pandas as pd
 
 # paths
 script_path = os.path.dirname(os.path.realpath(__file__))
-results_path = os.path.join(script_path, 'zero_shot')
+results_path = os.path.join(script_path, 'results')
 plots_path = os.path.join(script_path, 'plots')
 DMS_path = os.path.join(script_path, '../data/DMS_enzymes')
 datasets_path = os.path.join(DMS_path, 'datasets')
@@ -89,6 +89,11 @@ if __name__ == '__main__':
         if not os.path.exists(dest):
             os.mkdir(dest)
 
+        # create a folder for every gene
+        plots_dest = os.path.join(plots_path, name)
+        if not os.path.exists(plots_dest):
+            os.mkdir(plots_dest)
+
         # compute embeddings
         results, batch_lens, batch_labels, alphabet = esm_compute([seq])
         seq_rep = get_seq_rep(results, batch_lens)
@@ -104,25 +109,23 @@ if __name__ == '__main__':
         pdb = entropy_to_bfactor(pdbs[0], entropy)
 
         # save tensors
+        #torch.save(results, os.path.join(dest, f"results.pt"))
         torch.save(p, os.path.join(dest, f"prob_dist.pt"))
         torch.save(mmp, os.path.join(dest, f"masked_marginal_probability.pt"))
         torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
-        torch.save(results, os.path.join(dest, f"results.pt"))
         torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
 
-        # save visualizations
-        prb_dist_path = os.path.join(dest, f"prob_dist.png")
-        log_odds_path = os.path.join(dest, f"log_odds.png")
-        per_pos_entropy_path = os.path.join(dest, f"per_pos_entropy.png")
+        # save pdb
         pdb_path = os.path.join(dest, f"{name}.pdb")
-
-        plot_heatmap(p=p, alphabet=alphabet, remove_tokens=True, dest=prb_dist_path, show=False, title=f"{name} probability distribution", color_sheme="b")
-        plot_heatmap(p=mmp, alphabet=alphabet, dest=log_odds_path, show=True, title=f"{name} per position log-odds", color_sheme="rwb")
-        plot_per_position_entropy(entropy, seq, show=False, dest=per_pos_entropy_path)
         pdb.write(pdb_path)
 
+        # save plots
+        plot_heatmap(p=p, alphabet=alphabet, remove_tokens=True, dest=plots_dest, show=False, title=f"{name} probability distribution", color_sheme="b")
+        plot_heatmap(p=mmp, alphabet=alphabet, dest=plots_dest, show=True, title=f"{name} per position log-odds", color_sheme="rwb")
+        plot_per_position_entropy(entropy, seq, show=False, dest=plots_dest)
+        
         # highlighted plots
-        plot_entropy_with_highlighted_mutations(name=name, seq=seq, entropy=entropy, data=datasets[i], dest=dest)
-        plot_heatmap_with_highlighted_mutations(name=name, data=datasets[i], alphabet=alphabet, heatmap=mmp, heatmap_type='mmp')
+        plot_entropy_with_highlighted_mutations(name=name, seq=seq, entropy=entropy, data=datasets[i], dest=plots_dest)
+        plot_heatmap_with_highlighted_mutations(name=name, data=datasets[i], alphabet=alphabet, heatmap=mmp, heatmap_type='mmp', dest=plots_dest)
         i += 1
 
