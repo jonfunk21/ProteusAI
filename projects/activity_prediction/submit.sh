@@ -46,6 +46,9 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 cd ~/projects/proteusAI/projects/zero_shot
 python3 zero_shot_computation.py
 
+#remove esm model after zero-shot
+rm -f ~/.cache/torch/hub/checkpoints/*
+
 cd ~/projects/proteusAI/projects/activity_prediction
 #python3 prepare_datasets.py
 #python3 compute_representations.py --model esm1v
