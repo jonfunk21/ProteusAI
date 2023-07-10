@@ -46,13 +46,16 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 cd ~/projects/proteusAI/projects/activity_prediction
 
 
+cd ~/projects/proteusAI/projects/zero_shot
+python3 zero_shot_computation.py
+
+cd ~/projects/proteusAI/projects/activity_prediction
 #python3 prepare_datasets.py
 #python3 compute_representations.py --model esm1v
 #python3 compute_representations.py --model esm2
 #python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints
-python3 train_sklearn_regressor.py --encoder OHE
+#python3 train_sklearn_regressor.py --encoder OHE
 python3 train_esm_regressor.py --model esm1v --epochs 5000 --save_checkpoints
-
 python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints
 python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints
 python3 train_esm_regressor.py --model esm2 --epochs 5000 --save_checkpoints
