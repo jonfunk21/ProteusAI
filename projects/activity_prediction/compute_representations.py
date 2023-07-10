@@ -16,7 +16,7 @@ model = args.model
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
-dataset_path = os.path.join(script_path, 'datasets')
+dataset_path = os.path.join(script_path, '../data/DMS_enzymes/datasets')
 representation_path = os.path.join(script_path, f'representations/{model}')
 
 os.makedirs(dataset_path, exist_ok=True)

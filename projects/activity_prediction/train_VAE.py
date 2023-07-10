@@ -51,9 +51,9 @@ os.makedirs(plots_path, exist_ok=True)
 os.makedirs(checkpoints_path, exist_ok=True)
 
 # Training and validation data paths
-train_dir = os.path.join(script_path, 'datasets/train')
-val_dir = os.path.join(script_path, 'datasets/validate')
-test_dir = os.path.join(script_path, 'datasets/test')
+train_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/train')
+val_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/validate')
+test_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/test')
 
 names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 

@@ -27,9 +27,9 @@ os.makedirs(checkpoints_path, exist_ok=True)
 os.makedirs(results_path, exist_ok=True)
 
 # Training, validation, and test data paths
-train_dir = os.path.join(script_path, 'datasets/train')
-val_dir = os.path.join(script_path, 'datasets/validate')
-test_dir = os.path.join(script_path, 'datasets/test')
+train_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/train')
+val_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/validate')
+test_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/test')
 
 names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
@@ -94,16 +94,15 @@ for name in names:
     # Save the best model to a file
     dump(best_model, f'{checkpoints_path}/{name}_{encoding_type}_best_model.joblib')
 
-    # save results
-    resutls = {'name':model_name, 'test_r2':test_r2, 'corr_coef':corr_coef}
-    with open(f'{results_path}/{name}_{encoding_type}_results.json', 'w') as f:
-        json.dump(resutls, f)
-
-
     # Save the best parameters to a JSON file
     with open(f'{results_path}/{name}_{encoding_type}_best_params.json', 'w') as f:
         json.dump(best_params_, f)
 
+    # save results
+    resutls = {'name':model_name, 'test_r2':test_r2, 'corr_coef':corr_coef}
+    with open(f'{results_path}/{model_name}_results.json', 'w') as f:
+        json.dump(resutls, f)
+
     # Append predictions to test_df and save
     test_df['predictions'] = predictions
-    test_df.to_csv(f'{results_path}/{name}_{encoding_type}_predictions.csv', index=False)
+    test_df.to_csv(f'{results_path}/{model_name}_predictions.csv', index=False)
