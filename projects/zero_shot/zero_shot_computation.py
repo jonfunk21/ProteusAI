@@ -15,16 +15,6 @@ datasets_path = os.path.join(DMS_path, 'datasets')
 os.makedirs(results_path, exist_ok=True)
 os.makedirs(plots_path, exist_ok=True)
 
-#read metadata
-meta_data = pd.read_csv(os.path.join(DMS_path, "enzyme_metadata.csv"))
-
-# extract names and sequences
-seqs = meta_data['target_seq']
-names = meta_data['DMS_id']
-
-# load datasets
-datasets = [pd.read_csv(os.path.join(datasets_path, name + '.csv')) for name in names]
-
 # specific plotting functions
 def plot_entropy_with_highlighted_mutations(name: str, seq:str, entropy:torch.Tensor, data: pd.DataFrame, dest:str, show: bool=False):
     # Find positions with positive effect
@@ -77,11 +67,23 @@ def plot_heatmap_with_highlighted_mutations(name: str, data: pd.DataFrame, alpha
                  title=title, dest=dest)
 
 if __name__ == '__main__':
+
+    #read metadata
+    meta_data = pd.read_csv(os.path.join(DMS_path, "enzyme_metadata.csv"))
+
+    # extract names and sequences
+    seqs = meta_data['target_seq']
+    names = meta_data['DMS_id']
+
+    # load datasets
+    datasets = [pd.read_csv(os.path.join(datasets_path, name + '.csv')) for name in names]
+
     # load esm alphabet
     alphabet = alphabet.to_dict()
 
+    i = 0
     # compute and plot
-    for i, name, seq in enumerate(zip(names, seqs)):
+    for name, seq in zip(names, seqs):
         # create a folder for every gene
         dest = os.path.join(results_path, name)
         if not os.path.exists(dest):
@@ -122,4 +124,5 @@ if __name__ == '__main__':
         # highlighted plots
         plot_entropy_with_highlighted_mutations(name=name, seq=seq, entropy=entropy, data=datasets[i], dest=dest)
         plot_heatmap_with_highlighted_mutations(name=name, data=datasets[i], alphabet=alphabet, heatmap=mmp, heatmap_type='mmp')
+        i += 1
 
