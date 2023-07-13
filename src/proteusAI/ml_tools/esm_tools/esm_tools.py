@@ -532,6 +532,10 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
+    
+    # adjust keys and values
+    min_val = min(filtered_alphabet.values())
+    #filtered_alphabet = {char: i-min_val for char, i in filtered_alphabet.items()}
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
@@ -555,11 +559,11 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     if highlight_positions is not None:
         for pos, mutated_residue in highlight_positions.items():
             residue_index = filtered_alphabet[mutated_residue]
-            rect = patches.Rectangle((pos, residue_index), 1, 1, linewidth=1, edgecolor='lime', facecolor='none')
+            rect = patches.Rectangle((pos, residue_index-min_val), 1, 1, linewidth=1, edgecolor='lime', facecolor='none')
             ax.add_patch(rect)
 
     plt.xlabel("Sequence Position")
-    plt.ylabel("Character")
+    plt.ylabel("Residue")
     if title == None:
         plt.title("Per-Position Probability Distribution Heatmap")
     else:
@@ -567,7 +571,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     # Save the plot to the specified destination, if provided
     if dest is not None:
-        plt.savefig(dest, dpi=300, bbox_inches='tight')
+        plt.savefig(dest, dpi=400, bbox_inches='tight')
 
     # Show the plot, if the 'show' argument is True
     if show:
