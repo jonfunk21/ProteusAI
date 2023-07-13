@@ -68,7 +68,9 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
 
 # compute VAE embeddings
-python3 compute_VAE_representations
+python3 compute_VAE_representations --encoder OHE
+python3 compute_VAE_representations --encoder BLOSUM50
+python3 compute_VAE_representations --encoder BLOSUM62
 
 # train regressors                                     
 #python3 train_SVR.py --encoder OHE                                                 <-- Done
