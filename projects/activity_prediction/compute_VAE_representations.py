@@ -72,4 +72,4 @@ for dataset in mutant_datasets:
             for j, rep in enumerate(vae_representation):
                 mutant_name = mutants[i * batch_size + j]
                 seq_rep_path = os.path.join(study_path, f'{mutant_name}.pt')
-                torch.save(rep, seq_rep_path)
+                torch.save(rep.float(), seq_rep_path)
