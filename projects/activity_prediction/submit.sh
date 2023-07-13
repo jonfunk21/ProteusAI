@@ -17,8 +17,8 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o svr.out
-#BSUB -e svr.err
+#BSUB -o test.out
+#BSUB -e test.err
 
 # here follow the commands you want to execute
 module load cuda/11.7
@@ -74,17 +74,17 @@ cd ~/projects/proteusAI/projects/activity_prediction
 
 # train regressors                                     
 #python3 train_SVR.py --encoder OHE                                                 <-- Done
-python3 train_SVR.py --encoder BLOSUM50                                            #<-- TODO: run
-python3 train_SVR.py --encoder BLOSUM62                                            #<-- TODO: run
-python3 train_SVR_esm.py --encoder esm1v                                           #<-- TODO: run
-python3 train_SVR_esm.py --encoder esm2                                            #<-- TODO: run
+#python3 train_SVR.py --encoder BLOSUM50                                            #<-- Running...
+#python3 train_SVR.py --encoder BLOSUM62                                            #<-- Running...
+#python3 train_SVR_esm.py --encoder esm1v                                           #<-- Running...
+#python3 train_SVR_esm.py --encoder esm2                                            #<-- Running...
 #python3 train_SVR.py --encoder OHE_VAE                                             <-- TODO: implement
 #python3 train_SVR.py --encoder BLOSUM50_VAE                                        <-- TODO: implement
 #python3 train_SVR.py --encoder BLOSUM62_VAE                                        <-- TODO: implement
 
 # train FFNN
 #python3 train_esm_FFNN.py --model esm1v --epochs 5000 --save_checkpoints          <-- Done
-#python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           <-- TODO: run
+python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           #<-- Running...
 #python3 train_esm_FFNN.py --model OHE --epochs 5000 --save_checkpoints            <-- TODO: implement
 #python3 train_esm_FFNN.py --model BLOSUM50 --epochs 5000 --save_checkpoints       <-- TODO: implement
 #python3 train_esm_FFNN.py --model BLOSUM62 --epochs 5000 --save_checkpoints       <-- TODO: implement
