@@ -120,9 +120,7 @@ if __name__ == '__main__':
         pdb.write(pdb_path)
 
         # save plots
-        plot_heatmap(p=p, alphabet=alphabet, remove_tokens=True, dest=plots_dest, show=False, title=f"{name} probability distribution", color_sheme="b")
-        plot_heatmap(p=mmp, alphabet=alphabet, dest=plots_dest, show=True, title=f"{name} per position log-odds", color_sheme="rwb")
-        plot_per_position_entropy(entropy, seq, show=False, dest=plots_dest)
+        plot_per_position_entropy(entropy, seq, show=False, dest=os.path.join(plots_dest, name + '_per_position_entropy'), title=f'Per position entropy of {name}')
         
         # highlighted plots
         plot_entropy_with_highlighted_mutations(name=name, seq=seq, entropy=entropy, data=datasets[i], dest=plots_dest)
