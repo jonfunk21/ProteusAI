@@ -66,7 +66,7 @@ for dataset in mutant_datasets:
     with torch.no_grad():
         for i, batch in enumerate(data):
             batch = batch.view(batch.size(0), -1)
-            vae_representation, _, _ = model(batch)
+            vae_representation, _ = model.encoder.forward(batch)
             
             # Save the VAE representation for each sequence in the batch
             for j, rep in enumerate(vae_representation):
