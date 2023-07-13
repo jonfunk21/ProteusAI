@@ -17,8 +17,8 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o test.out
-#BSUB -e test.err
+#BSUB -o svr.out
+#BSUB -e svr.err
 
 # here follow the commands you want to execute
 module load cuda/11.7
@@ -68,16 +68,16 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
 
 # compute VAE embeddings
-python3 compute_VAE_representations.py --encoder OHE
-python3 compute_VAE_representations.py --encoder BLOSUM50
-python3 compute_VAE_representations.py --encoder BLOSUM62
+#python3 compute_VAE_representations.py --encoder OHE                               <-- takes to much space                 
+#python3 compute_VAE_representations.py --encoder BLOSUM50                          <-- takes to much space     
+#python3 compute_VAE_representations.py --encoder BLOSUM62                          <-- takes to much space     
 
 # train regressors                                     
 #python3 train_SVR.py --encoder OHE                                                 <-- Done
-#python3 train_SVR.py --encoder BLOSUM50                                            <-- TODO: run
-#python3 train_SVR.py --encoder BLOSUM62                                            <-- TODO: run
-#python3 train_SVR.py --encoder esm1v                                               <-- TODO: implement
-#python3 train_SVR.py --encoder esm2                                                <-- TODO: implement
+python3 train_SVR.py --encoder BLOSUM50                                            #<-- TODO: run
+python3 train_SVR.py --encoder BLOSUM62                                            #<-- TODO: run
+python3 train_SVR_esm.py --encoder esm1v                                           #<-- TODO: run
+python3 train_SVR_esm.py --encoder esm2                                            #<-- TODO: run
 #python3 train_SVR.py --encoder OHE_VAE                                             <-- TODO: implement
 #python3 train_SVR.py --encoder BLOSUM50_VAE                                        <-- TODO: implement
 #python3 train_SVR.py --encoder BLOSUM62_VAE                                        <-- TODO: implement

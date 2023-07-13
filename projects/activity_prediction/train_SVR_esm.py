@@ -4,14 +4,16 @@ import numpy as np
 import sys
 sys.path.insert(0, '../../src')
 import proteusAI.ml_tools.torch_tools as torch_tools
+import proteusAI.io_tools as io_tools
 import proteusAI.ml_tools.sklearn_tools as sklearn_tools
 from joblib import dump
 import json
+import torch
 import argparse
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Process some strings.")
-parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM50", "BLOSUM62"]')
+parser.add_argument('--encoder', type=str, default='esm1v', help='choose encoding method amino acid sequences ["esm1v", "esm2"]')
 args = parser.parse_args()
 
 # arguments
@@ -19,6 +21,7 @@ encoding_type = args.encoder
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
+representations_path = os.path.join(script_path, f'representations/{encoding_type}')
 
 train_plots_path = os.path.join(script_path, 'plots/train')
 results_plots_path = os.path.join(script_path, 'plots/results')
@@ -37,18 +40,9 @@ test_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/test')
 
 names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
-# pick encoder
-if encoding_type == 'OHE':
-    min_val, max_val = (0, 1)
-    encoder = torch_tools.one_hot_encoder
-if encoding_type == 'BLOSUM50':
-    min_val, max_val = (-5.0, 15.0)
-    encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM50')
-if encoding_type == 'BLOSUM62':
-    min_val, max_val = (-4.0, 11.0)
-    encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM62')
-
 for name in names:
+    rep_path = os.path.join(representations_path, name)
+    
     # define model name for saving
     model_name = name + f'_svr_{encoding_type}'
     
@@ -59,26 +53,21 @@ for name in names:
     
     # Combine train and validation sets for grid search
     train_val_df = pd.concat([train_df, val_df])
+
+    # mutants
+    train_val_mutants = [n + '.pt' for n in train_val_df['mutant'].to_list()]
+    test_mutants = [n + '.pt' for n in test_df['mutant'].to_list()]
+
+    # load embeddings
+    _, train_val_tensors = io_tools.embeddings.load_embeddings(path=rep_path, names=train_val_mutants)
+    _, test_tensors = io_tools.embeddings.load_embeddings(path=rep_path, names=test_mutants)
     
     # Split features and targets
-    X_train_val = train_val_df['mutated_sequence'].to_list()
+    X_train_val = torch.stack(train_val_tensors).cpu().numpy()
     y_train_val = train_val_df['y'].to_list()
-    X_test = test_df['mutated_sequence'].to_list()
+    X_test = torch.stack(test_tensors).cpu().numpy()
     y_test = test_df['y'].to_list()
-    
-    # to numpy arra
-    X_train_val = encoder(X_train_val).numpy()
-    X_test = encoder(X_test).numpy()
-    
-    # flatten X
-    X_train_val = X_train_val.reshape(X_train_val.shape[0], -1)
-    X_test = X_test.reshape(X_test.shape[0], -1)
-    
-    # Scale X from 1 to 0
-    if min_val != 0 and max_val != 1:
-        X_train_val = (X_train_val - min_val) / (max_val - min_val)
-        X_test = (X_test - min_val) / (max_val - min_val)
-    
+
     # Initialize and train the SVR model using grid search
     print(f"Training {model_name} model...")
     best_model, test_r2, corr_coef, p_value, cv_results_df, best_params_ = sklearn_tools.svr_grid_search(
