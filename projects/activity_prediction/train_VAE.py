@@ -14,7 +14,7 @@ import argparse
 # Argument parsing
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
-parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--z_dim', type=int, default=64)
 parser.add_argument('--dropout_p', type=float, default=0.0)
 parser.add_argument('--hidden_layers', type=str, default='2048,1024,256', help='Comma-separated list of hidden layer sizes')
