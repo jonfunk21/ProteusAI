@@ -53,6 +53,7 @@ for dataset in mutant_datasets:
     df = pd.read_csv(df_path)
     dataset = VAEDataset(df, encoding_type=encoding_type)
     data = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    mutants = df['mutant'].to_list()
 
     # Assuming each sequence in the dataset is one-hot encoded and is of shape (seq_len, alphabet_size)
     seq_len, alphabet_size = data.dataset[0].shape
@@ -69,5 +70,6 @@ for dataset in mutant_datasets:
             
             # Save the VAE representation for each sequence in the batch
             for j, rep in enumerate(vae_representation):
-                seq_rep_path = os.path.join(study_path, f'{i * batch_size + j}.pt')
+                mutant_name = mutants[i * batch_size + j]
+                seq_rep_path = os.path.join(study_path, f'{mutant_name}.pt')
                 torch.save(rep, seq_rep_path)
