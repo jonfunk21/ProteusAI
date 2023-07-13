@@ -62,7 +62,7 @@ names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
 for name in names:
     # define model name for saving
-    model_name = name + f'_{esm_model}_regressor'
+    model_name = name + f'_{esm_model}_FFNN'
     
     # Load training, validation, and test sets
     train_df = pd.read_csv(os.path.join(train_dir, name + '.csv'))

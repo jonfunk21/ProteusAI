@@ -46,7 +46,7 @@ if encoding_type == 'BLOSUM62':
 
 for name in names:
     # define model name for saving
-    model_name = name + '_svr_regressor'
+    model_name = name + f'_svr_{encoding_type}'
     
     # Load training, validation, and test sets
     train_df = pd.read_csv(os.path.join(train_dir, name + '.csv'))
@@ -89,13 +89,13 @@ for name in names:
     predictions = best_model.predict(X_test)
 
     # plot best predictions
-    sklearn_tools.plot_predictions_vs_groundtruth(y_test, predictions, fname=f'{results_plots_path}/{name}_{encoding_type}_pred_vs_true.png')
+    sklearn_tools.plot_predictions_vs_groundtruth(y_test, predictions, fname=f'{results_plots_path}/{model_name}_pred_vs_true.png')
 
     # Save the best model to a file
-    dump(best_model, f'{checkpoints_path}/{name}_{encoding_type}_best_model.joblib')
+    dump(best_model, f'{checkpoints_path}/{model_name}_best_model.joblib')
 
     # Save the best parameters to a JSON file
-    with open(f'{results_path}/{name}_{encoding_type}_best_params.json', 'w') as f:
+    with open(f'{results_path}/{model_name}_best_params.json', 'w') as f:
         json.dump(best_params_, f)
 
     # save results
