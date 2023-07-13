@@ -43,19 +43,49 @@ pip install "fair-esm[esmfold]"
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 
-cd ~/projects/proteusAI/projects/zero_shot
-python3 zero_shot_computation.py
+
+# Zero shot computation
+#cd ~/projects/proteusAI/projects/zero_shot
+
+#python3 zero_shot_computation.py                                                       <-- Done
 
 #remove esm model after zero-shot
-rm -f ~/.cache/torch/hub/checkpoints/*
+#rm -f ~/.cache/torch/hub/checkpoints/*                                                 <-- Done
 
+# Activity prediction
 cd ~/projects/proteusAI/projects/activity_prediction
-#python3 prepare_datasets.py
-#python3 compute_representations.py --model esm1v
-#python3 compute_representations.py --model esm2
-#python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints
-#python3 train_sklearn_regressor.py --encoder OHE
-python3 train_esm_regressor.py --model esm1v --epochs 5000 --save_checkpoints
-python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints
-python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints
-python3 train_esm_regressor.py --model esm2 --epochs 5000 --save_checkpoints
+
+# precompute
+#python3 prepare_datasets.py                                                            <-- Done
+#python3 compute_representations.py --model esm1v                                       <-- Done
+#python3 compute_representations.py --model esm2                                        <-- Done
+
+#rm -f ~/.cache/torch/hub/checkpoints/*
+
+# train VAEs
+#python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     <-- Done
+#python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                <-- Done
+#python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
+
+# compute VAE embeddings
+python3 compute_VAE_representations
+
+# train regressors                                     
+#python3 train_SVR.py --encoder OHE                                                 <-- Done
+#python3 train_SVR.py --encoder BLOSUM50                                            <-- TODO: run
+#python3 train_SVR.py --encoder BLOSUM62                                            <-- TODO: run
+#python3 train_SVR.py --encoder esm1v                                               <-- TODO: implement
+#python3 train_SVR.py --encoder esm2                                                <-- TODO: implement
+#python3 train_SVR.py --encoder OHE_VAE                                             <-- TODO: implement
+#python3 train_SVR.py --encoder BLOSUM50_VAE                                        <-- TODO: implement
+#python3 train_SVR.py --encoder BLOSUM62_VAE                                        <-- TODO: implement
+
+# train FFNN
+#python3 train_esm_FFNN.py --model esm1v --epochs 5000 --save_checkpoints          <-- Done
+#python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           <-- TODO: run
+#python3 train_esm_FFNN.py --model OHE --epochs 5000 --save_checkpoints            <-- TODO: implement
+#python3 train_esm_FFNN.py --model BLOSUM50 --epochs 5000 --save_checkpoints       <-- TODO: implement
+#python3 train_esm_FFNN.py --model BLOSUM62 --epochs 5000 --save_checkpoints       <-- TODO: implement
+#python3 train_esm_FFNN.py --model OHE_VAE --epochs 5000 --save_checkpoints        <-- TODO: implement
+#python3 train_esm_FFNN.py --model BLOSUM50_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
+#python3 train_esm_FFNN.py --model BLOSUM62_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
