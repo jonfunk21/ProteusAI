@@ -17,8 +17,8 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o test.out
-#BSUB -e test.err
+#BSUB -o vae.out
+#BSUB -e vae.err
 
 # here follow the commands you want to execute
 module load cuda/11.7
@@ -64,8 +64,8 @@ cd ~/projects/proteusAI/projects/activity_prediction
 
 # train VAEs
 #python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     <-- Done
-#python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                <-- Done
-#python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
+python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                #<-- Rerun with proper normalization
+python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                #<-- Rerun with proper normalization
 
 # compute VAE embeddings
 #python3 compute_VAE_representations.py --encoder OHE                               <-- takes to much space                 
@@ -74,17 +74,17 @@ cd ~/projects/proteusAI/projects/activity_prediction
 
 # train regressors                                     
 #python3 train_SVR.py --encoder OHE                                                 <-- Done
-#python3 train_SVR.py --encoder BLOSUM50                                            #<-- Running...
-#python3 train_SVR.py --encoder BLOSUM62                                            #<-- Running...
-#python3 train_SVR_esm.py --encoder esm1v                                           #<-- Running...
-#python3 train_SVR_esm.py --encoder esm2                                            #<-- Running...
-#python3 train_SVR.py --encoder OHE_VAE                                             <-- TODO: implement
-#python3 train_SVR.py --encoder BLOSUM50_VAE                                        <-- TODO: implement
-#python3 train_SVR.py --encoder BLOSUM62_VAE                                        <-- TODO: implement
+#python3 train_SVR.py --encoder BLOSUM50                                            <-- Done (maybe recompute)
+#python3 train_SVR.py --encoder BLOSUM62                                            <-- Done (maybe recompute)
+#python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
+#python3 train_SVR_esm.py --encoder esm2                                            <-- Done
+python3 train_SVR_VAE.py --encoder OHE                                              #<-- TODO: run
+python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- TODO: run
+python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- TODO: run
 
 # train FFNN
 #python3 train_esm_FFNN.py --model esm1v --epochs 5000 --save_checkpoints          <-- Done
-python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           #<-- Running...
+#python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           <-- Done
 #python3 train_esm_FFNN.py --model OHE --epochs 5000 --save_checkpoints            <-- TODO: implement
 #python3 train_esm_FFNN.py --model BLOSUM50 --epochs 5000 --save_checkpoints       <-- TODO: implement
 #python3 train_esm_FFNN.py --model BLOSUM62 --epochs 5000 --save_checkpoints       <-- TODO: implement
