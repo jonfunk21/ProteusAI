@@ -45,6 +45,13 @@ class VAEDataset(Dataset):
 
         assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
 
+        if encoding_type == 'OHE':
+            self.encoder = torch_tools.one_hot_encoder
+        if encoding_type == 'BLOSUM50':
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM50')
+        if encoding_type == 'BLOSUM62':
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM62')
+
     def __len__(self):
         return len(self.data)
 
