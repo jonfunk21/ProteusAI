@@ -11,7 +11,6 @@ import sys
 sys.path.insert(0, '../../src')
 import proteusAI.ml_tools.torch_tools as torch_tools
 from models import Autoencoders
-from utils import VAEDataset
 from torch.utils.data import DataLoader
 from torch.nn.functional import softmax
 
