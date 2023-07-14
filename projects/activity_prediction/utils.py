@@ -10,6 +10,10 @@ import pandas as pd
 import sys
 sys.path.insert(0, '../../src')
 import proteusAI.ml_tools.torch_tools as torch_tools
+from models import Autoencoders
+from utils import VAEDataset
+from torch.utils.data import DataLoader
+from torch.nn.functional import softmax
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 train_plots_path = os.path.join(script_path, 'plots/train')
@@ -32,22 +36,15 @@ class RegDataset(Dataset):
         y = torch.tensor(self.data['y'].iloc[index], dtype=torch.float32).to(self.device)
         return x, y
 
+# TODO: implement VAEDataset_finetune
+# TODO: create custom datasets for OHE and BLOSUM encoding
+
 class VAEDataset(Dataset):
     def __init__(self, data, encoding_type='OHE'):
         self.data = data
         self.encoding_type = encoding_type
 
         assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
-
-        if encoding_type == 'OHE':
-            self.min_val, self.max_val = (0, 1)
-            self.encoder = torch_tools.one_hot_encoder
-        if encoding_type == 'BLOSUM50':
-            self.min_val, self.max_val = (-5.0, 15.0)
-            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM50')
-        if encoding_type == 'BLOSUM62':
-            self.min_val, self.max_val = (-4.0, 11.0)
-            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM62')
 
     def __len__(self):
         return len(self.data)
@@ -58,12 +55,10 @@ class VAEDataset(Dataset):
         # Encode the sequence using the assigned encoder
         x = self.encoder(sequence)
 
-        if self.min_val != 0 and self.max_val != 1:
-            x = (x - self.min_val) / (self.max_val - self.min_val)
+        if self.encoding_type != 'OHE':
+            x = softmax(x, dim=-1)
 
         return x
-    
-# TODO: create custom datasets for OHE and BLOSUM encoding
     
 def criterion(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
@@ -272,3 +267,24 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
         plt.show()
 
     return predictions
+
+def compute_VAE_embeddings(df, encoding_type, hidden_layers, z_dim, dropout_p, batch_size, model_name):
+    dataset = VAEDataset(df, encoding_type=encoding_type)
+    data = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    mutants = df['mutant'].to_list()
+
+    # Assuming each sequence in the dataset is one-hot encoded and is of shape (seq_len, alphabet_size)
+    seq_len, alphabet_size = data.dataset[0].shape
+
+    # Load the pretrained weights for this study and encoding type
+    model = Autoencoders.VAE(input_dim = seq_len * alphabet_size, hidden_dims=hidden_layers, z_dim=z_dim, dropout=dropout_p)
+    model.load_state_dict(torch.load(f'checkpoints/{model_name}.pt'))
+    model.eval()
+
+    embeddings = []
+    with torch.no_grad():
+        for batch in data:
+            batch = batch.view(batch.size(0), -1)
+            vae_representation, _ = model.encoder.forward(batch)
+            embeddings.extend(vae_representation)
+    return embeddings
