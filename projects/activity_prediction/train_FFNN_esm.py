@@ -12,7 +12,7 @@ import argparse
 
 # args
 parser = argparse.ArgumentParser(description='Hyperparameters')
-parser.add_argument('--model', type=str, default='esm1v', help='Choose model either esm2 or esm1v')
+parser.add_argument('--encoder', type=str, default='esm1v', help='Choose encoder model either esm2 or esm1v')
 parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=1000)
 parser.add_argument('--dropout_p', type=float, default=0.1)
@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 # model for embedding computation esm1v or esm2
 model_dim = 1280 # right now all available models have this dim
-esm_model = args.model
+encoder = args.encoder
 hidden_layers = [int(x) for x in args.hidden_layers.split(',')]
 batch_size = args.batch_size
 epochs = args.epochs
@@ -41,7 +41,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
-representations_path = os.path.join(script_path, f'representations/{esm_model}')
+representations_path = os.path.join(script_path, f'representations/{encoder}')
 
 train_plots_path = os.path.join(script_path, 'plots/train')
 results_plots_path = os.path.join(script_path, 'plots/results')
@@ -62,7 +62,7 @@ names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
 for name in names:
     # define model name for saving
-    model_name = name + f'_{esm_model}_FFNN'
+    model_name = name + f'_FFNN_{encoder}'
     
     # Load training, validation, and test sets
     train_df = pd.read_csv(os.path.join(train_dir, name + '.csv'))

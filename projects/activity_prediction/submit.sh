@@ -78,16 +78,16 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 train_SVR.py --encoder BLOSUM62                                            <-- Done (maybe recompute)
 #python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
 #python3 train_SVR_esm.py --encoder esm2                                            <-- Done
-python3 train_SVR_VAE.py --encoder OHE                                              #<-- Running...
-python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- Running...
-python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- Running...
+#python3 train_SVR_VAE.py --encoder OHE                                              <-- Done
+#python3 train_SVR_VAE.py --encoder BLOSUM50                                         <-- Done
+#python3 train_SVR_VAE.py --encoder BLOSUM62                                         <-- Done
 
 # train FFNN
-#python3 train_esm_FFNN.py --model esm1v --epochs 5000 --save_checkpoints          <-- Done
-#python3 train_esm_FFNN.py --model esm2 --epochs 5000 --save_checkpoints           <-- Done
-#python3 train_esm_FFNN.py --model OHE --epochs 5000 --save_checkpoints            <-- TODO: implement
-#python3 train_esm_FFNN.py --model BLOSUM50 --epochs 5000 --save_checkpoints       <-- TODO: implement
-#python3 train_esm_FFNN.py --model BLOSUM62 --epochs 5000 --save_checkpoints       <-- TODO: implement
-#python3 train_esm_FFNN.py --model OHE_VAE --epochs 5000 --save_checkpoints        <-- TODO: implement
-#python3 train_esm_FFNN.py --model BLOSUM50_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
-#python3 train_esm_FFNN.py --model BLOSUM62_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
+#python3 train_FFNN_esm.py --encoder esm1v --epochs 5000 --save_checkpoints          <-- Done
+#python3 train_FFNN_esm.py --encoder esm2 --epochs 5000 --save_checkpoints           <-- Done
+#python3 train_FFNN.py --encoder OHE --epochs 5000 --save_checkpoints            <-- TODO: implement
+#python3 train_FFNN.py --encoder BLOSUM50 --epochs 5000 --save_checkpoints       <-- TODO: implement
+#python3 train_FFNN.py --encoder BLOSUM62 --epochs 5000 --save_checkpoints       <-- TODO: implement
+#python3 train_FFNN_VAE.py --encoder OHE_VAE --epochs 5000 --save_checkpoints        <-- TODO: implement
+#python3 train_FFNN_VAE.py --encoder BLOSUM50_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
+#python3 train_FFNN_VAE.py --encoder BLOSUM62_VAE --epochs 5000 --save_checkpoints   <-- TODO: implement
