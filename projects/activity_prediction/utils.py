@@ -200,10 +200,7 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
             if vae != None:
                 with torch.no_grad():
                     batch, _ = vae.encoder.forward(batch)
-                    print(batch.shape)
-                    asdf
                         
-
             optimizer.zero_grad()
             outputs = model(batch).squeeze(1)
             loss = criterion(outputs, targets)
