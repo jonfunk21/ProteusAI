@@ -64,8 +64,8 @@ cd ~/projects/proteusAI/projects/activity_prediction
 
 # train VAEs
 #python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     <-- Done
-python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                #<-- Rerun with proper normalization
-python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                #<-- Rerun with proper normalization
+#python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                <-- Done
+#python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
 
 # compute VAE embeddings
 #python3 compute_VAE_representations.py --encoder OHE                               <-- takes to much space                 
@@ -78,9 +78,9 @@ python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints         
 #python3 train_SVR.py --encoder BLOSUM62                                            <-- Done (maybe recompute)
 #python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
 #python3 train_SVR_esm.py --encoder esm2                                            <-- Done
-python3 train_SVR_VAE.py --encoder OHE                                              #<-- TODO: run
-python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- TODO: run
-python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- TODO: run
+python3 train_SVR_VAE.py --encoder OHE                                              #<-- Running...
+python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- Running...
+python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- Running...
 
 # train FFNN
 #python3 train_esm_FFNN.py --model esm1v --epochs 5000 --save_checkpoints          <-- Done
