@@ -182,7 +182,7 @@ def train_vae(train_data, val_data, model, optimizer, criterion, scheduler, epoc
 def train_regression(train_data, val_data, model, optimizer, criterion, scheduler, epochs, 
                      device, model_name, verbose=False, script_path=script_path, 
                      plots_path=train_plots_path, checkpoints_path=checkpoints_path,
-                     save_checkpoints=False):
+                     save_checkpoints=False, vae=None):
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
@@ -196,6 +196,13 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
             # Move the batch tensors to the right device
             batch = batch.to(device)
             targets = targets.to(device)
+            
+            if vae != None:
+                with torch.no_grad():
+                    batch, _ = vae.encoder.forward(batch)
+                    print(batch.shape)
+                    asdf
+                        
 
             optimizer.zero_grad()
             outputs = model(batch).squeeze(1)
@@ -220,6 +227,11 @@ def train_regression(train_data, val_data, model, optimizer, criterion, schedule
             num_examples = 0
             for batch, targets in val_data:
                 batch = batch.to(device)
+
+                if vae != None:
+                    with torch.no_grad():
+                        batch, _ = vae.encoder.forward(batch)
+
                 targets = targets.to(device)
                 outputs = model(batch).squeeze(1)
                 loss = criterion(outputs, targets)
