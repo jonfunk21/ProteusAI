@@ -63,7 +63,7 @@ names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 
 for name in names:
     # define model name for saving
-    model_name = name + f'_FFNN_{encoding_type}'
+    model_name = name + f'_FFNN_VAE_{encoding_type}'
     VAE_name = name + f'_{encoding_type}_VAE'
     
     # Load training, validation, and test sets

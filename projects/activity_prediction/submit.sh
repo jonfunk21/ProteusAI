@@ -88,6 +88,6 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 train_FFNN.py --encoder OHE --epochs 5000 --save_checkpoints            #<-- Running...
 #python3 train_FFNN.py --encoder BLOSUM50 --epochs 5000 --save_checkpoints       #<-- Running...
 #python3 train_FFNN.py --encoder BLOSUM62 --epochs 5000 --save_checkpoints       #<-- Running...
-python3 train_FFNN_VAE.py --encoder OHE_VAE --epochs 5000 --save_checkpoints        #<-- TODO: run
-python3 train_FFNN_VAE.py --encoder BLOSUM50_VAE --epochs 5000 --save_checkpoints   #<-- TODO: run
-python3 train_FFNN_VAE.py --encoder BLOSUM62_VAE --epochs 5000 --save_checkpoints   #<-- TODO: run
+python3 train_FFNN_VAE.py --encoder OHE --epochs 5000 --save_checkpoints        #<-- TODO: run
+python3 train_FFNN_VAE.py --encoder BLOSUM50 --epochs 5000 --save_checkpoints   #<-- TODO: run
+python3 train_FFNN_VAE.py --encoder BLOSUM62 --epochs 5000 --save_checkpoints   #<-- TODO: run
