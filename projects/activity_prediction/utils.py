@@ -63,7 +63,10 @@ class FFNNDataset2(Dataset):
         if self.encoding_type != 'OHE':
             x = softmax(x, dim=-1)
 
-        return x.view(x.size(0), -1), y
+        # flatten
+        x = x.view(-1)
+        
+        return x, y
     
 # TODO: implement VAEDataset_finetune
 # TODO: create custom datasets for OHE and BLOSUM encoding
