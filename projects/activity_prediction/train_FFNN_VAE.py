@@ -83,7 +83,7 @@ for name in names:
     vae_dim = len(train_data.dataset[0][0])
 
     # load VAE
-    vae = Autoencoders.VAE(input_dim = vae_dim, hidden_dims=hidden_layers, z_dim=z_dim, dropout=dropout_p)
+    vae = Autoencoders.VAE(input_dim = vae_dim, hidden_dims=hidden_layers, z_dim=z_dim, dropout=dropout_p).to(device)
     vae.load_state_dict(torch.load(f'checkpoints/{VAE_name}.pt'))
     vae.eval()
 
