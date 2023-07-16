@@ -18,7 +18,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 train_plots_path = os.path.join(script_path, 'plots/train')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 
-class RegDataset(Dataset):
+class FFNNDataset(Dataset):
     def __init__(self, data: pd.DataFrame, data_path: str):
         self.data = data
         self.data_path = data_path
@@ -35,6 +35,35 @@ class RegDataset(Dataset):
         y = torch.tensor(self.data['y'].iloc[index], dtype=torch.float32).to(self.device)
         return x, y
 
+class FFNNDataset2(Dataset):
+    def __init__(self, data, encoding_type='OHE'):
+        self.data = data
+        self.encoding_type = encoding_type
+
+        assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
+
+        if encoding_type == 'OHE':
+            self.encoder = torch_tools.one_hot_encoder
+        if encoding_type == 'BLOSUM50':
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM50')
+        if encoding_type == 'BLOSUM62':
+            self.encoder = lambda x: torch_tools.blosum_encoding(x, matrix='BLOSUM62')
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        sequence = self.data['mutated_sequence'].iloc[index]
+
+        # Encode the sequence using the assigned encoder
+        x = self.encoder(sequence)
+        y = torch.tensor(self.data['y'].iloc[index], dtype=torch.float32).to(self.device)
+
+        if self.encoding_type != 'OHE':
+            x = softmax(x, dim=-1)
+
+        return x.view(x.size(0), -1), y
+    
 # TODO: implement VAEDataset_finetune
 # TODO: create custom datasets for OHE and BLOSUM encoding
 
