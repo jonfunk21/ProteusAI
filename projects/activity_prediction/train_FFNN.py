@@ -80,7 +80,7 @@ for name in names:
     test_data = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # deterimine input size
-    seq_len, alphabet_size = train_data.dataset[0].shape
+    seq_len, alphabet_size = train_data.dataset[0][0].shape
     
     # Initialize model, optimizer and epochs
     model = Regressors.FFNN(input_dim=seq_len * alphabet_size, hidden_layers=hidden_layers, output_dim=1, dropout_p=dropout_p).to(device)
