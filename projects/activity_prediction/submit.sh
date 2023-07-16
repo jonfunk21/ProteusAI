@@ -17,8 +17,8 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o vae.out
-#BSUB -e vae.err
+#BSUB -o test.out
+#BSUB -e test.err
 
 # here follow the commands you want to execute
 module load cuda/11.7

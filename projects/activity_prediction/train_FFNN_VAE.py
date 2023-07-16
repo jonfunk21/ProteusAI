@@ -84,7 +84,7 @@ for name in names:
 
     # load VAE
     vae = Autoencoders.VAE(input_dim = vae_dim, hidden_dims=hidden_layers, z_dim=z_dim, dropout=dropout_p)
-    vae.load_state_dict(torch.load(f'checkpoints/{VAE_name}.pt', map_location='cpu'))
+    vae.load_state_dict(torch.load(f'checkpoints/{VAE_name}.pt'))
     vae.eval()
 
     # Initialize model, optimizer and epochs
