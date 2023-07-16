@@ -39,6 +39,7 @@ class FFNNDataset2(Dataset):
     def __init__(self, data, encoding_type='OHE'):
         self.data = data
         self.encoding_type = encoding_type
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         assert encoding_type in ['OHE', 'BLOSUM50', 'BLOSUM62']
 
@@ -56,7 +57,7 @@ class FFNNDataset2(Dataset):
         sequence = self.data['mutated_sequence'].iloc[index]
 
         # Encode the sequence using the assigned encoder
-        x = self.encoder(sequence)
+        x = self.encoder(sequence).to(self.device)
         y = torch.tensor(self.data['y'].iloc[index], dtype=torch.float32).to(self.device)
 
         if self.encoding_type != 'OHE':
