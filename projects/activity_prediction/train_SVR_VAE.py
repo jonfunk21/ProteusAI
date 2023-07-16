@@ -49,6 +49,7 @@ names = [f.split('.')[0] for f in os.listdir(train_dir) if f.endswith('.csv')]
 for name in names:
     # define model name for saving
     model_name = name + f'_svr_{encoding_type}'
+    VAE_name = name + f'_{encoding_type}_VAE'
     
     # Load training, validation, and test sets
     train_df = pd.read_csv(os.path.join(train_dir, name + '.csv'))
@@ -63,8 +64,8 @@ for name in names:
     test_mutants = [n + '.pt' for n in test_df['mutant'].to_list()]
 
     # load embeddings
-    train_val_tensors = compute_VAE_embeddings(train_val_df, encoding_type, hidden_layers, z_dim, dropout_p, batch_size, model_name)
-    test_tensors = compute_VAE_embeddings(test_df, encoding_type, hidden_layers, z_dim, dropout_p, batch_size, model_name)
+    train_val_tensors = compute_VAE_embeddings(train_val_df, encoding_type, hidden_layers, z_dim, dropout_p, batch_size, VAE_name)
+    test_tensors = compute_VAE_embeddings(test_df, encoding_type, hidden_layers, z_dim, dropout_p, batch_size, VAE_name)
     
     # Split features and targets
     X_train_val = torch.stack(train_val_tensors).cpu().numpy()
