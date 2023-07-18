@@ -286,7 +286,7 @@ def plot_predictions_vs_groundtruth(val_data, model, device, fname=None):
 
     with torch.no_grad(): # No need to track gradients
         for batch, targets in val_data:
-            batch = batch.to(device)
+            batch = batch.to(device).view(batch.size(0), -1)
             targets = targets.to(device)
             
             # Obtain model predictions
