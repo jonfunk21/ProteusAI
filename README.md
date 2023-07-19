@@ -12,7 +12,7 @@ ProteusAI is primarily powered by [PyTorch](https://pytorch.org/get-started/loca
 [scikit-learn](https://scikit-learn.org/stable/), 
 and [ESM](https://github.com/facebookresearch/esm) protein language models. 
 
-# Getting started
+## Getting started
 
 ----
 
