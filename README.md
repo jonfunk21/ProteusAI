@@ -23,9 +23,7 @@ conda create -n proteusAI python=3.8
 conda activate proteusAI
 ```
 
-and these core packages:
-
-Install [PyTorch](https://pytorch.org/get-started/locally/) based on your system, then install:
+Install [PyTorch](https://pytorch.org/get-started/locally/) based on your system, and these core packages:
 
 ```
 # basic stuff
