@@ -1,69 +1,94 @@
+
+![ProteusAI_overview](https://github.com/jonfunk21/ProteusAI/assets/74795032/f1b7e628-726b-412f-9794-28dc12997940)
+
+
 # ProteusAI
-ProteusAI is a library for the machine learning driven engineering of proteins. 
-The library enables workflows from protein structure prediction, prediction of 
-mutational effects to protein ligand interactions powered by artificial intelligence. 
-The goal is to provide state of the art machine learning models in a central library.
+ProteusAI is a library for machine learning-guided protein design and engineering. 
+The library enables workflows from protein structure prediction, the prediction of 
+mutational effects-, and zero-shot prediction of mutational effects.
+The goal is to provide state-of-the-art machine learning for protein engineering in a central library.
 
-# Setting up your environment required for DiffDock
+ProteusAI is primarily powered by [PyTorch](https://pytorch.org/get-started/locally/), 
+[scikit-learn](https://scikit-learn.org/stable/), 
+and [ESM](https://github.com/facebookresearch/esm) protein language models. 
 
-----
-
-```
-git clone https://github.com/gcorso/DiffDock.git
-```
-## GPU available
-```
-conda create --name proteusAI python=3.8
-conda activate proteusAI
-conda install pytorch pytorch-cuda=11.7 -c pytorch -c nvidia
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
-```
-
-## CPU only 
-```
-conda create --name proteusAI python=3.8
-conda activate proteusAI
-conda install pytorch -c pytorch
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cpu.html
-python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
-```
-
-# Install ESM
+# Getting started
 
 ----
 
+To get started you can create a conda environment or install all libraries via pip:
+
 ```
-pip install fair-esm  # latest release, OR:
-pip install git+https://github.com/facebookresearch/esm.git  # bleeding edge, current repo main branch
+conda create -n proteusAI python=3.8
+conda activate proteusAI
 ```
 
-## ESM fold
+and these core packages:
 
+Install [PyTorch](https://pytorch.org/get-started/locally/) based on your system, then install:
+
+```
+# basic stuff
+pip install pandas
+pip install numpy
+
+# additional requirements
+pip install biopython
+pip install biotite
+
+# ML toolkit
+pip install -U scikit-learn
+
+# visualization
+pip install matplotlib
+pip install seaborn
+```
+either through pip or conda.
+
+## LLM
+
+----
+
+If you want to use large language models by Meta you should install the following:
+
+```
+pip install fair-esm
+```
+
+Or this, if you also want to use ESM-fold (You should really have a good GPU for that).
 ```
 pip install "fair-esm[esmfold]"
 # OpenFold and its remaining dependency
 pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
-if no GPU available use huggingface 
+
+Optionally you can install jupyter lab or notebooks, if you prefer to work in those:
 
 ```
-pip install "transformers[torch]"
+conda install -c conda-forge jupyter jupyterlab
 ```
 
-# Additional requirements
-
-----
-
+For the visualization of protein structures in jupyter notebooks you can install:
 ```
-conda install -c conda-forge biopython
-conda install -c conda-forge biotite
+conda install -c anaconda ipywidgets
+jupyter nbextension enable --py widgetsnbextension
 conda install -c conda-forge py3dmol
 ```
 
-If you want to run use notebooks, run:
+## External application (MUSCLE for MSA)
 
+----
+
+To run MSA workflows, you need to install the muscle app and download the latest version here: https://github.com/rcedgar/muscle/releases
+if you are on a Mac then move the muscle app to the binary folder, and give it the needed permission:
+
+### On Mac
 ```
-conda install -c conda-forge jupyterlab
+mv /path_to_muscle/muscle<version> /usr/local/bin/muscle
+chmod -x /usr/local/bin/muscle
+```
+and Clustalw for DNA MSAs
+```
+brew install clustal-w
 ```
