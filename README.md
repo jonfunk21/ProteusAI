@@ -1,5 +1,6 @@
 
-![ProteusAI_overview](https://github.com/jonfunk21/ProteusAI/assets/74795032/f1b7e628-726b-412f-9794-28dc12997940)
+![ProteusAI_overview](https://github.com/jonfunk21/ProteusAI/assets/74795032/a2ed8314-ba17-489d-bc76-146ddd51937b)
+
 
 
 # ProteusAI
