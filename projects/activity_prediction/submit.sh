@@ -76,7 +76,7 @@ cd ~/projects/proteusAI/projects/activity_prediction
 python3 train_SVR.py --encoder OHE                                                 #<-- Rerun files have been overwritten
 python3 train_SVR.py --encoder BLOSUM50                                            #<-- Rerun files have been overwritten
 python3 train_SVR.py --encoder BLOSUM62                                            #<-- Rerun files have been overwritten
-python generate_test_results.py
+python3 generate_test_results.py
 #python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
 #python3 train_SVR_esm.py --encoder esm2                                            <-- Done
 #python3 train_SVR_VAE.py --encoder OHE                                              <-- Done
