@@ -17,8 +17,8 @@
 #BSUB -R "rusage[mem=64GB]"
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o test1.out
-#BSUB -e test1.err
+#BSUB -o test.out
+#BSUB -e test.err
 
 # here follow the commands you want to execute
 module load cuda/11.7
@@ -73,9 +73,10 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 compute_VAE_representations.py --encoder BLOSUM62                          <-- takes to much space     
 
 # train regressors                                     
-#python3 train_SVR.py --encoder OHE                                                 <-- Done
-#python3 train_SVR.py --encoder BLOSUM50                                            <-- Done (maybe recompute)
-#python3 train_SVR.py --encoder BLOSUM62                                            <-- Done (maybe recompute)
+python3 train_SVR.py --encoder OHE                                                 #<-- Rerun files have been overwritten
+python3 train_SVR.py --encoder BLOSUM50                                            #<-- Rerun files have been overwritten
+python3 train_SVR.py --encoder BLOSUM62                                            #<-- Rerun files have been overwritten
+python generate_test_results.py
 #python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
 #python3 train_SVR_esm.py --encoder esm2                                            <-- Done
 #python3 train_SVR_VAE.py --encoder OHE                                              <-- Done
