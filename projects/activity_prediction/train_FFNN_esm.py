@@ -69,9 +69,9 @@ for name in names:
     val_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
     test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
     
-    train_dataset = RegDataset(train_df, os.path.join(representations_path, name))
-    val_dataset = RegDataset(val_df, os.path.join(representations_path, name))
-    test_dataset = RegDataset(test_df, os.path.join(representations_path, name))
+    train_dataset = FFNNDataset(train_df, os.path.join(representations_path, name))
+    val_dataset = FFNNDataset(val_df, os.path.join(representations_path, name))
+    test_dataset = FFNNDataset(test_df, os.path.join(representations_path, name))
 
     train_data = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_data = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
