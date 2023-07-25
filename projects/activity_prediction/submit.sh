@@ -63,9 +63,9 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #rm -f ~/.cache/torch/hub/checkpoints/*
 
 # train VAEs
-#python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     <-- Done
-#python3 train_VAE.py --encoder BLOSUM62 --epochs 100 --save_checkpoints                <-- Done
-#python3 train_VAE.py --encoder BLOSUM50 --epochs 100 --save_checkpoints                <-- Done
+#python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     #<-- Done
+python3 train_VAE.py --encoder BLOSUM62 --epochs 500 --save_checkpoints                #<-- Rerunning...
+python3 train_VAE.py --encoder BLOSUM50 --epochs 500 --save_checkpoints                #<-- Rerunning...
 
 # compute VAE embeddings
 #python3 compute_VAE_representations.py --encoder OHE                               <-- takes to much space                 
@@ -83,6 +83,7 @@ python3 train_SVR_VAE.py --encoder OHE                                          
 python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- Rerunning...
 python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- Rerunning...
 python3 generate_test_results.py
+python3 train_VAE.py --encoder OHE --epochs 500 --save_checkpoints                     #<-- Rerunning...
 
 # train FFNN
 #python3 train_FFNN_esm.py --encoder esm1v --epochs 5000 --save_checkpoints          <-- Done
