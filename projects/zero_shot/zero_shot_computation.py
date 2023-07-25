@@ -4,10 +4,12 @@ from proteusAI.ml_tools.esm_tools import *
 import os
 import pandas as pd
 
+model = 'esm2'
+
 # paths
 script_path = os.path.dirname(os.path.realpath(__file__))
-results_path = os.path.join(script_path, 'results')
-plots_path = os.path.join(script_path, 'plots')
+results_path = os.path.join(script_path, f'results/{model}')
+plots_path = os.path.join(script_path, f'plots/{model}')
 DMS_path = os.path.join(script_path, '../data/DMS_enzymes')
 datasets_path = os.path.join(DMS_path, 'datasets')
 
@@ -95,18 +97,18 @@ if __name__ == '__main__':
             os.mkdir(plots_dest)
 
         # compute embeddings
-        results, batch_lens, batch_labels, alphabet = esm_compute([seq])
+        results, batch_lens, batch_labels, alphabet = esm_compute([seq], model=model)
         seq_rep = get_seq_rep(results, batch_lens)
 
         # LLM major computations
         logits, alphabet = get_mutant_logits(seq, batch_size=1)
-        _, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
+        #_, _, pdbs, _, _ = structure_prediction(seqs=[seq], names=[name])
 
         # calculations
         p = get_probability_distribution(logits)
         mmp = masked_marginal_probability(p, seq, alphabet)
         entropy = per_position_entropy(p)
-        pdb = entropy_to_bfactor(pdbs[0], entropy)
+        #pdb = entropy_to_bfactor(pdbs[0], entropy)
 
         # save tensors
         #torch.save(results, os.path.join(dest, f"results.pt"))
@@ -116,8 +118,8 @@ if __name__ == '__main__':
         torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
 
         # save pdb
-        pdb_path = os.path.join(dest, f"{name}.pdb")
-        pdb.write(pdb_path)
+        #pdb_path = os.path.join(dest, f"{name}.pdb")
+        #pdb.write(pdb_path)
 
         # save plots
         plot_per_position_entropy(entropy, seq, show=False, dest=os.path.join(plots_dest, name + '_per_position_entropy'), title=f'Per position entropy of {name}')
