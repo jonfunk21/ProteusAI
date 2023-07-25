@@ -73,15 +73,16 @@ cd ~/projects/proteusAI/projects/activity_prediction
 #python3 compute_VAE_representations.py --encoder BLOSUM62                          <-- takes to much space     
 
 # train regressors                                     
-python3 train_SVR.py --encoder OHE                                                 #<-- Rerun files have been overwritten
-python3 train_SVR.py --encoder BLOSUM50                                            #<-- Rerun files have been overwritten
-python3 train_SVR.py --encoder BLOSUM62                                            #<-- Rerun files have been overwritten
-python3 generate_test_results.py
+#python3 train_SVR.py --encoder OHE                                                 #<-- Done
+#python3 train_SVR.py --encoder BLOSUM50                                            #<-- Done
+#python3 train_SVR.py --encoder BLOSUM62                                            #<-- Done
+
 #python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
 #python3 train_SVR_esm.py --encoder esm2                                            <-- Done
-#python3 train_SVR_VAE.py --encoder OHE                                              <-- Done
-#python3 train_SVR_VAE.py --encoder BLOSUM50                                         <-- Done
-#python3 train_SVR_VAE.py --encoder BLOSUM62                                         <-- Done
+python3 train_SVR_VAE.py --encoder OHE                                              #<-- Rerunning...
+python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- Rerunning...
+python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- Rerunning...
+python3 generate_test_results.py
 
 # train FFNN
 #python3 train_FFNN_esm.py --encoder esm1v --epochs 5000 --save_checkpoints          <-- Done

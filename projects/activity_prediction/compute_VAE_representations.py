@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader
 # Argument parsing
 parser = argparse.ArgumentParser(description="Process some strings.")
 parser.add_argument('--encoder', type=str, default='OHE', help='choose encoding method amino acid sequences ["OHE", "BLOSUM62", "BLOSUM50"]')
-parser.add_argument('--hidden_layers', type=str, default='2048,1024,256', help='Comma-separated list of hidden layer sizes')
-parser.add_argument('--z_dim', type=int, default=64)
+parser.add_argument('--hidden_layers', type=str, default='4096,2048,1024,256', help='Comma-separated list of hidden layer sizes')
+parser.add_argument('--z_dim', type=int, default=128)
 parser.add_argument('--dropout_p', type=float, default=0.0)
 args = parser.parse_args()
 
