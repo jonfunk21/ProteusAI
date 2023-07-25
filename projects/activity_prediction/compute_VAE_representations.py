@@ -19,6 +19,7 @@ dropout_p = args.dropout_p
 hidden_layers = [int(x) for x in args.hidden_layers.split(',')]
 z_dim = args.z_dim
 batch_size = 256
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # encoding type ohe, BLOSUM62 or BLOSUM50
 encoding_type = args.encoder
@@ -60,7 +61,7 @@ for dataset in mutant_datasets:
 
     # Load the pretrained weights for this study and encoding type
     model = Autoencoders.VAE(input_dim = seq_len * alphabet_size, hidden_dims=hidden_layers, z_dim=z_dim, dropout=dropout_p)
-    model.load_state_dict(torch.load(f'checkpoints/{model_name}.pt'))
+    model.load_state_dict(torch.load(f'checkpoints/{model_name}.pt', map_location=device))
     model.eval()
 
     with torch.no_grad():
