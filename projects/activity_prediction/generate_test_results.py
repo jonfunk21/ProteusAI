@@ -9,6 +9,13 @@ import proteusAI.io_tools as io_tools
 from joblib import load
 import json
 import torch
+from utils import compute_VAE_embeddings
+
+# Initialize your VAE settings:
+hidden_layers = [2048, 1024, 256]
+z_dim = 64
+dropout_p = 0.0
+batch_size = 256
 
 # script path
 script_path = os.path.dirname(os.path.realpath(__file__))
@@ -59,6 +66,32 @@ for encoding_type in encoding_types:
             test_df['predictions'] = predictions
             test_df.to_csv(f'{predictions_path}/{model_name}_predictions.csv', index=False)
 
+    elif encoding_type in ['VAE_OHE', 'VAE_BLOSUM50', 'VAE_BLOSUM62']:
+        encoding_type_VAE = encoding_type.split('_')[1]
+
+        for name in names:
+            # define model name for loading
+            model_name = name + f'_svr_{encoding_type}'
+
+            # Load test set
+            test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
+
+            # Compute VAE embeddings
+            test_tensors = compute_VAE_embeddings(test_df, encoding_type_VAE, hidden_layers, z_dim, dropout_p, batch_size, name + f'_{encoding_type}_VAE')
+
+            # Prepare test features
+            X_test = torch.stack(test_tensors).cpu().numpy()
+
+            # Load the best model from a file
+            best_model = load(f'{checkpoints_path}/{model_name}_best_model.joblib')
+
+            # Predict on the test set
+            predictions = best_model.predict(X_test)
+
+            # Append predictions to test_df and save
+            test_df['predictions'] = predictions
+            test_df.to_csv(f'{predictions_path}/{model_name}_predictions.csv', index=False)
+    
     else:
         representations_path = os.path.join(script_path, f'representations/{encoding_type}')
 
