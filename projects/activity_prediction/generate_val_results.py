@@ -23,14 +23,14 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 results_plots_path = os.path.join(script_path, 'plots/results')
 checkpoints_path = os.path.join(script_path, 'checkpoints')
 results_path = os.path.join(script_path, 'results')
-predictions_path = os.path.join(script_path, 'test_prediction')
+predictions_path = os.path.join(script_path, 'val_prediction')
 os.makedirs(results_plots_path, exist_ok=True)
 os.makedirs(predictions_path, exist_ok=True)
 
 # Test data path
-test_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/test')
+val_dir = os.path.join(script_path, '../data/DMS_enzymes/datasets/validate')
 
-names = [f.split('.')[0] for f in os.listdir(test_dir) if f.endswith('.csv')]
+names = [f.split('.')[0] for f in os.listdir(val_dir) if f.endswith('.csv')]
 
 # List of encoding types
 encoding_types = ['OHE', 'BLOSUM50', 'BLOSUM62', 'esm1v', 'esm2']
@@ -50,7 +50,7 @@ for encoding_type in encoding_types:
             model_name = name + f'_svr_{encoding_type}'
             
             # Load test set
-            test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
+            test_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
             
             # Prepare test features
             X_test = encoder(test_df['mutated_sequence'].to_list()).numpy()
@@ -74,7 +74,7 @@ for encoding_type in encoding_types:
             model_name = name + f'_svr_{encoding_type}'
 
             # Load test set
-            test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
+            test_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
 
             # Compute VAE embeddings
             test_tensors = compute_VAE_embeddings(test_df, encoding_type_VAE, hidden_layers, z_dim, dropout_p, batch_size, name + f'_{encoding_type}_VAE')
@@ -102,7 +102,7 @@ for encoding_type in encoding_types:
             model_name = name + f'_svr_{encoding_type}'
             
             # Load test set
-            test_df = pd.read_csv(os.path.join(test_dir, name + '.csv'))
+            test_df = pd.read_csv(os.path.join(val_dir, name + '.csv'))
             
             # mutants
             test_mutants = [n + '.pt' for n in test_df['mutant'].to_list()]
