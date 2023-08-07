@@ -45,52 +45,45 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 
 # Zero shot computation
-#cd ~/projects/proteusAI/projects/zero_shot
+cd ~/projects/proteusAI/projects/zero_shot
 
-#python3 zero_shot_computation.py                                                       <-- Done
+python3 zero_shot_computation.py                                                    
 
 #remove esm model after zero-shot
-#rm -f ~/.cache/torch/hub/checkpoints/*                                                 <-- Done
+rm -f ~/.cache/torch/hub/checkpoints/*                                                 
 
 # Activity prediction
 cd ~/projects/proteusAI/projects/activity_prediction
 
 # precompute
-#python3 prepare_datasets.py                                                            <-- Done
-#python3 compute_representations.py --model esm1v                                       <-- Done
-#python3 compute_representations.py --model esm2                                        <-- Done
+python3 prepare_datasets.py                                                            
+python3 compute_representations.py --model esm1v                                      
+python3 compute_representations.py --model esm2                                        
 
 #rm -f ~/.cache/torch/hub/checkpoints/*
 
 # train VAEs
-#python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                     #<-- Done
-python3 train_VAE.py --encoder BLOSUM62 --epochs 500 --save_checkpoints                #<-- Rerunning...
-python3 train_VAE.py --encoder BLOSUM50 --epochs 500 --save_checkpoints                #<-- Rerunning...
+python3 train_VAE.py --encoder OHE --epochs 100 --save_checkpoints                    
+python3 train_VAE.py --encoder BLOSUM62 --epochs 500 --save_checkpoints                
+python3 train_VAE.py --encoder BLOSUM50 --epochs 500 --save_checkpoints               
 
 # compute VAE embeddings
-#python3 compute_VAE_representations.py --encoder OHE                               <-- takes to much space                 
-#python3 compute_VAE_representations.py --encoder BLOSUM50                          <-- takes to much space     
-#python3 compute_VAE_representations.py --encoder BLOSUM62                          <-- takes to much space     
+python3 compute_VAE_representations.py --encoder OHE                                         
+python3 compute_VAE_representations.py --encoder BLOSUM50                          
+python3 compute_VAE_representations.py --encoder BLOSUM62                          
 
 # train regressors                                     
-#python3 train_SVR.py --encoder OHE                                                 #<-- Done
-#python3 train_SVR.py --encoder BLOSUM50                                            #<-- Done
-#python3 train_SVR.py --encoder BLOSUM62                                            #<-- Done
+python3 train_SVR.py --encoder OHE                                                
+python3 train_SVR.py --encoder BLOSUM50                                            
+python3 train_SVR.py --encoder BLOSUM62                                            
 
-#python3 train_SVR_esm.py --encoder esm1v                                           <-- Done
-#python3 train_SVR_esm.py --encoder esm2                                            <-- Done
-#python3 train_SVR_VAE.py --encoder OHE                                              #<-- Done
-python3 train_SVR_VAE.py --encoder BLOSUM50                                         #<-- Rerunning...
-python3 train_SVR_VAE.py --encoder BLOSUM62                                         #<-- Rerunning...
-python3 generate_test_results.py
-
-# moved to weird place
-python3 train_VAE.py --encoder OHE --epochs 500 --save_checkpoints                     #<-- Rerunning...
-python3 train_SVR_VAE.py --encoder OHE                                              #<-- Rerunning...
+python3 train_SVR_esm.py --encoder esm1v                                           
+python3 train_SVR_esm.py --encoder esm2                                            
+python3 train_SVR_VAE.py --encoder OHE                                                                                 
 
 # train FFNN
-#python3 train_FFNN_esm.py --encoder esm1v --epochs 5000 --save_checkpoints          <-- Done
-#python3 train_FFNN_esm.py --encoder esm2 --epochs 5000 --save_checkpoints           <-- Done
+python3 train_FFNN_esm.py --encoder esm1v --epochs 5000 --save_checkpoints      
+python3 train_FFNN_esm.py --encoder esm2 --epochs 5000 --save_checkpoints        
 #python3 train_FFNN.py --encoder OHE --epochs 3000 --save_checkpoints            #<-- Aborted takes to long
 #python3 train_FFNN.py --encoder BLOSUM50 --epochs 3000 --save_checkpoints       #<-- Aborted takes to long
 #python3 train_FFNN.py --encoder BLOSUM62 --epochs 3000 --save_checkpoints       #<-- Aborted takes to long
