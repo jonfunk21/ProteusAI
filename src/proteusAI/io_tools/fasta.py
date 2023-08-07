@@ -8,7 +8,7 @@ import os
 from biotite.sequence import ProteinSequence
 import numpy as np
 
-def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False) -> tuple:
+def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False) -> dict:
     """
     Loads all fasta files from a directory, returns the names/ids and sequences as lists.
 
