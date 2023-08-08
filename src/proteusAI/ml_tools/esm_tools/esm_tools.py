@@ -488,7 +488,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     return pdb
 
 # Visualization
-def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b", highlight_positions: dict=None):
+def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, remove_tokens: bool=False, show: bool=True, color_sheme: str="b", highlight_positions: dict=None, section=None):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
@@ -500,6 +500,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         title (str): title of plot
         remove_tokens (bool): Remove start of sequence and end of sequence tokens
         show (bool): Display plot if True (default: True)
+        section (tuple): section which should be shown in the plot - low and high end of sequence to be displayed. show entire sequence if None
 
     Returns:
         None
@@ -519,6 +520,15 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     # Remove the start and end of sequence tokens
     if remove_tokens:
         probability_distribution_np = probability_distribution_np[1:-1, :]
+        
+    # make sure section is in range of sequence
+    if section != None:
+        seq_len = probability_distribution_np.shape[0]
+        print(seq_len)
+        assert section[0] < seq_len & section[1] < seq_len
+        assert section[0] < section[1]
+        
+        probability_distribution_np = probability_distribution_np[section[0]:section[1],:]
 
     # If no characters are specified, include only amino acids by default
     if include == "canonical":
@@ -551,9 +561,14 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         cmap = "Blues"
 
     # Create a heatmap using seaborn
-    plt.figure(figsize=(20, 6))
+    plt.figure(figsize=(12, 6))
     ax = plt.gca()
     sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax)
+    
+    # Adjust x-axis ticks and labels if 'section' is specified
+    if section is not None:
+        ax.set_xticks(np.arange(0, section[1] - section[0] + 1, max(1, (section[1] - section[0]) // 10)))
+        ax.set_xticklabels(np.arange(section[0], section[1] + 1, max(1, (section[1] - section[0]) // 10)))
 
     # Highlight the mutated positions with a green box
     if highlight_positions is not None:
