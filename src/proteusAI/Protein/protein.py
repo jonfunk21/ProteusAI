@@ -21,26 +21,26 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: str = None, seq: str = None, rep: Union[list, tuple] = [], rep_path: str = None):
+    def __init__(self, name: str = None, seq: str = None, reps: Union[list, tuple] = [], rep_path: str = None):
         """
         Initialize a new protein object.
 
         Args:
             name (str): Name/id of the protein.
             seq (str): Protein sequence.
-            rep (list): List of available representations.
+            reps (list): List of available representations.
             rep_path (str): Path to representations directory. Default './rep/'.
         """
 
         # assertions and checks
         assert isinstance(name, (str, type(None)))
         assert isinstance(seq, (str, type(None)))
-        assert isinstance(rep, (list, tuple))
+        assert isinstance(reps, (list, tuple))
         assert isinstance(rep_path, (str, type(None)))
 
         self.name = name
         self.seq = seq
-        self.rep = list(rep)
+        self.reps = list(reps)
         
         # If path is not provided, use the directory of the calling script
         if rep_path is None:
@@ -57,7 +57,7 @@ class Protein:
         return os.path.abspath(caller_path)
 
     def __str__(self):
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.rep}"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}"
     
     __repr__ = __str__
 
@@ -142,14 +142,14 @@ class Protein:
 
     # For rep
     @property
-    def rep(self):
-        return self._rep
+    def reps(self):
+        return self._reps
 
-    @rep.setter
-    def rep(self, value):
+    @reps.setter
+    def reps(self, value):
         if not isinstance(value, (list, tuple)) and value is not None:
             raise TypeError(f"Expected 'rep' to be of type 'list' or 'tuple', but got '{type(value).__name__}'")
-        self._rep = list(value)
+        self._reps = list(value)
 
     # For path
     @property
