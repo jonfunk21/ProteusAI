@@ -10,7 +10,8 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
 from proteusAI.Protein.protein import Protein
-from proteusAI.Library.esm_tools import *
+import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
+import proteusAI.io_tools as io_tools
 import pandas as pd
 from typing import Union, Optional
 
@@ -85,6 +86,7 @@ class Library:
 
         print('Done!')
 
+    ### IO ###
     def load_library(self):
         """
         Load an existing library.
@@ -124,12 +126,12 @@ class Library:
         print("Loading done!")
 
 
-    def read_data(self, data: str, seqs: str, y: str, y_type: str='num', names: str = None, sheet: Optional[str] = None):
+    def read_data(self, data: str, seqs: str = None, y: str = None, y_type: str='num', names: str = None, sheet: Optional[str] = None):
         """
-        Reads data from a CSV or Excel file and populates the Library object.
+        Reads data from a CSV, Excel, or FASTA file and populates the Library object.
 
         Args:
-            data (str): Path to the data file (CSV or Excel).
+            data (str): Path to the data file. Tabular data or fasta
             seqs (str): Column name for sequences in the data file.
             y (str): Column name for y values in the data file.
             y_type (str): Type of y values ('class' or 'num').
@@ -139,6 +141,26 @@ class Library:
         # Determine file type based on extension
         file_ext = os.path.splitext(data)[1].lower()
 
+        if file_ext in ['.xlsx', '.xls', '.csv']:
+            self._read_tabular_data(data, seqs, y, y_type, names, sheet, file_ext)
+        elif file_ext == '.fasta':
+            self._read_fasta(data)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
+
+    def _read_tabular_data(self, data: str, seqs: str, y: str, y_type: str, names: str, sheet: Optional[str], file_ext: str = None):
+        """
+        Reads data from a CSV, Excel, and populates the Library object. Called by read_data
+
+            Args:
+                data (str): Path to the data file.
+                seqs (str): Column name for sequences in the data file.
+                y (str): Column name for y values in the data file.
+                y_type (str): Type of y values ('class' or 'num').
+                names (str, optional): Column name for sequence names in the data file.
+                sheet (str, optional): Name of the Excel sheet to read.
+                file_ext (str): file extension
+        """
         if file_ext in ['.xlsx', '.xls']:
             if sheet is None:
                 df = pd.read_excel(data)
@@ -154,7 +176,8 @@ class Library:
             raise ValueError("The provided column names do not match the columns in the data file.")
 
         self.seqs = df[seqs].tolist()
-        self.y = df[y].tolist()
+        if y is not None:
+            self.y = df[y].tolist()
 
         # If names are not provided, generate dummy names
         if names not in df.columns:
@@ -165,21 +188,69 @@ class Library:
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
 
-        # check for available representations, store in protein object if representation is found
-        print(self.reps)
+        self._check_reps()
+
+
+    def _read_fasta(self, data):
+        """
+        Read fasta file and create protein objects.
+
+        Args:
+            data (str): Path to data.
+        """
+        names, sequences = io_tools.fasta.load_fasta(data)
+        self.names = names
+        self.seqs = sequences
+
+        # Create protein objects from names and sequences
+        self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+
+        self._check_reps()
+
+
+    def _check_reps(self):
+        """
+        Check for available representations, store in protein object if representation is found
+        """
+        
         if len(self.reps) > 0:
             for rep in self.reps:
+                computed = 0
                 rep_path = os.path.join(self.project, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
                 for protein in self.proteins:
                     f_name = protein.name + '.pt'
                     if f_name in rep_names:
-                        protein._rep.append(rep)
+                        protein._reps.append(rep)
+                        computed += 1
                     proteins.append(protein)
 
                 self.proteins = proteins
+            print(f"{round(computed/len(self.proteins)*100,2)}% of {rep} computed.")
+
+    ### Utility ###
+    def rename_proteins(self, new_names: Union[list, tuple]):
+        """
+        Renames all proteins in the Library object with provided names.
+
+        Args:
+            new_names (list or tuple): List of new protein names.
+        """
+        
+        if len(new_names) != len(self.proteins):
+            raise ValueError(f"Number of provided names ({len(new_names)}) does not match number of proteins in the library ({len(self.proteins)}).")
+
+        # Update names of Protein objects and in the self.names list
+        for protein, new_name in zip(self.proteins, new_names):
+            protein.name = new_name
+
+        self.names = new_names
+
+        self._check_reps()
+
     
+    ### Representation builders ###
     def compute(self, method: str, model = None, batch_size: int = 1):
         """
         Compute representations for proteins.
@@ -216,9 +287,9 @@ class Library:
         seqs = [protein.seq for protein in proteins_to_compute]
         
         # compute representations
-        batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size)
+        esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size)
 
         
         for protein in proteins_to_compute:
-            if model not in protein.refs:
-                protein.refs.append(model)
+            if model not in protein.reps:
+                protein.reps.append(model)
