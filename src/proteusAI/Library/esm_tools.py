@@ -33,7 +33,7 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
     """
     Compute the of esm_tools models for a list of sequences.
 
-    Parameters:
+    Args:
         seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence.
         names (list, default None): list of names/labels for protein sequences.
             If None sequences will be named seq1, seq2, ...
@@ -144,7 +144,7 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
-    Parameters:
+    Args:
         seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence
         names (list, default None): list of names/labels for protein sequences
         fasta_path (str): path to fasta file.
@@ -182,7 +182,7 @@ def mask_positions(sequence: str, mask_char: str='<mask>'):
     """
     Mask every position of an amino acid sequence. Returns list of masked sequence:
 
-    Parameters:
+    Args:
         sequence (str): Amino acid sequence
         mask_char (str): Character used for masking (default: <mask>)
 
@@ -210,7 +210,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     combined logits tensor, which will be returned together with the alphabet.
     Keep in mind: the returned logits have start of sequence and end of sequence tokens attached
 
-    Parameters:
+    Args:
         seq (str): native protein sequence
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
@@ -249,7 +249,7 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
     """
     Get the masked marginal probabilities for every mutation vs the wildtype.
 
-    Parameters:
+    Args:
         p (torch.Tensor): probability distribution.
         wt_seq (str): wildtype sequence
         alphabet (esm.data.Alphabet): alphabet
@@ -297,7 +297,7 @@ def most_likely_sequence(log_prob_tensor, alphabet):
     """
     Get the most likely amino acid sequence based on log probabilities.
 
-    Parameters:
+    Args:
         log_prob_tensor (torch.Tensor): Tensor of shape (1, sequence_length, alphabet_size) containing log probabilities
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
 
@@ -329,7 +329,7 @@ def find_mutations(native_seq, predicted_seq):
     """
     Find the mutations between the native protein sequence and the predicted most likely sequence.
 
-    Parameters:
+    Args:
         native_seq (str): Native protein sequence
         predicted_seq (str): Predicted most likely protein sequence
 
@@ -389,7 +389,7 @@ def structure_prediction(
     """
     Predict the structure of proteins.
 
-    Parameters:
+    Args:
         sequences (list): all sequences for structure prediction
         names (list): names of the sequences
         chunck_size (int): Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). Recommended values: 128, 64, 32.
@@ -433,7 +433,7 @@ def format_float(float_value: float, str_len: int=5, round_val: int=2):
     """
     Format a float value to a string of length 5, rounded to two decimal places.
 
-    Parameters:
+    Args:
         float_value (float): The float value to format
 
     Returns:
@@ -449,7 +449,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     """
     Convert per-position entropy values to b-factors between 0 and 100.
 
-    Parameters:
+    Args:
         entropy_values (list or numpy.ndarray): List of entropy values
         trim (bool): If True, remove the start and end of sequence tokens (default: False)
 
@@ -489,7 +489,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
 
-    Parameters:
+    Args:
         p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
         include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
@@ -593,7 +593,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     """
     Plot the per position entropy for a given sequence.
 
-    Parameters:
+    Args:
         per_position_entropy (torch.Tensor): Tensor of per position entropy values with shape (batch_size, sequence_length).
         sequence (str): Protein sequence.
         highlight_positions (list): List of positions to highlight in red (0-indexed) (default: None).
