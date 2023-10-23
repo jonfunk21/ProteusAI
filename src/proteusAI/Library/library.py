@@ -10,6 +10,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
 from proteusAI.Protein.protein import Protein
+from proteusAI.Library.esm_tools import *
 import pandas as pd
 from typing import Union, Optional
 
@@ -38,6 +39,7 @@ class Library:
             overwrite (bool): Allow to overwrite files if True.
             names (list): List of protein names.
             seqs (list): List of sequences as strings.
+            proteins (Protein, optional): List of proteusAI protein objects.
             y (list): List of y values.
             y_type: Type of y values class ('class') or numeric ('num') 
         """
@@ -51,14 +53,12 @@ class Library:
         # handle case if library does not exist
         if not os.path.exists(self.project):
             self.initialize_library()
-            
 
         # if the library already exists
         else:
             # load existing information
             print(f"Library {project} already exists. Loading existing library...")
-            #load_library()
-            print('Done!')
+            self.load_library()
 
     def initialize_library(self):
         """
@@ -115,10 +115,10 @@ class Library:
         # Check for representations
         rep_path = os.path.join(self.project, 'rep')
         if os.path.exists(rep_path):
-            for rep_type in Library.representation_types:
+            for rep_type in self.representation_types:
                 rep_type_path = os.path.join(rep_path, rep_type)
                 if os.path.exists(rep_type_path):
-                    self.reps.append(rep_type_path)
+                    self.reps.append(rep_type)
                     print(f"- Found representations of type '{rep_type}' in 'rep/{rep_type}'.")
 
         print("Loading done!")
@@ -166,26 +166,59 @@ class Library:
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
 
         # check for available representations, store in protein object if representation is found
+        print(self.reps)
         if len(self.reps) > 0:
             for rep in self.reps:
-                rep_path = os.path.join(self.project, 'rep')
+                rep_path = os.path.join(self.project, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
                 for protein in self.proteins:
-                    f_name = Protein.name + '.pt'
+                    f_name = protein.name + '.pt'
                     if f_name in rep_names:
                         protein._rep.append(rep)
+                    proteins.append(protein)
 
                 self.proteins = proteins
     
-    def compute(self, method: str, model = None):
+    def compute(self, method: str, model = None, batch_size: int = 1):
         """
         Compute representations for proteins.
 
         Args:
             method (str): Method for computing representation
+            batch_size (int, optional): Batch size for representation computation.
         """
         
+        assert method in self.representation_types, f"'{method}' is not a supported method"
+        assert isinstance(batch_size, (int, type(None)))
+
+        if method in ["esm2", "esm1v"]:
+            self.esm_builder(model=method, batch_size=batch_size)
+    
+    def esm_builder(self, model: str="esm2", batch_size: int=1):
+        """
+        Computes esm representations.
+
+        Args:
+            model (str): Supports esm2 and esm1v.
+            batch_size (int): Batch size for computation.
+        """
+
+        dest = os.path.join(self.project, f"rep/{model}")
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        # Filtering out proteins that have already computed representations
+        proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+
+        # get names for and sequences for computation
+        names = [protein.name for protein in proteins_to_compute]
+        seqs = [protein.seq for protein in proteins_to_compute]
         
+        # compute representations
+        batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size)
+
         
-        
+        for protein in proteins_to_compute:
+            if model not in protein.refs:
+                protein.refs.append(model)
