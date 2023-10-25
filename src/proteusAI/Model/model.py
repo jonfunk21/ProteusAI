@@ -40,10 +40,7 @@ class Model:
     _sklearn_models = ['rf', 'knn', 'svm', 'ffnn']
     _in_memory_representations = ['ohe', 'blosum50', 'blosum62']
     
-    def __init__(self,library: Library = None, model_type: str = 'rf', x: str = 'ohe', split: str = 'random',
-                 k_folds: int = None, grid_search: bool = False, custom_params: dict = None,
-                 custom_model: torch.nn.Module = None, optim: str = 'adam', lr: float = 10e-4, seed: int = 21
-            ):
+    def __init__(self, **kwargs):
         """
         Initialize a new model.
 
@@ -62,34 +59,47 @@ class Model:
             seed (int): random seed. Default 21.
         """
         self.model = None
-        self.library = library
-        self.model_type = model_type
-        self.x = x
-        self.split = split
-        self.k_folds = k_folds
-        self.grid_search = grid_search
-        self.custom_params = custom_params
-        self.custom_model = custom_model
-        self.optim = optim
-        self.lr = lr
-        self.seed = seed
-
-        # Attributes
         self.train_data = None
         self.test_data = None
         self.val_data = None
+
+        # Set attributes using the provided kwargs
+        self._set_attributes(**kwargs)
+
+        # Determine if the task is a classification or regression task
+        if self.library is not None:
+            self.y_type = self.library.y_type
+
+    
+    ### args
+    def _set_attributes(self, **kwargs):
+        defaults = {
+            'library': None,
+            'model_type': 'rf',
+            'x': 'ohe',
+            'split': 'random',
+            'k_folds': None,
+            'grid_search': False,
+            'custom_params': None,
+            'custom_model': None,
+            'optim': 'adam',
+            'lr': 10e-4,
+            'seed': 21
+        }
         
-        # determine if the task is a classification or regression task
-        if library is not None:
-            self.y_type = library.y_type
+        # Update defaults with provided keyword arguments
+        defaults.update(kwargs)
+
+        for key, value in defaults.items():
+            setattr(self, key, value)
         
 
-    def train(self, library: Library = None, model_type: str = 'rf', x: str = 'ohe', split: str = 'random',
-                 k_folds: int = None, grid_search: bool = False, custom_params: dict = None,
-                 custom_model: torch.nn.Module = None, optim: str = 'adam', lr: float = 10e-4, seed: int = 21):
+    def train(self, **kwargs):
         """
         Train the model.
         """
+        # Update attributes if new values are provided
+        self._set_attributes(**kwargs)
 
         # split data
         self.train_data, self.test_data, self.val_data = self.split_data()
@@ -151,10 +161,10 @@ class Model:
             list: List of representations.
         """
 
-        rep_path = os.path.join(self.library._rep_path, self.x)
-        names = [protein.name for protein in proteins]
+        rep_path = os.path.join(self.library.project, f"rep/{self.x}")
+        file_names = [protein.name + ".pt" for protein in proteins]
 
-        _, reps = io_tools.load_embeddings(names=names)
+        _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
 
         return reps
     
@@ -201,9 +211,10 @@ class Model:
         x_test = torch.stack(test).cpu().numpy()
         x_val = torch.stack(val).cpu().numpy()
 
-        y_train = [protein.y for protein in train]
-        y_test = [protein.y for protein in test]
-        y_val = [protein.y for protein in val]
+        # test test test
+        y_train = [protein.y for protein in self.train_data]
+        y_test = [protein.y for protein in self.test_data]
+        y_val = [protein.y for protein in self.val_data]
 
         if self.k_folds is None:
             self.model.fit(x_train, y_train)
