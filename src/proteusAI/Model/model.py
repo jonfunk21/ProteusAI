@@ -211,7 +211,6 @@ class Model:
         x_test = torch.stack(test).cpu().numpy()
         x_val = torch.stack(val).cpu().numpy()
 
-        # test test test
         y_train = [protein.y for protein in self.train_data]
         y_test = [protein.y for protein in self.test_data]
         y_val = [protein.y for protein in self.val_data]
