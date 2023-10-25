@@ -32,7 +32,7 @@ class Library:
     representation_types = ['esm1v', 'esm2', 'vae']
     _allowed_y_types = ['class', 'num']
 
-    def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y: Union[list, tuple] = [], y_type: str = None):
+    def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y_type: str = None):
         """
         Initialize a new library.
 
@@ -42,7 +42,6 @@ class Library:
             names (list): List of protein names.
             seqs (list): List of sequences as strings.
             proteins (Protein, optional): List of proteusAI protein objects.
-            y (list): List of y values.
             y_type: Type of y values class ('class') or numeric ('num') 
         """
         self.project = project
@@ -191,7 +190,6 @@ class Library:
 
         self.seqs = df[seqs].tolist()
         if y is not None:
-            self.y = y
             ys = df[y].tolist()
 
             # Create protein objects from names and sequences
@@ -262,6 +260,21 @@ class Library:
         self.names = new_names
 
         self._check_reps()
+
+    
+    def set_y_values(self, y_values: list):
+        """
+        Sets the y values for all proteins.
+
+        Args:
+            y_values (list): List of y values.
+        """
+
+        if len(y_values) != len(self.proteins):
+            raise ValueError(f"Number of provided y values ({len(y_values)}) does not match number of proteins in the library ({len(self.proteins)}).")
+
+        for protein, y_value in zip(self.proteins, y_values):
+            protein.y = y_value
 
     
     ### Representation builders ###
