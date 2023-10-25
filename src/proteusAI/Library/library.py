@@ -30,6 +30,8 @@ class Library:
         proteins (list): List of proteins.
     """
     representation_types = ['esm1v', 'esm2', 'vae']
+    _allowed_y_types = ['class', 'num']
+    _rep_path = None
 
     def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y: Union[list, tuple] = [], y_type: str = None):
         """
@@ -50,6 +52,10 @@ class Library:
         self.names = names
         self.seqs = seqs
         self.reps = []
+        self.y_type = y_type
+        self._rep_path = os.path.join(project, 'rep')
+        
+        assert y_type in self._allowed_y_types
         
         # handle case if library does not exist
         if not os.path.exists(self.project):
@@ -216,7 +222,7 @@ class Library:
         if len(self.reps) > 0:
             for rep in self.reps:
                 computed = 0
-                rep_path = os.path.join(self.project, f"rep/{rep}")
+                rep_path = self._rep_path
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
                 for protein in self.proteins:
@@ -275,7 +281,7 @@ class Library:
             batch_size (int): Batch size for computation.
         """
 
-        dest = os.path.join(self.project, f"rep/{model}")
+        dest = os.path.join(self._rep_path, model)
         if not os.path.exists(dest):
             os.makedirs(dest)
 
