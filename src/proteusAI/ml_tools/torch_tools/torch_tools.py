@@ -1,6 +1,9 @@
 import torch
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from typing import Union
 
 def one_hot_encoder(sequences, alphabet=None, canonical=True):
     """
@@ -134,3 +137,33 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
         tensor = tensor.squeeze(0)
 
     return tensor
+
+
+def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]):
+    """
+    Plot the attention weights for a specific layer and head.
+    
+    Args:
+        attention (list): List of attention weights from the model
+        layer (int): Index of the layer to visualize
+        head (int): Index of the head to visualize
+        seq (str): Input sequence as a list of tokens
+    """
+
+    if seq == type(str):
+        seq = [char for char in seq]
+
+    # Get the attention weights for the specified layer and head
+    attn_weights = attention[layer][head].detach().cpu().numpy()
+
+    # Create a heatmap using seaborn
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(attn_weights, xticklabels=seq, yticklabels=seq, cmap="viridis")
+
+    # Set plot title and labels
+    plt.title(f'Attention weights - Layer {layer + 1}, Head {head + 1}')
+    plt.xlabel('Input tokens')
+    plt.ylabel('Output tokens')
+
+    # Show the plot
+    plt.show()

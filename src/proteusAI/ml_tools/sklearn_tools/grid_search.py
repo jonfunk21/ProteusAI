@@ -201,28 +201,3 @@ def plot_predictions_vs_groundtruth(y_true, y_pred, fname=None):
         plt.show()
 
     return y_pred
-    
-
-def plot_attention(attention, layer, head, sequence):
-    """
-    Plot the attention weights for a specific layer and head.
-
-    :param attention: List of attention weights from the model
-    :param layer: Index of the layer to visualize
-    :param head: Index of the head to visualize
-    :param sequence: Input sequence as a list of tokens
-    """
-    # Get the attention weights for the specified layer and head
-    attn_weights = attention[layer][head].detach().cpu().numpy()
-
-    # Create a heatmap using seaborn
-    plt.figure(figsize=(10, 10))
-    sns.heatmap(attn_weights, xticklabels=sequence, yticklabels=sequence, cmap="viridis")
-
-    # Set plot title and labels
-    plt.title(f'Attention weights - Layer {layer + 1}, Head {head + 1}')
-    plt.xlabel('Input tokens')
-    plt.ylabel('Output tokens')
-
-    # Show the plot
-    plt.show()
