@@ -21,7 +21,7 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: str = None, seq: str = None, reps: Union[list, tuple] = [], rep_path: str = None):
+    def __init__(self, name: str = None, seq: str = None, reps: Union[list, tuple] = [], rep_path: str = None, y = None):
         """
         Initialize a new protein object.
 
@@ -30,6 +30,7 @@ class Protein:
             seq (str): Protein sequence.
             reps (list): List of available representations.
             rep_path (str): Path to representations directory. Default './rep/'.
+            y (float, int, str): Label for the protein.
         """
 
         # assertions and checks
@@ -41,6 +42,7 @@ class Protein:
         self.name = name
         self.seq = seq
         self.reps = list(reps)
+        self.y = y
         
         # If path is not provided, use the directory of the calling script
         if rep_path is None:
@@ -57,7 +59,7 @@ class Protein:
         return os.path.abspath(caller_path)
 
     def __str__(self):
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny\t{self.y}"
     
     __repr__ = __str__
 
@@ -161,3 +163,14 @@ class Protein:
         if not isinstance(value, str) and value is not None:
             raise TypeError(f"Expected 'path' to be of type 'str', but got '{type(value).__name__}'")
         self._path = value
+
+    # For y
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        if not isinstance(value, (str, int, float)) and value is not None:
+            raise TypeError(f"Expected 'rep' to be of type 'int', 'float', or 'str', but got '{type(value).__name__}'")
+        self._y = value

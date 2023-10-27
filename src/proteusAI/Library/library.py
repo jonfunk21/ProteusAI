@@ -30,8 +30,9 @@ class Library:
         proteins (list): List of proteins.
     """
     representation_types = ['esm1v', 'esm2', 'vae']
+    _allowed_y_types = ['class', 'num']
 
-    def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y: Union[list, tuple] = [], y_type: str = None):
+    def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y_type: str = None):
         """
         Initialize a new library.
 
@@ -41,7 +42,6 @@ class Library:
             names (list): List of protein names.
             seqs (list): List of sequences as strings.
             proteins (Protein, optional): List of proteusAI protein objects.
-            y (list): List of y values.
             y_type: Type of y values class ('class') or numeric ('num') 
         """
         self.project = project
@@ -50,6 +50,7 @@ class Library:
         self.names = names
         self.seqs = seqs
         self.reps = []
+        self.y_type = y_type  
         
         # handle case if library does not exist
         if not os.path.exists(self.project):
@@ -138,6 +139,10 @@ class Library:
             names (str, optional): Column name for sequence names in the data file.
             sheet (str, optional): Name of the Excel sheet to read.
         """
+
+        assert y_type in self._allowed_y_types
+        self.y_type = y_type
+        
         # Determine file type based on extension
         file_ext = os.path.splitext(data)[1].lower()
 
@@ -175,9 +180,7 @@ class Library:
         if seqs not in df.columns or y not in df.columns:
             raise ValueError("The provided column names do not match the columns in the data file.")
 
-        self.seqs = df[seqs].tolist()
-        if y is not None:
-            self.y = df[y].tolist()
+        
 
         # If names are not provided, generate dummy names
         if names not in df.columns:
@@ -185,8 +188,17 @@ class Library:
         else:
             self.names = df[names].tolist()
 
-        # Create protein objects from names and sequences
-        self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+        self.seqs = df[seqs].tolist()
+        if y is not None:
+            ys = df[y].tolist()
+
+            # Create protein objects from names and sequences
+            self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, ys)]
+
+        else:
+            # Create protein objects from names and sequences
+            self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+
 
         self._check_reps()
 
@@ -248,6 +260,21 @@ class Library:
         self.names = new_names
 
         self._check_reps()
+
+    
+    def set_y_values(self, y_values: list):
+        """
+        Sets the y values for all proteins.
+
+        Args:
+            y_values (list): List of y values.
+        """
+
+        if len(y_values) != len(self.proteins):
+            raise ValueError(f"Number of provided y values ({len(y_values)}) does not match number of proteins in the library ({len(self.proteins)}).")
+
+        for protein, y_value in zip(self.proteins, y_values):
+            protein.y = y_value
 
     
     ### Representation builders ###
