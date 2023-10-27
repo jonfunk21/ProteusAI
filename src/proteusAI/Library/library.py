@@ -32,7 +32,8 @@ class Library:
     representation_types = ['esm1v', 'esm2', 'vae']
     _allowed_y_types = ['class', 'num']
 
-    def __init__(self, project: str, overwrite: bool = False, names: Union[list, tuple] = [], seqs: Union[list, tuple] = [], proteins: Union[list, tuple] = [], y_type: str = None):
+    def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
+                 proteins: list = [], y_type: Union[str, None] = None):
         """
         Initialize a new library.
 
@@ -127,7 +128,8 @@ class Library:
         print("Loading done!")
 
 
-    def read_data(self, data: str, seqs: str = None, y: str = None, y_type: str='num', names: str = None, sheet: Optional[str] = None):
+    def read_data(self, data: str, seqs: str, y: Union[str, None] = None, y_type: str='num', 
+                  names: Union[str, None] = None, sheet: Optional[str] = None):
         """
         Reads data from a CSV, Excel, or FASTA file and populates the Library object.
 
@@ -147,13 +149,14 @@ class Library:
         file_ext = os.path.splitext(data)[1].lower()
 
         if file_ext in ['.xlsx', '.xls', '.csv']:
-            self._read_tabular_data(data, seqs, y, y_type, names, sheet, file_ext)
+            self._read_tabular_data(data=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
         elif file_ext == '.fasta':
             self._read_fasta(data)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-    def _read_tabular_data(self, data: str, seqs: str, y: str, y_type: str, names: str, sheet: Optional[str], file_ext: str = None):
+    def _read_tabular_data(self, data: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
+                           names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None):
         """
         Reads data from a CSV, Excel, and populates the Library object. Called by read_data
 
@@ -226,8 +229,9 @@ class Library:
         """
         
         if len(self.reps) > 0:
+            computed = 0
+            rep = None
             for rep in self.reps:
-                computed = 0
                 rep_path = os.path.join(self.project, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]

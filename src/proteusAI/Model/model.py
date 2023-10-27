@@ -16,6 +16,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 import random
+from typing import Union
 
 class Model:
     """
@@ -37,9 +38,9 @@ class Model:
         seed (int): random seed. Default 21.
         test_true (list): List of true values of the test dataset.
         test_predictions (list): Predicted values of the test dataset.
+        test_r2 (float): R-squared value of the model on the test set.
         val_true (list): List of true values of the validation dataset.
         val_predictions (list): Predicted values of the validation dataset.
-        test_r2 (float): R-squared value of the model on the test set.
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
@@ -65,15 +66,15 @@ class Model:
             seed (int): random seed. Default 21.
         """
         self.model = None
-        self.train_data = None
-        self.test_data = None
-        self.val_data = None
-        self.test_true = None
-        self.test_predictions = None
-        self.val_true = None
-        self.val_predictions = None
-        self.test_r2 = None
-        self.val_r2 = None
+        self.train_data = []
+        self.test_data = []
+        self.val_data = []
+        self.test_true = []
+        self.test_predictions = []
+        self.val_true = []
+        self.val_predictions = []
+        self.test_r2 = []
+        self.val_r2 = []
 
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
@@ -148,6 +149,7 @@ class Model:
         train_size = int(0.80 * len(proteins))
         test_size = int(0.10 * len(proteins))
 
+        train_data, test_data, val_data = [], [], []
         if self.split == 'random':
             random.shuffle(proteins)
             # Split the data
@@ -162,7 +164,7 @@ class Model:
         return train_data, test_data, val_data
     
 
-    def load_representations(self, proteins: list, rep_path: str = None):
+    def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
         Loads representations for a list of proteins.
 
@@ -190,6 +192,7 @@ class Model:
         """
 
         model_type = self.model_type
+        model = None
 
         if model_type in self._sklearn_models:
             if model_type in self._sklearn_models:
@@ -217,6 +220,7 @@ class Model:
         """
         Train sklearn models.
         """
+        assert self.model is not None
 
         train = self.load_representations(self.train_data)
         test = self.load_representations(self.test_data)
@@ -293,9 +297,9 @@ class Model:
         return scores
     
 
-    def true_vs_predicted(self, y_true: list, y_pred: list, title: str = None, 
-                          x_label: str = None, y_label: str = None , plot_grid: bool = True, 
-                          file: str = None, show_plot: bool = True):
+    def true_vs_predicted(self, y_true: list, y_pred: list, title: Union[str, None] = None, 
+                          x_label: Union[str, None] = None, y_label: Union[str, None] = None , plot_grid: bool = True, 
+                          file: Union[str, None] = None, show_plot: bool = True):
         """
         Predicts true values versus predicted values.
 

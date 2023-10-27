@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+from typing import Union
 
-def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: str = None, 
-                                    x_label: str = None, y_label: str = None , plot_grid: bool = True, 
-                                    file: str = None, show_plot: bool = True
+def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str, None] = None, 
+                                    x_label: Union[str, None] = None, y_label: Union[str, None] = None , plot_grid: bool = True, 
+                                    file: Union[str, None] = None, show_plot: bool = True
                                     ):
     """
     Plot predicted values versus ground truth.
