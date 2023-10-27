@@ -30,7 +30,7 @@ class Protein:
             seq (str): Protein sequence.
             reps (list): List of available representations.
             rep_path (str): Path to representations directory. Default './rep/'.
-            y (float, int, str): label for the protein.
+            y (float, int, str): Label for the protein.
         """
 
         # assertions and checks
