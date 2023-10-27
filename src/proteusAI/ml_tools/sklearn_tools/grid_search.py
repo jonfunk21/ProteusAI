@@ -11,8 +11,6 @@ from sklearn.neighbors import KNeighborsRegressor
 import pandas as pd
 from sklearn.svm import SVR
 import numpy
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
@@ -177,27 +175,3 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
         print("p-value: {:.4f}".format(p_value))
 
     return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_), grid_search.best_params_
-
-
-def plot_predictions_vs_groundtruth(y_true, y_pred, fname=None):
-    plt.figure(figsize=(10, 5))
-    sns.scatterplot(x=y_true, y=y_pred, alpha=0.5)
-    
-    # Extract model name from fname and use it in the plot title
-    if fname is not None:
-        name = fname.split('/')[-1].split('.')[0].replace('_', ' ')
-        plt.title(f'Predicted vs. True Activity Levels for {name}')
-    else:
-        plt.title('Predicted vs. True Activity Levels')
-        
-    plt.xlabel('True Activity Levels')
-    plt.ylabel('Predicted Activity Levels')
-    plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], color='grey', linestyle='dotted', linewidth=2)  # diagonal line
-    plt.grid(True)
-
-    if fname is not None:
-        plt.savefig(fname)
-    else:
-        plt.show()
-
-    return y_pred
