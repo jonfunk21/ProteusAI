@@ -21,7 +21,7 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: str = None, seq: str = None, reps: Union[list, tuple] = [], rep_path: str = None, y = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], rep_path: Union[str, None] = None, y = None):
         """
         Initialize a new protein object.
 
