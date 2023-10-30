@@ -17,6 +17,9 @@ import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 import random
 from typing import Union
+import json
+from joblib import dump
+import csv
 
 class Model:
     """
@@ -65,7 +68,7 @@ class Model:
             lr (float): Learning rate for training PyTorch models. Default 10e-4.
             seed (int): random seed. Default 21.
         """
-        self.model = None
+        self._model = None
         self.train_data = []
         self.test_data = []
         self.val_data = []
@@ -118,7 +121,7 @@ class Model:
         self.train_data, self.test_data, self.val_data = self.split_data()
 
         # load model
-        self.model = self.load_model()
+        self._model = self.model()
 
         # train
         if self.model_type in self._sklearn_models:
@@ -126,7 +129,7 @@ class Model:
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
-    
+  
     ### Helpers ###
     def split_data(self):
         """
@@ -184,43 +187,52 @@ class Model:
         _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
 
         return reps
-    
 
-    def load_model(self):
+
+    def model(self, **kwargs):
         """
-        Load model according to user specifications.
+        Load or create model according to user specifications and parameters.
+
+        For a complete list and detailed explanation of model parameters, refer to the scikit-learn documentation.
         """
 
         model_type = self.model_type
         model = None
 
+        # Define the path for the params.json and model
+        params_path = f"{self.library.project}/models/{self.model_type}/params.json"
+
+        # Check if params.json exists
+        if not os.path.exists(params_path):
+            os.makedirs(os.path.dirname(params_path), exist_ok=True)
+            with open(params_path, 'w') as f:
+                json.dump(kwargs, f)
+
         if model_type in self._sklearn_models:
-            if model_type in self._sklearn_models:
-                if self.y_type == 'class':
-                    if model_type == 'rf':
-                        model = RandomForestClassifier()
-                    if model_type == 'svm':
-                        model = SVC()  # Support Vector Classifier for classification tasks
-                    if model_type == 'knn':
-                        model = KNeighborsClassifier()
-                elif self.y_type == 'num':
-                    if model_type == 'rf':
-                        model = RandomForestRegressor()
-                    if model_type == 'svm':
-                        model = SVR()  # Support Vector Regressor for regression tasks
-                    if model_type == 'knn':
-                        model = KNeighborsRegressor()
+            if self.y_type == 'class':
+                if model_type == 'rf':
+                    model = RandomForestClassifier(**kwargs)
+                elif model_type == 'svm':
+                    model = SVC(**kwargs)
+                elif model_type == 'knn':
+                    model = KNeighborsClassifier(**kwargs)
+            elif self.y_type == 'num':
+                if model_type == 'rf':
+                    model = RandomForestRegressor(**kwargs)
+                elif model_type == 'svm':
+                    model = SVR(**kwargs)
+                elif model_type == 'knn':
+                    model = KNeighborsRegressor(**kwargs)
+            return model
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
-        
-        return model
     
 
     def train_sklearn(self):
         """
-        Train sklearn models.
+        Train sklearn models and save the model.
         """
-        assert self.model is not None
+        assert self._model is not None
 
         train = self.load_representations(self.train_data)
         test = self.load_representations(self.test_data)
@@ -235,14 +247,42 @@ class Model:
         self.y_val = [protein.y for protein in self.val_data]
 
         if self.k_folds is None:
-            self.model.fit(x_train, y_train)
+            self._model.fit(x_train, y_train)
 
-            self.test_r2 = self.model.score(x_test, self.y_test)
-            self.y_test_pred = self.model.predict(x_test)
+            self.test_r2 = self._model.score(x_test, self.y_test)
+            self.y_test_pred = self._model.predict(x_test)
 
-            self.val_r2 = self.model.score(x_val, self.y_val)
-            self.y_val_pred = self.model.predict(x_val)
-        
+            self.val_r2 = self._model.score(x_val, self.y_val)
+            self.y_val_pred = self._model.predict(x_val)
+
+            # Save the model
+            model_save_path = f"{self.library.project}/models/{self.model_type}/model.joblib"
+            os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+            dump(self._model, model_save_path)
+
+            if not os.path.exists(f"{self.library.project}/models/{self.model_type}/data/"):
+                os.makedirs(f"{self.library.project}/models/{self.model_type}/data/")
+
+            # Save the sequences, y-values, and predicted y-values to CSV
+            def save_to_csv(proteins, y_values, y_pred_values, filename):
+                with open(filename, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(['sequence', 'y-value', 'y-predicted'])  # CSV header
+                    for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
+                        writer.writerow([protein.seq, y, y_pred])
+
+            save_to_csv(self.train_data, y_train, [None]*len(y_train), f"{self.library.project}/models/{self.model_type}/data/train_data.csv")
+            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
+            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
+
+            # Save results to a JSON file
+            results = {
+                'test_r2': self.test_r2,
+                'val_r2': self.val_r2
+            }
+            with open(f"{self.library.project}/models/{self.model_type}/results.json", 'w') as f:
+                json.dump(results, f)
+
         else:
             raise ValueError(f"K-fold cross validation has not been implemented yet")
     
@@ -260,13 +300,13 @@ class Model:
         Returns:
             list: Predictions generated by the model.
         """
-        if self.model is None:
+        if self._model is None:
             raise ValueError(f"Model is 'None'")
 
         reps = self.load_representations(proteins, rep_path)
         x = torch.stack(reps).cpu().numpy()
 
-        predictions = self.model.predict(x)
+        predictions = self._model.predict(x)
 
         return predictions
     
@@ -285,14 +325,14 @@ class Model:
             list: Predictions generated by the model.
         """
 
-        if self.model is None:
+        if self._model is None:
             raise ValueError(f"Model is 'None'")
         
         reps = self.load_representations(proteins, rep_path)
         x = torch.stack(reps).cpu().numpy()
         y = [protein.y for protein in proteins]
 
-        scores = self.model.score(x, y)
+        scores = self._model.score(x, y)
 
         return scores
     
