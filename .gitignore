@@ -152,3 +152,5 @@ dmypy.json
 .idea/ProteusAI.iml
 Untitled.ipynb
 *.joblib
+demo/example_project/models/rf/params.json
+demo/example_project/models/rf/results.json
