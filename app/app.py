@@ -8,6 +8,7 @@ import proteusAI as pai
 import os
 
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
+train_test_val_splits = ["Random"]
 
 app_ui = ui.page_fluid(
     
@@ -174,7 +175,25 @@ app_ui = ui.page_fluid(
                                                          
                                         ),
 
-                                    ui.input_action_button("train_button", "Train Model")
+                                    
+                                    ui.row(
+                                        ui.column(6,
+                                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
+                                        ),
+                                        ui.column(6,
+                                            ui.input_slider("split_seed", "Random seed", min=0, max=1024, value=42)
+                                        ),
+                                        ui.column(4,
+                                            ui.input_numeric("n_train", "Training data (%)", value=80, min=0, max=100)
+                                        ),
+                                        ui.column(4,
+                                            ui.input_numeric("n_test", "Test data (%)", value=10, min=0, max=100)
+                                        ),
+                                        ui.column(4,
+                                            ui.input_numeric("n_val", "Validation data (%)", value=10, min=0, max=100)
+                                        ),
+                                    ),
+                                    ui.input_action_button("train_button", "Train Model"),
                                    
                             ),
                             ui.nav("Zero-shot",
@@ -307,6 +326,39 @@ def server(input: Inputs, output: Outputs, session: Session):
         library.set(lib)
     
     ### Library tab ###
+
+    ### Model tab ###
+    n_train = reactive.Value(80)
+    
+    @reactive.Effect
+    @reactive.event(input.n_train)
+    def _():
+        n_train = input.n_train()
+        n_test_max = 100 - n_train
+        new_test = round((n_test_max)/2, 2)
+        ui.update_numeric(
+            "n_test",
+            max = n_test_max,
+            value = new_test
+        )
+        new_val_max = 100 - n_train - new_test
+        ui.update_numeric(
+            "n_val",
+            max = new_val_max,
+            value = new_val_max
+        )
+
+    @reactive.Effect
+    @reactive.event(input.n_test)
+    def _():
+        n_train = input.n_train()
+        n_test = input.n_test()
+        n_val_max = 100 - n_train - n_test
+        ui.update_numeric(
+            "n_val",
+            max = n_val_max,
+            value = n_val_max
+        )
 
 
 app = App(app_ui, server)
