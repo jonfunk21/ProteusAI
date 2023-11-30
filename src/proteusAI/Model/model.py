@@ -360,8 +360,10 @@ class Model:
             if not os.path.exists(dest):
                 os.makedirs(dest)
 
-        vis.plot_predictions_vs_groundtruth(y_true, y_pred, title, x_label, 
+        fig, ax = vis.plot_predictions_vs_groundtruth(y_true, y_pred, title, x_label, 
                                             y_label, plot_grid, file, show_plot)
+        
+        return fig, ax
 
 
     ### Getters and Setters ###
