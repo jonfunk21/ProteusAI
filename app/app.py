@@ -7,6 +7,8 @@ sys.path.append('src/')
 import proteusAI as pai
 import os
 
+representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
+
 app_ui = ui.page_fluid(
     
     #ui.panel_title("ProteusAI"),
@@ -30,8 +32,11 @@ app_ui = ui.page_fluid(
                                "Data selection",
 
                                ui.row(
-                                   ui.column(12,
+                                   ui.column(6,
                                        ui.input_select("seq_col", "Sequence column", []),
+                                   ),
+                                   ui.column(6,
+                                       ui.input_select("description_col", "Description column", []),
                                    ),
                                    ui.column(6,
                                         ui.input_select("y_col", "Y-values", []),
@@ -41,7 +46,7 @@ app_ui = ui.page_fluid(
                                    ),
                                ),
                     
-                               ui.input_action_button('compute_library', 'Confirm Selection', class_="btn-success"),
+                               ui.input_action_button('compute_library', 'Confirm Selection'),
                                
                                
                         ),
@@ -55,7 +60,7 @@ app_ui = ui.page_fluid(
                     #    "input.dataset_table === null",
                     #    ui.output_table("dataset_table")
                     #),
-                    ui.output_table("dataset_table")
+                    ui.output_data_frame("dataset_table")
                     
                 ),
             ),
@@ -68,8 +73,63 @@ app_ui = ui.page_fluid(
                    ui.panel_sidebar(
                        ui.navset_tab(
                            ui.nav("Visualize",
+                                  ui.row(
+                                      ui.column(6,
+                                          ui.input_select("vis_rep_type", "Representation type", representation_types),
+                                      ),
+                                      ui.column(6,
+                                          ui.input_action_button("vis_compute_reps", "Compute"),
+                                            f"Representations 100 % computed",
+                                            style='padding:25px;'
+                                      )
+                                  ),
+
+                                
                                 ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
-                                ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"])
+                                
+                                ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
+                                
+                                # Conditional panel for Site
+                                ui.panel_conditional("input.color_by === 'Site'",
+                                        ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
+                                    ),
+                                
+                                # Conditional panel for Y-value with numeric data
+                                ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
+                                        ui.row(
+                                            ui.column(6,
+                                                    ui.input_text("upper_y", "Choose upper limit for y")  
+                                                ),
+                                            ui.column(6,
+                                                    ui.input_text("lower_y", "Choose lower limit for y")  
+                                                ),
+                                        )
+                                    ),
+                                # Conditional panel fo Y-value with categorical data
+                                ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
+                                        ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
+                                    ),
+                                
+                                ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
+
+                                ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
+                                ui.panel_conditional("input.hide_by_y === true",
+                                    ui.row(
+                                    # change these to be the min and max values observed in the library
+                                    ui.column(6,
+                                              ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
+                                        ),
+                                    ui.column(6,
+                                              ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
+                                        )
+                                ),
+                                
+
+                                ),
+
+                                ui.input_action_button("update_plot", "Update plot")
+                                
+                            
                            ),
                            ui.nav("Edit",
                                
@@ -77,7 +137,7 @@ app_ui = ui.page_fluid(
                        )
                    ),
                    ui.panel_main(
-                       
+                       "Visualizations under construction..."
                    )
                )
         ),
@@ -87,7 +147,6 @@ app_ui = ui.page_fluid(
                     ui.panel_sidebar(
                         ui.navset_tab(
                             ui.nav("Supervised",
-                                   "Model Customization",
                                    ui.row(
                                        ui.column(6,
                                             ui.input_select("model_type", "Model type", ["Random Forrest", "KNN", "SVM", "FFNN"])
@@ -96,16 +155,26 @@ app_ui = ui.page_fluid(
                                             ui.input_select("model_task", "Model task", ["Regression", "Classification"])
                                         ),
                                         ui.column(6,
-                                            ui.input_select("model_rep_type", "Representaion type", ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]),
-                                            "100 % computed"
+                                            ui.input_select("model_rep_type", "Representaion type", representation_types),
                                         ),
 
                                         ui.column(6,
-                                            ui.input_action_button("compute_reps", "Compute", class_="btn-success"),
+                                            ui.input_action_button("model_compute_reps", "Compute"),
+                                            f"Representations 100 % computed",
                                             style='padding:25px;'
-                                        )
+                                        ),
+                                        
                                    ),
-                                   "Choose model parameters"
+                                    
+                                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                                    
+                                    ui.panel_conditional("input.customize_model_params === true",
+                                            "Not implemented yet LOL",
+                                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")
+                                                         
+                                        ),
+
+                                    ui.input_action_button("train_button", "Train Model")
                                    
                             ),
                             ui.nav("Zero-shot",
@@ -126,7 +195,7 @@ app_ui = ui.page_fluid(
                         )
                     ),
                 ui.panel_main(
-                    "Here you will be able to inspect your model results..."
+                    "Model training and results under construction..."
                 )
                 )
         ),
@@ -151,6 +220,7 @@ app_ui = ui.page_fluid(
 
 def server(input: Inputs, output: Outputs, session: Session):
 
+    ### Homepage ###
     # App logo
     @output
     @render.image
@@ -163,10 +233,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     # dummy dataset until real dataset is entere
     dataset = reactive.Value(pd.DataFrame(data={
-                'Sequence':['Protein sequences'],
-                'Description':['Descriptions, e.g. M1V'],
-                '...':['...'],
-                'Y-value':['Experimental values']
+                'Sequence':['MAGLVQR','VAGLVQR', 'MTGLVQR'],
+                'Description':['wt','M1V', 'A2T'],
+                '...':['...', '...', '...'],
+                'Y-value':[0.2,-0.1, 0.9]
             })
     )
     dataset_path = reactive.Value(str)
@@ -184,9 +254,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         dataset_path.set(f[0]["datapath"])
 
     @output
-    @render.table
+    @render.data_frame
     def dataset_table():
-        return dataset()
+        df = render.DataTable(dataset(), summary=True)
+        return df
     
 
     @reactive.Effect()
@@ -198,6 +269,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             label="Select Sequences",
             choices=cols,
             selected=cols[0],
+        )
+        ui.update_select(
+            "description_col",
+            label="Select Descriptions",
+            choices=cols,
+            selected=cols[1],
         )
         ui.update_select(
             "y_col",
@@ -228,6 +305,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             pass
 
         library.set(lib)
-        
+    
+    ### Library tab ###
+
 
 app = App(app_ui, server)
