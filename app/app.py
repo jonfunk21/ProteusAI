@@ -192,8 +192,15 @@ app_ui = ui.page_fluid(
                                         ui.column(4,
                                             ui.input_numeric("n_val", "Validation data (%)", value=10, min=0, max=100)
                                         ),
+                                        ui.column(8,
+                                            ui.input_action_button("review_data", "Review data")
+                                        ),
+                                        ui.column(4,
+                                            ui.input_action_button("train_button", "Train Model")
+                                        )
                                     ),
-                                    ui.input_action_button("train_button", "Train Model"),
+                                    
+                                    
                                    
                             ),
                             ui.nav("Zero-shot",
@@ -204,12 +211,14 @@ app_ui = ui.page_fluid(
                                         ),
                                         ui.column(6,
                                             ui.input_select("add_input", "Aditional input (e.g., MSA)", ["None", "MSA"])
-                                        )
+                                        ),
+                                        ui.input_action_button("compute_zs", "Compute")
                                    )
                                    
                             ),
                             ui.nav(
-                                "Load model"
+                                "Load model",
+                                "Under construction..."
                             )
                         )
                     ),
@@ -219,20 +228,49 @@ app_ui = ui.page_fluid(
                 )
         ),
 
-        ui.nav_menu(
-            "Results",
-
-            ui.nav("Option 1", "Option 1 content"),
-            
-            align="right",
-        ),
-
+        
         ui.nav_menu(
             "Predict",
+            ui.nav(
+                "New sequences",
+                ui.layout_sidebar(
+                    ui.panel_sidebar(
+                        ui.navset_tab(
+                            ui.nav(
+                                "Single sequence",
+                                ui.row(
+                                    ui.column(6,
+                                        ui.input_text("new_seq", "Predict Y-value for new sequence"),
+                                    ),
+                                    ui.column(6,
+                                        "Your prediction here"
+                                    )
+                                ),
+                                "It would also be nice to attach measures of confidence here, e.g. model confidence or similarity to training data."
+                            ),
+                            ui.nav(
+                                "Upload new library",
+                                ui.row(
+                                    ui.input_file("new_seqs_file", "Upload sequences")
+                                )
+                            ),
+                        )
+                    ),
+                    ui.panel_main(
 
-            ui.nav("Option 1", "Option 1 content"),
-            
-            align="right",
+                    )
+                )
+            ),
+            ui.nav(
+                "New library",
+                "Under construction (Lauras M.Sc. Thesis)..."  
+            ),
+        ),
+        
+
+        ui.nav(
+            "Download Results",
+
         ),
     )
 )
@@ -334,16 +372,20 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.n_train)
     def _():
         n_train = input.n_train()
+        
         n_test_max = 100 - n_train
+            
         new_test = round((n_test_max)/2, 2)
         ui.update_numeric(
             "n_test",
+            min=0,
             max = n_test_max,
             value = new_test
         )
         new_val_max = 100 - n_train - new_test
         ui.update_numeric(
             "n_val",
+            min=0,
             max = new_val_max,
             value = new_val_max
         )
