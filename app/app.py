@@ -6,6 +6,7 @@ import sys
 sys.path.append('src/')
 import proteusAI as pai
 import os
+import matplotlib.pyplot as plt
 
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
@@ -200,8 +201,6 @@ app_ui = ui.page_fluid(
                                         )
                                     ),
                                     
-                                    
-                                   
                             ),
                             ui.nav("Zero-shot",
                                    "Model Customization",
@@ -218,12 +217,14 @@ app_ui = ui.page_fluid(
                             ),
                             ui.nav(
                                 "Load model",
-                                "Under construction..."
+                                "Under construction...",
+                                
                             )
                         )
                     ),
                 ui.panel_main(
-                    "Model training and results under construction..."
+                    "Model training and results under construction...",
+                    ui.output_plot("pred_vs_true")
                 )
                 )
         ),
@@ -367,6 +368,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### Model tab ###
     n_train = reactive.Value(80)
+    model = reactive.Value(pai.Model())
     
     @reactive.Effect
     @reactive.event(input.n_train)
@@ -401,6 +403,56 @@ def server(input: Inputs, output: Outputs, session: Session):
             max = n_val_max,
             value = n_val_max
         )
+
+    # Training models
+    y_t = reactive.Value([1])
+    y_p = reactive.Value([1])
+
+    @reactive.Effect
+    @reactive.event(input.train_button)
+    def _():
+        # model type
+        #if input.model_type == "Random Forrest":
+        model_type = "rf"
+        
+
+
+        # splits not implemented yet
+        if input.train_split() == "Random":
+            split = "random"
+        else:
+            print(f"{input.train_split()} is not implemented yet - choosing random split")
+            split = "random"
+
+        # representations types only esm-2 for now
+        if input.model_rep_type() == "ESM-2":
+            rep_type = "esm2"
+        else:
+            rep_type = "esm2"
+
+        lib = library()
+        #print('Training model')
+        #print(model_type)
+        #print(rep_type)
+        #print(split)
+        #print(input.split_seed())
+        #print(lib.proteins)
+        m = pai.Model(model_type=input.model_type)
+        m.train(library=lib, x=rep_type, split=split, seed=input.split_seed())
+        print(m.val_r2)
+
+        model.set(m)
+        
+        y_t.set(m.y_val)
+
+        y_p.set(m.y_val_pred)
+
+    @output
+    @render.plot
+    def pred_vs_true():
+        return model().true_vs_predicted(y_t(), y_p(), show_plot=False)
+
+
 
 
 app = App(app_ui, server)
