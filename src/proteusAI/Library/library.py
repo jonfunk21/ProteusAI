@@ -33,7 +33,7 @@ class Library:
     _allowed_y_types = ['class', 'num']
 
     def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
-                 proteins: list = [], y_type: Union[str, None] = None):
+                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None):
         """
         Initialize a new library.
 
@@ -42,6 +42,7 @@ class Library:
             overwrite (bool): Allow to overwrite files if True.
             names (list): List of protein names.
             seqs (list): List of sequences as strings.
+            ys (list): List of y values.
             proteins (Protein, optional): List of proteusAI protein objects.
             y_type: Type of y values class ('class') or numeric ('num') 
         """
@@ -50,6 +51,7 @@ class Library:
         self.proteins = proteins
         self.names = names
         self.seqs = seqs
+        self.ys = ys
         self.reps = []
         self.y_type = y_type  
         
@@ -61,6 +63,7 @@ class Library:
         else:
             # load existing information
             print(f"Library {project} already exists. Loading existing library...")
+            self.initialize_library()
             self.load_library()
 
     def initialize_library(self):
@@ -70,8 +73,9 @@ class Library:
         print(f"Initializing library '{self.project}'...")
         
         # create project library
-        os.makedirs(self.project)
-        print(f"library created at {self.project}")
+        if not os.path.exists(self.project):
+            os.makedirs(self.project)
+            print(f"library created at {self.project}")
 
         # check if sequence have been provided
         if len(self.seqs) > 0:
@@ -82,9 +86,15 @@ class Library:
                 self.names = [f"protein_{i}" for i in range(len(self.seqs))]
 
             # create protein objects
-            for name, seq in zip(self.names, self.seqs):
-                protein = Protein(name, seq)
-                self.proteins.append(protein)
+            if len(self.ys) == len(self.names):
+                for name, seq, y in zip(self.names, self.seqs, self.ys):
+                    protein = Protein(name, seq, y=y)
+                    self.proteins.append(protein)
+
+            else:
+                for name, seq in zip(self.names, self.seqs):
+                    protein = Protein(name, seq)
+                    self.proteins.append(protein)
 
         print('Done!')
 

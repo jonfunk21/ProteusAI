@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
+model_types = ["Random Forrest", "KNN", "SVM"]
 
 app_ui = ui.page_fluid(
     
@@ -26,10 +27,10 @@ app_ui = ui.page_fluid(
                     
                     ui.navset_tab(
                         ui.nav("Load Data",
-                               ui.input_file(id="dataset_file", label="Select dataset", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
+                               ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
                                
                                # CHANGE THIS TO EMPTY STRING LATER
-                               ui.input_text(id="project_path", label="Project Path", value="demo/example_project"),
+                               ui.input_text(id="project_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                                
                                "Data selection",
 
@@ -65,6 +66,7 @@ app_ui = ui.page_fluid(
                     ui.output_data_frame("dataset_table")
                     
                 ),
+                
             ),
         
         ),
@@ -151,7 +153,7 @@ app_ui = ui.page_fluid(
                             ui.nav("Supervised",
                                    ui.row(
                                        ui.column(6,
-                                            ui.input_select("model_type", "Model type", ["Random Forrest", "KNN", "SVM", "FFNN"])
+                                            ui.input_select("model_type", "Model type", model_types)
                                         ),
                                         ui.column(6,
                                             ui.input_select("model_task", "Model task", ["Regression", "Classification"])
@@ -290,13 +292,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         return img
 
     # dummy dataset until real dataset is entere
-    dataset = reactive.Value(pd.DataFrame(data={
-                'Sequence':['MAGLVQR','VAGLVQR', 'MTGLVQR'],
-                'Description':['wt','M1V', 'A2T'],
-                '...':['...', '...', '...'],
-                'Y-value':[0.2,-0.1, 0.9]
-            })
-    )
+    dataset = reactive.Value(pd.read_csv("app/demo_data.csv"))
+    
     dataset_path = reactive.Value(str)
 
     library = reactive.Value(None)
@@ -349,7 +346,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.compute_library)
     def _():
         print(input.project_path())
-        lib = pai.Library(project=input.project_path())
+        
 
         if input.y_type() == "numeric":
             y_type = "num"
@@ -357,17 +354,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             y_type = "class"
 
         # TRY TO FIND A MORE STABLE SOLUTION HERE
-        try:
-            lib.read_data(data=dataset_path(), seqs=input.seq_col(), y=input.y_col(), y_type=y_type, names='Description')
-        except:
-            pass
+        seqs = dataset()[input.seq_col()].to_list()
+        ys = dataset()[input.y_col()].to_list()
+        names = dataset()[input.description_col()].to_list()
+   
+        lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names)
 
         library.set(lib)
     
     ### Library tab ###
 
     ### Model tab ###
-    n_train = reactive.Value(80)
+
     model = reactive.Value(pai.Model())
     
     @reactive.Effect
@@ -431,12 +429,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             rep_type = "esm2"
 
         lib = library()
-        #print('Training model')
-        #print(model_type)
-        #print(rep_type)
-        #print(split)
-        #print(input.split_seed())
-        #print(lib.proteins)
+        print('Training model')
+        print(model_type)
+        print(rep_type)
+        print(split)
+        print(input.split_seed())
+        print(len(lib.proteins))
         m = pai.Model(model_type=input.model_type)
         m.train(library=lib, x=rep_type, split=split, seed=input.split_seed())
         print(m.val_r2)
