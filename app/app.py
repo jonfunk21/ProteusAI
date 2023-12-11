@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
 model_types = ["Random Forrest", "KNN", "SVM"]
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62"}
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm"}
+representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v"}
 
 app_ui = ui.page_fluid(
     
@@ -50,7 +51,7 @@ app_ui = ui.page_fluid(
                                    ),
                                ),
                     
-                               ui.input_action_button('compute_library', 'Confirm Selection'),
+                               ui.input_action_button('confirm_selection', 'Confirm Selection'),
                                
                                
                         ),
@@ -155,6 +156,7 @@ app_ui = ui.page_fluid(
                                         ui.column(6,
                                             ui.input_select("model_task", "Model task", ["Regression", "Classification"])
                                         ),
+                                        # TODO: Only show the computed representation types
                                         ui.column(6,
                                             ui.input_select("model_rep_type", "Representaion type", representation_types),
                                         ),
@@ -340,28 +342,57 @@ def server(input: Inputs, output: Outputs, session: Session):
     # loading existing library
     # Reading data
 
-    # Computing library
+    # Checking library
     @reactive.Effect
-    @reactive.event(input.compute_library)
+    @reactive.event(input.confirm_selection)
     def _():
-        print(input.project_path())
-        
-
         if input.y_type() == "numeric":
             y_type = "num"
         else:
             y_type = "class"
-
+    
         # TRY TO FIND A MORE STABLE SOLUTION HERE
         seqs = dataset()[input.seq_col()].to_list()
         ys = dataset()[input.y_col()].to_list()
         names = dataset()[input.description_col()].to_list()
-   
+    
         lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names)
-
+        
         library.set(lib)
+
+        # update representation selection
+        # TODO: Make sure these have to be 100% computed
+        inverted_reps = {v: k for k, v in representation_dict.items()}
+        ui.update_select(
+            "model_rep_type",
+            choices=[inverted_reps[i] for i in lib.reps]
+        )
     
     ### Library tab ###
+    
+    # Compute representations
+
+    # Visualizations
+    # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations
+    # representation types are set by vis_rep_type
+    @reactive.Effect
+    @reactive.event(input.vis_compute_reps)
+    def _():
+        print(f"Computing library: {representation_dict[input.vis_rep_type()]}")
+        
+        lib = library()
+        
+        lib.compute(method=representation_dict[input.vis_rep_type()])
+
+        library.set(lib)
+        print("Done!")
+
+        # update representation selection
+        inverted_reps = {v: k for k, v in representation_dict.items()}
+        ui.update_select(
+            "model_rep_type",
+            choices=[inverted_reps[i] for i in lib.reps]
+        )
 
     ### Model tab ###
 
@@ -405,8 +436,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     y_t = reactive.Value([1])
     y_p = reactive.Value([1])
 
-
-    # train
+    # Train model
     @reactive.Effect
     @reactive.event(input.train_button)
     def _():
@@ -425,10 +455,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             rep_type = "esm2"
 
         lib = library()
-        print(input.model_type())
-        print(model_dict[input.model_type()])
-        m = pai.Model(model_type=model_dict[input.model_type()])
+
+        print(f"training {model_dict[input.model_type()]}")
+
+        m = pai.Model(model_type=model_dict[input.model_type()], seed=input.split_seed())
         m.train(library=lib, x=rep_type, split=split, seed=input.split_seed(), model_type=model_dict[input.model_type()])
+
+        print("training done!")
 
         model.set(m)
         y_t.set(m.y_val)
@@ -438,8 +471,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def pred_vs_true():
         return model().true_vs_predicted(y_t(), y_p(), show_plot=False)
-
-
 
 
 app = App(app_ui, server)
