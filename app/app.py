@@ -11,11 +11,12 @@ import matplotlib.pyplot as plt
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
 model_types = ["Random Forrest", "KNN", "SVM"]
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62"}
 
 app_ui = ui.page_fluid(
     
     #ui.panel_title("ProteusAI"),
-    ui.output_image("image", inline=True, ),
+    ui.output_image("image", inline=True),
     
     ui.navset_tab_card(
 
@@ -59,10 +60,6 @@ app_ui = ui.page_fluid(
                 ui.panel_main(
                     
                     "Raw data view",
-                    #ui.panel_conditional(
-                    #    "input.dataset_table === null",
-                    #    ui.output_table("dataset_table")
-                    #),
                     ui.output_data_frame("dataset_table")
                     
                 ),
@@ -186,20 +183,23 @@ app_ui = ui.page_fluid(
                                         ui.column(6,
                                             ui.input_slider("split_seed", "Random seed", min=0, max=1024, value=42)
                                         ),
-                                        ui.column(4,
-                                            ui.input_numeric("n_train", "Training data (%)", value=80, min=0, max=100)
+                                        ui.column(12,
+                                            "Cross-validation split:"
                                         ),
                                         ui.column(4,
-                                            ui.input_numeric("n_test", "Test data (%)", value=10, min=0, max=100)
+                                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
                                         ),
                                         ui.column(4,
-                                            ui.input_numeric("n_val", "Validation data (%)", value=10, min=0, max=100)
+                                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
+                                        ),
+                                        ui.column(4,
+                                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
                                         ),
                                         ui.column(8,
                                             ui.input_action_button("review_data", "Review data")
                                         ),
                                         ui.column(4,
-                                            ui.input_action_button("train_button", "Train Model")
+                                            ui.input_action_button("train_button", "Train")
                                         )
                                     ),
                                     
@@ -225,7 +225,6 @@ app_ui = ui.page_fluid(
                         )
                     ),
                 ui.panel_main(
-                    "Model training and results under construction...",
                     ui.output_plot("pred_vs_true")
                 )
                 )
@@ -406,15 +405,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     y_t = reactive.Value([1])
     y_p = reactive.Value([1])
 
+
+    # train
     @reactive.Effect
     @reactive.event(input.train_button)
     def _():
         # model type
-        #if input.model_type == "Random Forrest":
-        model_type = "rf"
-        
-
-
         # splits not implemented yet
         if input.train_split() == "Random":
             split = "random"
@@ -429,20 +425,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             rep_type = "esm2"
 
         lib = library()
-        print('Training model')
-        print(model_type)
-        print(rep_type)
-        print(split)
-        print(input.split_seed())
-        print(len(lib.proteins))
-        m = pai.Model(model_type=input.model_type)
-        m.train(library=lib, x=rep_type, split=split, seed=input.split_seed())
-        print(m.val_r2)
+        print(input.model_type())
+        print(model_dict[input.model_type()])
+        m = pai.Model(model_type=model_dict[input.model_type()])
+        m.train(library=lib, x=rep_type, split=split, seed=input.split_seed(), model_type=model_dict[input.model_type()])
 
         model.set(m)
-        
         y_t.set(m.y_val)
-
         y_p.set(m.y_val_pred)
 
     @output
