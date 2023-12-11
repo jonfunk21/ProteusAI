@@ -11,9 +11,11 @@ root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
 from proteusAI.Protein.protein import Protein
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
+import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.io_tools as io_tools
 import pandas as pd
 from typing import Union, Optional
+import torch
 
 
 
@@ -29,7 +31,10 @@ class Library:
         data (str): Path to data file ().
         proteins (list): List of proteins.
     """
-    representation_types = ['esm1v', 'esm2', 'vae']
+
+    # TODO: add VAEs too
+
+    representation_types = ['esm1v', 'esm2', 'ohe', 'blosum62', 'blosum50', 'vae']
     _allowed_y_types = ['class', 'num']
 
     def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
@@ -237,11 +242,11 @@ class Library:
         """
         Check for available representations, store in protein object if representation is found
         """
-        
-        if len(self.reps) > 0:
+        reps = os.listdir(os.path.join(self.project, "rep"))
+        if len(reps) > 0:
             computed = 0
             rep = None
-            for rep in self.reps:
+            for rep in reps:
                 rep_path = os.path.join(self.project, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
@@ -292,7 +297,7 @@ class Library:
 
     
     ### Representation builders ###
-    def compute(self, method: str, model = None, batch_size: int = 1):
+    def compute(self, method: str, batch_size: int = 1):
         """
         Compute representations for proteins.
 
@@ -300,12 +305,19 @@ class Library:
             method (str): Method for computing representation
             batch_size (int, optional): Batch size for representation computation.
         """
-        
-        assert method in self.representation_types, f"'{method}' is not a supported method"
+        simple_rep_types = ['ohe', 'blosum62', 'blosum50']
+        supported_methods = self.representation_types + simple_rep_types
+
+        assert method in supported_methods, f"'{method}' is not a supported method"
         assert isinstance(batch_size, (int, type(None)))
 
         if method in ["esm2", "esm1v"]:
             self.esm_builder(model=method, batch_size=batch_size)
+        elif method == 'ohe':
+            self.ohe_builder()
+        elif method in ['blosum62', 'blosum50']:
+            self.blosum_builder(matrix_type=method.upper())
+
     
     def esm_builder(self, model: str="esm2", batch_size: int=1):
         """
@@ -322,6 +334,8 @@ class Library:
 
         # Filtering out proteins that have already computed representations
         proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+        
+        print(f"computing {len(proteins_to_compute)} proteins")
 
         # get names for and sequences for computation
         names = [protein.name for protein in proteins_to_compute]
@@ -329,8 +343,59 @@ class Library:
         
         # compute representations
         esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size)
-
         
         for protein in proteins_to_compute:
             if model not in protein.reps:
                 protein.reps.append(model)
+
+
+    def ohe_builder(self):
+        """
+        Computes one-hot encoding representations for proteins using one_hot_encoder method.
+        Assumes all data fits in memory.
+        """
+
+        dest = os.path.join(self.project, "rep/ohe")
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+        
+        print(f"Computing {len(proteins_to_compute)} proteins")
+
+        sequences = [protein.seq for protein in proteins_to_compute]
+        if len(proteins_to_compute) > 0:
+            ohe_representations = torch_tools.one_hot_encoder(sequences)
+
+            for i, protein in enumerate(proteins_to_compute):
+                torch.save(ohe_representations[i], os.path.join(dest, protein.name + '.pt'))
+                if 'ohe' not in protein.reps:
+                    protein.reps.append('ohe')
+
+
+    def blosum_builder(self, matrix_type="BLOSUM62"):
+        """
+        Computes BLOSUM representations for proteins using blosum_encoding method.
+        Assumes all data fits in memory.
+
+        Args:
+            matrix_type (str): Type of BLOSUM matrix to use.
+        """
+
+        dest = os.path.join(self.project, f"rep/{matrix_type.lower()}")
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+        
+        print(f"Computing {len(proteins_to_compute)} proteins")
+
+        sequences = [protein.seq for protein in proteins_to_compute]
+
+        if len(proteins_to_compute) > 0:
+            blosum_representations = torch_tools.blosum_encoding(sequences, matrix=matrix_type)
+
+            for i, protein in enumerate(proteins_to_compute):
+                torch.save(blosum_representations[i], os.path.join(dest, protein.name + '.pt'))
+                if matrix_type.lower() not in protein.reps:
+                    protein.reps.append(matrix_type.lower())
