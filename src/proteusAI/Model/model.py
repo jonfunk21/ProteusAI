@@ -12,6 +12,7 @@ sys.path.append(root_path)
 import torch
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
+from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
@@ -20,6 +21,9 @@ from typing import Union
 import json
 from joblib import dump
 import csv
+import torch
+import pandas as pd
+
 
 class Model:
     """
@@ -100,7 +104,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 21
+            'seed': 42
         }
         
         # Update defaults with provided keyword arguments
@@ -179,6 +183,9 @@ class Model:
         Returns:
             list: List of representations.
         """
+        torch.manual_seed(self.seed)
+        torch.cuda.manual_seed_all(self.seed)
+
         if rep_path is None:
             rep_path = os.path.join(self.library.project, f"rep/{self.x}")
 
@@ -209,23 +216,27 @@ class Model:
                 json.dump(kwargs, f)
 
         if model_type in self._sklearn_models:
+            model_params = kwargs.copy()
+            #model_params['seed'] = self.seed
+
             if self.y_type == 'class':
                 if model_type == 'rf':
-                    model = RandomForestClassifier(**kwargs)
+                    model = RandomForestClassifier(**model_params)
                 elif model_type == 'svm':
-                    model = SVC(**kwargs)
+                    model = SVC(**model_params)
                 elif model_type == 'knn':
-                    model = KNeighborsClassifier(**kwargs)
+                    model = KNeighborsClassifier(**model_params)
             elif self.y_type == 'num':
                 if model_type == 'rf':
-                    model = RandomForestRegressor(**kwargs)
+                    model = RandomForestRegressor(random_state=self.seed, **model_params)
                 elif model_type == 'svm':
-                    model = SVR(**kwargs)
+                    model = SVR(**model_params)
                 elif model_type == 'knn':
-                    model = KNeighborsRegressor(**kwargs)
+                    model = KNeighborsRegressor(**model_params)
             return model
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
+
     
 
     def train_sklearn(self):
@@ -234,6 +245,7 @@ class Model:
         """
         assert self._model is not None
 
+        # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data)
         test = self.load_representations(self.test_data)
         val = self.load_representations(self.val_data)
@@ -242,9 +254,12 @@ class Model:
         x_test = torch.stack(test).cpu().numpy()
         x_val = torch.stack(val).cpu().numpy()
 
+        # TODO: For representations that are stored in memory the computation happens here:
+
         y_train = [protein.y for protein in self.train_data]
         self.y_test = [protein.y for protein in self.test_data]
         self.y_val = [protein.y for protein in self.val_data]
+        self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
             self._model.fit(x_train, y_train)
@@ -284,6 +299,8 @@ class Model:
                 json.dump(results, f)
 
         else:
+            #kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            #for train_index, test_index in kf.split(X):
             raise ValueError(f"K-fold cross validation has not been implemented yet")
     
 
@@ -364,6 +381,34 @@ class Model:
                                             y_label, plot_grid, file, show_plot)
         
         return fig, ax
+    
+    def true_vs_predicted_ggplot(self, data: pd.DataFrame, title: Union[str, None] = None,
+                          x_label: Union[str, None] = None, y_label: Union[str, None] = None , plot_grid: bool = True, 
+                          file: Union[str, None] = None, show_plot: bool = True):
+        """
+        Predicts true values versus predicted values.
+
+        Args:
+            y_true (list): True y values.
+            y_pred (list): Predicted y values.
+            title (str): Set the title of the plot. 
+            x_label (str): Set the x-axis label.
+            y_label (str): Set the y-axis label.
+            plot_grid (bool): Display a grid in the plot.
+            file (str): Choose a file name.
+            show_plot (bool): Choose to show the plot.
+        """
+        
+        if file is not None:
+            dest = os.path.join(self.library.project, f"plots/{self.model_type}")
+            file = os.path.join(dest, file)
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+
+        plot = vis.plot_predictions_vs_groundtruth_ggplot(data, title, x_label, 
+                                            y_label, plot_grid, file)
+        
+        return plot
 
 
     ### Getters and Setters ###

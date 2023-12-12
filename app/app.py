@@ -1,6 +1,7 @@
 import shiny
 from shiny import App, ui, render, Inputs, Outputs, Session, reactive
 from shiny.types import FileInfo, ImgData
+from shiny.plotutils import brushed_points, near_points
 import pandas as pd
 import sys
 sys.path.append('src/')
@@ -8,11 +9,13 @@ import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
 
+
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
 model_types = ["Random Forrest", "KNN", "SVM"]
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v"}
+FAST_INTERACT_INTERVAL = 60 # in milliseconds
 
 app_ui = ui.page_fluid(
     
@@ -227,7 +230,11 @@ app_ui = ui.page_fluid(
                         )
                     ),
                 ui.panel_main(
-                    ui.output_plot("pred_vs_true")
+                    ui.output_ui("pred_vs_true_ui"),
+                    #ui.output_plot("pred_vs_true"),
+                    ui.tags.b("Points near cursor"),
+                    ui.output_table("near_hover"),
+                    #ui.output_table("in_brush")
                 )
                 )
         ),
@@ -433,8 +440,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
 
     # Training models
-    y_t = reactive.Value([1])
-    y_p = reactive.Value([1])
+    val_df = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[]}))
 
     # Train model
     @reactive.Effect
@@ -464,13 +470,55 @@ def server(input: Inputs, output: Outputs, session: Session):
         print("training done!")
 
         model.set(m)
-        y_t.set(m.y_val)
-        y_p.set(m.y_val_pred)
+        val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred}))
+
+    @output
+    @render.ui
+    def pred_vs_true_ui():
+        hover_opts_kwargs = {}
+        #brush_opts_kwargs = {}
+        #brush_opts_kwargs["direction"] = "xy"
+        hover_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
+        hover_opts_kwargs["delay_type"] = "throttle"
+        #brush_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
+        #brush_opts_kwargs["delay_type"] = "throttle"
+
+        return ui.output_plot(
+            "pred_vs_true",
+            hover=ui.hover_opts(**hover_opts_kwargs),
+            #brush=ui.brush_opts(**brush_opts_kwargs),
+        )
 
     @output
     @render.plot
     def pred_vs_true():
-        return model().true_vs_predicted(y_t(), y_p(), show_plot=False)
+        df = val_df()
+        p = model().true_vs_predicted_ggplot(df)
+        return p
+
+    @output
+    @render.table()
+    def near_hover():
+        df = val_df()
+        return near_points(
+            df,
+            input.pred_vs_true_hover(),
+            threshold=15,
+            xvar="y_true",
+            yvar="y_pred",
+            add_dist=True,
+            all_rows=False,
+        )
+    
+    #@output
+    #@render.table()
+    #def in_brush():
+    #    df = val_df()
+    #    return brushed_points(
+    #        df,
+    #        input.pred_vs_true_brush(),
+    #        all_rows=False,
+    #    )
 
 
 app = App(app_ui, server)

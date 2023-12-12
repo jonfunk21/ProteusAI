@@ -65,7 +65,6 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True):
     return tensor
 
 
-
 def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
     '''
     Returns BLOSUM encoding for amino acid sequence. Unknown amino acids will be

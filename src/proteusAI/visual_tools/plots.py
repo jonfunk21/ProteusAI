@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Union
+from typing import Union, List
+from plotnine import ggplot, aes, geom_point, geom_abline, labs, theme_minimal, theme, element_line
+import pandas as pd
 
 def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str, None] = None, 
                                     x_label: Union[str, None] = None, y_label: Union[str, None] = None, 
@@ -34,3 +36,35 @@ def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str
 
     # Return the figure and axes
     return fig, ax
+
+def plot_predictions_vs_groundtruth_ggplot(data: pd.DataFrame,
+                                           title: Union[str, None] = None, x_label: Union[str, None] = None, 
+                                           y_label: Union[str, None] = None, plot_grid: bool = True, 
+                                           file: Union[str, None] = None):
+
+    # Set default labels if none provided
+    if title is None:
+        title = 'Predicted vs. True y-values'
+    if y_label is None:
+        y_label = 'Predicted y'
+    if x_label is None:
+        x_label = 'True y'
+
+    # Create the ggplot object with updated aesthetics
+    p = (ggplot(data, aes('y_true', 'y_pred')) +
+         geom_point(alpha=0.5) +  # Blue points
+         geom_abline(slope=1, intercept=0, color='grey', linetype='dotted', size=1.5) +
+         labs(title=title, x=x_label, y=y_label) +
+         theme_minimal())  # White background
+
+    # Add grid if required
+    if plot_grid:
+        p += theme(panel_grid_major=element_line(color='grey', size=0.5))
+
+    # Save the plot to a file
+    if file is not None:
+        p.save(file)
+
+    # Return the plot object
+    print(data)
+    return p
