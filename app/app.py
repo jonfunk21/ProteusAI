@@ -8,6 +8,7 @@ sys.path.append('src/')
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
+import asyncio
 
 
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
@@ -71,7 +72,7 @@ app_ui = ui.page_fluid(
             ),
         
         ),
-
+        
         ui.nav("Library", 
                
                ui.layout_sidebar(
@@ -162,13 +163,7 @@ app_ui = ui.page_fluid(
                                         # TODO: Only show the computed representation types
                                         ui.column(6,
                                             ui.input_select("model_rep_type", "Representaion type", representation_types),
-                                        ),
-
-                                        ui.column(6,
-                                            ui.input_action_button("model_compute_reps", "Compute"),
-                                            f"Representations 100 % computed",
-                                            style='padding:25px;'
-                                        ),
+                                        )
                                         
                                    ),
                                     
@@ -176,8 +171,7 @@ app_ui = ui.page_fluid(
                                     
                                     ui.panel_conditional("input.customize_model_params === true",
                                             "Not implemented yet LOL",
-                                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")
-                                                         
+                                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
                                         ),
 
                                     
@@ -378,28 +372,29 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### Library tab ###
     
     # Compute representations
-
-    # Visualizations
     # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations
     # representation types are set by vis_rep_type
     @reactive.Effect
     @reactive.event(input.vis_compute_reps)
-    def _():
-        print(f"Computing library: {representation_dict[input.vis_rep_type()]}")
-        
-        lib = library()
-        
-        lib.compute(method=representation_dict[input.vis_rep_type()])
+    async def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Calculation in progress", detail="This may take a while...")
 
-        library.set(lib)
-        print("Done!")
+            print(f"Computing library: {representation_dict[input.vis_rep_type()]}")
+            
+            lib = library()
+            
+            lib.compute(method=representation_dict[input.vis_rep_type()])
 
-        # update representation selection
-        inverted_reps = {v: k for k, v in representation_dict.items()}
-        ui.update_select(
-            "model_rep_type",
-            choices=[inverted_reps[i] for i in lib.reps]
-        )
+            library.set(lib)
+            print("Done!")
+
+            # update representation selection
+            inverted_reps = {v: k for k, v in representation_dict.items()}
+            ui.update_select(
+                "model_rep_type",
+                choices=[inverted_reps[i] for i in lib.reps]
+            )
 
     ### Model tab ###
 
@@ -445,41 +440,43 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Train model
     @reactive.Effect
     @reactive.event(input.train_button)
-    def _():
-        # model type
-        # splits not implemented yet
-        if input.train_split() == "Random":
-            split = "random"
-        else:
-            print(f"{input.train_split()} is not implemented yet - choosing random split")
-            split = "random"
+    async def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Training model", detail="This may take a while...")
+            # model type
+            # splits not implemented yet
+            if input.train_split() == "Random":
+                split = "random"
+            else:
+                print(f"{input.train_split()} is not implemented yet - choosing random split")
+                split = "random"
 
-        # representations types only esm-2 for now
-        if input.model_rep_type() == "ESM-2":
-            rep_type = "esm2"
-        else:
-            rep_type = "esm2"
+            # representations types only esm-2 for now
+            if input.model_rep_type() == "ESM-2":
+                rep_type = "esm2"
+            else:
+                rep_type = "esm2"
 
-        lib = library()
+            lib = library()
 
-        print(f"training {model_dict[input.model_type()]}")
+            print(f"training {model_dict[input.model_type()]}")
 
-        m = pai.Model(model_type=model_dict[input.model_type()], seed=input.split_seed())
-        m.train(library=lib, x=rep_type, split=split, seed=input.split_seed(), model_type=model_dict[input.model_type()])
+            m = pai.Model(model_type=model_dict[input.model_type()], seed=input.split_seed())
+            m.train(library=lib, x=rep_type, split=split, seed=input.split_seed(), model_type=model_dict[input.model_type()])
 
-        print("training done!")
+            print("training done!")
 
-        model.set(m)
-        val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred}))
+            model.set(m)
+            val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred}))
 
     @output
     @render.ui
     def pred_vs_true_ui():
         hover_opts_kwargs = {}
-        #brush_opts_kwargs = {}
-        #brush_opts_kwargs["direction"] = "xy"
         hover_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
         hover_opts_kwargs["delay_type"] = "throttle"
+        #brush_opts_kwargs = {}
+        #brush_opts_kwargs["direction"] = "xy"
         #brush_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
         #brush_opts_kwargs["delay_type"] = "throttle"
 
