@@ -3,6 +3,11 @@ import seaborn as sns
 from typing import Union, List
 from plotnine import ggplot, aes, geom_point, geom_abline, labs, theme_minimal, theme, element_line
 import pandas as pd
+from sklearn.manifold import TSNE
+import numpy as np
+import pandas as pd
+
+representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v"}
 
 def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str, None] = None, 
                                     x_label: Union[str, None] = None, y_label: Union[str, None] = None, 
@@ -41,6 +46,9 @@ def plot_predictions_vs_groundtruth_ggplot(data: pd.DataFrame,
                                            title: Union[str, None] = None, x_label: Union[str, None] = None, 
                                            y_label: Union[str, None] = None, plot_grid: bool = True, 
                                            file: Union[str, None] = None):
+    """
+    Plotting function used for the app.
+    """
 
     # Set default labels if none provided
     if title is None:
@@ -68,3 +76,44 @@ def plot_predictions_vs_groundtruth_ggplot(data: pd.DataFrame,
     # Return the plot object
     print(data)
     return p
+
+def plot_tsne(x: list, y: Union[list, None] = None, y_type: str = 'num', random_state: int = 42, rep_type: Union[str,None] = None):
+    """
+    Create a t-SNE plot and color by y values.
+
+    Args:
+        x (list): List of sequence representations as numpy arrays (R^1).
+        y (list): List of y values numpy array (R^1).
+        y_type (str): class for categorical labels or num for numerical labels.
+        random_state (int): Random state.
+        rep_type (str): representation type used for plotting
+    """
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    assert type(x) == list
+
+    if y == None:
+        y = [None for i in range(len(x))]
+
+    
+    x = np.array([t.numpy() for t in x])
+
+    # handle ohe, and blosum encodings
+    if len(x.shape) == 3:
+        x = x.reshape(x.shape[0], -1)
+
+    tsne = TSNE(n_components=2, verbose=1, random_state=random_state)
+    z = tsne.fit_transform(x)
+
+    df = pd.DataFrame(z, columns=['z1', 'z2'])
+    df['y'] = y
+
+    inverted_reps = {v: k for k, v in representation_dict.items()}
+
+    cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    sns.scatterplot(x=f"z1", y=f"z2", hue=df.y.tolist(),
+                    palette=cmap,
+                    data=df).set(title=f"t-SNE projection of {inverted_reps[rep_type]} representations")
+
+    return fig, ax

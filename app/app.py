@@ -81,7 +81,7 @@ app_ui = ui.page_fluid(
                            ui.nav("Visualize",
                                   ui.row(
                                       ui.column(6,
-                                          ui.input_select("vis_rep_type", "Representation type", representation_types),
+                                          ui.input_select("vis_rep_type", "Compute representation type", representation_types),
                                       ),
                                       ui.column(6,
                                           ui.input_action_button("vis_compute_reps", "Compute"),
@@ -132,8 +132,17 @@ app_ui = ui.page_fluid(
                                 
 
                                 ),
+                                ui.row(
+                                    ui.column(12, "Visualize representations"),
+                                    ui.column(6,
+                                        ui.input_select("plot_rep_type", "", representation_types),
+                                    ),
+                                        ui.column(6,
+                                        ui.input_action_button("update_plot", "Update plot")
+                                    )
+                                )
+                                
 
-                                ui.input_action_button("update_plot", "Update plot")
                                 
                             
                            ),
@@ -143,7 +152,9 @@ app_ui = ui.page_fluid(
                        )
                    ),
                    ui.panel_main(
-                       "Visualizations under construction..."
+                       "Visualizations under construction...",
+                       ui.output_plot('tsne_plot')
+                       
                    )
                )
         ),
@@ -368,8 +379,28 @@ def server(input: Inputs, output: Outputs, session: Session):
             "model_rep_type",
             choices=[inverted_reps[i] for i in lib.reps]
         )
+        ui.update_select(
+            "plot_rep_type",
+            choices=[inverted_reps[i] for i in lib.reps]
+        )
     
     ### Library tab ###
+        
+    # Visualizations
+    @output
+    @render.plot
+    @reactive.event(input.update_plot)
+    def tsne_plot():
+        """
+        render plot once button is pressed.
+        """
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Plotting", detail="This may take a while...")
+            lib = library()
+            rep = representation_dict[input.plot_rep_type()]
+            fig, ax = lib.plot_tsne(rep=rep)
+        
+        
     
     # Compute representations
     # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations

@@ -13,6 +13,7 @@ from proteusAI.Protein.protein import Protein
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.io_tools as io_tools
+import proteusAI.visual_tools as vis
 import pandas as pd
 from typing import Union, Optional
 import torch
@@ -399,3 +400,43 @@ class Library:
                 torch.save(blosum_representations[i], os.path.join(dest, protein.name + '.pt'))
                 if matrix_type.lower() not in protein.reps:
                     protein.reps.append(matrix_type.lower())
+
+
+    def load_representations(self, rep: Union[str, None], proteins: Union[list, None] = None):
+        """
+        Loads representations for a list of proteins.
+
+        Args:
+            rep (str): type of representation to load
+            proteins (list): list of proteins to load, load all if None
+
+        Returns:
+            list: List of representations.
+        """
+
+
+        rep_path = os.path.join(self.project, f"rep/{rep}")
+
+        if proteins == None:
+            file_names = [protein.name + ".pt" for protein in self.proteins]
+        else:
+            file_names = [protein.name + ".pt" for protein in proteins]
+
+        _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+
+        return reps
+    
+
+    def plot_tsne(self, rep: str):
+        """
+        Plot representations.
+
+        rep (str): Representation type to plot
+        """
+
+        x = self.load_representations(rep)
+        y = self.ys
+
+        fig, ax = vis.plot_tsne(x, y, rep_type=rep)
+
+        return fig, ax
