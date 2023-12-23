@@ -33,7 +33,7 @@ app_ui = ui.page_fluid(
                 ui.sidebar(
                     
                     ui.navset_tab(
-                        ui.nav_panel("Load Data",
+                        ui.nav_panel("Load Library",
                                
                                #ui.tooltip(
                                     ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
@@ -66,93 +66,80 @@ app_ui = ui.page_fluid(
                                
                                
                         ),
-                        ui.nav_panel("Custom Protein", "Under construction..."),
+                        ui.nav_panel("Single Protein", "Under construction..."),
                     ),
                 width=450
                 ),
-                #ui.panel_main(
-                    
-                    "Raw data view",
-                    ui.output_data_frame("dataset_table")
-                    
-                #),
-                
+                # Main panel
+                "Raw data view",
+                ui.output_data_frame("dataset_table")
             ),
-        
         ),
         
         ui.nav_panel("Library", 
-               
                ui.layout_sidebar(
                    ui.sidebar(
-                       ui.navset_tab(
-                           ui.nav_panel("Visualize",
-                                  ui.row(
-                                      ui.column(6,
-                                          ui.input_select("vis_rep_type", "Compute representation", representation_types),
-                                      ),
-                                      ui.column(6,
-                                          ui.input_action_button("vis_compute_reps", "Compute"),
-                                            f"Representations 100 % computed",
-                                            style='padding:25px;'
-                                      )
-                                  ),
+                        ui.row(
+                            ui.column(6,
+                                ui.input_select("vis_rep_type", "Compute representation", representation_types),
+                            ),
+                            ui.column(6,
+                                ui.input_action_button("vis_compute_reps", "Compute"),
+                                f"Representations 100 % computed",
+                                style='padding:25px;'
+                            )
+                        ),
 
-                                
-                                ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
-                                
-                                ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
-                                
-                                # Conditional panel for Site
-                                ui.panel_conditional("input.color_by === 'Site'",
-                                        ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
-                                    ),
-                                
-                                # Conditional panel for Y-value with numeric data
-                                ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
-                                        ui.row(
-                                            ui.column(6,
-                                                    ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
-                                                ),
-                                            ui.column(6,
-                                                    ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
-                                                ),
-                                        )
-                                    ),
-                                # Conditional panel fo Y-value with categorical data
-                                ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
-                                        ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
-                                    ),
-                                
-                                ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
-
-                                ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
-                                ui.panel_conditional("input.hide_by_y === true",
-                                    ui.row(
-                                    # change these to be the min and max values observed in the library
+                    
+                        ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
+                        
+                        ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
+                        
+                        # Conditional panel for Site
+                        ui.panel_conditional("input.color_by === 'Site'",
+                                ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
+                            ),
+                        
+                        # Conditional panel for Y-value with numeric data
+                        ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
+                                ui.row(
                                     ui.column(6,
-                                              ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
+                                            ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
                                         ),
                                     ui.column(6,
-                                              ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
-                                        )
-                                ),
+                                            ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
+                                        ),
+                                )
+                            ),
+                        # Conditional panel fo Y-value with categorical data
+                        ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
+                                ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
+                            ),
+                        
+                        ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
 
+                        ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
+                        ui.panel_conditional("input.hide_by_y === true",
+                            ui.row(
+                            # change these to be the min and max values observed in the library
+                            ui.column(6,
+                                        ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
                                 ),
-                                ui.row(
-                                    ui.column(12, "Visualize representations"),
-                                    ui.column(6,
-                                        ui.input_select("plot_rep_type", "", representation_types),
-                                    ),
-                                        ui.column(6,
-                                        ui.input_action_button("update_plot", "Update plot")
-                                    )
-                                )  
-                           ),
-                           ui.nav_panel("Edit",
-                               
-                           )
-                       ),
+                            ui.column(6,
+                                        ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
+                                )
+                        ),
+
+                        ),
+                        ui.row(
+                            ui.column(12, "Visualize representations"),
+                            ui.column(6,
+                                ui.input_select("plot_rep_type", "", representation_types),
+                            ),
+                                ui.column(6,
+                                ui.input_action_button("update_plot", "Update plot")
+                            )
+                        ),
                     width=450
                    ),
                    #ui.panel_main(
