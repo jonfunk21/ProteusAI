@@ -77,29 +77,34 @@ def plot_predictions_vs_groundtruth_ggplot(data: pd.DataFrame,
     print(data)
     return p
 
-def plot_tsne(x: list, y: Union[list, None] = None, y_type: str = 'num', random_state: int = 42, rep_type: Union[str,None] = None):
+def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None, 
+              y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
+              names: Union[List[str], None] = None, y_type: str = 'num', 
+              random_state: int = 42, rep_type: Union[str, None] = None):
     """
-    Create a t-SNE plot and color by y values.
+    Create a t-SNE plot and color by y values, with special coloring for points outside given thresholds.
 
     Args:
-        x (list): List of sequence representations as numpy arrays (R^1).
-        y (list): List of y values numpy array (R^1).
-        y_type (str): class for categorical labels or num for numerical labels.
+        x (List[np.ndarray]): List of sequence representations as numpy arrays (R^1).
+        y (List[float]): List of y values numpy array (R^1).
+        y_upper (float): Upper threshold for special coloring.
+        y_lower (float): Lower threshold for special coloring.
+        names (List[str]): List of names for each point.
+        y_type (str): 'class' for categorical labels or 'num' for numerical labels.
         random_state (int): Random state.
-        rep_type (str): representation type used for plotting
+        rep_type (str): Representation type used for plotting.
     """
     
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    assert type(x) == list
+    assert isinstance(x, list)
 
-    if y == None:
-        y = [None for i in range(len(x))]
+    if y is None:
+        y = [None] * len(x)
 
-    
     x = np.array([t.numpy() for t in x])
 
-    # handle ohe, and blosum encodings
+    # Handle OHE and Blosum encodings
     if len(x.shape) == 3:
         x = x.reshape(x.shape[0], -1)
 
@@ -108,12 +113,24 @@ def plot_tsne(x: list, y: Union[list, None] = None, y_type: str = 'num', random_
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y
+    if names:
+        df['names'] = names
 
+    # Inverted representations mapping (if needed)
     inverted_reps = {v: k for k, v in representation_dict.items()}
 
     cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
-    sns.scatterplot(x=f"z1", y=f"z2", hue=df.y.tolist(),
-                    palette=cmap,
-                    data=df).set(title=f"t-SNE projection of {inverted_reps[rep_type]} representations")
+    scatter = sns.scatterplot(x='z1', y='z2', hue='y', palette=cmap, data=df)
 
-    return fig, ax
+    if y_upper is not None or y_lower is not None:
+        # Color points outside the thresholds in light grey
+        outlier_mask = np.full(len(df), False, dtype=bool)
+        if y_upper is not None:
+            outlier_mask |= (df['y'] > y_upper)
+        if y_lower is not None:
+            outlier_mask |= (df['y'] < y_lower)
+        scatter.scatter(df['z1'][outlier_mask], df['z2'][outlier_mask], color='lightgrey')
+
+    scatter.set(title=f"t-SNE projection of {inverted_reps.get(rep_type, rep_type)} representations")
+
+    return fig, ax, df

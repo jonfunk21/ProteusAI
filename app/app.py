@@ -10,7 +10,7 @@ import os
 import matplotlib.pyplot as plt
 import asyncio
 
-
+VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
 model_types = ["Random Forrest", "KNN", "SVM"]
@@ -22,18 +22,25 @@ app_ui = ui.page_fluid(
     
     #ui.panel_title("ProteusAI"),
     ui.output_image("image", inline=True),
+    VERSION,
     
     ui.navset_tab_card(
 
-        ui.nav(
+        ui.nav_panel(
             "Data", 
             
             ui.layout_sidebar(
-                ui.panel_sidebar(
+                ui.sidebar(
                     
                     ui.navset_tab(
-                        ui.nav("Load Data",
-                               ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
+                        ui.nav_panel("Load Data",
+                               
+                               #ui.tooltip(
+                                    ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
+                                    #"Upload a '.csv', '.xlsx' or 'EnzymeML' file.",
+                                    #placement="right",
+                                    #id="upload info",
+                                #),
                                
                                # CHANGE THIS TO EMPTY STRING LATER
                                ui.input_text(id="project_path", label="Project Path (Default: demo path)", value="demo/example_project"),
@@ -59,29 +66,30 @@ app_ui = ui.page_fluid(
                                
                                
                         ),
-                        ui.nav("Custom Protein", "Under construction..."),
-                    )
+                        ui.nav_panel("Custom Protein", "Under construction..."),
+                    ),
+                width=450
                 ),
-                ui.panel_main(
+                #ui.panel_main(
                     
                     "Raw data view",
                     ui.output_data_frame("dataset_table")
                     
-                ),
+                #),
                 
             ),
         
         ),
         
-        ui.nav("Library", 
+        ui.nav_panel("Library", 
                
                ui.layout_sidebar(
-                   ui.panel_sidebar(
+                   ui.sidebar(
                        ui.navset_tab(
-                           ui.nav("Visualize",
+                           ui.nav_panel("Visualize",
                                   ui.row(
                                       ui.column(6,
-                                          ui.input_select("vis_rep_type", "Compute representation type", representation_types),
+                                          ui.input_select("vis_rep_type", "Compute representation", representation_types),
                                       ),
                                       ui.column(6,
                                           ui.input_action_button("vis_compute_reps", "Compute"),
@@ -104,10 +112,10 @@ app_ui = ui.page_fluid(
                                 ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
                                         ui.row(
                                             ui.column(6,
-                                                    ui.input_text("upper_y", "Choose upper limit for y")  
+                                                    ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
                                                 ),
                                             ui.column(6,
-                                                    ui.input_text("lower_y", "Choose lower limit for y")  
+                                                    ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
                                                 ),
                                         )
                                     ),
@@ -129,7 +137,6 @@ app_ui = ui.page_fluid(
                                               ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
                                         )
                                 ),
-                                
 
                                 ),
                                 ui.row(
@@ -140,30 +147,26 @@ app_ui = ui.page_fluid(
                                         ui.column(6,
                                         ui.input_action_button("update_plot", "Update plot")
                                     )
-                                )
-                                
-
-                                
-                            
+                                )  
                            ),
-                           ui.nav("Edit",
+                           ui.nav_panel("Edit",
                                
                            )
-                       )
+                       ),
+                    width=450
                    ),
-                   ui.panel_main(
-                       "Visualizations under construction...",
+                   #ui.panel_main(
                        ui.output_plot('tsne_plot')
                        
-                   )
+                   #)
                )
         ),
 
-        ui.nav("Model", 
+        ui.nav_panel("Model", 
                 ui.layout_sidebar(
-                    ui.panel_sidebar(
+                    ui.sidebar(
                         ui.navset_tab(
-                            ui.nav("Supervised",
+                            ui.nav_panel("Supervised",
                                    ui.row(
                                        ui.column(6,
                                             ui.input_select("model_type", "Model type", model_types)
@@ -191,7 +194,7 @@ app_ui = ui.page_fluid(
                                             ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
                                         ),
                                         ui.column(6,
-                                            ui.input_slider("split_seed", "Random seed", min=0, max=1024, value=42)
+                                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
                                         ),
                                         ui.column(12,
                                             "Cross-validation split:"
@@ -214,7 +217,7 @@ app_ui = ui.page_fluid(
                                     ),
                                     
                             ),
-                            ui.nav("Zero-shot",
+                            ui.nav_panel("Zero-shot",
                                    "Model Customization",
                                    ui.row(
                                         ui.column(6,
@@ -227,32 +230,33 @@ app_ui = ui.page_fluid(
                                    )
                                    
                             ),
-                            ui.nav(
+                            ui.nav_panel(
                                 "Load model",
                                 "Under construction...",
                                 
                             )
-                        )
+                        ),
+                    width=450
                     ),
-                ui.panel_main(
+                #ui.panel_main(
                     ui.output_ui("pred_vs_true_ui"),
                     #ui.output_plot("pred_vs_true"),
                     ui.tags.b("Points near cursor"),
                     ui.output_table("near_hover"),
                     #ui.output_table("in_brush")
-                )
+                #)
                 )
         ),
 
         
         ui.nav_menu(
             "Predict",
-            ui.nav(
+            ui.nav_panel(
                 "New sequences",
                 ui.layout_sidebar(
-                    ui.panel_sidebar(
+                    ui.sidebar(
                         ui.navset_tab(
-                            ui.nav(
+                            ui.nav_panel(
                                 "Single sequence",
                                 ui.row(
                                     ui.column(6,
@@ -264,27 +268,27 @@ app_ui = ui.page_fluid(
                                 ),
                                 "It would also be nice to attach measures of confidence here, e.g. model confidence or similarity to training data."
                             ),
-                            ui.nav(
+                            ui.nav_panel(
                                 "Upload new library",
                                 ui.row(
                                     ui.input_file("new_seqs_file", "Upload sequences")
                                 )
                             ),
-                        )
-                    ),
-                    ui.panel_main(
+                        ),
+                    width=450),
+                    #ui.panel_main(
 
-                    )
+                    #)
                 )
             ),
-            ui.nav(
+            ui.nav_panel(
                 "New library",
                 "Under construction (Lauras M.Sc. Thesis)..."  
             ),
         ),
         
 
-        ui.nav(
+        ui.nav_panel(
             "Download Results",
 
         ),
@@ -306,9 +310,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     # dummy dataset until real dataset is entere
     dataset = reactive.Value(pd.read_csv("app/demo_data.csv"))
-    
     dataset_path = reactive.Value(str)
-
     library = reactive.Value(None)
         
     # Reading data
@@ -387,18 +389,29 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### Library tab ###
         
     # Visualizations
+    tsne_df = reactive.Value()   
+
     @output
     @render.plot
     @reactive.event(input.update_plot)
     def tsne_plot():
         """
-        render plot once button is pressed.
+        Render plot once button is pressed.
         """
         with ui.Progress(min=1, max=15) as p:
+
             p.set(message="Plotting", detail="This may take a while...")
             lib = library()
+            names = lib.names
+            y_upper = input.y_upper()
+            y_lower = input.y_lower()
             rep = representation_dict[input.plot_rep_type()]
-            fig, ax = lib.plot_tsne(rep=rep)
+            
+            # Update to pass the new parameters
+            fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+
+            tsne_df.set(df)
+            return fig, ax
         
         
     
@@ -492,8 +505,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             print(f"training {model_dict[input.model_type()]}")
 
-            m = pai.Model(model_type=model_dict[input.model_type()], seed=input.split_seed())
-            m.train(library=lib, x=rep_type, split=split, seed=input.split_seed(), model_type=model_dict[input.model_type()])
+            m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed())
+            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()])
 
             print("training done!")
 
