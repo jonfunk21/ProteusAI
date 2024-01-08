@@ -149,83 +149,63 @@ app_ui = ui.page_fluid(
                )
         ),
 
-        ui.nav_panel("Model", 
+        ui.nav_menu("Models",
+                    
+            ui.nav_panel("Supervised", 
                 ui.layout_sidebar(
                     ui.sidebar(
-                        ui.navset_tab(
-                            ui.nav_panel("Supervised",
-                                   ui.row(
-                                       ui.column(6,
-                                            ui.input_select("model_type", "Model type", model_types)
-                                        ),
-                                        ui.column(6,
-                                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
-                                        ),
-                                        # TODO: Only show the computed representation types
-                                        ui.column(6,
-                                            ui.input_select("model_rep_type", "Representaion type", representation_types),
-                                        )
-                                        
-                                   ),
-                                    
-                                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
-                                    
-                                    ui.panel_conditional("input.customize_model_params === true",
-                                            "Not implemented yet LOL",
-                                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
-                                        ),
+                        ui.row(
+                            ui.column(6,
+                                ui.input_select("model_type", "Model type", model_types)
+                            ),
+                            ui.column(6,
+                                ui.input_select("model_task", "Model task", ["Regression", "Classification"])
+                            ),
+                            # TODO: Only show the computed representation types
+                            ui.column(6,
+                                ui.input_select("model_rep_type", "Representaion type", representation_types),
+                            )
+                            
+                        ),
+                        
+                        ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                        
+                        ui.panel_conditional("input.customize_model_params === true",
+                                "Not implemented yet LOL",
+                                ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
+                            ),
 
-                                    
-                                    ui.row(
-                                        ui.column(6,
-                                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                                        ),
-                                        ui.column(6,
-                                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
-                                        ),
-                                        ui.column(12,
-                                            "Cross-validation split:"
-                                        ),
-                                        ui.column(4,
-                                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
-                                        ),
-                                        ui.column(4,
-                                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
-                                        ),
-                                        ui.column(4,
-                                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
-                                        ),
-                                        ui.column(8,
-                                            ui.input_action_button("review_data", "Review data")
-                                        ),
-                                        ui.column(4,
-                                            ui.input_action_button("train_button", "Train")
-                                        )
-                                    ),
-                                    
+                        
+                        ui.row(
+                            ui.column(6,
+                                ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
                             ),
-                            ui.nav_panel("Zero-shot",
-                                   "Model Customization",
-                                   ui.row(
-                                        ui.column(6,
-                                            ui.input_select("zs_model", "Choose zero-shot model", ["ESM-2", "ESM-1v", "MSA-Transformer"])
-                                        ),
-                                        ui.column(6,
-                                            ui.input_select("add_input", "Aditional input (e.g., MSA)", ["None", "MSA"])
-                                        ),
-                                        ui.input_action_button("compute_zs", "Compute")
-                                   )
-                                   
+                            ui.column(6,
+                                ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
                             ),
-                            ui.nav_panel(
-                                "Load model",
-                                "Under construction...",
-                                
+                            ui.column(12,
+                                "Cross-validation split:"
+                            ),
+                            ui.column(4,
+                                ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
+                            ),
+                            ui.column(4,
+                                ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
+                            ),
+                            ui.column(4,
+                                ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
+                            ),
+                            ui.column(8,
+                                ui.input_action_button("review_data", "Review data")
+                            ),
+                            ui.column(4,
+                                ui.input_action_button("train_button", "Train")
                             )
                         ),
+                        
                     width=450
                     ),
-                #ui.panel_main(
+                    #ui.panel_main(
                     ui.output_ui("pred_vs_true_ui"),
                     #ui.output_plot("pred_vs_true"),
                     ui.tags.b("Points near cursor"),
@@ -233,6 +213,26 @@ app_ui = ui.page_fluid(
                     #ui.output_table("in_brush")
                 #)
                 )
+            ),
+            ui.nav_panel("Zero-shot",
+                "Model Customization",
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("zs_model", "Choose zero-shot model", ["ESM-2", "ESM-1v", "MSA-Transformer"])
+                    ),
+                    ui.column(6,
+                        ui.input_select("add_input", "Aditional input (e.g., MSA)", ["None", "MSA"])
+                    ),
+                    ui.input_action_button("compute_zs", "Compute")
+                )
+                                   
+            ),
+            ui.nav_panel(
+                "Load model",
+                "Under construction...",
+                                
+            )
+                    
         ),
 
         
