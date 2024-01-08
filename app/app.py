@@ -11,12 +11,13 @@ import matplotlib.pyplot as plt
 import asyncio
 
 VERSION = "version " + "0.1"
-representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"]
+representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62", "VAE", "MSA-Transformer"]
 train_test_val_splits = ["Random"]
-model_types = ["Random Forrest", "KNN", "SVM"]
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm"}
-representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v"}
+model_types = ["Random Forrest", "KNN", "SVM", "VAE"]
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae"}
+representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
+SIDEBAR_WIDTH = 450
 
 app_ui = ui.page_fluid(
     
@@ -68,7 +69,7 @@ app_ui = ui.page_fluid(
                         ),
                         ui.nav_panel("Single Protein", "Under construction..."),
                     ),
-                width=450
+                width=SIDEBAR_WIDTH
                 ),
                 # Main panel
                 "Raw data view",
@@ -85,11 +86,18 @@ app_ui = ui.page_fluid(
                             ),
                             ui.column(6,
                                 ui.input_action_button("vis_compute_reps", "Compute"),
-                                f"Representations 100 % computed",
+                                #f"Representations 100 % computed",
                                 style='padding:25px;'
                             )
                         ),
 
+                        ui.panel_conditional("input.vis_rep_type === 'VAE' || input.vis_rep_type === 'MSA-Transformer'",
+                            ui.input_file("MSA_vae_training", "Upload MSA file")
+                        ),
+
+                        ui.panel_conditional("input.vis_rep_type === 'VAE'",
+                            ui.input_checkbox("custom_vae", "Customize VAE parameters")
+                        ),
                     
                         ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
                         
@@ -140,7 +148,7 @@ app_ui = ui.page_fluid(
                                 ui.input_action_button("update_plot", "Update plot")
                             )
                         ),
-                    width=450
+                    width=SIDEBAR_WIDTH
                    ),
                    #ui.panel_main(
                        ui.output_plot('tsne_plot')
@@ -202,8 +210,8 @@ app_ui = ui.page_fluid(
                                 ui.input_action_button("train_button", "Train")
                             )
                         ),
-                        
-                    width=450
+
+                    width=SIDEBAR_WIDTH
                     ),
                     #ui.panel_main(
                     ui.output_ui("pred_vs_true_ui"),
@@ -215,18 +223,24 @@ app_ui = ui.page_fluid(
                 )
             ),
             ui.nav_panel("Zero-shot",
-                "Model Customization",
-                ui.row(
-                    ui.column(6,
-                        ui.input_select("zs_model", "Choose zero-shot model", ["ESM-2", "ESM-1v", "MSA-Transformer"])
-                    ),
-                    ui.column(6,
-                        ui.input_select("add_input", "Aditional input (e.g., MSA)", ["None", "MSA"])
-                    ),
-                    ui.input_action_button("compute_zs", "Compute")
-                )
-                                   
+                ui.layout_sidebar(
+                    ui.sidebar(
+                        "Model Customization",
+                        ui.row(
+                            ui.column(6,
+                                ui.input_select("zs_model", "Choose zero-shot model", ["ESM-2", "ESM-1v", "MSA-Transformer", "VAE"])
+                            ),
+                            
+                            ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
+                                    ui.input_file("input_msa", "MSA")
+                            ),
+                            
+                            ui.input_action_button("compute_zs", "Compute")
+                        ),
+                    width=SIDEBAR_WIDTH)
+                )      
             ),
+
             ui.nav_panel(
                 "Load model",
                 "Under construction...",
@@ -262,7 +276,7 @@ app_ui = ui.page_fluid(
                                 )
                             ),
                         ),
-                    width=450),
+                    width=SIDEBAR_WIDTH),
                     #ui.panel_main(
 
                     #)
