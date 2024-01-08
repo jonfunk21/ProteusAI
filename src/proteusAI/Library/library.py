@@ -243,11 +243,11 @@ class Library:
         """
         Check for available representations, store in protein object if representation is found
         """
-        reps = os.listdir(os.path.join(self.project, "rep"))
+        reps = [r for r in os.listdir(os.path.join(self.project, "rep")) if not r.startswith('.')]
         if len(reps) > 0:
-            computed = 0
             rep = None
             for rep in reps:
+                computed = 0
                 rep_path = os.path.join(self.project, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
@@ -259,7 +259,7 @@ class Library:
                     proteins.append(protein)
 
                 self.proteins = proteins
-            print(f"{round(computed/len(self.proteins)*100,2)}% of {rep} computed.")
+                print(f"{rep} representation {round(computed/len(self.proteins)*100,2)} % computed.")
 
     ### Utility ###
     def rename_proteins(self, new_names: Union[list, tuple]):
