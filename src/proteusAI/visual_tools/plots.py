@@ -73,8 +73,6 @@ def plot_predictions_vs_groundtruth_ggplot(data: pd.DataFrame,
     if file is not None:
         p.save(file)
 
-    # Return the plot object
-    print(data)
     return p
 
 def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None, 
