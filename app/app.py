@@ -26,7 +26,6 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     
-    
     ui.navset_tab_card(
 
         ###############
@@ -40,13 +39,9 @@ app_ui = ui.page_fluid(
                     
                     ui.navset_tab(
                         ui.nav_panel("Load Library",
-                               
-                               #ui.tooltip(
+
                                 ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
-                                    #"Upload a '.csv', '.xlsx' or 'EnzymeML' file.",
-                                    #placement="right",
-                                    #id="upload info",
-                                #),
+
                                
                                # CHANGE THIS TO EMPTY STRING LATER
                                ui.input_text(id="project_path", label="Project Path (Default: demo path)", value="demo/example_project"),
@@ -74,24 +69,22 @@ app_ui = ui.page_fluid(
                         ),
                         ui.nav_panel("Single Protein",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
+                            ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Confirm Selection'),
                             
                         ),
-                        
                         
                     ),
                 width=SIDEBAR_WIDTH
                 ),
                 # Main panel
                 ui.panel_conditional("typeof output.protein_fasta !== 'string'",
-                    "Upload experimental data (csv or Excel file) or a single protein (FASTA)",
+                    "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
                     ui.output_data_frame("dataset_table"),
                 ),
                 
                 ui.output_text("protein_fasta")
-                
-                              
-                
+
             ),
         ),
 
@@ -173,9 +166,8 @@ app_ui = ui.page_fluid(
                     ),
                     #ui.panel_main(
                     ui.output_ui("pred_vs_true_ui"),
-                    #ui.output_plot("pred_vs_true"),
-                    ui.tags.b("Points near cursor"),
-                    ui.output_table("near_hover"),
+                    #ui.tags.b("Points near cursor"),
+                    #ui.output_table("near_hover"),
                     #ui.output_table("in_brush")
                 #)
                 )
@@ -362,6 +354,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein.load_fasta(f[0]["datapath"])
+        prot.path = input.protein_path()
+        print(prot.path)
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
         MODE.set('protein')
@@ -373,7 +367,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             seq = None
         else:
             seq = 'Protein name: ' + protein().name + '\n' + protein().seq
-        print(protein())
         return seq
 
 
@@ -389,7 +382,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def analyze_ui():
-        print(MODE())
         if MODE() == "dataset":
             return ui.TagList(
                 ui.h4("Dataset mode"),
