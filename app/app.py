@@ -68,7 +68,7 @@ app_ui = ui.page_fluid(
                                    ),
                                ),
                     
-                               ui.input_action_button('confirm_selection', 'Confirm Selection'),
+                               ui.input_action_button('confirm_dataset', 'Confirm Selection'),
                                
                                
                         ),
@@ -101,75 +101,8 @@ app_ui = ui.page_fluid(
         ui.nav_panel("Analyze", 
                ui.layout_sidebar(
                    ui.sidebar(
-                        ui.row(
-                            ui.column(6,
-                                ui.input_select("vis_rep_type", "Compute representation", representation_types),
-                            ),
-                            ui.column(6,
-                                ui.input_action_button("vis_compute_reps", "Compute"),
-                                #f"Representations 100 % computed",
-                                style='padding:25px;'
-                            )
-                        ),
-
-                        ui.panel_conditional("input.vis_rep_type === 'VAE' || input.vis_rep_type === 'MSA-Transformer'",
-                            ui.input_file("MSA_vae_training", "Upload MSA file")
-                        ),
-
-                        ui.panel_conditional("input.vis_rep_type === 'VAE'",
-                            ui.input_checkbox("custom_vae", "Customize VAE parameters"),
-                            ui.input_action_button("train_vae", "Train VAE")
-                        ),
-                    
-                        ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
+                        ui.output_ui("analyze_ui"),
                         
-                        ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
-                        
-                        # Conditional panel for Site
-                        ui.panel_conditional("input.color_by === 'Site'",
-                                ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
-                            ),
-                        
-                        # Conditional panel for Y-value with numeric data
-                        ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
-                                ui.row(
-                                    ui.column(6,
-                                            ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
-                                        ),
-                                    ui.column(6,
-                                            ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
-                                        ),
-                                )
-                            ),
-                        # Conditional panel fo Y-value with categorical data
-                        ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
-                                ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
-                            ),
-                        
-                        ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
-
-                        ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
-                        ui.panel_conditional("input.hide_by_y === true",
-                            ui.row(
-                            # change these to be the min and max values observed in the library
-                            ui.column(6,
-                                        ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
-                                ),
-                            ui.column(6,
-                                        ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
-                                )
-                        ),
-
-                        ),
-                        ui.row(
-                            ui.column(12, "Visualize representations"),
-                            ui.column(6,
-                                ui.input_select("plot_rep_type", "", representation_types),
-                            ),
-                                ui.column(6,
-                                ui.input_action_button("update_plot", "Update plot")
-                            )
-                        ),
                     width=SIDEBAR_WIDTH
                    ),
                    #ui.panel_main(
@@ -247,29 +180,10 @@ app_ui = ui.page_fluid(
                 #)
                 )
             ),
-            ui.nav_panel("Zero-shot",
-                ui.layout_sidebar(
-                    ui.sidebar(
-                        "Model Customization",
-                        ui.row(
-                            ui.column(6,
-                                ui.input_select("zs_model", "Choose zero-shot model", ["ESM-2", "ESM-1v", "MSA-Transformer", "VAE"])
-                            ),
-                            
-                            ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
-                                    ui.input_file("input_msa", "MSA")
-                            ),
-                            
-                            ui.input_action_button("compute_zs", "Compute")
-                        ),
-                    width=SIDEBAR_WIDTH)
-                )      
-            ),
 
             ui.nav_panel(
                 "Load model",
-                "Under construction...",
-                                
+                "Under construction...",            
             )
                     
         ),
@@ -278,7 +192,7 @@ app_ui = ui.page_fluid(
         ## PREDICT PAGE ##
         ##################
         ui.nav_menu(
-            "Build",
+            "Design",
             ui.nav_panel(
                 "New sequences",
                 ui.layout_sidebar(
@@ -324,6 +238,9 @@ app_ui = ui.page_fluid(
 )
 
 def server(input: Inputs, output: Outputs, session: Session):
+
+    # Operation mode
+    MODE = reactive.Value(None)
 
     ### Homepage ###
     # App logo
@@ -393,7 +310,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     # Checking library
     @reactive.Effect
-    @reactive.event(input.confirm_selection)
+    @reactive.event(input.confirm_dataset)
     def _():
         if input.y_type() == "numeric":
             y_type = "num"
@@ -421,6 +338,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices=[inverted_reps[i] for i in lib.reps]
         )
         protein.set(None)
+        MODE.set("dataset")
 
 
     
@@ -446,6 +364,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = pai.Protein.load_fasta(f[0]["datapath"])
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
+        MODE.set('protein')
 
     @output
     @render.text
@@ -466,6 +385,106 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Dataset case
     # Visualizations
     tsne_df = reactive.Value()   
+
+    @output
+    @render.ui
+    def analyze_ui():
+        print(MODE())
+        if MODE() == "dataset":
+            return ui.TagList(
+                ui.h4("Dataset mode"),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("vis_rep_type", "Compute representation", representation_types),
+                    ),
+                    ui.column(6,
+                        ui.input_action_button("vis_compute_reps", "Compute"),
+                            #f"Representations 100 % computed",
+                            style='padding:25px;'
+                        )
+                    ),
+
+                    ui.panel_conditional("input.vis_rep_type === 'VAE' || input.vis_rep_type === 'MSA-Transformer'",
+                        ui.input_file("MSA_vae_training", "Upload MSA file")
+                    ),
+
+                    ui.panel_conditional("input.vis_rep_type === 'VAE'",
+                        ui.input_checkbox("custom_vae", "Customize VAE parameters"),
+                        ui.input_action_button("train_vae", "Train VAE")
+                    ),
+                
+                    ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
+                    
+                    ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
+                    
+                    # Conditional panel for Site
+                    ui.panel_conditional("input.color_by === 'Site'",
+                            ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
+                        ),
+                    
+                    # Conditional panel for Y-value with numeric data
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
+                            ui.row(
+                                ui.column(6,
+                                        ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
+                                    ),
+                                ui.column(6,
+                                        ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
+                                    ),
+                            )
+                        ),
+                    # Conditional panel fo Y-value with categorical data
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
+                            ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
+                        ),
+                    
+                    ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
+
+                    ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
+                    ui.panel_conditional("input.hide_by_y === true",
+                        ui.row(
+                        # change these to be the min and max values observed in the library
+                        ui.column(6,
+                                    ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
+                            ),
+                        ui.column(6,
+                                    ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
+                            )
+                    ),
+
+                    ),
+                    ui.row(
+                        ui.column(12, "Visualize representations"),
+                        ui.column(6,
+                            ui.input_select("plot_rep_type", "", representation_types),
+                        ),
+                            ui.column(6,
+                            ui.input_action_button("update_plot", "Update plot")
+                        )
+                    )
+            )
+        if MODE() == "protein":
+            return ui.TagList(
+                ui.h4("Zero-shot modeling"),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("zs_model", "Choose model", ["ESM-2", "ESM-1v", "MSA-Transformer", "VAE"])
+                    ),
+                    
+                    ui.column(12,
+                        ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
+                            ui.input_file("input_msa", "MSA")
+                        ),
+                    ),
+                    ui.column(6,
+                        ui.input_action_button("compute_zs", "Compute")
+                    )
+                ),
+            )
+        else:
+            return ui.TagList(
+                "To proceed either upload a Dataset or a Protein and click proceed in the 'Data' tab."
+            )
 
     @output
     @render.plot
