@@ -8,7 +8,7 @@ sys.path.append('src/')
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
-import asyncio
+import plotnine
 
 VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62", "VAE", "MSA-Transformer"]
@@ -18,6 +18,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
+print(plotnine.__version__)
 
 app_ui = ui.page_fluid(
     
@@ -25,8 +26,12 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     
+    
     ui.navset_tab_card(
 
+        ###############
+        ## DATA PAGE ##
+        ###############
         ui.nav_panel(
             "Data", 
             
@@ -37,7 +42,7 @@ app_ui = ui.page_fluid(
                         ui.nav_panel("Load Library",
                                
                                #ui.tooltip(
-                                    ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls', '.fasta'], placeholder="None"),
+                                ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
                                     #"Upload a '.csv', '.xlsx' or 'EnzymeML' file.",
                                     #placement="right",
                                     #id="upload info",
@@ -67,17 +72,33 @@ app_ui = ui.page_fluid(
                                
                                
                         ),
-                        ui.nav_panel("Single Protein", "Under construction..."),
+                        ui.nav_panel("Single Protein",
+                            ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
+                            ui.input_action_button('confirm_protein', 'Confirm Selection'),
+                            
+                        ),
+                        
+                        
                     ),
                 width=SIDEBAR_WIDTH
                 ),
                 # Main panel
-                "Raw data view",
-                ui.output_data_frame("dataset_table")
+                ui.panel_conditional("typeof output.protein_fasta !== 'string'",
+                    "Upload experimental data (csv or Excel file) or a single protein (FASTA)",
+                    ui.output_data_frame("dataset_table"),
+                ),
+                
+                ui.output_text("protein_fasta")
+                
+                              
+                
             ),
         ),
-        
-        ui.nav_panel("Library", 
+
+        ##################
+        ## Analyze PAGE ##
+        ##################
+        ui.nav_panel("Analyze", 
                ui.layout_sidebar(
                    ui.sidebar(
                         ui.row(
@@ -96,7 +117,8 @@ app_ui = ui.page_fluid(
                         ),
 
                         ui.panel_conditional("input.vis_rep_type === 'VAE'",
-                            ui.input_checkbox("custom_vae", "Customize VAE parameters")
+                            ui.input_checkbox("custom_vae", "Customize VAE parameters"),
+                            ui.input_action_button("train_vae", "Train VAE")
                         ),
                     
                         ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
@@ -157,7 +179,10 @@ app_ui = ui.page_fluid(
                )
         ),
 
-        ui.nav_menu("Models",
+        #################
+        ## MODELS PAGE ##
+        #################
+        ui.nav_menu("Learn",
                     
             ui.nav_panel("Supervised", 
                 ui.layout_sidebar(
@@ -249,9 +274,11 @@ app_ui = ui.page_fluid(
                     
         ),
 
-        
+        ##################
+        ## PREDICT PAGE ##
+        ##################
         ui.nav_menu(
-            "Predict",
+            "Build",
             ui.nav_panel(
                 "New sequences",
                 ui.layout_sidebar(
@@ -308,13 +335,21 @@ def server(input: Inputs, output: Outputs, session: Session):
         dir = Path(__file__).resolve().parent
         img: ImgData = {"src": str(dir / "logo.png"),  "height": "75px"}
         return img
+    
+    # dummy data set for demo purposes
+    dummy = pd.DataFrame({
+        "Sequence":["MGVARGTV...G", "AGVARGTV...G", "...", "MGVARGTV...V"],
+        "Description":["wt", "M1A", "...", "G142V"],
+        "Activity":["0.5", "0.32", "...", "0.7"]
+    })
 
     # dummy dataset until real dataset is entere
-    dataset = reactive.Value(pd.read_csv("app/demo_data.csv"))
+    #dataset = reactive.Value(pd.read_csv("app/demo_data.csv"))
+    dataset = reactive.Value(dummy)
     dataset_path = reactive.Value(str)
     library = reactive.Value(None)
         
-    # Reading data
+    # Reading dataset
     @reactive.Effect
     @reactive.event(input.dataset_file)
     def _():
@@ -330,7 +365,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         df = render.DataTable(dataset(), summary=True)
         return df
     
-
     @reactive.Effect()
     def _():
         cols = list(dataset().columns)
@@ -370,8 +404,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         seqs = dataset()[input.seq_col()].to_list()
         ys = dataset()[input.y_col()].to_list()
         names = dataset()[input.description_col()].to_list()
-    
-        lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names)
+
+        lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names, proteins=[])
         
         library.set(lib)
 
@@ -386,9 +420,50 @@ def server(input: Inputs, output: Outputs, session: Session):
             "plot_rep_type",
             choices=[inverted_reps[i] for i in lib.reps]
         )
+        protein.set(None)
+
+
     
-    ### Library tab ###
+    protein_path = reactive.Value(str)
+    protein = reactive.Value(None)
+    protein_name = reactive.Value(None)
+
+    #reading protein fasta
+    @reactive.Effect
+    @reactive.event(input.protein_file)
+    def _():
+        prot = protein()
+        f: list[FileInfo] = input.protein_file()
+        prot = pai.Protein.load_fasta(f[0]["datapath"])
+        protein.set(prot)
+        dataset_path.set(f[0]["datapath"])
+
+    @reactive.Effect
+    @reactive.event(input.confirm_protein)
+    def _():
+        prot = protein()
+        f: list[FileInfo] = input.protein_file()
+        prot = pai.Protein.load_fasta(f[0]["datapath"])
+        protein.set(prot)
+        dataset_path.set(f[0]["datapath"])
+
+    @output
+    @render.text
+    def protein_fasta():
+        if protein() == None:
+            seq = None
+        else:
+            seq = 'Protein name: ' + protein().name + '\n' + protein().seq
+        print(protein())
+        return seq
+
+
         
+    #################
+    ## Analyze TAB ##
+    #################
+    
+    # Dataset case
     # Visualizations
     tsne_df = reactive.Value()   
 
