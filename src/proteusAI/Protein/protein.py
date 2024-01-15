@@ -70,17 +70,13 @@ class Protein:
         Load protein sequence from a FASTA file.
 
         Args:
-            fasta_file_path (str): Path to the FASTA file.
+            file (str): Path to the FASTA file.
         """
-        # Initialize sequence and headers lists
         sequences = []
         headers = []
-        
-        # Temp variables
         header = None
         seq = []
 
-        # Read the file
         with open(file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -93,32 +89,23 @@ class Protein:
                 else:
                     seq.append(line)
 
-            # Append last sequence
             if seq:
                 sequences.append(''.join(seq))
 
-        # Check for the FASTA format
         if not headers:
             raise ValueError(f"The file {file} is not in FASTA format or is empty.")
         
-        # Warn if there are multiple entries
         if len(headers) > 1:
-            warnings.warn("The provided FASTA file contains multiple entries. Using only the first entry - the header and not file name will be stored as 'name'!")
-            
-            # Set the first header as self.name
-            name = headers[0].strip('>')  # remove the '>' character if it's there
-        else:
-            # Store the filename (without extension) as self.name
-            base_name = os.path.basename(file)  # get file name with extension
-            file_name_without_extension = os.path.splitext(base_name)[0]
-            name = file_name_without_extension
+            warnings.warn("The provided FASTA file contains multiple entries. Using only the first entry.")
+
+        # Set the header as self.name
+        name = headers[0].strip()  # remove potential leading spaces
 
         # Store the first sequence in self.seq
         seq = sequences[0]
 
         # Create and return a new Protein instance
-        protein_instance = cls(name=name, seq=seq)
-        return protein_instance
+        return cls(name=name, seq=seq)
     
     ### getters and setters ###
     @property
