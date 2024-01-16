@@ -28,6 +28,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
+BATCH_SIZE = 100
 print(plotnine.__version__)
 
 app_ui = ui.page_fluid(
@@ -488,6 +489,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "To proceed either upload a Dataset or a Protein and click proceed in the 'Data' tab."
             )
 
+    # Outputs for analyze tab
     @output
     @render.plot
     @reactive.event(input.update_plot)
@@ -510,7 +512,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             tsne_df.set(df)
             return fig, ax
         
-        
+    # Zero-shot modeling
+    zs_scores = reactive.Value(pd.DataFrame())
+
+    @reactive.Effect
+    @reactive.event(input.compute_zs)
+    def zs_compute():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Computing", detail="This may take several minutes...")
+            prot = protein()
+            model = representation_dict[input.zs_model()]
+            print(f"computing zero shot scores using {model}")
+            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
+            zs_scores.set(df)
+            
     
     # Compute representations
     # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations

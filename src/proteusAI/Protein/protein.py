@@ -145,7 +145,8 @@ class Protein:
         torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
         torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
 
-        zs_to_csv(seq, alphabet, p, mmp, entropy, dest)
+        df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
+        return df
 
     
     ### getters and setters ###

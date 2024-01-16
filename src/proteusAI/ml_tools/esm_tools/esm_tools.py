@@ -366,26 +366,24 @@ def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: to
     alphabet_list = list(alphabet.to_dict().keys())
     alphabet = alphabet.to_dict()
     canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-
-    with open(dest, 'w', newline='') as csvfile:
-        fieldnames = ['mutant', 'p', 'mmp', 'entropy']
-        
-        mutants, p_values, mmp_values, entropy_values = [], [], [], []
-        for pos in range(len(wt_seq)):
-            for aa in canonical_aas:
-                if wt_seq[pos] != aa:
-                    mutants.append(wt_seq[pos] + str(pos+1) + aa)
-                    p_values.append(p[0, pos, alphabet[aa]].item())
-                    mmp_values.append(mmp[0, pos, alphabet[aa]].item())
-                    entropy_values.append(entropy[0, pos].item())
     
-        df = pd.DataFrame({
-            'mutant': mutants,
-            'p': p_values,
-            'mmp': mmp_values,
-            'entropy': entropy_values
-        })
-        df.to_csv(dest, index=False)
+    mutants, p_values, mmp_values, entropy_values = [], [], [], []
+    for pos in range(len(wt_seq)):
+        for aa in canonical_aas:
+            if wt_seq[pos] != aa:
+                mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                p_values.append(p[0, pos, alphabet[aa]].item())
+                mmp_values.append(mmp[0, pos, alphabet[aa]].item())
+                entropy_values.append(entropy[0, pos].item())
+
+    df = pd.DataFrame({
+        'mutant': mutants,
+        'p': p_values,
+        'mmp': mmp_values,
+        'entropy': entropy_values
+    })
+    df.to_csv(dest, index=False)
+    return df
 
 
 ### Protein structure
