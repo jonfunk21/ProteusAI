@@ -350,6 +350,44 @@ def find_mutations(native_seq, predicted_seq):
     return mutations
 
 
+def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: torch.Tensor, entropy: torch.Tensor, dest: str):
+    """
+    Save the results as a CSV file.
+
+    Args:
+        wt_seq (str): Wildtype sequence.
+        alphabet (esm.data.Alphabet): Alphabet used for the model.
+        p (torch.Tensor): Probability distribution tensor.
+        mmp (torch.Tensor): Masked marginal probability tensor.
+        entropy (torch.Tensor): Per-position entropy tensor.
+        dest (str): Destination path for the CSV file.
+    """
+    # Convert alphabet to list for indexing
+    alphabet_list = list(alphabet.to_dict().keys())
+    alphabet = alphabet.to_dict()
+    canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+
+    with open(dest, 'w', newline='') as csvfile:
+        fieldnames = ['mutant', 'p', 'mmp', 'entropy']
+        
+        mutants, p_values, mmp_values, entropy_values = [], [], [], []
+        for pos in range(len(wt_seq)):
+            for aa in canonical_aas:
+                if wt_seq[pos] != aa:
+                    mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                    p_values.append(p[0, pos, alphabet[aa]].item())
+                    mmp_values.append(mmp[0, pos, alphabet[aa]].item())
+                    entropy_values.append(entropy[0, pos].item())
+    
+        df = pd.DataFrame({
+            'mutant': mutants,
+            'p': p_values,
+            'mmp': mmp_values,
+            'entropy': entropy_values
+        })
+        df.to_csv(dest, index=False)
+
+
 ### Protein structure
 def string_to_tempfile(data):
     """
