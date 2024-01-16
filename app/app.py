@@ -1,3 +1,13 @@
+# This source code is part of the proteusAI package and is distributed
+# under the MIT License.
+
+"""
+The proteusAI shiny app.
+"""
+
+__name__ = "proteusAI"
+__author__ = "Jonathan Funk"
+
 import shiny
 from shiny import App, ui, render, Inputs, Outputs, Session, reactive
 from shiny.types import FileInfo, ImgData
