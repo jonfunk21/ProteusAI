@@ -8,6 +8,11 @@ from typing import Union
 import inspect
 import os
 import warnings
+import sys
+current_path = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.join(current_path, '..')
+sys.path.append(root_path)
+from proteusAI.ml_tools.esm_tools import *
 
 class Protein:
     """
@@ -106,6 +111,42 @@ class Protein:
 
         # Create and return a new Protein instance
         return cls(name=name, seq=seq)
+    
+    ### Zero-shot prediction ###
+    def zs_prediction(self, model: str='esm2', batch_size: int=1):
+        """
+        Compute zero-shot prediction scores for a protein.
+
+        Args:
+            model (str): Zero-shot model
+            batch_size (int): Batch size. 
+        """
+        seq = self.seq
+
+         # LLM major computations
+        print("computing logits")
+        logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
+
+        # calculations
+        p = get_probability_distribution(logits)
+        mmp = masked_marginal_probability(p, seq, alphabet)
+        entropy = per_position_entropy(p)
+
+        # save tensors
+        project_path = self.path
+        print(project_path)
+        dest = os.path.join(project_path, "zero_shot/" + model)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+            print(f"library created at {project_path}")
+
+        torch.save(p, os.path.join(dest, f"prob_dist.pt"))
+        torch.save(mmp, os.path.join(dest, f"masked_marginal_probability.pt"))
+        torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
+        torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
+
+        zs_to_csv(seq, alphabet, p, mmp, entropy, dest)
+
     
     ### getters and setters ###
     @property
