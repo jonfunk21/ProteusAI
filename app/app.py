@@ -19,16 +19,18 @@ import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
 import plotnine
+import hashlib
 
 VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
 model_types = ["Random Forrest", "KNN", "SVM"] # Add VAEs later
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae"}
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 100
+ZS_MODELS = ["ESM-2", "ESM-1v"]
 print(plotnine.__version__)
 
 # TODO: check if Project path exists, create one if not
@@ -73,7 +75,7 @@ app_ui = ui.page_fluid(
                                         ui.input_select("y_col", "Y-values", []),
                                    ),
                                    ui.column(6,
-                                       ui.input_select("y_type", "Data type", ["numeric", "categorical"])
+                                       ui.input_select("y_type", "Data type", ["Numeric", "Categorical"])
                                    ),
                                ),
                     
@@ -311,23 +313,35 @@ def server(input: Inputs, output: Outputs, session: Session):
             selected=cols[-1],
         )
 
-    # loading existing library
-    # Reading data
+    # check if data is numerical
+    def is_numerical(data):
+        """
+        Check if the data is numerical.
+        Args:
+            data: List of data values.
+        Returns:
+            Boolean: True if all data is numerical (int, float, complex), False otherwise.
+        """
+        return all(isinstance(x, (int, float, complex)) for x in data)
 
-    # Checking library
+    # Loading library data
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
     def _():
-        if input.y_type() == "numeric":
+        ys = dataset()[input.y_col()].to_list()
+
+        # Determine if the data is numerical or categorical
+        if is_numerical(ys):
             y_type = "num"
             choice = "Regression"
+            _y_type = "Numeric"
         else:
             y_type = "class"
             choice = "Classification"
+            _y_type = "Categorical"
     
         # TRY TO FIND A MORE STABLE SOLUTION HERE
         seqs = dataset()[input.seq_col()].to_list()
-        ys = dataset()[input.y_col()].to_list()
         names = dataset()[input.description_col()].to_list()
 
         lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names, proteins=[])
@@ -351,15 +365,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             "model_task",
             choices=[choice]
         )
-        
+
+        ui.update_select(
+            "y_type",
+            choices=[_y_type]
+        )
+
         protein.set(None)
         MODE.set("dataset")
 
 
     
-    protein_path = reactive.Value(str)
+    
     protein = reactive.Value(None)
-    protein_name = reactive.Value(None)
+    zs_results = reactive.Value([])
 
     #reading protein fasta
     @reactive.Effect
@@ -385,7 +404,21 @@ def server(input: Inputs, output: Outputs, session: Session):
         dataset_path.set(f[0]["datapath"])
         MODE.set('protein')
 
-        # check which datasets are available for the zero shot computation - then display those that are
+        # check for zs-computations
+        seq = prot.seq
+        computed = []
+        for model in ZS_MODELS:
+            # compute hash
+            zs_hash = hashlib.md5((seq+model_dict[model]).encode()).hexdigest()
+
+            # check hash existence
+            zs_path = os.path.join(prot.path, f"zero_shot/{model_dict[model]}/{zs_hash}")
+
+            if os.path.exists(zs_path):
+                computed.append(model)
+            
+        zs_results.set(computed)
+        print(zs_results())
         
 
     @output
@@ -396,8 +429,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             seq = 'Protein name: ' + protein().name + '\n' + protein().seq
         return seq
-
-
         
     #################
     ## Analyze TAB ##
@@ -424,6 +455,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     ),
 
+                    ui.h4("Visualization"),
+
                     ui.panel_conditional("input.vis_rep_type === 'VAE' || input.vis_rep_type === 'MSA-Transformer'",
                         ui.input_file("MSA_vae_training", "Upload MSA file")
                     ),
@@ -443,7 +476,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     
                     # Conditional panel for Y-value with numeric data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'numeric'",
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
                             ui.row(
                                 ui.column(6,
                                         ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
@@ -454,7 +487,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             )
                         ),
                     # Conditional panel fo Y-value with categorical data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'categorical'",
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
                             ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
                         ),
                     
@@ -489,19 +522,23 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.row(
                     ui.column(6,
                         # add MSA-Transformer and VAE later
-                        ui.input_select("zs_model", "Choose model", ["ESM-2", "ESM-1v"])
+                        ui.input_select("zs_model", "Choose model", ZS_MODELS)
                     ),
                     
-                    ui.column(12,
+                    ui.column(6,
                         ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
                             ui.input_file("input_msa", "MSA")
                         ),
                     ),
-                    ui.column(6,
+                    
+                    ui.column(12,
                         ui.input_action_button("compute_zs", "Compute")
                     ),
-                    ui.column(12,
-                        ui.input_select("zs_data", "Zero-shot data", choices=[])
+
+                    ui.h4("Visualize"),
+
+                    ui.column(6,
+                        ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
                     )
                 ),
             )
@@ -543,7 +580,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Computing", detail="This may take several minutes...")
             prot = protein()
             model = representation_dict[input.zs_model()]
+
             print(f"computing zero shot scores using {model}")
+
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
             zs_scores.set(df)
     
