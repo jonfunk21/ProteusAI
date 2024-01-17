@@ -49,6 +49,7 @@ class Protein:
         self.seq = seq
         self.reps = list(reps)
         self.y = y
+        self.zs_hash = None
         
         # If path is not provided, use the directory of the calling script
         if rep_path is None:
@@ -118,10 +119,10 @@ class Protein:
         seq = self.seq
 
         # check scores for this protein and model have already been computed
-        seq_hash = hashlib.md5((seq+model).encode()).hexdigest()
+        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
 
         project_path = self.path
-        dest = os.path.join(project_path, "zero_shot", model, seq_hash)
+        dest = os.path.join(project_path, "zero_shot", model, zs_hash)
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -153,6 +154,9 @@ class Protein:
             torch.save(logits, os.path.join(dest, "masked_logits.pt"))
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
+        
+        # add zs hash for later conversion
+        self.zs_hash = zs_hash
 
         return df
 
