@@ -60,6 +60,7 @@ class Library:
         self.ys = ys
         self.reps = []
         self.y_type = y_type  
+        self.class_dict = {}
         
         # handle case if library does not exist
         if not os.path.exists(self.project):
@@ -208,15 +209,18 @@ class Library:
             self.names = df[names].tolist()
 
         self.seqs = df[seqs].tolist()
+        # Handle y values
         if y is not None:
-            ys = df[y].tolist()
+            self.ys = df[y].tolist()
+            if y_type == 'class':
+                self.ys, self.class_dict = self._encode_categorical_labels(self.ys)
 
-            # Create protein objects from names and sequences
-            self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, ys)]
-
+            # Create protein objects with y values
+            self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.ys)]
         else:
-            # Create protein objects from names and sequences
+            # Create protein objects without y values
             self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+
 
 
         self._check_reps()
@@ -260,6 +264,16 @@ class Library:
 
                 self.proteins = proteins
                 print(f"{rep} representation {round(computed/len(self.proteins)*100,2)} % computed.")
+
+
+    def _encode_categorical_labels(self, ys):
+        """
+        Encode categorical labels into numerical format.
+        """
+        label_encoder = LabelEncoder()
+        encoded_labels = label_encoder.fit_transform(ys)
+        class_mapping = {index: label for index, label in enumerate(label_encoder.classes_)}
+        return encoded_labels, class_mapping
 
     ### Utility ###
     def rename_proteins(self, new_names: Union[list, tuple]):
