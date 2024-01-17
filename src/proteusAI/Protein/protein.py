@@ -13,6 +13,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
 from proteusAI.ml_tools.esm_tools import *
+import hashlib
 
 class Protein:
     """
@@ -113,39 +114,46 @@ class Protein:
         return cls(name=name, seq=seq)
     
     ### Zero-shot prediction ###
-    def zs_prediction(self, model: str='esm2', batch_size: int=1):
-        """
-        Compute zero-shot prediction scores for a protein.
-
-        Args:
-            model (str): Zero-shot model
-            batch_size (int): Batch size. 
-        """
+    def zs_prediction(self, model='esm2', batch_size=1):
         seq = self.seq
 
-         # LLM major computations
-        print("computing logits")
-        logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
+        # check scores for this protein and model have already been computed
+        seq_hash = hashlib.md5((seq+model).encode()).hexdigest()
 
-        # calculations
-        p = get_probability_distribution(logits)
-        mmp = masked_marginal_probability(p, seq, alphabet)
-        entropy = per_position_entropy(p)
-
-        # save tensors
         project_path = self.path
-        print(project_path)
-        dest = os.path.join(project_path, "zero_shot/" + model)
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-            print(f"library created at {project_path}")
+        dest = os.path.join(project_path, "zero_shot", model, seq_hash)
 
-        torch.save(p, os.path.join(dest, f"prob_dist.pt"))
-        torch.save(mmp, os.path.join(dest, f"masked_marginal_probability.pt"))
-        torch.save(entropy, os.path.join(dest, f"per_position_entropy.pt"))
-        torch.save(logits, os.path.join(dest, f"masked_logits.pt"))
+        # Check if results already exist
+        if os.path.exists(dest):
+            print(f"Results already computed. Loading from {dest}")
+            p = torch.load(os.path.join(dest, "prob_dist.pt"))
+            mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
+            entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
+            logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+            df = pd.read_csv(os.path.join(dest, "zs_scores.csv"))
+        else:
+            # Perform computation if results do not exist
+            print("Computing logits")
+            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
 
-        df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
+            # Calculations
+            p = get_probability_distribution(logits)
+            mmp = masked_marginal_probability(p, seq, alphabet)
+            entropy = per_position_entropy(p)
+
+            # Create directory if it doesn't exist
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+                print(f"Directory created at {dest}")
+
+            # Save tensors
+            torch.save(p, os.path.join(dest, "prob_dist.pt"))
+            torch.save(mmp, os.path.join(dest, "masked_marginal_probability.pt"))
+            torch.save(entropy, os.path.join(dest, "per_position_entropy.pt"))
+            torch.save(logits, os.path.join(dest, "masked_logits.pt"))
+
+            df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
+
         return df
 
     

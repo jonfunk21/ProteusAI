@@ -21,15 +21,18 @@ import matplotlib.pyplot as plt
 import plotnine
 
 VERSION = "version " + "0.1"
-representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62", "VAE", "MSA-Transformer"]
+representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
-model_types = ["Random Forrest", "KNN", "SVM", "VAE"]
+model_types = ["Random Forrest", "KNN", "SVM"] # Add VAEs later
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 100
 print(plotnine.__version__)
+
+# TODO: check if Project path exists, create one if not
+# TODO: if no project path is provided create a temporary file system on the server - which can then be downloaded
 
 app_ui = ui.page_fluid(
     
@@ -126,7 +129,7 @@ app_ui = ui.page_fluid(
                     ui.sidebar(
                         ui.row(
                             ui.column(6,
-                                ui.input_select("model_type", "Model type", model_types)
+                                ui.input_select("model_type", "Surrogate model", model_types)
                             ),
                             ui.column(6,
                                 ui.input_select("model_task", "Model task", ["Regression", "Classification"])
@@ -317,8 +320,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         if input.y_type() == "numeric":
             y_type = "num"
+            choice = "Regression"
         else:
             y_type = "class"
+            choice = "Classification"
     
         # TRY TO FIND A MORE STABLE SOLUTION HERE
         seqs = dataset()[input.seq_col()].to_list()
@@ -340,6 +345,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             "plot_rep_type",
             choices=[inverted_reps[i] for i in lib.reps]
         )
+        
+        # update available model tasks
+        ui.update_select(
+            "model_task",
+            choices=[choice]
+        )
+        
         protein.set(None)
         MODE.set("dataset")
 
@@ -362,14 +374,19 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     def _():
+        # initialize protein
         prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein.load_fasta(f[0]["datapath"])
         prot.path = input.protein_path()
-        print(prot.path)
+
+        # set shiny variables
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
         MODE.set('protein')
+
+        # check which datasets are available for the zero shot computation - then display those that are
+        
 
     @output
     @render.text
@@ -471,7 +488,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.h4("Zero-shot modeling"),
                 ui.row(
                     ui.column(6,
-                        ui.input_select("zs_model", "Choose model", ["ESM-2", "ESM-1v", "MSA-Transformer", "VAE"])
+                        # add MSA-Transformer and VAE later
+                        ui.input_select("zs_model", "Choose model", ["ESM-2", "ESM-1v"])
                     ),
                     
                     ui.column(12,
@@ -481,6 +499,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     ui.column(6,
                         ui.input_action_button("compute_zs", "Compute")
+                    ),
+                    ui.column(12,
+                        ui.input_select("zs_data", "Zero-shot data", choices=[])
                     )
                 ),
             )
@@ -525,7 +546,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             print(f"computing zero shot scores using {model}")
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
             zs_scores.set(df)
-            
+    
     
     # Compute representations
     # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations
