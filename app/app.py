@@ -374,8 +374,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         protein.set(None)
         MODE.set("dataset")
 
-
-    
     
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
