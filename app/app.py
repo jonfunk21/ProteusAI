@@ -384,7 +384,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein.load_fasta(f[0]["datapath"])
+        prot = pai.Protein(file=f[0]["datapath"])
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
 
@@ -394,7 +394,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # initialize protein
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein.load_fasta(f[0]["datapath"])
+        prot = pai.Protein(file=f[0]["datapath"])
         prot.path = input.protein_path()
 
         # set shiny variables
@@ -436,6 +436,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Visualizations
     tsne_df = reactive.Value()   
 
+    # Dynamic sidebar tab for Analyze tab
     @output
     @render.ui
     def analyze_ui():
@@ -444,10 +445,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.h4("Dataset mode"),
                 ui.row(
                     ui.column(6,
-                        ui.input_select("vis_rep_type", "Compute representation", representation_types),
+                        ui.input_select("dat_rep_type", "Compute representation", representation_types),
                     ),
                     ui.column(6,
-                        ui.input_action_button("vis_compute_reps", "Compute"),
+                        ui.input_action_button("dat_compute_reps", "Compute"),
                             #f"Representations 100 % computed",
                             style='padding:25px;'
                         )
@@ -455,11 +456,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                     ui.h4("Visualization"),
 
-                    ui.panel_conditional("input.vis_rep_type === 'VAE' || input.vis_rep_type === 'MSA-Transformer'",
+                    ui.panel_conditional("input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
                         ui.input_file("MSA_vae_training", "Upload MSA file")
                     ),
 
-                    ui.panel_conditional("input.vis_rep_type === 'VAE'",
+                    ui.panel_conditional("input.dat_rep_type === 'VAE'",
                         ui.input_checkbox("custom_vae", "Customize VAE parameters"),
                         ui.input_action_button("train_vae", "Train VAE")
                     ),
@@ -545,60 +546,18 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "To proceed either upload a Dataset or a Protein and click proceed in the 'Data' tab."
             )
 
-    # Outputs for analyze tab
-    @output
-    @render.plot
-    @reactive.event(input.update_plot)
-    def tsne_plot():
-        """
-        Render plot once button is pressed.
-        """
-        with ui.Progress(min=1, max=15) as p:
-
-            p.set(message="Plotting", detail="This may take a while...")
-            lib = library()
-            names = lib.names
-            y_upper = input.y_upper()
-            y_lower = input.y_lower()
-            rep = representation_dict[input.plot_rep_type()]
-            
-            # Update to pass the new parameters
-            fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
-
-            tsne_df.set(df)
-            return fig, ax
-        
-    # Zero-shot modeling
-    zs_scores = reactive.Value(pd.DataFrame())
-
-    @reactive.Effect
-    @reactive.event(input.compute_zs)
-    def zs_compute():
-        with ui.Progress(min=1, max=15) as p:
-            p.set(message="Computing", detail="This may take several minutes...")
-            prot = protein()
-            model = representation_dict[input.zs_model()]
-
-            print(f"computing zero shot scores using {model}")
-
-            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
-            zs_scores.set(df)
-    
-    
     # Compute representations
-    # compute representations buttons: 'vis_compute_reps' and 'model_compute_reps' will trigger computations
-    # representation types are set by vis_rep_type
     @reactive.Effect
-    @reactive.event(input.vis_compute_reps)
+    @reactive.event(input.dat_compute_reps)
     async def _():
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Calculation in progress", detail="This may take a while...")
 
-            print(f"Computing library: {representation_dict[input.vis_rep_type()]}")
+            print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
             lib = library()
             
-            lib.compute(method=representation_dict[input.vis_rep_type()])
+            lib.compute(method=representation_dict[input.dat_rep_type()])
 
             library.set(lib)
             print("Done!")
@@ -609,6 +568,59 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
             )
+
+    # Output dataset mode
+    @output
+    @render.plot
+    @reactive.event(input.update_plot)
+    def tsne_plot():
+        """
+        Render plot once button is pressed.
+        """
+        with ui.Progress(min=1, max=15) as p:
+            if MODE() == "dataset":
+                p.set(message="Plotting", detail="This may take a while...")
+                lib = library()
+                names = lib.names
+                y_upper = input.y_upper()
+                y_lower = input.y_lower()
+                rep = representation_dict[input.plot_rep_type()]
+                
+                # Update to pass the new parameters
+                fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+
+                tsne_df.set(df)
+                return fig, ax
+
+            # removes plot when the mode is changed to protein
+            if MODE() == "protein":
+                ui.remove_ui(selector="div:has(> #tsne_plot)")
+        
+    # Zero-shot modeling
+    zs_scores = reactive.Value(pd.DataFrame())
+
+    @reactive.Effect
+    @reactive.event(input.compute_zs)
+    def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Computing", detail="This may take several minutes...")
+            prot = protein()
+            model = representation_dict[input.zs_model()]
+
+            print(f"computing zero shot scores using {model}")
+
+            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
+            zs_scores.set(df)
+    
+    # Output protein mode
+    @output
+    @render.plot
+    @reactive.event(input.plot_entropy)
+    def entropy_plot():
+        """
+        Create the per position entropy plot
+        """
+        pass
 
     ### Model tab ###
 
