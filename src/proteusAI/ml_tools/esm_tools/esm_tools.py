@@ -638,7 +638,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         title (str): title of plot
 
     Returns:
-        None
+        matplotlib.figure.Figure: The matplotlib figure object for the plot.
     """
 
     # Convert the tensor to a numpy array
@@ -652,7 +652,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     positions = np.arange(len(sequence))
 
     # Create a bar plot of per position entropy
-    plt.figure(figsize=(20, 6))
+    fig = plt.figure(figsize=(20, 6))
 
     if highlight_positions is None:
         plt.bar(positions, per_position_entropy_np.squeeze())
@@ -677,3 +677,5 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     # Show the plot
     if show:
         plt.show()
+
+    return fig

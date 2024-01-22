@@ -27,7 +27,7 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], rep_path: Union[str, None] = None, y = None, file: str = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], project: Union[str, None] = None, y = None, file: str = None):
         """
         Initialize a new protein object.
 
@@ -35,7 +35,7 @@ class Protein:
             name (str): Name/id of the protein.
             seq (str): Protein sequence.
             reps (list): List of available representations.
-            rep_path (str): Path to representations directory. Default './rep/'.
+            project (str): Path to the project. Will create one if the path does not exist.
             y (float, int, str): Label for the protein.
             file (str): path to fasta file
         """
@@ -44,7 +44,7 @@ class Protein:
         assert isinstance(name, (str, type(None)))
         assert isinstance(seq, (str, type(None)))
         assert isinstance(reps, (list, tuple))
-        assert isinstance(rep_path, (str, type(None)))
+        assert isinstance(project, (str, type(None)))
 
         self.name = name
         self.seq = seq
@@ -53,12 +53,14 @@ class Protein:
         self.zs_hash = None
         
         # If path is not provided, use the directory of the calling script
-        if rep_path is None:
+        if project is None:
             caller_path = os.path.dirname(self.get_caller_path())
-            self.path = os.path.join(caller_path, 'rep')
+            self.project = os.path.join(caller_path)
+            self.rep_path = os.path.join(caller_path, 'rep')
         else:
-            assert isinstance(rep_path, str)
-            self.path = rep_path
+            assert isinstance(project, str)
+            self.project = project
+            self.rep_path = os.path.join(project, 'rep')
 
         # If file is not None, then initialize load fasta
         if file is not None:
@@ -119,13 +121,16 @@ class Protein:
         self.seq = seq
     
     ### Zero-shot prediction ###
-    def zs_prediction(self, model='esm2', batch_size=1):
+    def zs_prediction(self, model='esm2', batch_size=100):
+        """
+        Compute zero-shot scores
+        """
         seq = self.seq
 
         # check scores for this protein and model have already been computed
         zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
 
-        project_path = self.path
+        project_path = self.project
         dest = os.path.join(project_path, "zero_shot", model, zs_hash)
 
         # Check if results already exist
@@ -139,7 +144,7 @@ class Protein:
         else:
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
+            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model) # modify function so it also stores the representations
 
             # Calculations
             p = get_probability_distribution(logits)
@@ -157,12 +162,41 @@ class Protein:
             torch.save(entropy, os.path.join(dest, "per_position_entropy.pt"))
             torch.save(logits, os.path.join(dest, "masked_logits.pt"))
 
+            self.p = p
+            self.mmp = mmp
+            self.entropy = entropy
+            self.logits = logits
+
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
         
         # add zs hash for later conversion
         self.zs_hash = zs_hash
 
         return df
+
+    # Plot zero-shot entropy
+    def plot_entropy(self, model='esm2'):
+        
+        seq = self.seq
+        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
+
+        dest = os.path.join(self.project, "zero_shot", model, zs_hash)
+
+        # make an efficient test if they are already loaded and also handle the situation if someone wants to plot but the things do not exist
+        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
+        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
+        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
+        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+
+        # cannot save the plot in shiny right now, causes app to crash
+        #plot_dest = os.path.join(dest, "per_position_entropy")
+
+        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title="test")
+        return fig
+    
+    # Plot 
+    def plot_scores(self, model='esm2'):
+        pass
 
     
     ### getters and setters ###
@@ -197,17 +231,6 @@ class Protein:
         if not isinstance(value, (list, tuple)) and value is not None:
             raise TypeError(f"Expected 'rep' to be of type 'list' or 'tuple', but got '{type(value).__name__}'")
         self._reps = list(value)
-
-    # For path
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, value):
-        if not isinstance(value, str) and value is not None:
-            raise TypeError(f"Expected 'path' to be of type 'str', but got '{type(value).__name__}'")
-        self._path = value
 
     # For y
     @property
