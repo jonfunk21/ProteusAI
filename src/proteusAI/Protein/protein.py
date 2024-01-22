@@ -27,7 +27,7 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], rep_path: Union[str, None] = None, y = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], rep_path: Union[str, None] = None, y = None, file: str = None):
         """
         Initialize a new protein object.
 
@@ -37,6 +37,7 @@ class Protein:
             reps (list): List of available representations.
             rep_path (str): Path to representations directory. Default './rep/'.
             y (float, int, str): Label for the protein.
+            file (str): path to fasta file
         """
 
         # assertions and checks
@@ -59,6 +60,10 @@ class Protein:
             assert isinstance(rep_path, str)
             self.path = rep_path
 
+        # If file is not None, then initialize load fasta
+        if file is not None:
+            self.load_fasta(file=file)
+
     def get_caller_path(self):
         """Returns the path of the script that called the function."""
         caller_frame = inspect.stack()[1]
@@ -70,9 +75,7 @@ class Protein:
     
     __repr__ = __str__
 
-    ### Class methods ###
-    @classmethod
-    def load_fasta(cls, file: str):
+    def load_fasta(self, file: str):
         """
         Load protein sequence from a FASTA file.
 
@@ -112,7 +115,8 @@ class Protein:
         seq = sequences[0]
 
         # Create and return a new Protein instance
-        return cls(name=name, seq=seq)
+        self.name = name
+        self.seq = seq
     
     ### Zero-shot prediction ###
     def zs_prediction(self, model='esm2', batch_size=1):
