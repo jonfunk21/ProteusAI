@@ -42,7 +42,7 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     
-    ui.navset_tab_card(
+    ui.navset_card_tab(
 
         ###############
         ## DATA PAGE ##
@@ -114,10 +114,13 @@ app_ui = ui.page_fluid(
                         
                     width=SIDEBAR_WIDTH
                    ),
-                   #ui.panel_main(
-                       ui.output_plot('tsne_plot')
-                       
-                   #)
+                   
+                    ui.output_plot('tsne_plot'),
+
+                    ui.output_plot("entropy_plot"),
+
+                    ui.output_plot("scores_plot")
+                    
                )
         ),
 
@@ -384,7 +387,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(file=f[0]["datapath"])
+        prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
 
@@ -394,8 +397,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # initialize protein
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(file=f[0]["datapath"])
-        prot.path = input.protein_path()
+        prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
 
         # set shiny variables
         protein.set(prot)
@@ -410,7 +412,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             zs_hash = hashlib.md5((seq+model_dict[model]).encode()).hexdigest()
 
             # check hash existence
-            zs_path = os.path.join(prot.path, f"zero_shot/{model_dict[model]}/{zs_hash}")
+            zs_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{zs_hash}")
 
             if os.path.exists(zs_path):
                 computed.append(model)
@@ -536,9 +538,18 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                     ui.h4("Visualize"),
 
-                    ui.column(6,
+                    ui.column(12,
                         ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
-                    )
+                    ),
+
+                    ui.column(6,
+                        ui.input_action_button("plot_entropy", "Plot entropy")
+                    ),
+
+                    ui.column(6,
+                        ui.input_action_button("plot_scores", "Plot scores")
+                    ),
+
                 ),
             )
         else:
@@ -620,7 +631,20 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         Create the per position entropy plot
         """
-        pass
+        prot = protein()
+        fig = prot.plot_entropy()
+        return fig
+
+    @output
+    @render.plot
+    @reactive.event(input.plot_scores)
+    def scores_plot():
+        """
+        Create the per position entropy plot
+        """
+        prot = protein()
+        fig = prot.plot_entropy()
+        return fig
 
     ### Model tab ###
 
