@@ -557,8 +557,6 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     # make sure section is in range of sequence
     if section != None:
         seq_len = probability_distribution_np.shape[0]
-        print(seq_len)
-        assert section[0] < seq_len & section[1] < seq_len
         assert section[0] < section[1]
         
         probability_distribution_np = probability_distribution_np[section[0]:section[1],:]
@@ -594,7 +592,8 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         cmap = "Blues"
 
     # Create a heatmap using seaborn
-    plt.figure(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
+
     ax = plt.gca()
     sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax)
     
@@ -624,6 +623,8 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     # Show the plot, if the 'show' argument is True
     if show:
         plt.show()
+
+    return fig
 
 def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None):
     """

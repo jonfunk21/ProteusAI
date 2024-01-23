@@ -195,8 +195,26 @@ class Protein:
         return fig
     
     # Plot 
-    def plot_scores(self, model='esm2'):
-        pass
+    def plot_scores(self, model='esm2', section=None, color_scheme=None):
+        seq = self.seq
+        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
+
+        dest = os.path.join(self.project, "zero_shot", model, zs_hash)
+
+        # make an efficient test if they are already loaded and also handle the situation if someone wants to plot but the things do not exist
+        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
+        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
+        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
+        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+
+        if section == None:
+            section = (0, len(self.seq))
+
+        if color_scheme == None:
+            color_scheme = "rwb"
+
+        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title="test", show=False, remove_tokens=True, color_sheme=color_scheme, section=section)
+        return fig
 
     
     ### getters and setters ###

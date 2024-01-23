@@ -326,7 +326,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             Boolean: True if all data is numerical (int, float, complex), False otherwise.
         """
         return all(isinstance(x, (int, float, complex)) for x in data)
-
+    
     # Loading library data
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
@@ -418,6 +418,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 computed.append(model)
             
         zs_results.set(computed)
+
         print(zs_results())
         
 
@@ -532,24 +533,66 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     
-                    ui.column(12,
+                    ui.column(6,
                         ui.input_action_button("compute_zs", "Compute")
                     ),
 
                     ui.h4("Visualize"),
 
-                    ui.column(12,
+                    ui.column(6,
                         ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
                     ),
 
-                    ui.column(6,
-                        ui.input_action_button("plot_entropy", "Plot entropy")
+                    ui.h4("Entropy"),
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_action_button("plot_entropy", "Plot entropy")
+                        ),
+                        ui.column(6,
+                            ui.input_checkbox("customize_entropy", "Customize plot"),
+                        ),
+                        ui.panel_conditional("input.customize_entropy === true",
+                            ui.row(
+                                ui.column(6,
+                                    ui.input_slider("entropy_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
+                                ),
+                                ui.column(6,
+                                    ui.input_numeric("entropy_width", "Sliding window width", value=10)
+                                )
+                            )
+
+                        )
                     ),
 
-                    ui.column(6,
-                        ui.input_action_button("plot_scores", "Plot scores")
-                    ),
 
+                    
+
+                    ui.h4("Scores"),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_action_button("plot_scores", "Plot scores")
+                        ),
+
+                        ui.column(6,
+                            ui.input_checkbox("customize_scores", "Customize plot"),
+                        ),
+
+                        ui.panel_conditional("input.customize_scores === true", 
+                            ui.row(
+                                ui.column(6,
+                                    ui.input_slider("scores_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
+                                ),
+                                ui.column(6,
+                                    ui.input_numeric("scores_width", "Sliding window width", value=len(protein().seq))
+                                ),
+                                ui.column(6,
+                                    ui.input_select("scores_color", "Customize color scheme", choices=["rwb", "b"])
+                                )
+                            )
+                        ),
+                    ),
                 ),
             )
         else:
@@ -643,7 +686,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         Create the per position entropy plot
         """
         prot = protein()
-        fig = prot.plot_entropy()
+        seq = prot.seq
+
+        if input.customize_scores():
+            start = input.scores_slider()
+            end = start + input.scores_width()
+            print(start, end)
+        else:
+            start = 0
+            end = len(seq)
+
+        section = (start, end)
+        fig = prot.plot_scores(section=section, color_scheme = input.scores_color())
         return fig
 
     ### Model tab ###
