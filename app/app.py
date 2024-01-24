@@ -685,6 +685,11 @@ def server(input: Inputs, output: Outputs, session: Session):
             end = len(seq)
 
         section = (start, end)
+        if section[1] > len(seq):
+            assert section[1] > section[0]
+            width = section[1] - section[0]
+            section = (len(seq) - width, len(seq))
+
         prot = protein()
         fig = prot.plot_entropy(section=section)
         return fig
@@ -716,6 +721,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             end = len(seq)
 
         section = (start, end)
+
+        if section[1] > len(seq):
+            assert section[1] > section[0]
+            width = section[1] - section[0]
+            section = (len(seq) - width, len(seq))
+        
         fig = prot.plot_scores(section=section, color_scheme = "rwb", )
         return fig
     

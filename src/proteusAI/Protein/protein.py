@@ -178,51 +178,75 @@ class Protein:
 
     # Plot zero-shot entropy
     def plot_entropy(self, model='esm2', title=None, section=None):
-        
         seq = self.seq
-        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
+        zs_hash = hashlib.md5((seq + model).encode()).hexdigest()
 
         dest = os.path.join(self.project, "zero_shot", model, zs_hash)
 
-        # make an efficient test if they are already loaded and also handle the situation if someone wants to plot but the things do not exist
+        # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
         self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
         self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
         self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
 
-        # cannot save the plot in shiny right now, causes app to crash
-        #plot_dest = os.path.join(dest, "per_position_entropy")
-        if section == None:
-            section = (0, len(self.seq))
+        # Section handling
+        seq_len = len(seq)
+        if section is None:
+            section = (0, seq_len)
+        elif isinstance(section, tuple):
+            if len(section) != 2 or any(type(i) != int for i in section):
+                raise ValueError("Section must be a tuple of two integers.")
+            if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
+                raise ValueError("Section indices are out of sequence range.")
+            if section[1] < section[0]:
+                raise ValueError("Section start index must be less than end index.")
+        else:
+            raise TypeError("Section must be a tuple or None.")
 
-        if title == None:
+        # Set title
+        if title is None:
             title = f"{model_dict[model]} per-position entropy"
 
+        # Plot entropy
         fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
         return fig
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
         seq = self.seq
-        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
+        zs_hash = hashlib.md5((seq + model).encode()).hexdigest()
 
         dest = os.path.join(self.project, "zero_shot", model, zs_hash)
 
-        # make an efficient test if they are already loaded and also handle the situation if someone wants to plot but the things do not exist
+        # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
         self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
         self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
         self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
 
-        if section == None:
-            section = (0, len(self.seq))
+        # Section handling
+        seq_len = len(seq)
+        if section is None:
+            section = (0, seq_len)
+        elif isinstance(section, tuple):
+            if len(section) != 2 or any(type(i) != int for i in section):
+                raise ValueError("Section must be a tuple of two integers.")
+            if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
+                raise ValueError("Section indices are out of sequence range.")
+            if section[1] < section[0]:
+                raise ValueError("Section start index must be less than end index.")
+        else:
+            raise TypeError("Section must be a tuple or None.")
 
-        if color_scheme == None:
-            color_scheme = "rwb"#
+        # Set color scheme
+        if color_scheme is None:
+            color_scheme = "rwb"
 
-        if title == None:
+        # Set title
+        if title is None:
             title = f"{model_dict[model]} Zero-shot prediction scores"
 
+        # Plot heatmap
         fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section)
         return fig
 
