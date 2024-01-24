@@ -626,7 +626,9 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     return fig
 
-def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None, section: tuple=None):
+def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, 
+                              show: bool = False, dest: str = None, title: str = None, section: tuple = None, 
+                              use_normal_ticks: bool = True):
     """
     Plot the per position entropy for a given sequence.
 
@@ -636,8 +638,9 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         highlight_positions (list): List of positions to highlight in red (0-indexed) (default: None).
         show (bool): Display the plot if True (default: False).
         dest (str): Optional path to save the plot as an image file (default: None).
-        title (str): title of plot
+        title (str): Title of plot.
         section (tuple): Section of the sequence to plot (default: None). If None, the entire sequence is plotted.
+        use_normal_ticks (bool): If True, use normal numerical ticks for x-axis (default: False).
 
     Returns:
         matplotlib.figure.Figure: The matplotlib figure object for the plot.
@@ -660,6 +663,9 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
 
+    # Dynamic tick interval
+    tick_interval = 1 if len(sequence) <= 30 else int(len(sequence) / 20)
+
     # Create a bar plot of per position entropy
     fig = plt.figure(figsize=(20, 6))
 
@@ -669,8 +675,11 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         colors = ["red" if pos in highlight_positions else "blue" for pos in positions]
         plt.bar(positions, per_position_entropy_np.squeeze(), color=colors)
 
-    # Set the x-axis labels to the sequence
-    plt.xticks(positions, sequence)
+    # Set the x-axis labels
+    if use_normal_ticks:
+        plt.xticks(positions[::tick_interval])
+    else:
+        plt.xticks(positions[::tick_interval], [sequence[i] for i in positions[::tick_interval]])
 
     # Set the labels and title
     plt.xlabel("Sequence Position")
