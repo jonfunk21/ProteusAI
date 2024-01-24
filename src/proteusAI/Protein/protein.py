@@ -15,6 +15,8 @@ sys.path.append(root_path)
 from proteusAI.ml_tools.esm_tools import *
 import hashlib
 
+model_dict = {"rf":"Random Forrest", "knn":"KNN", "svm":"SVM", "vae":"VAE", "esm2":"ESM-2", "esm1v":"ESM-1v"}
+
 class Protein:
     """
     The protein object contains information about a single protein,
@@ -175,7 +177,7 @@ class Protein:
         return df
 
     # Plot zero-shot entropy
-    def plot_entropy(self, model='esm2'):
+    def plot_entropy(self, model='esm2', title=None, section=None):
         
         seq = self.seq
         zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
@@ -190,12 +192,17 @@ class Protein:
 
         # cannot save the plot in shiny right now, causes app to crash
         #plot_dest = os.path.join(dest, "per_position_entropy")
+        if section == None:
+            section = (0, len(self.seq))
 
-        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title="test")
+        if title == None:
+            title = f"{model_dict[model]} per-position entropy"
+
+        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
         return fig
     
     # Plot 
-    def plot_scores(self, model='esm2', section=None, color_scheme=None):
+    def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
         seq = self.seq
         zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
 
@@ -211,9 +218,12 @@ class Protein:
             section = (0, len(self.seq))
 
         if color_scheme == None:
-            color_scheme = "rwb"
+            color_scheme = "rwb"#
 
-        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title="test", show=False, remove_tokens=True, color_sheme=color_scheme, section=section)
+        if title == None:
+            title = f"{model_dict[model]} Zero-shot prediction scores"
+
+        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section)
         return fig
 
     

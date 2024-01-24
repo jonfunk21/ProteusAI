@@ -626,7 +626,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     return fig
 
-def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None):
+def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None, section: tuple=None):
     """
     Plot the per position entropy for a given sequence.
 
@@ -637,6 +637,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         show (bool): Display the plot if True (default: False).
         dest (str): Optional path to save the plot as an image file (default: None).
         title (str): title of plot
+        section (tuple): Section of the sequence to plot (default: None). If None, the entire sequence is plotted.
 
     Returns:
         matplotlib.figure.Figure: The matplotlib figure object for the plot.
@@ -648,6 +649,13 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     # Check if the length of the per_position_entropy and sequence match
     if per_position_entropy_np.shape[1] != len(sequence):
         raise ValueError("The length of per_position_entropy and sequence must be the same.")
+
+    # If a section is specified, adjust the per_position_entropy and sequence accordingly
+    if section is not None:
+        if section[0] < 0 or section[1] > len(sequence):
+            raise ValueError("Section indices are out of range.")
+        per_position_entropy_np = per_position_entropy_np[:, section[0]:section[1]]
+        sequence = sequence[section[0]:section[1]]
 
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
@@ -665,7 +673,7 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     plt.xticks(positions, sequence)
 
     # Set the labels and title
-    plt.xlabel("Sequence")
+    plt.xlabel("Sequence Position")
     plt.ylabel("Per Position Entropy")
     if title is None:
         plt.title("Per Position Entropy of Sequence")

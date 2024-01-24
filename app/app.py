@@ -543,16 +543,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
                     ),
 
-                    ui.h4("Entropy"),
+                    ui.h4("Plot Entropy"),
                     
                     ui.row(
                         ui.column(6,
-                            ui.input_action_button("plot_entropy", "Plot entropy")
+                            ui.input_action_button("plot_entropy", "Plot")
                         ),
                         ui.column(6,
-                            ui.input_checkbox("customize_entropy", "Customize plot"),
+                            ui.input_checkbox("plot_entropy_section", "Plot subsection"),
                         ),
-                        ui.panel_conditional("input.customize_entropy === true",
+                        ui.panel_conditional("input.plot_entropy_section === true",
                             ui.row(
                                 ui.column(6,
                                     ui.input_slider("entropy_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
@@ -568,28 +568,28 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                     
 
-                    ui.h4("Scores"),
+                    ui.h4("Plot Scores"),
 
                     ui.row(
                         ui.column(6,
-                            ui.input_action_button("plot_scores", "Plot scores")
+                            ui.input_action_button("plot_scores", "Plot")
                         ),
 
                         ui.column(6,
-                            ui.input_checkbox("customize_scores", "Customize plot"),
+                            ui.input_checkbox("plot_scores_section", "Plot subsection"),
                         ),
 
-                        ui.panel_conditional("input.customize_scores === true", 
+                        ui.panel_conditional("input.plot_scores_section === true", 
                             ui.row(
                                 ui.column(6,
                                     ui.input_slider("scores_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
                                 ),
                                 ui.column(6,
-                                    ui.input_numeric("scores_width", "Sliding window width", value=len(protein().seq))
+                                    ui.input_numeric("scores_width", "Sliding window width", value=10)
                                 ),
-                                ui.column(6,
-                                    ui.input_select("scores_color", "Customize color scheme", choices=["rwb", "b"])
-                                )
+                                #ui.column(6,
+                                #    ui.input_select("scores_color", "Customize color scheme", choices=["rwb", "b"])
+                                #)
                             )
                         ),
                     ),
@@ -675,8 +675,28 @@ def server(input: Inputs, output: Outputs, session: Session):
         Create the per position entropy plot
         """
         prot = protein()
-        fig = prot.plot_entropy()
+        seq = prot.seq
+
+        if input.plot_entropy_section():
+            start = input.entropy_slider()
+            end = start + input.entropy_width()
+        else:
+            start = 0
+            end = len(seq)
+
+        section = (start, end)
+        prot = protein()
+        fig = prot.plot_entropy(section=section)
         return fig
+    
+    @reactive.Effect
+    @reactive.event(input.plot_entropy_section)
+    def _():
+        if input.plot_entropy_section():
+            ui.update_action_button(
+                "plot_entropy",
+                label="Update plot"
+            )
 
     @output
     @render.plot
@@ -688,17 +708,25 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = protein()
         seq = prot.seq
 
-        if input.customize_scores():
+        if input.plot_scores_section():
             start = input.scores_slider()
             end = start + input.scores_width()
-            print(start, end)
         else:
             start = 0
             end = len(seq)
 
         section = (start, end)
-        fig = prot.plot_scores(section=section, color_scheme = input.scores_color())
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", )
         return fig
+    
+    @reactive.Effect
+    @reactive.event(input.plot_scores_section)
+    def _():
+        if input.plot_scores_section():
+            ui.update_action_button(
+                "plot_scores",
+                label="Update plot"
+            )
 
     ### Model tab ###
 
