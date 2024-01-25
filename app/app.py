@@ -108,20 +108,27 @@ app_ui = ui.page_fluid(
         ## Analyze PAGE ##
         ##################
         ui.nav_panel("Analyze", 
-               ui.layout_sidebar(
-                   ui.sidebar(
+                ui.layout_sidebar(
+                    ui.sidebar(
                         ui.output_ui("analyze_ui"),
-                        
                     width=SIDEBAR_WIDTH
-                   ),
-                   
-                    ui.output_plot('tsne_plot'),
+                ),
 
+                ui.panel_conditional("typeof output.protein_fasta === 'string'",
+            
                     ui.output_plot("entropy_plot"),
 
                     ui.output_plot("scores_plot")
-                    
-               )
+                ),
+                
+                ui.panel_conditional("typeof output.protein_fasta !== 'string'",
+                                     
+                    ui.output_plot('tsne_plot')
+
+                ),
+
+               
+            )
         ),
 
         #################
@@ -420,7 +427,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         zs_results.set(computed)
 
         print(zs_results())
-        
 
     @output
     @render.text
@@ -526,6 +532,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                         # add MSA-Transformer and VAE later
                         ui.input_select("zs_model", "Choose model", ZS_MODELS)
                     ),
+
+                    ui.column(6,
+                        ui.input_action_button("compute_zs", "Compute"),
+                        style='padding:25px;'
+                    ),
                     
                     ui.column(6,
                         ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
@@ -533,9 +544,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     
-                    ui.column(6,
-                        ui.input_action_button("compute_zs", "Compute")
-                    ),
+                    
 
                     ui.h4("Visualize"),
 
@@ -551,6 +560,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                         ui.column(6,
                             ui.input_checkbox("plot_entropy_section", "Plot subsection"),
+                            style='padding:10px;'
                         ),
                         ui.panel_conditional("input.plot_entropy_section === true",
                             ui.row(
@@ -565,9 +575,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     ),
 
-
-                    
-
                     ui.h4("Plot Scores"),
 
                     ui.row(
@@ -577,6 +584,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                         ui.column(6,
                             ui.input_checkbox("plot_scores_section", "Plot subsection"),
+                            style='padding:10px;'
                         ),
 
                         ui.panel_conditional("input.plot_scores_section === true", 
@@ -645,10 +653,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 tsne_df.set(df)
                 return fig, ax
-
-            # removes plot when the mode is changed to protein
-            if MODE() == "protein":
-                ui.remove_ui(selector="div:has(> #tsne_plot)")
         
     # Zero-shot modeling
     zs_scores = reactive.Value(pd.DataFrame())
@@ -727,7 +731,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb", )
+        fig = prot.plot_scores(section=section, color_scheme = "rwb")
         return fig
     
     @reactive.Effect
@@ -741,7 +745,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### Model tab ###
 
-    model = reactive.Value(pai.Model())
+    model = reactive.Value(None)
     
     @reactive.Effect
     @reactive.event(input.n_train)
@@ -833,7 +837,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def pred_vs_true():
         df = val_df()
-        p = model().true_vs_predicted_ggplot(df)
+        if model() != None:
+            p = model().true_vs_predicted_ggplot(df)
+        else:
+            p = None
         return p
 
     @output
