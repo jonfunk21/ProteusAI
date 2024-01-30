@@ -832,13 +832,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             hover=ui.hover_opts(**hover_opts_kwargs),
             #brush=ui.brush_opts(**brush_opts_kwargs),
         )
-
+    
     @output
     @render.plot
     def pred_vs_true():
         df = val_df()
         if model() != None:
-            p = model().true_vs_predicted_ggplot(df)
+            p = model().true_vs_predicted(y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list())
         else:
             p = None
         return p

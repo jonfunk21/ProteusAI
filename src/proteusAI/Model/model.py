@@ -356,7 +356,7 @@ class Model:
 
     def true_vs_predicted(self, y_true: list, y_pred: list, title: Union[str, None] = None, 
                           x_label: Union[str, None] = None, y_label: Union[str, None] = None , plot_grid: bool = True, 
-                          file: Union[str, None] = None, show_plot: bool = True):
+                          file: Union[str, None] = None, show_plot: bool = False):
         """
         Predicts true values versus predicted values.
 
@@ -382,35 +382,6 @@ class Model:
         
         return fig, ax
     
-    def true_vs_predicted_ggplot(self, data: pd.DataFrame, title: Union[str, None] = None,
-                          x_label: Union[str, None] = None, y_label: Union[str, None] = None , plot_grid: bool = True, 
-                          file: Union[str, None] = None, show_plot: bool = True):
-        """
-        Predicts true values versus predicted values.
-
-        Args:
-            y_true (list): True y values.
-            y_pred (list): Predicted y values.
-            title (str): Set the title of the plot. 
-            x_label (str): Set the x-axis label.
-            y_label (str): Set the y-axis label.
-            plot_grid (bool): Display a grid in the plot.
-            file (str): Choose a file name.
-            show_plot (bool): Choose to show the plot.
-        """
-        
-        if file is not None:
-            dest = os.path.join(self.library.project, f"plots/{self.model_type}")
-            file = os.path.join(dest, file)
-            if not os.path.exists(dest):
-                os.makedirs(dest)
-
-        plot = vis.plot_predictions_vs_groundtruth_ggplot(data, title, x_label, 
-                                            y_label, plot_grid, file)
-        
-        return plot
-
-
     ### Getters and Setters ###
     # Getter and Setter for library
     @property
