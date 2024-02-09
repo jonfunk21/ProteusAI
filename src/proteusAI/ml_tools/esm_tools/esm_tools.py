@@ -367,17 +367,19 @@ def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: to
     alphabet = alphabet.to_dict()
     canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     
-    mutants, p_values, mmp_values, entropy_values = [], [], [], []
+    mutants, sequences, p_values, mmp_values, entropy_values = [], [], [], [], []
     for pos in range(len(wt_seq)):
         for aa in canonical_aas:
             if wt_seq[pos] != aa:
                 mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
                 p_values.append(p[0, pos, alphabet[aa]].item())
                 mmp_values.append(mmp[0, pos, alphabet[aa]].item())
                 entropy_values.append(entropy[0, pos].item())
 
     df = pd.DataFrame({
         'mutant': mutants,
+        'sequences': sequences,
         'p': p_values,
         'mmp': mmp_values,
         'entropy': entropy_values

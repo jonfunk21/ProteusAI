@@ -146,7 +146,7 @@ class Protein:
         else:
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model) # modify function so it also stores the representations
+            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
 
             # Calculations
             p = get_probability_distribution(logits)

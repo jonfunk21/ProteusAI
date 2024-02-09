@@ -131,7 +131,7 @@ app_ui = ui.page_fluid(
             )
         ),
 
-        #################
+        ################
         ## LEARN PAGE ##
         ################
         ui.nav_panel("Learn", 
@@ -418,7 +418,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 computed.append(model)
             
         zs_results.set(computed)
-
         print(zs_results())
 
     @output
