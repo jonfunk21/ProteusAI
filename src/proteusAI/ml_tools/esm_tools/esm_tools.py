@@ -379,7 +379,7 @@ def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: to
 
     df = pd.DataFrame({
         'mutant': mutants,
-        'sequences': sequences,
+        'sequence': sequences,
         'p': p_values,
         'mmp': mmp_values,
         'entropy': entropy_values
