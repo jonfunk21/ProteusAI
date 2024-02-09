@@ -132,79 +132,72 @@ app_ui = ui.page_fluid(
         ),
 
         #################
-        ## MODELS PAGE ##
-        #################
-        ui.nav_menu("Learn",
-                    
-            ui.nav_panel("Supervised", 
-                ui.layout_sidebar(
-                    ui.sidebar(
-                        ui.row(
-                            ui.column(6,
-                                ui.input_select("model_type", "Surrogate model", model_types)
-                            ),
-                            ui.column(6,
-                                ui.input_select("model_task", "Model task", ["Regression", "Classification"])
-                            ),
-                            # TODO: Only show the computed representation types
-                            ui.column(6,
-                                ui.input_select("model_rep_type", "Representaion type", representation_types),
-                            )
-                            
+        ## LEARN PAGE ##
+        ################
+        ui.nav_panel("Learn", 
+            ui.layout_sidebar(
+                ui.sidebar(
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("model_type", "Surrogate model", model_types)
                         ),
-                        
-                        ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
-                        
-                        ui.panel_conditional("input.customize_model_params === true",
-                                "Not implemented yet LOL",
-                                ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
-                            ),
-
-                        
-                        ui.row(
-                            ui.column(6,
-                                ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                            ),
-                            ui.column(6,
-                                ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
-                            ),
-                            ui.column(12,
-                                "Cross-validation split:"
-                            ),
-                            ui.column(4,
-                                ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
-                            ),
-                            ui.column(4,
-                                ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
-                            ),
-                            ui.column(4,
-                                ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
-                            ),
-                            ui.column(8,
-                                ui.input_action_button("review_data", "Review data")
-                            ),
-                            ui.column(4,
-                                ui.input_action_button("train_button", "Train")
-                            )
+                        ui.column(6,
+                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
                         ),
-
-                    width=SIDEBAR_WIDTH
+                        # TODO: Only show the computed representation types
+                        ui.column(6,
+                            ui.input_select("model_rep_type", "Representaion type", representation_types),
+                        )
+                        
                     ),
-                    #ui.panel_main(
-                    ui.output_ui("pred_vs_true_ui"),
-                    #ui.tags.b("Points near cursor"),
-                    #ui.output_table("near_hover"),
-                    #ui.output_table("in_brush")
-                #)
-                )
-            ),
-
-            ui.nav_panel(
-                "Load model",
-                "Under construction...",            
-            )
                     
+                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                    
+                    ui.panel_conditional("input.customize_model_params === true",
+                            "Not implemented yet LOL",
+                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
+                        ),
+
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
+                        ),
+                        ui.column(6,
+                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
+                        ),
+                        ui.column(12,
+                            "Cross-validation split:"
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(8,
+                            ui.input_action_button("review_data", "Review data")
+                        ),
+                        ui.column(4,
+                            ui.input_action_button("train_button", "Train")
+                        )
+                    ),
+
+                width=SIDEBAR_WIDTH
+                ),
+                #ui.panel_main(
+                ui.output_ui("pred_vs_true_ui"),
+                #ui.tags.b("Points near cursor"),
+                #ui.output_table("near_hover"),
+                #ui.output_table("in_brush")
+            #)
+            )
         ),
+                    
+        
 
         ##################
         ## PREDICT PAGE ##
@@ -668,6 +661,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             print(f"computing zero shot scores using {model}")
 
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
+            print(df)
             zs_scores.set(df)
     
     # Output protein mode
@@ -743,8 +737,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update plot"
             )
 
-    ### Model tab ###
-
+    ### Learn tab ###
     model = reactive.Value(None)
     
     @reactive.Effect
