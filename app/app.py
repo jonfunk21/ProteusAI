@@ -83,7 +83,7 @@ app_ui = ui.page_fluid(
                                
                                
                         ),
-                        ui.nav_panel("Single Protein",
+                        ui.nav_panel("Zero-Shot",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
                             ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Confirm Selection'),
@@ -138,6 +138,9 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.row(
+                        ui.column(12,
+                            ui.output_ui("learn_dynamic_ui")
+                        ),
                         ui.column(6,
                             ui.input_select("model_type", "Surrogate model", model_types)
                         ),
@@ -199,51 +202,47 @@ app_ui = ui.page_fluid(
                     
         
 
-        ##################
-        ## PREDICT PAGE ##
-        ##################
-        ui.nav_menu(
+        #################
+        ## Design PAGE ##
+        #################
+        
+        ui.nav_panel(
             "Design",
-            ui.nav_panel(
-                "New sequences",
-                ui.layout_sidebar(
-                    ui.sidebar(
-                        ui.navset_tab(
-                            ui.nav_panel(
-                                "Single sequence",
-                                ui.row(
-                                    ui.column(6,
-                                        ui.input_text("new_seq", "Predict Y-value for new sequence"),
-                                    ),
-                                    ui.column(6,
-                                        "Your prediction here"
-                                    )
+            ui.layout_sidebar(
+                ui.sidebar(
+                    ui.navset_tab(
+                        ui.nav_panel(
+                            "Single sequence",
+                            ui.row(
+                                ui.column(6,
+                                    ui.input_text("new_seq", "Predict Y-value for new sequence"),
                                 ),
-                                "It would also be nice to attach measures of confidence here, e.g. model confidence or similarity to training data."
-                            ),
-                            ui.nav_panel(
-                                "Upload new library",
-                                ui.row(
-                                    ui.input_file("new_seqs_file", "Upload sequences")
+                                ui.column(6,
+                                    "Your prediction here"
                                 )
                             ),
+                            "It would also be nice to attach measures of confidence here, e.g. model confidence or similarity to training data."
                         ),
-                    width=SIDEBAR_WIDTH),
-                    #ui.panel_main(
+                        ui.nav_panel(
+                            "Upload new library",
+                            ui.row(
+                                ui.input_file("new_seqs_file", "Upload sequences")
+                            )
+                        ),
+                    ),
+                width=SIDEBAR_WIDTH),
+                #ui.panel_main(
 
-                    #)
-                )
-            ),
-            ui.nav_panel(
-                "New library",
-                "Under construction (Lauras M.Sc. Thesis)..."  
-            ),
+                #)
+            )
         ),
-        
 
         ui.nav_panel(
-            "Download Results",
+            "Download",
+        ),
 
+        ui.nav_panel(
+            "About us",
         ),
     )
 )
@@ -402,7 +401,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # set shiny variables
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
-        MODE.set('protein')
+        MODE.set('zero-shot')
 
         # check for zs-computations
         seq = prot.seq
@@ -516,7 +515,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     )
             )
-        if MODE() == "protein":
+        if MODE() == "zero-shot":
             return ui.TagList(
                 ui.h4("Zero-shot modeling"),
                 ui.row(
@@ -660,8 +659,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             print(f"computing zero shot scores using {model}")
 
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
-            print(df)
+
+            lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant, proteins=[])
+            
+            library.set(lib)
+
             zs_scores.set(df)
+            print(df)
     
     # Output protein mode
     @output
@@ -737,6 +741,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
     ### Learn tab ###
+    @output
+    @render.ui
+    def learn_dynamic_ui():        
+        if MODE() == "zero-shot":
+            return ui.TagList(
+                ui.h4("Learning from zero-shot data")
+            )
+        if MODE() == "dataset":
+            return ui.TagList(
+                ui.h4("Learning from experimental data")
+            )
+        
     model = reactive.Value(None)
     
     @reactive.Effect
