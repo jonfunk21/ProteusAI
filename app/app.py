@@ -19,7 +19,6 @@ import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
 import plotnine
-import hashlib
 
 VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
@@ -387,9 +386,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
+        prot.name = f[0]["name"].split('.')[0]
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
 
+    # Confirm protein
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     def _():
@@ -397,7 +398,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
-
+        name = f[0]["name"].split('.')[0]
+        prot.name = name
+        
         # set shiny variables
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
@@ -406,18 +409,47 @@ def server(input: Inputs, output: Outputs, session: Session):
         # check for zs-computations
         seq = prot.seq
         computed = []
+        computed_reps = []
         for model in ZS_MODELS:
-            # compute hash
-            zs_hash = hashlib.md5((seq+model_dict[model]).encode()).hexdigest()
-
             # check hash existence
-            zs_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{zs_hash}")
+            zs_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}")
 
             if os.path.exists(zs_path):
                 computed.append(model)
             
+            # check for dataset
+            zs_dataset_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}/zs_scores.csv")
+            
+            if os.path.exists(zs_dataset_path):
+                zs_data = pd.read_csv(zs_dataset_path)
+                seqs = zs_data["sequence"].to_list()
+                names = zs_data["mutant"].to_list()
+                mmp = zs_data["mmp"].to_list()
+                lib = pai.Library(project=input.project_path(), seqs=seqs, ys=mmp, y_type="num", names=names, proteins=[])
+                dataset.set(zs_data)
+            
+            # check for representations
+            rep_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}/rep")
+            if os.path.exists(rep_path):
+                computed_reps.append(model)
+        
+        library.set(lib)
         zs_results.set(computed)
-        print(zs_results())
+
+        # update uis
+        ui.update_select(
+            "model_task",
+            choices=["Regression"]
+        )
+        
+        inverted_reps = {v: k for k, v in representation_dict.items()}
+        ui.update_select(
+            "model_rep_type",
+            choices=[inverted_reps[i] for i in computed_reps]
+        )
+
+
+        
 
     @output
     @render.text
@@ -550,7 +582,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_action_button("plot_entropy", "Plot")
                         ),
                         ui.column(6,
-                            ui.input_checkbox("plot_entropy_section", "Plot subsection"),
+                            ui.input_checkbox("plot_entropy_section", "Customize plot"),
                             style='padding:10px;'
                         ),
                         ui.panel_conditional("input.plot_entropy_section === true",
@@ -574,7 +606,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
 
                         ui.column(6,
-                            ui.input_checkbox("plot_scores_section", "Plot subsection"),
+                            ui.input_checkbox("plot_scores_section", "Customize plot"),
                             style='padding:10px;'
                         ),
 
@@ -663,7 +695,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant, proteins=[])
             
             library.set(lib)
-
+            dataset.set(df)
             zs_scores.set(df)
             print(df)
     
@@ -788,6 +820,17 @@ def server(input: Inputs, output: Outputs, session: Session):
             max = n_val_max,
             value = n_val_max
         )
+
+    # Reviewing data
+    data_reviewed = reactive.value(None)
+
+    @reactive.Effect
+    @reactive.event(input.review_data)
+    def _():
+        print("button pressed")
+        print(dataset())
+        print(zs_results())
+        data_reviewed.set('reviewed')
 
     # Training models
     val_df = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[]}))
