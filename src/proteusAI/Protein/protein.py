@@ -52,7 +52,6 @@ class Protein:
         self.seq = seq
         self.reps = list(reps)
         self.y = y
-        self.zs_hash = None
         
         # If path is not provided, use the directory of the calling script
         if project is None:
@@ -130,10 +129,10 @@ class Protein:
         seq = self.seq
 
         # check scores for this protein and model have already been computed
-        zs_hash = hashlib.md5((seq+model).encode()).hexdigest()
+        name = self.name
 
         project_path = self.project
-        dest = os.path.join(project_path, "zero_shot", model, zs_hash)
+        dest = os.path.join(project_path, "zero_shot", model, name)
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -170,18 +169,15 @@ class Protein:
             self.logits = logits
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
-        
-        # add zs hash for later conversion
-        self.zs_hash = zs_hash
 
         return df
 
     # Plot zero-shot entropy
     def plot_entropy(self, model='esm2', title=None, section=None):
         seq = self.seq
-        zs_hash = hashlib.md5((seq + model).encode()).hexdigest()
+        name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", model, zs_hash)
+        dest = os.path.join(self.project, "zero_shot", model, name)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
@@ -214,9 +210,9 @@ class Protein:
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
         seq = self.seq
-        zs_hash = hashlib.md5((seq + model).encode()).hexdigest()
+        name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", model, zs_hash)
+        dest = os.path.join(self.project, "zero_shot", model, name)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
