@@ -441,15 +441,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             "model_task",
             choices=["Regression"]
         )
-        
+        # update representation selection
         inverted_reps = {v: k for k, v in representation_dict.items()}
         ui.update_select(
             "model_rep_type",
-            choices=[inverted_reps[i] for i in computed_reps]
-        )
-
-
-        
+            choices=[inverted_reps[i] for i in lib.reps]
+        )        
 
     @output
     @render.text
@@ -476,10 +473,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.TagList(
                 ui.h4("Dataset mode"),
                 ui.row(
-                    ui.column(6,
-                        ui.input_select("dat_rep_type", "Compute representation", representation_types),
+                    ui.column(7,
+                        ui.input_select("dat_rep_type", "Compute representations", representation_types),
                     ),
-                    ui.column(6,
+                    ui.column(5,
                         ui.input_action_button("dat_compute_reps", "Compute"),
                             #f"Representations 100 % computed",
                             style='padding:25px;'
@@ -539,10 +536,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     ui.row(
                         ui.column(12, "Visualize representations"),
-                        ui.column(6,
+                        ui.column(7,
                             ui.input_select("plot_rep_type", "", representation_types),
                         ),
-                            ui.column(6,
+                            ui.column(5,
                             ui.input_action_button("update_plot", "Update plot")
                         )
                     )
@@ -551,12 +548,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.TagList(
                 ui.h4("Zero-shot modeling"),
                 ui.row(
-                    ui.column(6,
+                    ui.column(7,
                         # add MSA-Transformer and VAE later
                         ui.input_select("zs_model", "Choose model", ZS_MODELS)
                     ),
 
-                    ui.column(6,
+                    ui.column(5,
                         ui.input_action_button("compute_zs", "Compute"),
                         style='padding:25px;'
                     ),
@@ -574,12 +571,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.column(6,
                         ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
                     ),
-
-                    ui.h4("Plot Entropy"),
                     
                     ui.row(
                         ui.column(6,
-                            ui.input_action_button("plot_entropy", "Plot")
+                            ui.input_action_button("plot_entropy", "Plot Entropy")
                         ),
                         ui.column(6,
                             ui.input_checkbox("plot_entropy_section", "Customize plot"),
@@ -598,11 +593,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     ),
 
-                    ui.h4("Plot Scores"),
-
                     ui.row(
                         ui.column(6,
-                            ui.input_action_button("plot_scores", "Plot")
+                            ui.input_action_button("plot_scores", "Plot Scores")
                         ),
 
                         ui.column(6,
@@ -624,6 +617,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                             )
                         ),
                     ),
+                    ui.row(
+                        ui.column(7,
+                            ui.input_select('zs_rep_type', "Compute representations", representation_types)
+                        ),
+                        ui.column(5,
+                        ui.input_action_button("zs_compute_reps", "Compute"),
+                            #f"Representations 100 % computed",
+                            style='padding:25px;'
+                        )
+                    )
                 ),
             )
         else:
@@ -636,13 +639,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.dat_compute_reps)
     async def _():
         with ui.Progress(min=1, max=15) as p:
-            p.set(message="Calculation in progress", detail="This may take a while...")
+            p.set(message="Computation in progress", detail="This may take a while...")
 
             print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
             lib = library()
             
-            lib.compute(method=representation_dict[input.dat_rep_type()])
+            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE)
 
             library.set(lib)
             print("Done!")
@@ -733,7 +736,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.plot_entropy_section():
             ui.update_action_button(
                 "plot_entropy",
-                label="Update plot"
+                label="Update Entropy"
             )
 
     @output
@@ -769,7 +772,34 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.plot_scores_section():
             ui.update_action_button(
                 "plot_scores",
-                label="Update plot"
+                label="Update Scores"
+            )
+
+    @reactive.Effect
+    @reactive.event(input.zs_compute_reps)
+    async def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Computation in progress", detail="This may take a while...")
+
+            print(f"Computing library: {representation_dict[input.zs_rep_type()]}")
+            
+            lib = library()
+            prot = protein()            
+            
+            print(prot.name)
+            print(input.zs_rep_type())
+            dest = os.path.join(prot.project, f"zero_shot/{representation_dict[input.zs_rep_type()]}/{prot.name}/rep")
+
+            lib.compute(method=representation_dict[input.zs_rep_type()], dest=dest, batch_size=BATCH_SIZE)
+
+            library.set(lib)
+            print("Done!")
+
+            # update representation selection
+            inverted_reps = {v: k for k, v in representation_dict.items()}
+            ui.update_select(
+                "model_rep_type",
+                choices=[inverted_reps[i] for i in lib.reps]
             )
 
     ### Learn tab ###
@@ -873,15 +903,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         hover_opts_kwargs = {}
         hover_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
         hover_opts_kwargs["delay_type"] = "throttle"
-        #brush_opts_kwargs = {}
-        #brush_opts_kwargs["direction"] = "xy"
-        #brush_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
-        #brush_opts_kwargs["delay_type"] = "throttle"
 
         return ui.output_plot(
             "pred_vs_true",
             hover=ui.hover_opts(**hover_opts_kwargs),
-            #brush=ui.brush_opts(**brush_opts_kwargs),
         )
     
     @output

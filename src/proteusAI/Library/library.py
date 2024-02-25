@@ -39,7 +39,7 @@ class Library:
     _allowed_y_types = ['class', 'num']
 
     def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
-                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None):
+                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None, zs: bool = False):
         """
         Initialize a new library.
 
@@ -173,7 +173,8 @@ class Library:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
     def _read_tabular_data(self, data: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
-                           names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None):
+                           names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None,
+                           check_rep: bool = False):
         """
         Reads data from a CSV, Excel, and populates the Library object. Called by read_data
 
@@ -185,6 +186,7 @@ class Library:
                 names (str, optional): Column name for sequence names in the data file.
                 sheet (str, optional): Name of the Excel sheet to read.
                 file_ext (str): file extension
+                check_rep (bool): Check if all representations have been computed.
         """
         if file_ext in ['.xlsx', '.xls']:
             if sheet is None:
@@ -221,17 +223,17 @@ class Library:
             # Create protein objects without y values
             self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
 
+        if check_rep:
+            self._check_reps()
 
 
-        self._check_reps()
-
-
-    def _read_fasta(self, data):
+    def _read_fasta(self, data, check_rep: bool = False):
         """
         Read fasta file and create protein objects.
 
         Args:
             data (str): Path to data.
+            check_rep (bool): Check if all representations have been computed.
         """
         names, sequences = io_tools.fasta.load_fasta(data)
         self.names = names
@@ -240,7 +242,8 @@ class Library:
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
 
-        self._check_reps()
+        if check_rep:
+            self._check_reps()
 
 
     def _check_reps(self):
@@ -312,13 +315,14 @@ class Library:
 
     
     ### Representation builders ###
-    def compute(self, method: str, batch_size: int = 1):
+    def compute(self, method: str, batch_size: int = 1, dest: Union[str, None] = None):
         """
         Compute representations for proteins.
 
         Args:
             method (str): Method for computing representation
             batch_size (int, optional): Batch size for representation computation.
+            dest (str): destination of representations
         """
         simple_rep_types = ['ohe', 'blosum62', 'blosum50']
         supported_methods = self.representation_types + simple_rep_types
@@ -327,23 +331,27 @@ class Library:
         assert isinstance(batch_size, (int, type(None)))
 
         if method in ["esm2", "esm1v"]:
-            self.esm_builder(model=method, batch_size=batch_size)
+            self.esm_builder(model=method, batch_size=batch_size, dest=dest)
         elif method == 'ohe':
-            self.ohe_builder()
+            self.ohe_builder(dest=dest)
         elif method in ['blosum62', 'blosum50']:
-            self.blosum_builder(matrix_type=method.upper())
+            self.blosum_builder(matrix_type=method.upper(), dest=dest)
 
     
-    def esm_builder(self, model: str="esm2", batch_size: int=1):
+    def esm_builder(self, model: str="esm2", batch_size: int=1, dest: Union[str, None] = None):
         """
         Computes esm representations.
 
         Args:
             model (str): Supports esm2 and esm1v.
             batch_size (int): Batch size for computation.
+            dest (str): destination of representations
         """
+        if dest != None:
+            dest = os.path.join(dest)
+        else:
+            dest = os.path.join(self.project, f"rep/{model}")
 
-        dest = os.path.join(self.project, f"rep/{model}")
         if not os.path.exists(dest):
             os.makedirs(dest)
 
@@ -364,13 +372,20 @@ class Library:
                 protein.reps.append(model)
 
 
-    def ohe_builder(self):
+    def ohe_builder(self, dest: Union[str, None] = None):
         """
         Computes one-hot encoding representations for proteins using one_hot_encoder method.
         Assumes all data fits in memory.
+
+        Args:
+            dest (str): destination of representations
         """
 
-        dest = os.path.join(self.project, "rep/ohe")
+        if dest != None:
+            dest = os.path.join(dest)
+        else:
+            dest = os.path.join(self.project, "rep/ohe")
+
         if not os.path.exists(dest):
             os.makedirs(dest)
 
@@ -388,16 +403,19 @@ class Library:
                     protein.reps.append('ohe')
 
 
-    def blosum_builder(self, matrix_type="BLOSUM62"):
+    def blosum_builder(self, matrix_type="BLOSUM62", dest: Union[str, None] = None):
         """
         Computes BLOSUM representations for proteins using blosum_encoding method.
         Assumes all data fits in memory.
 
         Args:
             matrix_type (str): Type of BLOSUM matrix to use.
+            dest (str): destination
         """
-
-        dest = os.path.join(self.project, f"rep/{matrix_type.lower()}")
+        if dest != None:
+            dest = os.path.join(dest)
+        else:
+            dest = os.path.join(self.project, f"rep/{matrix_type.lower()}")
         if not os.path.exists(dest):
             os.makedirs(dest)
 
