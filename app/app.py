@@ -326,6 +326,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         return all(isinstance(x, (int, float, complex)) for x in data)
     
     # Loading library data
+    representation_path = reactive.Value(None)
+
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
     def _():
@@ -373,6 +375,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
 
         protein.set(None)
+        
+        representation_path.set(None) # used in train
+        
         MODE.set("dataset")
 
     
@@ -403,50 +408,40 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         # set shiny variables
         protein.set(prot)
+        print(protein())
         dataset_path.set(f[0]["datapath"])
         MODE.set('zero-shot')
 
         # check for zs-computations
-        seq = prot.seq
-        computed = []
-        computed_reps = []
+        zs_computed = []
+        rep_computed = []
         for model in ZS_MODELS:
             # check hash existence
-            zs_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}")
+            zs_path = os.path.join(prot.project, f"zero_shot/{name}/{model_dict[model]}")
 
             if os.path.exists(zs_path):
-                computed.append(model)
+                if "zs_scores.csv" in os.listdir(zs_path):
+                    zs_computed.append(model)
             
-            # check for dataset
-            zs_dataset_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}/zs_scores.csv")
+            for rep in representation_types:
+                rep_path = os.path.join(zs_path, "rep", rep)
+                if os.path.exists(rep_path):
+                    rep_computed.append(rep)
+
             
-            if os.path.exists(zs_dataset_path):
-                zs_data = pd.read_csv(zs_dataset_path)
-                seqs = zs_data["sequence"].to_list()
-                names = zs_data["mutant"].to_list()
-                mmp = zs_data["mmp"].to_list()
-                lib = pai.Library(project=input.project_path(), seqs=seqs, ys=mmp, y_type="num", names=names, proteins=[])
-                dataset.set(zs_data)
-            
-            # check for representations
-            rep_path = os.path.join(prot.project, f"zero_shot/{model_dict[model]}/{name}/rep")
-            if os.path.exists(rep_path):
-                computed_reps.append(model)
-        
-        library.set(lib)
-        zs_results.set(computed)
+        zs_results.set(zs_computed)
 
         # update uis
         ui.update_select(
             "model_task",
             choices=["Regression"]
-        )
+        )   
+
         # update representation selection
-        inverted_reps = {v: k for k, v in representation_dict.items()}
         ui.update_select(
-            "model_rep_type",
-            choices=[inverted_reps[i] for i in lib.reps]
-        )        
+            "zs_scores",
+            choices=zs_computed
+        ) 
 
     @output
     @render.text
@@ -683,6 +678,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Zero-shot modeling
     zs_scores = reactive.Value(pd.DataFrame())
 
+    # compute zero-shot scores
     @reactive.Effect
     @reactive.event(input.compute_zs)
     def _():
@@ -702,6 +698,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             zs_scores.set(df)
             print(df)
     
+
     # Output protein mode
     @output
     @render.plot
@@ -775,6 +772,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update Scores"
             )
 
+    # compute representations for Zero-Shot
     @reactive.Effect
     @reactive.event(input.zs_compute_reps)
     async def _():
@@ -783,16 +781,22 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             print(f"Computing library: {representation_dict[input.zs_rep_type()]}")
             
-            lib = library()
-            prot = protein()            
+            prot = protein()
+
+            wt_seq = prot.seq
+            canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+            mutants, sequences = [], []
+            for pos in range(len(wt_seq)):
+                for aa in canonical_aas:
+                    if wt_seq[pos] != aa:
+                        mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                        sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
             
-            print(prot.name)
-            print(input.zs_rep_type())
-            dest = os.path.join(prot.project, f"zero_shot/{representation_dict[input.zs_rep_type()]}/{prot.name}/rep")
+            dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[input.zs_rep_type()]}")
 
+            lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[])
             lib.compute(method=representation_dict[input.zs_rep_type()], dest=dest, batch_size=BATCH_SIZE)
-
-            library.set(lib)
+            
             print("Done!")
 
             # update representation selection
@@ -879,18 +883,20 @@ def server(input: Inputs, output: Outputs, session: Session):
                 print(f"{input.train_split()} is not implemented yet - choosing random split")
                 split = "random"
 
-            # representations types only esm-2 for now
-            if input.model_rep_type() == "ESM-2":
-                rep_type = "esm2"
+            rep_type = representation_dict[input.model_rep_type()]
+            if MODE() == "zero-shot":
+                prot = protein()
+                name = prot.name
+                rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
             else:
-                rep_type = "esm2"
+                rep_path = None
 
             lib = library()
 
             print(f"training {model_dict[input.model_type()]}")
 
             m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed())
-            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()])
+            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], rep_path=rep_path)
 
             print("training done!")
 
@@ -932,16 +938,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             add_dist=True,
             all_rows=False,
         )
-    
-    #@output
-    #@render.table()
-    #def in_brush():
-    #    df = val_df()
-    #    return brushed_points(
-    #        df,
-    #        input.pred_vs_true_brush(),
-    #        all_rows=False,
-    #    )
 
 
 app = App(app_ui, server)

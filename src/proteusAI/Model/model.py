@@ -51,7 +51,7 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
-    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn']
+    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn'] # add GP
     _in_memory_representations = ['ohe', 'blosum50', 'blosum62']
     
     def __init__(self, **kwargs):
@@ -82,6 +82,7 @@ class Model:
         self.val_predictions = []
         self.test_r2 = []
         self.val_r2 = []
+        self.rep_path = None
 
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
@@ -97,6 +98,7 @@ class Model:
             'library': None,
             'model_type': 'rf',
             'x': 'ohe',
+            'rep_path': None,
             'split': 'random',
             'k_folds': None,
             'grid_search': False,
@@ -117,6 +119,20 @@ class Model:
     def train(self, **kwargs):
         """
         Train the model.
+
+        Args:
+            library (proteusAI.Library): Data for training.
+            model_type (str): choose the model type ['rf', 'svm', 'knn', 'ffnn'],
+            x (str): choose the representation type ['esm2', 'esm1v', 'ohe', 'blosum50', 'blosum62'].
+            rep_path (str): Path to representations. Default None - will extract from library object.
+            split (str): Choose a method to split your data ['random'].
+            k_folds (int): Number of folds for cross validation.
+            grid_search: Enable grid search.
+            custom_params: None. Not implemented yet.
+            custom_model: None. Not implemented yet.
+            optim (str): Choose optimizer for feed forward neural network. e.g. 'adam'.
+            lr (float): Choose a learning rate for feed forward neural networks. e.g. 10e-4.
+            seed (int): Choose a random seed. e.g. 42
         """
         # Update attributes if new values are provided
         self._set_attributes(**kwargs)
@@ -129,7 +145,7 @@ class Model:
 
         # train
         if self.model_type in self._sklearn_models:
-            self.train_sklearn()
+            self.train_sklearn(rep_path=self.rep_path)
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
@@ -239,16 +255,25 @@ class Model:
 
     
 
-    def train_sklearn(self):
+    def train_sklearn(self, rep_path):
         """
         Train sklearn models and save the model.
+
+        Args:
+            rep_path (str): representation path
         """
         assert self._model is not None
 
         # This is for representations that are not stored in memory
-        train = self.load_representations(self.train_data)
-        test = self.load_representations(self.test_data)
-        val = self.load_representations(self.val_data)
+        train = self.load_representations(self.train_data, rep_path=rep_path)
+        test = self.load_representations(self.test_data, rep_path=rep_path)
+        val = self.load_representations(self.val_data, rep_path=rep_path)
+
+        # handle representations that are not esm
+        if len(train[0].shape) == 2:
+            train = [x.view(-1) for x in train]
+            test = [x.view(-1) for x in test]
+            val = [x.view(-1) for x in val]
 
         x_train = torch.stack(train).cpu().numpy()
         x_test = torch.stack(test).cpu().numpy()

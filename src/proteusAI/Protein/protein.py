@@ -132,7 +132,7 @@ class Protein:
         name = self.name
 
         project_path = self.project
-        dest = os.path.join(project_path, "zero_shot", model, name)
+        dest = os.path.join(project_path, "zero_shot", name, model)
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -177,7 +177,7 @@ class Protein:
         seq = self.seq
         name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", model, name)
+        dest = os.path.join(self.project, "zero_shot", name, model)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
@@ -212,7 +212,7 @@ class Protein:
         seq = self.seq
         name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", model, name)
+        dest = os.path.join(self.project, "zero_shot", name, model)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
