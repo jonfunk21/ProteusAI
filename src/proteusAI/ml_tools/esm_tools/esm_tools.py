@@ -425,8 +425,9 @@ def structure_prediction(
         seqs: list, names: list=None, chunk_size: int = 124,
         max_tokens_per_batch: int = 1024, num_recycles: int = None):
     """
-    Predict the structure of proteins.
-
+    Predict the structure of proteins. The pdb files are returned as 'biotite.structure.io.pdb.PDBFile' objects.
+    They can be written to file with pdb.write(os.path.join(dest, "prot.pdb")).
+    
     Args:
         sequences (list): all sequences for structure prediction
         names (list): names of the sequences
