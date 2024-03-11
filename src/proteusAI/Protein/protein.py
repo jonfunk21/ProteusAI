@@ -62,6 +62,8 @@ class Protein:
             assert isinstance(project, str)
             self.project = project
             self.rep_path = os.path.join(project, 'rep')
+            if not os.path.exists(project):
+                os.makedirs(project)
 
         # If file is not None, then initialize load fasta
         if file is not None:
