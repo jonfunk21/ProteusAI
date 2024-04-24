@@ -53,7 +53,7 @@ app_ui = ui.page_fluid(
                 ui.sidebar(
                     
                     ui.navset_tab(
-                        ui.nav_panel("MLDE",
+                        ui.nav_panel("Library",
 
                                 ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
 
@@ -82,13 +82,13 @@ app_ui = ui.page_fluid(
                                
                                
                         ),
-                        ui.nav_panel("Zero-Shot",
+                        ui.nav_panel("Sequence",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
                             ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Confirm Selection'),
                             
                         ),
-                        ui.nav_panel("Protein Design",
+                        ui.nav_panel("Structure",
                             ui.input_file(id="struture_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
                             ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_structure', 'Confirm Selection'),
@@ -196,12 +196,7 @@ app_ui = ui.page_fluid(
 
                 width=SIDEBAR_WIDTH
                 ),
-                #ui.panel_main(
                 ui.output_ui("pred_vs_true_ui"),
-                #ui.tags.b("Points near cursor"),
-                #ui.output_table("near_hover"),
-                #ui.output_table("in_brush")
-            #)
             )
         ),
                     
@@ -396,7 +391,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
+        prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
         prot.name = f[0]["name"].split('.')[0]
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
@@ -408,7 +403,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # initialize protein
         prot = protein()
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(file=f[0]["datapath"], project=input.protein_path())
+        prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
         name = f[0]["name"].split('.')[0]
         prot.name = name
         

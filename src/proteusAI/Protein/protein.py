@@ -30,17 +30,18 @@ class Protein:
         rep_path (str): Path to representations directory.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, reps: Union[list, tuple] = [], project: Union[str, None] = None, y = None, file: str = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], project: Union[str, None] = None, y = None, fasta: str = None):
         """
         Initialize a new protein object.
 
         Args:
             name (str): Name/id of the protein.
             seq (str): Protein sequence.
+            struc (str, AtomArray): Protein structure.
             reps (list): List of available representations.
             project (str): Path to the project. Will create one if the path does not exist.
             y (float, int, str): Label for the protein.
-            file (str): path to fasta file
+            fasta (str): path to fasta file
         """
 
         # assertions and checks
@@ -67,8 +68,8 @@ class Protein:
                 os.makedirs(project)
 
         # If file is not None, then initialize load fasta
-        if file is not None:
-            self.load_fasta(file=file)
+        if fasta is not None:
+            self.load_fasta(file=fasta)
 
     def get_caller_path(self):
         """Returns the path of the script that called the function."""
