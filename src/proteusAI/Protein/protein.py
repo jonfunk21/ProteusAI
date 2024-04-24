@@ -13,6 +13,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
 from proteusAI.ml_tools.esm_tools import *
+from proteusAI.structure.struc import *
 import hashlib
 
 model_dict = {"rf":"Random Forrest", "knn":"KNN", "svm":"SVM", "vae":"VAE", "esm2":"ESM-2", "esm1v":"ESM-1v"}
