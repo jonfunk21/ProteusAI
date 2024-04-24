@@ -13,6 +13,28 @@ import biotite.structure as struc
 import biotite.structure.io.pdbx as pdbx
 
 
+def load_struc(prot):
+    """
+    Load a protein structure.
+
+    Args:
+        prot biotite.structure.AtomArray or path to pdb (str).
+    """
+    if type(prot) == struc.AtomArray:
+        prot = prot
+
+    elif type(prot) == str:
+        try:
+            prot = strucio.load_structure(prot)
+        except:
+            raise ValueError("prot 1 has an unexpected format")
+    
+    else:
+        raise ValueError("pdb file has an unexpected format")
+
+    return prot
+
+
 def align(prot1, prot2):
     """
     Superimpose protein 2 on protein 1.
@@ -24,17 +46,8 @@ def align(prot1, prot2):
     Returns:
         prot1, prot2_superimposed as biotite.structure.AtomArray's
     """
-    if type(prot1) == "str":
-        try:
-            prot1 = strucio.load_structure(prot1)
-        except:
-            raise ValueError("prot 1 has an unexpected format")
-        
-    if type(prot2) == "str":
-        try:
-            prot2 = strucio.load_structure(prot2)
-        except:
-            raise ValueError("prot 2 has an unexpected format")
+    prot1 = load_struc(prot1)
+    prot2 = load_struc(prot2)
 
     prot1 = prot1[(prot1.chain_id == "A") | (prot1.chain_id == "B")]
     prot1 = prot1[~struc.filter_solvent(prot1)]
@@ -64,7 +77,7 @@ def align(prot1, prot2):
 
     return prot1, prot2_superimposed
 
-def rmsd(prot1, prot2):
+def compute_rmsd(prot1, prot2):
     """
     Compute rmsd between two proteins.
 
@@ -76,17 +89,8 @@ def rmsd(prot1, prot2):
         rmsd (float)
     """
 
-    if type(prot1) == "str":
-        try:
-            prot1 = strucio.load_structure(prot1)
-        except:
-            raise ValueError("prot 1 has an unexpected format")
-        
-    if type(prot2) == "str":
-        try:
-            prot2 = strucio.load_structure(prot2)
-        except:
-            raise ValueError("prot 2 has an unexpected format")
+    prot1 = load_struc(prot1)
+    prot2 = load_struc(prot2)
 
     prot1_common = prot1[struc.filter_intersection(prot1, prot2)]
     prot2_common = prot2[struc.filter_intersection(prot2, prot1)]
@@ -94,3 +98,16 @@ def rmsd(prot1, prot2):
     rmsd = struc.rmsd(prot1_common, prot2_common)
     print("{:.3f}".format(rmsd))
     return rmsd
+
+def chain_parser(pdb_file):
+    """
+    Parse chains from pdb file.
+
+    Args:
+        pdb_file: path to pdb file (str) or AtomArray
+    """
+
+    prot = load_struc(pdb_file)
+    
+    chains = list(set(prot.chain_id)) # type: ignore
+    return chains

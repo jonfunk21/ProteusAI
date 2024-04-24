@@ -2,7 +2,7 @@
 # under the MIT License.
 
 """
-A subpackage for mining_tools.
+A subpackage for structures.
 """
 
 __name__ = "proteusAI"
