@@ -26,6 +26,10 @@ import math
 import numpy as np
 import matplotlib.patches as patches
 from typing import Union
+import shutil
+import esm.inverse_folding
+import esm.inverse_folding.util
+from esm.inverse_folding.util import CoordBatchConverter
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
@@ -400,6 +404,124 @@ def string_to_tempfile(data):
         # flush the file to make sure the data_tools is written
         temp_file.flush()
         # return the file object
+        return temp_file
+
+def save_tempfile(temp_file, target_file_path):
+    """
+    Copies the contents of a temporary file to a permanent file location.
+    
+    Args:
+        temp_file_path (str): The file path of the temporary file.
+        target_file_path (str): The file path where the contents should be permanently saved.
+    
+    Returns:
+        bool: True if the file was copied successfully, False if an error occurred.
+    """
+    if type(temp_file) == tempfile._TemporaryFileWrapper:
+        temp_file_path = temp_file.file.name
+    elif type(temp_file) == str:
+        temp_file_path = temp_file
+    else:
+        raise ValueError('tempfile has an unexpected format')
+    try:
+        # Copy the content of the temporary file to the target file
+        shutil.copy(temp_file_path, target_file_path)
+        print(f"File has been successfully saved to {target_file_path}.")
+        return True
+    except Exception as e:
+        print(f"Failed to save the file: {e}")
+        return False
+
+
+def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, outpath=None, model=None, alphabet=None):
+    """
+    Perform structure based protein design using ESM-IF.
+
+    Args:
+        pdbfile (str): path to pdb file.
+        chain (str): chain to be designed.
+        fixed (list): list of residues that should be remained fixed.
+        temperature (float): sampling temperature. Higher temperatures lead to more stochasiticiy
+        num_samples (int): Number of samples
+        outpath (str): path to which the output should be saved
+        model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
+        alphabet (esm.data.Alphabet): If None alphabet will be loaded
+
+    Return:
+        tempfile when no outpath is provided.
+    """
+    
+    if model == None or alphabet == None:
+        model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
+
+    coords, native_seq = esm.inverse_folding.util.load_coords(pdbfile, chain)
+
+    print('Native sequence loaded from structure file:')
+    print(native_seq)
+
+    # Temporary file handling
+    if outpath is None:
+        temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt')
+        outpath = temp_file.name
+
+    print(f'Saving sampled sequences to {outpath}.')
+    Path(outpath).parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(outpath, 'w') as f:
+        L = len(coords)
+        batch_converter = CoordBatchConverter(model.decoder.dictionary)
+        batch_coords, confidence, _, _, padding_mask = (
+            batch_converter([(coords, None, None)], device='cpu')
+        )
+        
+        
+        # Start with prepend token
+        mask_idx = model.decoder.dictionary.get_idx('<mask>')
+        sampled_tokens = torch.full((1, 1+L), mask_idx, dtype=int)
+        sampled_tokens[0, 0] = model.decoder.dictionary.get_idx('<cath>')
+
+        # Unmask fixed residues
+        if fixed:
+            for i in fixed:
+                res = native_seq[i-1]
+                sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
+
+        # Save incremental states for faster sampling
+        incremental_state = dict()
+
+        # Run encoder only once
+        encoder_out = model.encoder(batch_coords, padding_mask, confidence)
+
+        # Decode tokens
+        all_seqs = []
+        sampled_tokens_tensor = sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
+        for i in range(1, L+1):
+            logits, _ = model.decoder(
+                sampled_tokens[:, :i],
+                encoder_out,
+                incremental_state=incremental_state,
+            )
+            logits = logits[0].transpose(0, 1)
+            logits /= temperature
+            probs = F.softmax(logits, dim=-1)
+            if sampled_tokens[0, i] == mask_idx:
+                sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
+                sampled_tokens_tensor[:, i, :] = torch.multinomial(probs, num_samples, replacement=True).squeeze(-1)
+                
+        sampled_tokens_tensor = sampled_tokens_tensor[0, 1:, :]
+
+        for i in range(num_samples):
+            sampled_seq_i = sampled_tokens_tensor[:, i]
+            s = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
+            all_seqs.append(s)
+            recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
+
+            print(f'>sampled_seq_{i+1} recovery: {recovery}')
+            print(s, '\n')
+            f.write(f'>sampled_seq_{i+1} recovery: {recovery}\n')
+            f.write(s + '\n')
+
+    if temp_file:
         return temp_file
 
 
