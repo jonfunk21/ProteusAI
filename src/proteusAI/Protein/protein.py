@@ -53,6 +53,8 @@ class Protein:
         self.name = name
         self.seq = seq
         self.reps = list(reps)
+        self.struc = struc
+        self.atom_array = None
         self.y = y
         
         # If path is not provided, use the directory of the calling script
@@ -70,6 +72,10 @@ class Protein:
         # If file is not None, then initialize load fasta
         if fasta is not None:
             self.load_fasta(file=fasta)
+        
+        # If file is not None, then initialize load fasta
+        if struc is not None:
+            self.atom_array = self.load_structure(struc)
 
     def get_caller_path(self):
         """Returns the path of the script that called the function."""
@@ -78,7 +84,9 @@ class Protein:
         return os.path.abspath(caller_path)
 
     def __str__(self):
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny\t{self.y}"
+        if self.atom_array is not None:
+            struc_loaded = "loaded"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\nstruc:\t{self.struc}\n"
     
     __repr__ = __str__
 
@@ -124,6 +132,23 @@ class Protein:
         # Create and return a new Protein instance
         self.name = name
         self.seq = seq
+
+    def load_structure(self, prot, name = None):
+        """
+        Load a structure from a pdb or cif file or an AtomArray.
+
+        Args:
+            struc: path to structure file or AtomArray
+            name: provide protein name, else name of the file is assumed.
+        """
+        if name is None and type(prot) == str:
+            name = prot.split('/')[-1].split('.')[0]
+
+        prot = load_struc(prot)
+
+        self.name = name
+        self.atom_array = prot
+
     
     ### Zero-shot prediction ###
     def zs_prediction(self, model='esm2', batch_size=100):
