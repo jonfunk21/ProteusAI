@@ -53,7 +53,7 @@ app_ui = ui.page_fluid(
                 ui.sidebar(
                     
                     ui.navset_tab(
-                        ui.nav_panel("Load Library",
+                        ui.nav_panel("MLDE",
 
                                 ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
 
@@ -86,6 +86,12 @@ app_ui = ui.page_fluid(
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
                             ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Confirm Selection'),
+                            
+                        ),
+                        ui.nav_panel("Protein Design",
+                            ui.input_file(id="struture_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
+                            ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
+                            ui.input_action_button('confirm_structure', 'Confirm Selection'),
                             
                         ),
                         
