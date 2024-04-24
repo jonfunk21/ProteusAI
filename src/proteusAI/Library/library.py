@@ -145,7 +145,7 @@ class Library:
         print("Loading done!")
 
 
-    def read_data(self, data: str, seqs: str, y: Union[str, None] = None, y_type: str='num', 
+    def read_data(self, data: str, seqs: Union[str, None] = None, y: Union[str, None] = None, y_type: str='num', 
                   names: Union[str, None] = None, sheet: Optional[str] = None):
         """
         Reads data from a CSV, Excel, or FASTA file and populates the Library object.
@@ -167,7 +167,7 @@ class Library:
 
         if file_ext in ['.xlsx', '.xls', '.csv']:
             self._read_tabular_data(data=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
-        elif file_ext == '.fasta':
+        elif file_ext in ['.fasta', '.fa']:
             self._read_fasta(data)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
@@ -315,7 +315,7 @@ class Library:
 
     
     ### Representation builders ###
-    def compute(self, method: str, batch_size: int = 1, dest: Union[str, None] = None):
+    def compute(self, method: str, batch_size: int = 100, dest: Union[str, None] = None):
         """
         Compute representations for proteins.
 
@@ -338,7 +338,7 @@ class Library:
             self.blosum_builder(matrix_type=method.upper(), dest=dest)
 
     
-    def esm_builder(self, model: str="esm2", batch_size: int=1, dest: Union[str, None] = None):
+    def esm_builder(self, model: str="esm2", batch_size: int=10, dest: Union[str, None] = None):
         """
         Computes esm representations.
 
