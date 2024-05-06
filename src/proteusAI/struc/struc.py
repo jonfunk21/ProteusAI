@@ -13,12 +13,26 @@ import biotite.structure as struc
 import biotite.structure.io.pdbx as pdbx
 
 
+amino_acid_mapping = {
+    'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
+    'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
+    'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P',
+    'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
+    # Adding a generic mapping for unknowns
+    'UNK': 'X',  # Unknown
+    'SEC': 'U',  # Selenocysteine, sometimes considered the 21st amino acid
+    # Additional mappings as needed
+}
+
 def load_struc(prot):
     """
     Load a protein structure.
 
     Args:
         prot biotite.structure.AtomArray or path to pdb (str).
+
+    Returns:
+        biotite.structure.AtomArray
     """
     if type(prot) == struc.AtomArray:
         prot = prot
@@ -111,3 +125,26 @@ def chain_parser(pdb_file):
     
     chains = list(set(prot.chain_id)) # type: ignore
     return chains
+
+def get_sequences(prot_f):
+    """
+    Get the sequence from a protein structure.
+
+    Args:
+        prot biotite.structure.AtomArray or path to pdb (str).
+
+    Return:
+        dictionary of chains and sequences
+    """
+
+    prot = load_struc(prot_f)
+
+    chains = chain_parser(prot)
+
+    sequences = {}
+    for chain in chains:
+        res_ids = list(set(prot[prot.chain_id==chain].res_id))
+        residues = [amino_acid_mapping.get(prot[prot.res_id==r].res_name[0], 'X') for r in res_ids]
+        sequences[chain] = ''.join(residues)
+
+    return sequences
