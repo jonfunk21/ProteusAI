@@ -28,7 +28,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 100
+BATCH_SIZE = 20
 ZS_MODELS = ["ESM-2", "ESM-1v"]
 print(plotnine.__version__)
 
@@ -89,7 +89,7 @@ app_ui = ui.page_fluid(
                             
                         ),
                         ui.nav_panel("Structure",
-                            ui.input_file(id="struture_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
+                            ui.input_file(id="structure_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
                             ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_structure', 'Confirm Selection'),
                             
@@ -452,7 +452,29 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             seq = 'Protein name: ' + protein().name + '\n' + protein().seq
         return seq
+    
+    # Confirm structure
+    @reactive.Effect
+    @reactive.event(input.confirm_structure)
+    def _():
+        print('test')
+        prot = protein()
+        f: list[FileInfo] = input.structure_file()
+        print(f)
+        prot = pai.Protein(struc=f[0]["datapath"], project=input.project_path())
+        print(prot)
+
+        name = f[0]["name"].split('.')[0]
+        prot.name = name
         
+        # set shiny variables
+        protein.set(prot)
+        print(protein())
+        dataset_path.set(f[0]["datapath"])
+        MODE.set('structure')
+        print(protein)
+
+
     #################
     ## Analyze TAB ##
     #################

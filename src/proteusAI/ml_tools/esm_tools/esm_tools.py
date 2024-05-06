@@ -523,6 +523,8 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, outpa
 
     if temp_file:
         return temp_file
+    else:
+        return outpath
 
 
 def create_batched_sequence_datasest(
