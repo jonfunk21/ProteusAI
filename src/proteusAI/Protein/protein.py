@@ -55,6 +55,7 @@ class Protein:
         self.reps = list(reps)
         self.struc = struc
         self.atom_array = None
+        self.chains = []
         self.y = y
         
         # If path is not provided, use the directory of the calling script
@@ -133,7 +134,7 @@ class Protein:
         self.name = name
         self.seq = seq
 
-    def load_structure(self, prot, name = None):
+    def load_structure(self, prot_f, name = None):
         """
         Load a structure from a pdb or cif file or an AtomArray.
 
@@ -141,13 +142,17 @@ class Protein:
             struc: path to structure file or AtomArray
             name: provide protein name, else name of the file is assumed.
         """
-        if name is None and type(prot) == str:
-            name = prot.split('/')[-1].split('.')[0]
+        if name is None and type(prot_f) == str:
+            name = prot_f.split('/')[-1].split('.')[0]
 
-        prot = load_struc(prot)
+        prot = load_struc(prot_f)
+        seqs = get_sequences(prot_f)
+        chains = chain_parser(self.struc)
 
+        self.seq = seqs[chains[0]]
         self.name = name
         self.atom_array = prot
+        self.chains = chains
 
     
     ### Zero-shot prediction ###
@@ -235,6 +240,19 @@ class Protein:
         # Plot entropy
         fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
         return fig
+    
+    ### Inverse Folding ###
+    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, outpath=None, model=None, alphabet=None):
+        """
+        Perform inverse folding using ESM-IF
+        """
+        pdbfile = self.struc
+
+        if chain == None:
+            chain = self.chains[0]
+
+        out = esm_design(pdbfile, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, outpath=outpath, model=model, alphabet=alphabet)
+        return out
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
