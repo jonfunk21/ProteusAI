@@ -130,9 +130,10 @@ app_ui = ui.page_fluid(
                                      
                     ui.output_plot('tsne_plot')
 
-                ),
+                ),               
 
-               
+                ui.output_ui("stuc3D")
+                
             )
         ),
 
@@ -161,10 +162,6 @@ app_ui = ui.page_fluid(
                     
                     ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
                     
-                    ui.panel_conditional("input.customize_model_params === true",
-                            "Not implemented yet LOL",
-                            ui.input_text("frustrations", "Draft your angry tweet here (How do we call tweets on X now?):")            
-                        ),
 
                     
                     ui.row(
@@ -457,22 +454,17 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_structure)
     def _():
-        print('test')
         prot = protein()
         f: list[FileInfo] = input.structure_file()
-        print(f)
         prot = pai.Protein(struc=f[0]["datapath"], project=input.project_path())
-        print(prot)
 
         name = f[0]["name"].split('.')[0]
         prot.name = name
         
         # set shiny variables
         protein.set(prot)
-        print(protein())
         dataset_path.set(f[0]["datapath"])
         MODE.set('structure')
-        print(protein)
 
 
     #################
@@ -562,7 +554,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     )
             )
-        if MODE() == "zero-shot":
+        if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
                 ui.h4("Zero-shot modeling"),
                 ui.row(
@@ -576,19 +568,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         style='padding:25px;'
                     ),
                     
-                    ui.column(6,
-                        ui.panel_conditional("input.zs_model === 'VAE' || input.zs_model === 'MSA-Transformer'",
-                            ui.input_file("input_msa", "MSA")
-                        ),
-                    ),
-                    
-                    
-
                     ui.h4("Visualize"),
-
-                    ui.column(6,
-                        ui.input_select("zs_data", "Zero-shot data", choices=zs_results())
-                    ),
                     
                     ui.row(
                         ui.column(6,
@@ -629,9 +609,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                                 ui.column(6,
                                     ui.input_numeric("scores_width", "Sliding window width", value=10)
                                 ),
-                                #ui.column(6,
-                                #    ui.input_select("scores_color", "Customize color scheme", choices=["rwb", "b"])
-                                #)
                             )
                         ),
                     ),
@@ -649,7 +626,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         else:
             return ui.TagList(
-                "To proceed either upload a Dataset or a Protein and click proceed in the 'Data' tab."
+                "To proceed either upload data in the 'Data' tab and confirm your selection."
             )
 
     # Compute representations
@@ -828,6 +805,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
             )
+
+    ### structure mode
+    @render.ui
+    def stuc3D():
+        view = protein().view_struc()
+        return ui.TagList(
+            ui.HTML(view.write_html())
+        )
 
     ### Learn tab ###
     @output

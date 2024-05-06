@@ -154,6 +154,12 @@ class Protein:
         self.atom_array = prot
         self.chains = chains
 
+    def view_struc(self):
+        """
+        3D visualization of protein structure
+        """
+        view = show_pdb(self.struc)
+        return view
     
     ### Zero-shot prediction ###
     def zs_prediction(self, model='esm2', batch_size=100):
