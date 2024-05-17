@@ -400,7 +400,7 @@ class Model:
 
         y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
         self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
-        self.y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+        y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
         self.val_names = [protein.name for protein in self.val_data]
 
         likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
@@ -437,12 +437,16 @@ class Model:
         print(f'Training completed. Final loss: {loss.item()}')   
         
         # prediction on test set
-        self.y_test_pred, self.y_test_sigma = predict_gp(self._model, likelihood, x_test)
-        self.test_r2 = computeR2(self.y_test, self.y_test_pred)
+        y_test_pred, y_test_sigma = predict_gp(self._model, likelihood, x_test)
+        self.test_r2 = computeR2(self.y_test, y_test_pred)
+        self.y_test_pred, self.y_test_sigma  = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
 
         # prediction on validation set
-        self.y_val_pred, self.y_val_sigma = predict_gp(self._model, likelihood, x_val)
-        self.val_r2 = computeR2(self.y_val, self.y_val_pred)
+        y_val_pred, y_val_sigma = predict_gp(self._model, likelihood, x_val)
+        self.val_r2 = computeR2(y_val, y_val_pred)
+        self.y_val_pred, self.y_val_sigma = y_val_pred.cpu().numpy(), y_val_sigma.cpu().numpy()
+
+        self.y_val = y_val.cpu().numpy()
 
         # Save the model
         model_save_path = f"{self.library.project}/models/{self.model_type}/model.pt"
@@ -462,8 +466,8 @@ class Model:
                     writer.writerow([protein.seq, y, y_pred, y_sig])
 
         save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{self.library.project}/models/{self.model_type}/data/train_data.csv")
-        save_to_csv(self.test_data, self.y_test.cpu().numpy(), self.y_test_pred.cpu().numpy(), self.y_test_sigma.cpu().numpy(), f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
-        save_to_csv(self.val_data, self.y_val.cpu().numpy(), self.y_val_pred.cpu().numpy(),  self.y_val_sigma.cpu().numpy(), f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
+        save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
+        save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
 
         # Save results to a JSON file
         results = {

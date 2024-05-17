@@ -14,23 +14,23 @@ from shiny.types import FileInfo, ImgData
 from shiny.plotutils import brushed_points, near_points
 import pandas as pd
 import sys
-sys.path.append('src/')
+import os
+app_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(app_path, '../src/'))
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
-import plotnine
 
 VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
-model_types = ["Random Forrest", "KNN", "SVM"] # Add VAEs later
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v"}
+model_types = ["Random Forrest", "KNN", "SVM", "GP"]
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "GP":"gp"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 ZS_MODELS = ["ESM-2", "ESM-1v"]
-print(plotnine.__version__)
 
 # TODO: check if Project path exists, create one if not
 # TODO: if no project path is provided create a temporary file system on the server - which can then be downloaded
