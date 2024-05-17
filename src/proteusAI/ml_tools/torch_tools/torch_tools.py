@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Union
+import gpytorch
 
 def one_hot_encoder(sequences, alphabet=None, canonical=True):
     """
@@ -166,3 +167,54 @@ def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]
 
     # Show the plot
     plt.show()
+
+class GP(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood, fix_mean=False): #special method: instantiate object
+        super(GP, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean() #attribute
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+        self.mean_module.constant.data.fill_(1)  # Set the mean value to 1
+        if fix_mean:
+            self.mean_module.constant.requires_grad_(False)
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+def predict_gp(model, likelihood, X):
+    model.eval()
+    likelihood.eval()
+
+    with torch.no_grad():
+        predictions = likelihood(model(X))
+        y_pred = predictions.mean
+        y_std = predictions.stddev
+        #lower, upper = predictions.confidence_region()
+
+    return y_pred, y_std
+
+def computeR2(y_true, y_pred):
+    """
+    Compute R2-values for to torch tensors.
+
+    Args:
+        y_true (torch.Tensor): true y-values
+        y_pred (torch.Tensor): predicted y-values
+    """
+    # Ensure the tensors are 1-dimensional
+    if y_true.dim() != 1 or y_pred.dim() != 1:
+        raise ValueError("Both y_true and y_pred must be 1-dimensional tensors")
+    
+    # Compute the mean of true values
+    y_mean = torch.mean(y_true)
+    
+    # Compute the total sum of squares (SS_tot)
+    ss_tot = torch.sum((y_true - y_mean) ** 2)
+    
+    # Compute the residual sum of squares (SS_res)
+    ss_res = torch.sum((y_true - y_pred) ** 2)
+    
+    # Compute the R² value
+    r2 = 1 - (ss_res / ss_tot)
+    
+    return r2.item()  # Convert tensor to float

@@ -16,6 +16,7 @@ from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
+from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
 import random
 from typing import Union
 import json
@@ -23,6 +24,7 @@ from joblib import dump
 import csv
 import torch
 import pandas as pd
+import gpytorch
 
 
 class Model:
@@ -51,7 +53,8 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
-    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn'] # add GP
+    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn']
+    _pt_models = ['gp']
     _in_memory_representations = ['ohe', 'blosum50', 'blosum62']
     
     def __init__(self, **kwargs):
@@ -84,6 +87,9 @@ class Model:
         self.val_r2 = []
         self.rep_path = None
 
+        # check for device
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
 
@@ -114,7 +120,28 @@ class Model:
 
         for key, value in defaults.items():
             setattr(self, key, value)
+
+    def _update_attributes(self, **kwargs):
+        defaults = {
+            'library': None,
+            'model_type': 'rf',
+            'x': 'ohe',
+            'rep_path': None,
+            'split': 'random',
+            'k_folds': None,
+            'grid_search': False,
+            'custom_params': None,
+            'custom_model': None,
+            'optim': 'adam',
+            'lr': 10e-4,
+            'seed': 42
+        }
         
+        # Update defaults with provided keyword arguments
+        defaults.update(kwargs)
+        
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def train(self, **kwargs):
         """
@@ -135,7 +162,7 @@ class Model:
             seed (int): Choose a random seed. e.g. 42
         """
         # Update attributes if new values are provided
-        self._set_attributes(**kwargs)
+        self._update_attributes(**kwargs)
 
         # split data
         self.train_data, self.test_data, self.val_data = self.split_data()
@@ -146,6 +173,8 @@ class Model:
         # train
         if self.model_type in self._sklearn_models:
             self.train_sklearn(rep_path=self.rep_path)
+        elif self.model_type in self._pt_models:
+            self.train_gp(rep_path=self.rep_path)
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
@@ -249,7 +278,19 @@ class Model:
                     model = SVR(**model_params)
                 elif model_type == 'knn':
                     model = KNeighborsRegressor(**model_params)
+                
             return model
+        
+        elif model_type in self._pt_models:
+            if self.y_type == 'class':
+                if model_type == 'gp':
+                    raise ValueError(f"Model type '{model_type}' has not been implemented yet")
+            elif self.y_type == 'num':
+                if model_type == 'gp':
+                    model = 'GP_MODEL'
+
+            return model
+        
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
 
@@ -287,11 +328,14 @@ class Model:
         self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
+            # train model
             self._model.fit(x_train, y_train)
 
+            # prediction on test set
             self.test_r2 = self._model.score(x_test, self.y_test)
             self.y_test_pred = self._model.predict(x_test)
 
+            # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
 
@@ -300,6 +344,7 @@ class Model:
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
 
+            # create results directory
             if not os.path.exists(f"{self.library.project}/models/{self.model_type}/data/"):
                 os.makedirs(f"{self.library.project}/models/{self.model_type}/data/")
 
@@ -328,6 +373,107 @@ class Model:
             #for train_index, test_index in kf.split(X):
             raise ValueError(f"K-fold cross validation has not been implemented yet")
     
+    
+    def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):
+        """
+        Train a Gaussian Process model and save the model.
+
+        Args:
+            rep_path (str): representation path
+        """
+        assert self._model is not None
+
+        # This is for representations that are not stored in memory
+        train = self.load_representations(self.train_data, rep_path=rep_path)
+        test = self.load_representations(self.test_data, rep_path=rep_path)
+        val = self.load_representations(self.val_data, rep_path=rep_path)
+
+        # handle representations that are not esm
+        if len(train[0].shape) == 2:
+            train = [x.view(-1) for x in train]
+            test = [x.view(-1) for x in test]
+            val = [x.view(-1) for x in val]
+
+        x_train = torch.stack(train).to(device=self.device)
+        x_test = torch.stack(test).to(device=self.device)
+        x_val = torch.stack(val).to(device=self.device)
+
+        y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
+        self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
+        self.y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+        self.val_names = [protein.name for protein in self.val_data]
+
+        likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
+        self._model = GP(x_train, y_train, likelihood).to(device=self.device)
+        fix_mean = True
+        
+        optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
+        mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, self._model)
+
+        for param in self._model.named_parameters(): 
+            print(param)
+
+        # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
+        self._model.train()
+        likelihood.train()
+        prev_loss = float('inf')
+        #TODO: abstract this away
+        for _ in range(epochs):
+            optimizer.zero_grad()
+            output = self._model(x_train)
+            loss = -mll(output, y_train)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+
+            # Check for convergence
+            if abs(prev_loss - loss.item()) < 0.0001:
+                print(f'Convergence reached. Stopping training...')
+                break
+            
+            prev_loss = loss.item()
+
+        print(f'Training completed. Final loss: {loss.item()}')   
+        
+        # prediction on test set
+        self.y_test_pred, self.y_test_sigma = predict_gp(self._model, likelihood, x_test)
+        self.test_r2 = computeR2(self.y_test, self.y_test_pred)
+
+        # prediction on validation set
+        self.y_val_pred, self.y_val_sigma = predict_gp(self._model, likelihood, x_val)
+        self.val_r2 = computeR2(self.y_val, self.y_val_pred)
+
+        # Save the model
+        model_save_path = f"{self.library.project}/models/{self.model_type}/model.pt"
+        os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+        torch.save(self._model.state_dict(), model_save_path)
+
+        # create results directory
+        if not os.path.exists(f"{self.library.project}/models/{self.model_type}/data/"):
+            os.makedirs(f"{self.library.project}/models/{self.model_type}/data/")
+
+        # Save the sequences, y-values, and predicted y-values to CSV
+        def save_to_csv(proteins, y_values, y_pred_values, y_pred_sigma, filename):
+            with open(filename, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['sequence', 'y-value', 'y-predicted', 'sigma'])  # CSV header
+                for protein, y, y_pred, y_sig in zip(proteins, y_values, y_pred_values, y_pred_sigma):
+                    writer.writerow([protein.seq, y, y_pred, y_sig])
+
+        save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{self.library.project}/models/{self.model_type}/data/train_data.csv")
+        save_to_csv(self.test_data, self.y_test.cpu().numpy(), self.y_test_pred.cpu().numpy(), self.y_test_sigma.cpu().numpy(), f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
+        save_to_csv(self.val_data, self.y_val.cpu().numpy(), self.y_val_pred.cpu().numpy(),  self.y_val_sigma.cpu().numpy(), f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
+
+        # Save results to a JSON file
+        results = {
+            'test_r2': self.test_r2,
+            'val_r2': self.val_r2,
+        }
+
+        with open(f"{self.library.project}/models/{self.model_type}/results.json", 'w') as f:
+            json.dump(results, f)
+      
 
     def predict(self, proteins: list, rep_path = None):
         """
