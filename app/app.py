@@ -28,7 +28,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 20
+BATCH_SIZE = 1
 ZS_MODELS = ["ESM-2", "ESM-1v"]
 print(plotnine.__version__)
 
@@ -104,7 +104,8 @@ app_ui = ui.page_fluid(
                     ui.output_data_frame("dataset_table"),
                 ),
                 
-                ui.output_text("protein_fasta")
+                ui.output_text("protein_fasta"),
+                ui.output_text("protein_struc")
 
             ),
         ),
@@ -119,6 +120,11 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH
                 ),
 
+                ui.panel_conditional(
+                    "typeof output.protein_struc === 'string'",
+                    ui.output_ui("struc3D"),
+                ),
+                
                 ui.panel_conditional("typeof output.protein_fasta === 'string'",
             
                     ui.output_plot("entropy_plot"),
@@ -131,9 +137,6 @@ app_ui = ui.page_fluid(
                     ui.output_plot('tsne_plot')
 
                 ),               
-
-                ui.output_ui("stuc3D")
-                
             )
         ),
 
@@ -386,7 +389,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.protein_file)
     def _():
-        prot = protein()
+        #prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
         prot.name = f[0]["name"].split('.')[0]
@@ -398,7 +401,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.confirm_protein)
     def _():
         # initialize protein
-        prot = protein()
+        #prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
         name = f[0]["name"].split('.')[0]
@@ -467,6 +470,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         MODE.set('structure')
 
 
+    @output
+    @render.text
+    def protein_struc():
+        if protein() == None:
+            struc = None
+
+        elif protein().struc != None:
+            struc = 'Structure loaded'
+
+        else:
+            struc = None
+        return struc
     #################
     ## Analyze TAB ##
     #################
@@ -806,14 +821,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[inverted_reps[i] for i in lib.reps]
             )
 
-    ### structure mode
+    ### structure mode 
     @render.ui
-    def stuc3D():
+    def struc3D():
         view = protein().view_struc()
         return ui.TagList(
             ui.HTML(view.write_html())
         )
-
+    
     ### Learn tab ###
     @output
     @render.ui
