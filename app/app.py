@@ -27,6 +27,7 @@ train_test_val_splits = ["Random"]
 model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
+inverted_reps = {v: k for k, v in representation_dict.items()}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 10
@@ -372,7 +373,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         # update representation selection
         # TODO: Make sure these have to be 100% computed
-        inverted_reps = {v: k for k, v in representation_dict.items()}
         ui.update_select(
             "model_rep_type",
             choices=[inverted_reps[i] for i in lib.reps]
@@ -534,7 +534,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     library.set(lib)
                     dataset.set(df)
                     zs_scores.set(df)
-                    inverted_reps = {v: k for k, v in representation_dict.items()}
 
                     ui.update_select(
                         "model_rep_type",
@@ -575,9 +574,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def representations_ui():
-        if MODE() != "dataset" or MODE() == "":
+        if MODE() != "start":
             return ui.TagList(
-                ui.h4("Dataset mode"),
+                ui.h4("Representation Learning"),
                 ui.row(
                     ui.column(7,
                         ui.input_select("dat_rep_type", "Compute representations", representation_types),
@@ -652,7 +651,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         else:
             return ui.TagList(
-                h4("Upload a Librariy in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options.")
+               "Upload a Library in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options."
             )
         
 
@@ -662,7 +661,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zero_shot_ui():
         if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
-                ui.h4("Zero-shot modeling"),
+                ui.h4("Representation Learning"),
                 ui.row(
                     ui.h5("Compute a zero-shot Library"),
                     ui.column(7,
@@ -753,7 +752,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             print("Done!")
 
             # update representation selection
-            inverted_reps = {v: k for k, v in representation_dict.items()}
             ui.update_select(
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
@@ -916,8 +914,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             print("Done!")
 
             # update representation selection
-            inverted_reps = {v: k for k, v in representation_dict.items()}
-            
             ui.update_select(
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]

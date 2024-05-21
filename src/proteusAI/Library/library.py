@@ -378,6 +378,9 @@ class Library:
         for protein in proteins_to_compute:
             if model not in protein.reps:
                 protein.reps.append(model)
+        
+        if model not in self.reps:
+            self.reps.append(model)
 
 
     def ohe_builder(self, dest: Union[str, None] = None):
@@ -409,6 +412,9 @@ class Library:
                 torch.save(ohe_representations[i], os.path.join(dest, protein.name + '.pt'))
                 if 'ohe' not in protein.reps:
                     protein.reps.append('ohe')
+        
+        if 'ohe' not in self.reps:
+            self.reps.append('ohe')
 
 
     def blosum_builder(self, matrix_type="BLOSUM62", dest: Union[str, None] = None):
@@ -440,6 +446,8 @@ class Library:
                 torch.save(blosum_representations[i], os.path.join(dest, protein.name + '.pt'))
                 if matrix_type.lower() not in protein.reps:
                     protein.reps.append(matrix_type.lower())
+        if matrix_type.lower() not in self.reps:
+            self.reps.append(matrix_type.lower())
 
 
     def load_representations(self, rep: Union[str, None], proteins: Union[list, None] = None):
