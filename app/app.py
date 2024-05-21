@@ -132,13 +132,13 @@ app_ui = ui.page_fluid(
             ),
         ),
 
-        ####################
-        ## Visualize PAGE ##
-        ####################
-        ui.nav_panel("Visualize", 
+        ##########################
+        ## Representations PAGE ##
+        ##########################
+        ui.nav_panel("Representations", 
                 ui.layout_sidebar(
                     ui.sidebar(
-                        ui.output_ui("visualize_ui"),
+                        ui.output_ui("representations_ui"),
                     width=SIDEBAR_WIDTH
                 ),
 
@@ -345,6 +345,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     # Loading library data
     representation_path = reactive.Value(None)
+    available_reps = reactive.Value(representation_types)
 
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
@@ -376,10 +377,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             "model_rep_type",
             choices=[inverted_reps[i] for i in lib.reps]
         )
-        ui.update_select(
-            "plot_rep_type",
-            choices=[inverted_reps[i] for i in lib.reps]
-        )
+
+        #ui.update_select(
+        #    "plot_rep_type",
+        #    choices=[inverted_reps[i] for i in lib.reps]
+        #)
+        available_reps.set([inverted_reps[i] for i in lib.reps])
         
         # update available model tasks
         ui.update_select(
@@ -464,10 +467,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                     library.set(lib)
                     dataset.set(df)
                     zs_scores.set(df)
+                    
                     ui.update_select(
                         "model_rep_type",
                         choices=[inverted_reps[i] for i in lib.reps]
                     )
+
+                    #ui.update_select(
+                    #    "plot_rep_type",
+                    #    choices=[inverted_reps[i] for i in lib.reps]
+                    #)
+                    available_reps.set([inverted_reps[i] for i in lib.reps])
                 except:
                     pass
         
@@ -525,10 +535,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                     dataset.set(df)
                     zs_scores.set(df)
                     inverted_reps = {v: k for k, v in representation_dict.items()}
+
                     ui.update_select(
                         "model_rep_type",
                         choices=[inverted_reps[i] for i in lib.reps]
                     )
+
+                    #ui.update_select(
+                    #    "plot_rep_type",
+                    #    choices=[inverted_reps[i] for i in lib.reps]
+                    #)
+                    available_reps.set([inverted_reps[i] for i in lib.reps])
                 except:
                     pass
         
@@ -545,9 +562,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             struc = None
         return struc
-    #################
-    ## Visualize TAB ##
-    #################
+
+    #########################
+    ## Representations TAB ##
+    #########################
     
     # Dataset case
     # Visualizations
@@ -556,7 +574,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Dynamic sidebar tab for Zero-shot tab
     @output
     @render.ui
-    def visualize_ui():
+    def representations_ui():
         if MODE() != "dataset" or MODE() == "":
             return ui.TagList(
                 ui.h4("Dataset mode"),
@@ -625,7 +643,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.row(
                         ui.column(12, "Visualize representations"),
                         ui.column(7,
-                            ui.input_select("plot_rep_type", "", representation_types),
+                            ui.input_select("plot_rep_type", "", available_reps()),
                         ),
                             ui.column(5,
                             ui.input_action_button("update_plot", "Update plot")
@@ -701,16 +719,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                             )
                         ),
                     ),
-                    ui.row(
-                        ui.column(7,
-                            ui.input_select('zs_rep_type', "Compute representations", representation_types)
-                        ),
-                        ui.column(5,
-                        ui.input_action_button("zs_compute_reps", "Compute"),
-                            #f"Representations 100 % computed",
-                            style='padding:25px;'
-                        )
-                    )
+                    #ui.row(
+                    #    ui.column(7,
+                    #        ui.input_select('zs_rep_type', "Compute representations", representation_types)
+                    #    ),
+                    #    ui.column(5,
+                    #    ui.input_action_button("zs_compute_reps", "Compute"),
+                    #        #f"Representations 100 % computed",
+                    #        style='padding:25px;'
+                    #    )
+                    #)
                 ),
             )
         else:
@@ -740,6 +758,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
             )
+
+            #ui.update_select(
+            #    "plot_rep_type",
+            #    choices=[inverted_reps[i] for i in lib.reps]
+            #)
+            available_reps.set([inverted_reps[i] for i in lib.reps])
 
     # Output dataset mode
     @output
@@ -893,10 +917,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             # update representation selection
             inverted_reps = {v: k for k, v in representation_dict.items()}
+            
             ui.update_select(
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
             )
+
+            #ui.update_select(
+            #    "plot_rep_type",
+            #    choices=[inverted_reps[i] for i in lib.reps]
+            #)
+            available_reps.set([inverted_reps[i] for i in lib.reps])
 
     ### structure mode 
     @render.ui
