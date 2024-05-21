@@ -110,13 +110,35 @@ app_ui = ui.page_fluid(
             ),
         ),
 
+        ####################
+        ## Zero-shot PAGE ##
+        ####################
+        ui.nav_panel(
+            "Zero-Shot",
+
+            ui.layout_sidebar(
+                ui.sidebar(
+
+                    ui.output_ui("zero_shot_ui"),
+                    width=SIDEBAR_WIDTH
+                ),
+
+                ui.panel_conditional("typeof output.protein_fasta === 'string'",
+            
+                    ui.output_plot("entropy_plot"),
+
+                    ui.output_plot("scores_plot")
+                ),
+            ),
+        ),
+
         ##################
-        ## Analyze PAGE ##
+        ## Visualize PAGE ##
         ##################
-        ui.nav_panel("Analyze", 
+        ui.nav_panel("Visualize", 
                 ui.layout_sidebar(
                     ui.sidebar(
-                        ui.output_ui("analyze_ui"),
+                        ui.output_ui("visualize_ui"),
                     width=SIDEBAR_WIDTH
                 ),
 
@@ -124,31 +146,26 @@ app_ui = ui.page_fluid(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D"),
                 ),
-                
-                ui.panel_conditional("typeof output.protein_fasta === 'string'",
-            
-                    ui.output_plot("entropy_plot"),
 
-                    ui.output_plot("scores_plot")
-                ),
+                #ui.output_ui("struc3D"),
+                ui.output_plot('tsne_plot'),
                 
-                ui.panel_conditional("typeof output.protein_fasta !== 'string'",
-                                     
-                    ui.output_plot('tsne_plot')
-
-                ),               
+                #ui.panel_conditional("typeof output.protein_fasta !== 'string'",
+                #                     
+                #    ui.output_plot('tsne_plot')
+                #),               
             )
         ),
 
         ################
-        ## LEARN PAGE ##
+        ## MLDE PAGE ##
         ################
-        ui.nav_panel("Learn", 
+        ui.nav_panel("MLDE", 
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.row(
                         ui.column(12,
-                            ui.output_ui("learn_dynamic_ui")
+                            ui.output_ui("mlde_dynamic_ui")
                         ),
                         ui.column(6,
                             ui.input_select("model_type", "Surrogate model", model_types)
@@ -199,8 +216,6 @@ app_ui = ui.page_fluid(
                 ui.output_ui("pred_vs_true_ui"),
             )
         ),
-                    
-        
 
         #################
         ## Design PAGE ##
@@ -250,7 +265,7 @@ app_ui = ui.page_fluid(
 def server(input: Inputs, output: Outputs, session: Session):
 
     # Operation mode
-    MODE = reactive.Value(None)
+    MODE = reactive.Value('start')
 
     ### Homepage ###
     # App logo
@@ -385,7 +400,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
 
-    #reading protein fasta
+    # reading protein fasta
     @reactive.Effect
     @reactive.event(input.protein_file)
     def _():
@@ -483,18 +498,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             struc = None
         return struc
     #################
-    ## Analyze TAB ##
+    ## Visualize TAB ##
     #################
     
     # Dataset case
     # Visualizations
     tsne_df = reactive.Value()   
 
-    # Dynamic sidebar tab for Analyze tab
+    # Dynamic sidebar tab for Zero-shot tab
     @output
     @render.ui
-    def analyze_ui():
-        if MODE() == "dataset":
+    def visualize_ui():
+        if library() != None:
             return ui.TagList(
                 ui.h4("Dataset mode"),
                 ui.row(
@@ -569,6 +584,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                     )
             )
+        else:
+            return ui.TagList(
+                "Visualize works for "
+            )
+        
+
+    # Dynamic sidebar tab for Zero-shot tab
+    @output
+    @render.ui
+    def zero_shot_ui():
         if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
                 ui.h4("Zero-shot modeling"),
@@ -641,7 +666,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         else:
             return ui.TagList(
-                "To proceed either upload data in the 'Data' tab and confirm your selection."
+                "The zero-shot mode is available for individual proteins and structures."
             )
 
     # Compute representations
@@ -676,19 +701,20 @@ def server(input: Inputs, output: Outputs, session: Session):
         Render plot once button is pressed.
         """
         with ui.Progress(min=1, max=15) as p:
-            if MODE() == "dataset":
-                p.set(message="Plotting", detail="This may take a while...")
-                lib = library()
-                names = lib.names
-                y_upper = input.y_upper()
-                y_lower = input.y_lower()
-                rep = representation_dict[input.plot_rep_type()]
-                
-                # Update to pass the new parameters
-                fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+            #if MODE() == "dataset":
+            p.set(message="Plotting", detail="This may take a while...")
+            lib = library()
+            names = lib.names
+            y_upper = input.y_upper()
+            y_lower = input.y_lower()
+            rep = representation_dict[input.plot_rep_type()]
+            
+            # Update to pass the new parameters
+            fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
-                tsne_df.set(df)
-                return fig, ax
+            tsne_df.set(df)
+            return fig, ax
+    
         
     # Zero-shot modeling
     zs_scores = reactive.Value(pd.DataFrame())
@@ -705,8 +731,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             print(f"computing zero shot scores using {model}")
 
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
+            
+            rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
 
-            lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant, proteins=[])
+            lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
             
             library.set(lib)
             dataset.set(df)
@@ -829,17 +857,17 @@ def server(input: Inputs, output: Outputs, session: Session):
             ui.HTML(view.write_html())
         )
     
-    ### Learn tab ###
+    ### MLDE tab ###
     @output
     @render.ui
-    def learn_dynamic_ui():        
+    def mlde_dynamic_ui():        
         if MODE() == "zero-shot":
             return ui.TagList(
-                ui.h4("Learning from zero-shot data")
+                ui.h4("MLDE from zero-shot data")
             )
         if MODE() == "dataset":
             return ui.TagList(
-                ui.h4("Learning from experimental data")
+                ui.h4("MLDE from experimental data")
             )
         
     model = reactive.Value(None)
