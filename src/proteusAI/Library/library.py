@@ -39,7 +39,7 @@ class Library:
     _allowed_y_types = ['class', 'num']
 
     def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
-                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None, zs: bool = False):
+                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None, zs: bool = False, rep_path: Union[str, None] = None):
         """
         Initialize a new library.
 
@@ -51,6 +51,7 @@ class Library:
             ys (list): List of y values.
             proteins (Protein, optional): List of proteusAI protein objects.
             y_type: Type of y values class ('class') or numeric ('num') 
+            self.rep_path (str): Use custom representation path else, will resume with default.
         """
         self.project = project
         self.overwrite = overwrite
@@ -61,6 +62,7 @@ class Library:
         self.reps = []
         self.y_type = y_type  
         self.class_dict = {}
+        self.rep_path = rep_path
         
         # handle case if library does not exist
         if not os.path.exists(self.project):
@@ -134,7 +136,11 @@ class Library:
                 print(f"- Found {len(regressor_models)} regressor models in 'models/reg'.")
 
         # Check for representations
-        rep_path = os.path.join(self.project, 'rep')
+        if self.rep_path == None:
+            rep_path = os.path.join(self.project, 'rep')
+        else:
+            rep_path = self.rep_path
+            
         if os.path.exists(rep_path):
             for rep_type in self.representation_types:
                 rep_type_path = os.path.join(rep_path, rep_type)
@@ -446,8 +452,10 @@ class Library:
             list: List of representations.
         """
 
-
-        rep_path = os.path.join(self.project, f"rep/{rep}")
+        if self.rep_path == None:
+            rep_path = os.path.join(self.project, f"rep/{rep}")
+        else:
+            rep_path = self.rep_path
 
         if proteins == None:
             file_names = [protein.name + ".pt" for protein in self.proteins]
