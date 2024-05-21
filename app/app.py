@@ -214,6 +214,8 @@ app_ui = ui.page_fluid(
                 width=SIDEBAR_WIDTH
                 ),
                 ui.output_ui("pred_vs_true_ui"),
+
+                ui.output_data_frame("model_table")
             )
         ),
 
@@ -973,8 +975,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     async def _():
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Training model", detail="This may take a while...")
-            # model type
-            # splits not implemented yet
+
             if input.train_split() == "Random":
                 split = "random"
             else:
@@ -1024,18 +1025,12 @@ def server(input: Inputs, output: Outputs, session: Session):
         return p
 
     @output
-    @render.table()
-    def near_hover():
+    @render.data_frame()
+    def model_table():
         df = val_df()
-        return near_points(
-            df,
-            input.pred_vs_true_hover(),
-            threshold=15,
-            xvar="y_true",
-            yvar="y_pred",
-            add_dist=True,
-            all_rows=False,
-        )
-
+        if len(df) == 0:
+            return None
+        else:
+            return df
 
 app = App(app_ui, server)
