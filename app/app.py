@@ -78,20 +78,20 @@ app_ui = ui.page_fluid(
                                    ),
                                ),
                     
-                               ui.input_action_button('confirm_dataset', 'Confirm Selection'),
+                               ui.input_action_button('confirm_dataset', 'Continue'),
                                
                                
                         ),
                         ui.nav_panel("Sequence",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
                             ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
-                            ui.input_action_button('confirm_protein', 'Confirm Selection'),
+                            ui.input_action_button('confirm_protein', 'Continue'),
                             
                         ),
                         ui.nav_panel("Structure",
                             ui.input_file(id="structure_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
                             ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
-                            ui.input_action_button('confirm_structure', 'Confirm Selection'),
+                            ui.input_action_button('confirm_structure', 'Continue'),
                             
                         ),
                         
@@ -132,9 +132,9 @@ app_ui = ui.page_fluid(
             ),
         ),
 
-        ##################
+        ####################
         ## Visualize PAGE ##
-        ##################
+        ####################
         ui.nav_panel("Visualize", 
                 ui.layout_sidebar(
                     ui.sidebar(
@@ -415,37 +415,60 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     def _():
-        # initialize protein
-        #prot = protein()
-        f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
-        name = f[0]["name"].split('.')[0]
-        prot.name = name
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Searching for available data...", detail="This may take a while...")
+            # initialize protein
+            #prot = protein()
+            f: list[FileInfo] = input.protein_file()
+            prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
+            name = f[0]["name"].split('.')[0]
+            prot.name = name
+            
+            # set shiny variables
+            protein.set(prot)
+            print(protein())
+            dataset_path.set(f[0]["datapath"])
+            MODE.set('zero-shot')
+
+            # check for zs-computations
+            zs_computed = []
+            rep_computed = []
+            for model in ZS_MODELS:
+                # check hash existence
+                zs_path = os.path.join(prot.project, f"zero_shot/{name}/{model_dict[model]}")
+
+                if os.path.exists(zs_path):
+                    if "zs_scores.csv" in os.listdir(zs_path):
+                        zs_computed.append(model)
+                
+                for rep in representation_types:
+                    rep_path = os.path.join(zs_path, "rep", rep)
+                    if os.path.exists(rep_path):
+                        rep_computed.append(rep)
+
+                
+            zs_results.set(zs_computed)
+
+            # load zs-library if exists
+            for model in ZS_MODELS:
+                try:
+                    rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[model]}")
+                    df_path = os.path.join(prot.project, f"zero_shot/{prot.name}/{representation_dict[model]}/zs_scores.csv")
+                    
+                    df = pd.read_csv(df_path)
+                    p.set(message="Loading data...", detail="This may take a while...")
+                    lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+
+                    library.set(lib)
+                    dataset.set(df)
+                    zs_scores.set(df)
+                    ui.update_select(
+                        "model_rep_type",
+                        choices=[inverted_reps[i] for i in lib.reps]
+                    )
+                except:
+                    pass
         
-        # set shiny variables
-        protein.set(prot)
-        print(protein())
-        dataset_path.set(f[0]["datapath"])
-        MODE.set('zero-shot')
-
-        # check for zs-computations
-        zs_computed = []
-        rep_computed = []
-        for model in ZS_MODELS:
-            # check hash existence
-            zs_path = os.path.join(prot.project, f"zero_shot/{name}/{model_dict[model]}")
-
-            if os.path.exists(zs_path):
-                if "zs_scores.csv" in os.listdir(zs_path):
-                    zs_computed.append(model)
-            
-            for rep in representation_types:
-                rep_path = os.path.join(zs_path, "rep", rep)
-                if os.path.exists(rep_path):
-                    rep_computed.append(rep)
-
-            
-        zs_results.set(zs_computed)
 
         # update uis
         ui.update_select(
@@ -472,18 +495,41 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_structure)
     def _():
-        prot = protein()
-        f: list[FileInfo] = input.structure_file()
-        prot = pai.Protein(struc=f[0]["datapath"], project=input.project_path())
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Searching for available data...", detail="This may take a while...")
+            prot = protein()
+            f: list[FileInfo] = input.structure_file()
+            prot = pai.Protein(struc=f[0]["datapath"], project=input.project_path())
 
-        name = f[0]["name"].split('.')[0]
-        prot.name = name
+            name = f[0]["name"].split('.')[0]
+            prot.name = name
+            
+            # set shiny variables
+            protein.set(prot)
+            dataset_path.set(f[0]["datapath"])
+            MODE.set('structure')
+
+            # load zs-library if exists
+            for model in ZS_MODELS:
+                try:
+                    rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[model]}")
+                    df_path = os.path.join(prot.project, f"zero_shot/{prot.name}/{representation_dict[model]}/zs_scores.csv")
+                    
+                    df = pd.read_csv(df_path)
+                    p.set(message="Loading data...", detail="This may take a while...")
+                    lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+
+                    library.set(lib)
+                    dataset.set(df)
+                    zs_scores.set(df)
+                    inverted_reps = {v: k for k, v in representation_dict.items()}
+                    ui.update_select(
+                        "model_rep_type",
+                        choices=[inverted_reps[i] for i in lib.reps]
+                    )
+                except:
+                    pass
         
-        # set shiny variables
-        protein.set(prot)
-        dataset_path.set(f[0]["datapath"])
-        MODE.set('structure')
-
 
     @output
     @render.text
@@ -509,7 +555,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def visualize_ui():
-        if library() != None:
+        if MODE() != "dataset" or MODE() == "":
             return ui.TagList(
                 ui.h4("Dataset mode"),
                 ui.row(
@@ -547,10 +593,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
                             ui.row(
                                 ui.column(6,
-                                        ui.input_numeric("y_upper", "Choose upper limit for y", value=None)  
+                                        ui.input_numeric("y_upper", "Choose an upper limit for y", value=None)  
                                     ),
                                 ui.column(6,
-                                        ui.input_numeric("y_lower", "Choose lower limit for y", value=None)  
+                                        ui.input_numeric("y_lower", "Choose an lower limit for y", value=None)  
                                     ),
                             )
                         ),
@@ -586,7 +632,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         else:
             return ui.TagList(
-                "Visualize works for "
+                h4("Upload a Librariy in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options.")
             )
         
 
@@ -598,9 +644,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.TagList(
                 ui.h4("Zero-shot modeling"),
                 ui.row(
+                    ui.h5("Compute a zero-shot Library"),
                     ui.column(7,
                         # add MSA-Transformer and VAE later
-                        ui.input_select("zs_model", "Choose model", ZS_MODELS)
+                        ui.input_select("zs_model", "Choose a model", ZS_MODELS)
                     ),
 
                     ui.column(5,
@@ -935,7 +982,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 split = "random"
 
             rep_type = representation_dict[input.model_rep_type()]
-            if MODE() == "zero-shot":
+            if MODE() in ["zero-shot", "structure"]:
                 prot = protein()
                 name = prot.name
                 rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
