@@ -139,8 +139,8 @@ class Library:
         if self.rep_path == None:
             rep_path = os.path.join(self.project, 'rep')
         else:
-            rep_path = self.rep_path
-            
+            rep_path = '/'.join(self.rep_path.split('/')[:-1])
+
         if os.path.exists(rep_path):
             for rep_type in self.representation_types:
                 rep_type_path = os.path.join(rep_path, rep_type)
@@ -355,6 +355,8 @@ class Library:
         """
         if dest != None:
             dest = os.path.join(dest)
+        elif self.rep_path is not None:
+            dest = self.rep_path
         else:
             dest = os.path.join(self.project, f"rep/{model}")
 
