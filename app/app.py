@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 VERSION = "version " + "0.1"
 representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
-model_types = ["Random Forrest", "KNN", "SVM", "GP"]
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "GP":"gp"}
+model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
