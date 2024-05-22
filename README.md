@@ -17,62 +17,26 @@ and [ESM](https://github.com/facebookresearch/esm) protein language models.
 
 ----
 
-To get started you can create a conda environment or install all libraries via pip:
+To get started, you need to create a conda environment suitable for running the app. You can do this using the 'proteusEnvironment.yml' file with the following commands:
 
 ```
-conda create -n proteusAI python=3.8
+conda env create -f proteusEnvironment.yml 
 conda activate proteusAI
 ```
-
-Install [PyTorch](https://pytorch.org/get-started/locally/) based on your system, and these core packages:
-
-```
-# basic stuff
-pip install pandas
-pip install numpy
-
-# additional requirements
-pip install biopython
-pip install biotite
-
-# ML toolkit
-pip install -U scikit-learn
-
-# visualization
-pip install matplotlib
-pip install seaborn
-```
-either through pip or conda.
 
 ## LLM
 
 ----
 
-If you want to use large language models by Meta you should install the following:
+Large language models by Meta are already installed in the proteusAI environment. However, if you also want to use ESM-fold (which requires a good GPU), you can install it as well:
 
 ```
-pip install fair-esm
-```
-
-Or this, if you also want to use ESM-fold (You should really have a good GPU for that).
-```
-pip install "fair-esm[esmfold]"
-# OpenFold and its remaining dependency
-pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
 pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
 
-Optionally you can install jupyter lab or notebooks, if you prefer to work in those:
-
+Optionally, you can work in Jupyter notebooks if you prefer. To visualize protein structures in Jupyter notebooks, run the following command:
 ```
-conda install -c conda-forge jupyter jupyterlab
-```
-
-For the visualization of protein structures in jupyter notebooks you can install:
-```
-conda install -c anaconda ipywidgets
 jupyter nbextension enable --py widgetsnbextension
-conda install -c conda-forge py3dmol
 ```
 
 ## External application (MUSCLE for MSA)
