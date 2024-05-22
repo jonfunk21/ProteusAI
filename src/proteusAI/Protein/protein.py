@@ -262,11 +262,9 @@ class Protein:
         if chain == None:
             chain = self.chains[0]
 
-        out = esm_design(pdbfile, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, outpath=outpath, model=model, alphabet=alphabet)
+        out = esm_design(pdbfile, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet)
         
-        out_str = tempfile_to_string(out)
-        self.design = out_str
-        return out_str
+        return out
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):

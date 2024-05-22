@@ -250,7 +250,7 @@ app_ui = ui.page_fluid(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
 
-                    ui.output_text("design_out")
+                    ui.output_data_frame("design_out")
                     
                 ),
             )
@@ -1083,12 +1083,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     design_output = reactive.Value('start')
     @output
-    @render.text
+    @render.data_frame
     def design_out():
         out = design_output()
-        if out == 'start':
+        if type(out) == str:
             return None
         else:
-            return out
+            return render.DataTable(out, summary=True)
 
 app = App(app_ui, server)

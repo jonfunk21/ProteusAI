@@ -29,7 +29,7 @@ from typing import Union
 import shutil
 import esm.inverse_folding
 import esm.inverse_folding.util
-from esm.inverse_folding.util import CoordBatchConverter
+from esm.inverse_folding.util import CoordBatchConverter, load_coords, score_sequence
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
@@ -440,98 +440,95 @@ def tempfile_to_string(temp_file):
         data = file.read()
     return data
 
-def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, outpath=None, model=None, alphabet=None):
+
+def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None):
     """
-    Perform structure based protein design using ESM-IF.
+    Perform structure-based protein design using ESM-IF.
 
     Args:
         pdbfile (str): path to pdb file.
         chain (str): chain to be designed.
         fixed (list): list of residues that should be remained fixed.
-        temperature (float): sampling temperature. Higher temperatures lead to more stochasiticiy
+        temperature (float): sampling temperature. Higher temperatures lead to more stochasticity
         num_samples (int): Number of samples
-        outpath (str): path to which the output should be saved
         model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
         alphabet (esm.data.Alphabet): If None alphabet will be loaded
 
     Return:
-        tempfile when no outpath is provided.
+        DataFrame with columns: seqid, recovery, log_likelihood, sequence
     """
-    
-    if model == None or alphabet == None:
+
+    if model is None or alphabet is None:
         model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
 
-    coords, native_seq = esm.inverse_folding.util.load_coords(pdbfile, chain)
+    coords, native_seq = load_coords(pdbfile, chain)
 
     print('Native sequence loaded from structure file:')
     print(native_seq)
 
-    # Temporary file handling
-    if outpath is None:
-        temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt')
-        outpath = temp_file.name
+    L = len(coords)
+    batch_converter = CoordBatchConverter(model.decoder.dictionary)
+    batch_coords, confidence, _, _, padding_mask = (
+        batch_converter([(coords, None, None)], device='cpu')
+    )
 
-    print(f'Saving sampled sequences to {outpath}.')
-    Path(outpath).parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(outpath, 'w') as f:
-        L = len(coords)
-        batch_converter = CoordBatchConverter(model.decoder.dictionary)
-        batch_coords, confidence, _, _, padding_mask = (
-            batch_converter([(coords, None, None)], device='cpu')
+    # Start with prepend token
+    mask_idx = model.decoder.dictionary.get_idx('<mask>')
+    sampled_tokens = torch.full((1, 1+L), mask_idx, dtype=int)
+    sampled_tokens[0, 0] = model.decoder.dictionary.get_idx('<cath>')
+
+    # Unmask fixed residues
+    if fixed:
+        for i in fixed:
+            res = native_seq[i-1]
+            sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
+
+    # Save incremental states for faster sampling
+    incremental_state = dict()
+
+    # Run encoder only once
+    encoder_out = model.encoder(batch_coords, padding_mask, confidence)
+
+    # Decode tokens
+    all_seqs = []
+    sampled_tokens_tensor = sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
+    for i in range(1, L+1):
+        logits, _ = model.decoder(
+            sampled_tokens[:, :i],
+            encoder_out,
+            incremental_state=incremental_state,
         )
+        logits = logits[0].transpose(0, 1)
+        logits /= temperature
+        probs = F.softmax(logits, dim=-1)
+        if sampled_tokens[0, i] == mask_idx:
+            sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
+            sampled_tokens_tensor[:, i, :] = torch.multinomial(probs, num_samples, replacement=True).squeeze(-1)
+
+    sampled_tokens_tensor = sampled_tokens_tensor[0, 1:, :]
+
+     # Create a list to store the results as dictionaries
+    results = []
+
+    for i in range(num_samples):
+        sampled_seq_i = sampled_tokens_tensor[:, i]
+        s = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
+        all_seqs.append(s)
+        recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
+
+        ll, _ = score_sequence(model, alphabet, coords, s)
+
+        print(f'>sampled_seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
+        print(s, '\n')
         
-        
-        # Start with prepend token
-        mask_idx = model.decoder.dictionary.get_idx('<mask>')
-        sampled_tokens = torch.full((1, 1+L), mask_idx, dtype=int)
-        sampled_tokens[0, 0] = model.decoder.dictionary.get_idx('<cath>')
+        # Append the results to the list
+        results.append({'seqid': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': s})
 
-        # Unmask fixed residues
-        if fixed:
-            for i in fixed:
-                res = native_seq[i-1]
-                sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
+    # Convert the list of dictionaries to a DataFrame
+    df = pd.DataFrame(results)
+    
+    return df
 
-        # Save incremental states for faster sampling
-        incremental_state = dict()
-
-        # Run encoder only once
-        encoder_out = model.encoder(batch_coords, padding_mask, confidence)
-
-        # Decode tokens
-        all_seqs = []
-        sampled_tokens_tensor = sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
-        for i in range(1, L+1):
-            logits, _ = model.decoder(
-                sampled_tokens[:, :i],
-                encoder_out,
-                incremental_state=incremental_state,
-            )
-            logits = logits[0].transpose(0, 1)
-            logits /= temperature
-            probs = F.softmax(logits, dim=-1)
-            if sampled_tokens[0, i] == mask_idx:
-                sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
-                sampled_tokens_tensor[:, i, :] = torch.multinomial(probs, num_samples, replacement=True).squeeze(-1)
-                
-        sampled_tokens_tensor = sampled_tokens_tensor[0, 1:, :]
-
-        for i in range(num_samples):
-            sampled_seq_i = sampled_tokens_tensor[:, i]
-            s = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
-            all_seqs.append(s)
-            recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
-
-            print(f'>sampled_seq_{i+1} recovery: {recovery}')
-            print(s, '\n')
-            f.write(f'>sampled_seq_{i+1} recovery: {recovery}\n')
-            f.write(s + '\n')
-
-    if temp_file:
-        return temp_file
-    else:
-        return outpath
 
 
 def create_batched_sequence_datasest(
