@@ -28,6 +28,7 @@ class Protein:
         seq (str): Protein sequence.
         rep (list): List of available representations.
         rep_path (str): Path to representations directory.
+        design (str): Output of design.
     """
 
     def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], project: Union[str, None] = None, y = None, fasta: str = None):
@@ -57,6 +58,7 @@ class Protein:
         self.atom_array = None
         self.chains = []
         self.y = y
+        self.design = None
         
         # If path is not provided, use the directory of the calling script
         if project is None:
@@ -261,7 +263,10 @@ class Protein:
             chain = self.chains[0]
 
         out = esm_design(pdbfile, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, outpath=outpath, model=model, alphabet=alphabet)
-        return out
+        
+        out_str = tempfile_to_string(out)
+        self.design = out_str
+        return out_str
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):

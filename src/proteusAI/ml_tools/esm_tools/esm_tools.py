@@ -432,6 +432,13 @@ def save_tempfile(temp_file, target_file_path):
         print(f"Failed to save the file: {e}")
         return False
 
+def tempfile_to_string(temp_file):
+    """
+    Take a temporary file object and return its content as a string
+    """
+    with open(temp_file.name, 'r', encoding='utf-8') as file:
+        data = file.read()
+    return data
 
 def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, outpath=None, model=None, alphabet=None):
     """

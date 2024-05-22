@@ -249,6 +249,8 @@ app_ui = ui.page_fluid(
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
+
+                    ui.output_text("design_out")
                     
                 ),
             )
@@ -1067,11 +1069,26 @@ def server(input: Inputs, output: Outputs, session: Session):
             ui.HTML(view.write_html())
         )
 
+    
     @reactive.Effect
     @reactive.event(input.desgin_button)
-    def design_esmif():
+    def _():
+        residues_str = list(set(input.design_res().strip().split(',') + input.design_sidechains().strip().split(',')))
+        fixed_residues = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+        print(fixed_residues)
         prot = protein()
-        
-        pass
+        print(prot)
+        out = prot.esm_if(fixed=fixed_residues)
+        design_output.set(out)
+    
+    design_output = reactive.Value('start')
+    @output
+    @render.text
+    def design_out():
+        out = design_output()
+        if out == 'start':
+            return None
+        else:
+            return out
 
 app = App(app_ui, server)
