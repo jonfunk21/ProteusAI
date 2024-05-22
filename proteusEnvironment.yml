@@ -1,4 +1,4 @@
-name: ProteusAI
+name: proteusAI
 
 channels: 
    - pytorch
