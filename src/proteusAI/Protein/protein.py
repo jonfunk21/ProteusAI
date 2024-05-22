@@ -154,11 +154,14 @@ class Protein:
         self.atom_array = prot
         self.chains = chains
 
-    def view_struc(self):
+    def view_struc(self, color=None, highlight=None, sticks=None):
         """
-        3D visualization of protein structure
+        3D visualization of protein structure.
+
+        Args:
+            color (str): Choose different coloration options
         """
-        view = show_pdb(self.struc)
+        view = show_pdb(self.struc, color=color, highlight=highlight, sticks=sticks)
         return view
     
     ### Zero-shot prediction ###

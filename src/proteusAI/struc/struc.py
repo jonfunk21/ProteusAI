@@ -158,15 +158,16 @@ def get_sequences(prot_f):
 
     return sequences
 
-def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=None, size=(800, 480), show_sidechains=False,
-         show_mainchains=False, highlight=None):
+def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=None, size=(800, 480),
+             show_sidechains=False, show_mainchains=False, highlight=None, sticks=None):
     """
     This function displays the 3D structure of a protein from a given PDB file in a Jupyter notebook.
     The protein structure can be colored by chain, rainbow, pLDDT, or confidence value. The size of the
     display can be changed. The sidechains and mainchains can be displayed or hidden.
+    Additional functionality includes highlighting specific residues by passing their numbers in a list.
     Parameters:
         pdb_path (str): The filename of the PDB file that contains the protein structure.
-        color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", or "confidence". Defaults to "rainbow".
+        color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", "confidence". Defaults to "rainbow".
         vmin (float, optional): The minimum value of pLDDT or confidence value. Defaults to 50.
         vmax (float, optional): The maximum value of pLDDT or confidence value. Defaults to 90.
         chains (int, optional): The number of chains to be displayed. Defaults to None.
@@ -174,6 +175,8 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
         size (tuple, optional): The size of the display window. Defaults to (800, 480).
         show_sidechains (bool, optional): Whether to display the sidechains. Defaults to False.
         show_mainchains (bool, optional): Whether to display the mainchains. Defaults to False.
+        highlight (list, optional): A list of residue numbers to be highlighted. Defaults to None.
+        sticks (list, optional): A list of residues that should be displayed as sticks. Default to None.
     Returns:
         view: The 3Dmol view object that displays the protein structure.
     """
@@ -183,30 +186,47 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
 
     view = py3Dmol.view(js='https://3dmol.org/build/3Dmol.js', width=size[0], height=size[1])
 
-    if chains is None:
-        chains = 1 if Ls is None else len(Ls)
-
     view.addModelsAsFrames(system)
+    
+    
+    
+    # Apply color styles based on function arguments
     if color == "pLDDT" or color == 'confidence':
-        view.setStyle({'cartoon': {'colorscheme': {'prop': 'b', 'gradient': 'rwb', 'min': vmin, 'max': vmax}}})
+        view.setStyle({}, {'cartoon': {'colorscheme': {'prop': 'b', 'gradient': 'rwb', 'min': vmin, 'max': vmax}}})
     elif color == "rainbow":
-        view.setStyle({'cartoon': {'color': 'spectrum'}})
-    elif color == "chain":
-        for n, chain, color in zip(range(chains), alphabet_list, pymol_color_list):
-            view.setStyle({'chain': chain}, {'cartoon': {'color': color}})
+        view.setStyle({}, {'cartoon': {'color': 'spectrum'}})
+    else:
+        # Set default style as white
+        view.setStyle({}, {'cartoon': {'color': 'white'}})
+    
+    # Highlight specific residues
+    if highlight:
+        for resi in highlight:
+            if resi in sticks:
+                highlight_style = {'stick': {'colorscheme': 'blueCarbon', 'radius': 0.3}}
+                sticks.remove(resi)
+            else:
+                highlight_style = {'cartoon': {'colorscheme': 'blueCarbon', 'radius': 0.3}}
+            view.addStyle({'resi': str(resi)}, highlight_style)
+    
+    if sticks:
+        highlight_style = {'stick': {'radius': 0.3}}
+        for resi in sticks:
+            view.addStyle({'resi': str(resi)}, highlight_style)
+        
 
     if show_sidechains:
         BB = ['C', 'O', 'N']
         view.addStyle({'and': [{'resn': ["GLY", "PRO"], 'invert': True}, {'atom': BB, 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
         view.addStyle({'and': [{'resn': "GLY"}, {'atom': 'CA'}]},
-                      {'sphere': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'sphere': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
         view.addStyle({'and': [{'resn': "PRO"}, {'atom': ['C', 'O'], 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
+
     if show_mainchains:
         BB = ['C', 'O', 'N', 'CA']
-        view.addStyle({'atom': BB}, {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
-        view.zoomTo()
+        view.addStyle({'atom': BB}, {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
 
     view.zoomTo()
 

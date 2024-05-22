@@ -28,6 +28,7 @@ model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 inverted_reps = {v: k for k, v in representation_dict.items()}
+design_models = {"ESM-IF":"esm_if"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 10
@@ -228,39 +229,34 @@ app_ui = ui.page_fluid(
             "Design",
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.navset_tab(
-                        ui.nav_panel(
-                            "Single sequence",
-                            ui.row(
-                                ui.column(6,
-                                    ui.input_text("new_seq", "Predict Y-value for new sequence"),
-                                ),
-                                ui.column(6,
-                                    "Your prediction here"
-                                )
-                            ),
-                            "It would also be nice to attach measures of confidence here, e.g. model confidence or similarity to training data."
-                        ),
-                        ui.nav_panel(
-                            "Upload new library",
-                            ui.row(
-                                ui.input_file("new_seqs_file", "Upload sequences")
-                            )
-                        ),
-                    ),
-                width=SIDEBAR_WIDTH),
-                #ui.panel_main(
+                ui.row(
+                    ui.input_select("design_models", "Choose model", list(design_models.keys())),
 
-                #)
+                    ui.input_text("design_res", "Select residues to be omitted from redesign, seperated by ','"),
+
+                    ui.input_text("design_sidechains", "Select residues for angle constraints during redesign ','"),
+
+                    ui.row(
+                        ui.column(4,
+                            ui.input_action_button("desgin_button", "Design")     
+                        )
+                    )
+
+                    
+                ),
+                width=SIDEBAR_WIDTH),
+                
+                ui.panel_conditional(
+                    "typeof output.protein_struc === 'string'",
+                    ui.output_ui("struc3D_design"),
+                    
+                ),
             )
         ),
 
         ui.nav_panel(
             "Download",
-        ),
-
-        ui.nav_panel(
-            "About us",
+            ui.h4("Download results")
         ),
     )
 )
@@ -928,7 +924,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### structure mode 
     @render.ui
     def struc3D():
-        view = protein().view_struc()
+        view = protein().view_struc(color="confidence") # TODO: Add coloring options
         return ui.TagList(
             ui.HTML(view.write_html())
         )
@@ -1059,5 +1055,23 @@ def server(input: Inputs, output: Outputs, session: Session):
             return None
         else:
             return df
+
+    ### Design mode ###
+    @render.ui
+    def struc3D_design():
+        sidechains = input.design_sidechains().strip().split(',')
+        # here all maked sidechains should also be highlighted
+        highlights = list(set(input.design_res().strip().split(',') + sidechains))
+        view = protein().view_struc(color="white", highlight=highlights, sticks=sidechains)
+        return ui.TagList(
+            ui.HTML(view.write_html())
+        )
+
+    @reactive.Effect
+    @reactive.event(input.desgin_button)
+    def design_esmif():
+        prot = protein()
+        
+        pass
 
 app = App(app_ui, server)
