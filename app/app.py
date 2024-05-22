@@ -1050,7 +1050,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return p
 
     @output
-    @render.data_frame()
+    @render.data_frame
     def model_table():
         df = val_df()
         if len(df) == 0:
