@@ -232,18 +232,29 @@ app_ui = ui.page_fluid(
                 ui.row(
                     ui.input_select("design_models", "Choose model", list(design_models.keys())),
 
+                    ui.column(6,
+                        ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
+                    ),
+
+                    ui.column(6,
+                        ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
+                    ),
+
                     ui.input_text("design_res", "Select residues to be omitted from redesign, seperated by ','"),
 
                     ui.input_text("design_sidechains", "Select residues for angle constraints during redesign ','"),
 
-                    ui.row(
-                        ui.column(4,
-                            ui.input_action_button("desgin_button", "Design")     
-                        )
-                    )
+                    
+                    ui.column(4,
+                        ui.input_action_button("desgin_button", "Design")     
+                    ),
 
                     
                 ),
+                ui.output_ui(
+                        "folding"
+                    ),
+                
                 width=SIDEBAR_WIDTH),
                 
                 ui.panel_conditional(
@@ -716,16 +727,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                             )
                         ),
                     ),
-                    #ui.row(
-                    #    ui.column(7,
-                    #        ui.input_select('zs_rep_type', "Compute representations", representation_types)
-                    #    ),
-                    #    ui.column(5,
-                    #    ui.input_action_button("zs_compute_reps", "Compute"),
-                    #        #f"Representations 100 % computed",
-                    #        style='padding:25px;'
-                    #    )
-                    #)
                 ),
             )
         else:
@@ -1078,10 +1079,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         print(fixed_residues)
         prot = protein()
         print(prot)
-        out = prot.esm_if(fixed=fixed_residues)
+        out = prot.esm_if(fixed=fixed_residues, num_samples=int(input.n_designs()), temperature=float(input.sampling_temp()))
         design_output.set(out)
     
     design_output = reactive.Value('start')
+
     @output
     @render.data_frame
     def design_out():
@@ -1089,6 +1091,23 @@ def server(input: Inputs, output: Outputs, session: Session):
         if type(out) == str:
             return None
         else:
-            return render.DataTable(out, summary=True)
+            return render.DataTable(out, summary=True) 
+    
+    @output
+    @render.ui
+    def folding():
+        out = design_output()
+        if type(out) != str:
+            return ui.TagList(
+                ui.h5("Fold designs"),
+                ui.column(6,
+                    ui.input_selectize("fold_these", "Select sequences to be folded", out.seqid.to_list(), multiple=True)
+                ),
+                ui.column(6,
+                    ui.input_action_button("folding_button", "Fold")      
+                )
+                
+            )
+
 
 app = App(app_ui, server)
