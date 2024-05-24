@@ -520,7 +520,7 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
         ll, _ = score_sequence(model, alphabet, coords, s)
         
         if pbar:
-            pbar.set(i, message="Computing")
+            pbar.set(i, message="Computing", detail=f"{i}/{num_samples} remaining...")
 
         print(f'>sampled_seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
         print(s, '\n')

@@ -1076,6 +1076,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         n_designs = int(input.n_designs())
         with ui.Progress(min=1, max=n_designs) as p:
+            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
             residues_str = list(set(input.design_res().strip().split(',') + input.design_sidechains().strip().split(',')))
             fixed_residues = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
             print(fixed_residues)
