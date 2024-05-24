@@ -1074,13 +1074,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.desgin_button)
     def _():
-        residues_str = list(set(input.design_res().strip().split(',') + input.design_sidechains().strip().split(',')))
-        fixed_residues = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
-        print(fixed_residues)
-        prot = protein()
-        print(prot)
-        out = prot.esm_if(fixed=fixed_residues, num_samples=int(input.n_designs()), temperature=float(input.sampling_temp()))
-        design_output.set(out)
+        n_designs = int(input.n_designs())
+        with ui.Progress(min=1, max=n_designs) as p:
+            residues_str = list(set(input.design_res().strip().split(',') + input.design_sidechains().strip().split(',')))
+            fixed_residues = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+            print(fixed_residues)
+            prot = protein()
+            print(prot)
+            out = prot.esm_if(fixed=fixed_residues, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p)
+            design_output.set(out)
     
     design_output = reactive.Value('start')
 

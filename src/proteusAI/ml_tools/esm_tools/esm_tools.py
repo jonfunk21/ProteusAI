@@ -441,7 +441,7 @@ def tempfile_to_string(temp_file):
     return data
 
 
-def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None):
+def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None):
     """
     Perform structure-based protein design using ESM-IF.
 
@@ -453,6 +453,7 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
         num_samples (int): Number of samples
         model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
         alphabet (esm.data.Alphabet): If None alphabet will be loaded
+        pbar: Progress bar for shiny app
 
     Return:
         DataFrame with columns: seqid, recovery, log_likelihood, sequence
@@ -517,6 +518,9 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
         recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
 
         ll, _ = score_sequence(model, alphabet, coords, s)
+        
+        if pbar:
+            pbar.set(i, message="Computing")
 
         print(f'>sampled_seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
         print(s, '\n')
