@@ -31,7 +31,7 @@ dependencies:
     - fair-esm
     - "fair-esm[esmfold]"
     - 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
-    #- 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
+    - 'openfold @ git+https://github.com/aqlaboratory/openfold.git@310f240c0045310f399b7a4f388e3cd5da3e497d'
     - seaborn
     - gpytorch
   
