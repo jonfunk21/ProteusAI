@@ -162,6 +162,8 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.row(
+                        ui.h5("Machine Learning Guided Directed Evolution"),
+
                         ui.column(12,
                             ui.output_ui("mlde_dynamic_ui")
                         ),
@@ -226,6 +228,8 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                 ui.row(
+                    ui.h5("Structure Based Protein Design"),
+
                     ui.input_select("design_models", "Choose model", list(design_models.keys())),
 
                     ui.column(6,
@@ -842,14 +846,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.compute_zs)
     def _():
         method = input.zs_model()
-        with ui.Progress(min=1, max=15) as p:
+        prot = protein()
+        with ui.Progress(min=1, max=len(prot.seq)) as p:
             p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
-            prot = protein()
+            
             model = representation_dict[method]
 
             print(f"computing zero shot scores using {model}")
 
-            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE)
+            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
             rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
 
