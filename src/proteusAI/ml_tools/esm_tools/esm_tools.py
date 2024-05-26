@@ -210,7 +210,7 @@ def mask_positions(sequence: str, mask_char: str='<mask>'):
     return masked_sequences
 
 
-def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
+def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33, pbar=None):
     """
     Exhaustively compute the logits for every position in a sequence using esm1v or esm2.
     Every position of a sequence will be masked and the logits for the masked position
@@ -223,6 +223,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
+        pbar: ProteusAI progress bar.
 
     Returns:
         tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm_tools.data_tools.Alphabet
@@ -240,11 +241,16 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     # Initialize an empty tensor of the desired shape
     logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
 
+    counter = 0
     for i in range(0, len(masked_seqs), batch_size):
         results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
                                                                   names[i:i + batch_size], model=model,
                                                                   rep_layer=rep_layer)
         logits = results["logits"]
+
+        if pbar:
+            counter += len(masked_seqs[i:i + batch_size])
+            pbar.set(counter, message="Computing", detail=f"{counter}/{len(masked_seqs)} positions computed...")
 
         # Extract the logits corresponding to the masked position for each sequence in the batch
         for j, masked_seq_name in enumerate(names[i:i + batch_size]):

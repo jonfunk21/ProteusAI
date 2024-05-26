@@ -167,9 +167,14 @@ class Protein:
         return view
     
     ### Zero-shot prediction ###
-    def zs_prediction(self, model='esm2', batch_size=100):
+    def zs_prediction(self, model='esm2', batch_size=100, pbar=None):
         """
         Compute zero-shot scores
+
+        Args:
+            model (str): Model used to compute ZS scores
+            batch_size (int): Batch size used to compute ZS-Scores
+            pbar: App progress bar
         """
         seq = self.seq
 
@@ -190,7 +195,7 @@ class Protein:
         else:
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model)
+            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model, pbar=pbar)
 
             # Calculations
             p = get_probability_distribution(logits)
