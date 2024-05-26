@@ -6,7 +6,7 @@ import seaborn as sns
 from typing import Union
 import gpytorch
 
-def one_hot_encoder(sequences, alphabet=None, canonical=True):
+def one_hot_encoder(sequences, alphabet=None, canonical=True, pbar=None):
     """
     Encodes sequences provided an alphabet.
 
@@ -52,6 +52,8 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True):
 
     # Fill the tensor
     for i, sequence in enumerate(sequences):
+        if pbar:
+            pbar.set(i, message="Computing", detail=f"{i}/{len(sequences)} remaining...")
         for j, character in enumerate(sequence):
             # Get the index of the character in the alphabet
             char_index = alphabet_dict.get(character, -1)  # Return -1 if character is not in the alphabet
@@ -66,7 +68,7 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True):
     return tensor
 
 
-def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
+def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None):
     '''
     Returns BLOSUM encoding for amino acid sequence. Unknown amino acids will be
     encoded with 0.5 at in entire row.
@@ -76,6 +78,7 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
         sequences (list or str): List of amino acid sequences or a single sequence
         blosum_matrix_choice (str): Choice of BLOSUM matrix. Can be 'BLOSUM50' or 'BLOSUM62'
         canonical (bool): only use canonical amino acids
+        pbar: Progress bar for shiny app
 
     Returns:
     --------
@@ -125,6 +128,8 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True):
 
     # Convert each amino acid in sequence to BLOSUM encoding
     for i, sequence in enumerate(sequences):
+        if pbar:
+            pbar.set(i, message="Computing", detail=f"{i}/{len(sequences)} remaining...")
         for j, aa in enumerate(sequence):
             if aa in alphabet:
                 tensor[i, j, :] = torch.tensor(blosum_matrix[aa])

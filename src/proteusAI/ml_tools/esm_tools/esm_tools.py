@@ -144,7 +144,7 @@ def per_position_entropy(probability_distribution):
 
 
 
-def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33):
+def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33, pbar=None):
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
@@ -156,6 +156,7 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
+        pbar: Progress bar for shiny app
 
     Returns: representations (list) of sequence representation.
 
@@ -173,6 +174,7 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
     if fasta_path == None and seqs == None:
         raise "Either fasta_path or seqs must not be None"
 
+    counter = 0
     for i in range(0, len(seqs), batch_size):
         results, batch_lens, _, _ = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
         sequence_representations = get_seq_rep(results, batch_lens)
@@ -180,7 +182,9 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
             for j in range(len(sequence_representations)):
                 _dest = os.path.join(dest, names[i:i + batch_size][j])
                 torch.save(sequence_representations[j], _dest + '.pt')
-
+        if pbar:
+            counter += len(seqs[i:i + batch_size])
+            pbar.set(counter, message="Computing", detail=f"{counter}/|{len(seqs)} computed...")
 
 def mask_positions(sequence: str, mask_char: str='<mask>'):
     """

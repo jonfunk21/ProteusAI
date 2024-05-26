@@ -151,11 +151,7 @@ app_ui = ui.page_fluid(
 
                 #ui.output_ui("struc3D"),
                 ui.output_plot('tsne_plot'),
-                
-                #ui.panel_conditional("typeof output.protein_fasta !== 'string'",
-                #                     
-                #    ui.output_plot('tsne_plot')
-                #),               
+                              
             )
         ),
 
@@ -418,7 +414,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.protein_file)
     def _():
-        #prot = protein()
         f: list[FileInfo] = input.protein_file()
         prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
         prot.name = f[0]["name"].split('.')[0]
@@ -430,6 +425,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.confirm_protein)
     def _():
         with ui.Progress(min=1, max=15) as p:
+            library.set(None)
             p.set(message="Searching for available data...", detail="This may take a while...")
             # initialize protein
             #prot = protein()
@@ -738,14 +734,42 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.dat_compute_reps)
     async def _():
-        with ui.Progress(min=1, max=15) as p:
-            p.set(message="Computation in progress", detail="This may take a while...")
+        mode = MODE()
+        lib = library()
+        prot = protein()
+
+        if mode == 'zero-shot':
+            wt_seq = prot.seq
+            method = input.dat_rep_type()
+
+            canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+            mutants, sequences = [], []
+            for pos in range(len(wt_seq)):
+                for aa in canonical_aas:
+                    if wt_seq[pos] != aa:
+                        mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                        sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
+            pbar_max = len(mutants)
+        else:
+            pbar_max = len(lib)
+        
+        with ui.Progress(min=1, max=pbar_max) as p:
+
+            p.set(message="Computation in progress", detail="Initializing...")
+
+            # if no library was loaded one has to be created
+            if mode == 'zero-shot':
+                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
+                lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
 
             print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
-            lib = library()
-            
-            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE)
+            if mode == 'zero-shot':
+                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
+            else:
+                dest = None
+
+            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p, dest=dest)
 
             library.set(lib)
             print("Done!")
@@ -756,24 +780,41 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[inverted_reps[i] for i in lib.reps]
             )
 
-            #ui.update_select(
-            #    "plot_rep_type",
-            #    choices=[inverted_reps[i] for i in lib.reps]
-            #)
             available_reps.set([inverted_reps[i] for i in lib.reps])
 
     # Output dataset mode
-    @output
-    @render.plot
+    library_plot = reactive.Value(None)
+
+    @reactive.Effect
     @reactive.event(input.update_plot)
-    def tsne_plot():
+    def _():
         """
         Render plot once button is pressed.
         """
         with ui.Progress(min=1, max=15) as p:
             #if MODE() == "dataset":
             p.set(message="Plotting", detail="This may take a while...")
+
             lib = library()
+            mode = MODE()
+            prot = protein()
+
+            # if no library was loaded one has to be created
+            if mode == 'zero-shot' and lib == None:
+                wt_seq = prot.seq
+                method = input.dat_rep_type()
+
+                canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+                mutants, sequences = [], []
+                for pos in range(len(wt_seq)):
+                    for aa in canonical_aas:
+                        if wt_seq[pos] != aa:
+                            mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                            sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
+                
+                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
+                lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
+
             names = lib.names
             y_upper = input.y_upper()
             y_lower = input.y_lower()
@@ -783,6 +824,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
             tsne_df.set(df)
+            library_plot.set((fig, ax))
+    
+    @output
+    @render.plot
+    def tsne_plot(alt=None):
+        if library_plot():
+            fig, ax = library_plot()
             return fig, ax
     
         
@@ -793,10 +841,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.compute_zs)
     def _():
+        method = input.zs_model()
         with ui.Progress(min=1, max=15) as p:
-            p.set(message="Computing", detail="This may take several minutes...")
+            p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             prot = protein()
-            model = representation_dict[input.zs_model()]
+            model = representation_dict[method]
 
             print(f"computing zero shot scores using {model}")
 
@@ -816,7 +865,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.plot
     @reactive.event(input.plot_entropy)
-    def entropy_plot():
+    def entropy_plot(alt=None):
         """
         Create the per position entropy plot
         """
@@ -852,7 +901,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.plot
     @reactive.event(input.plot_scores)
-    def scores_plot():
+    def scores_plot(alt=None):
         """
         Create the per position entropy plot
         """
@@ -885,44 +934,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update Scores"
             )
 
-    # compute representations for Zero-Shot
-    @reactive.Effect
-    @reactive.event(input.zs_compute_reps)
-    async def _():
-        with ui.Progress(min=1, max=15) as p:
-            p.set(message="Computation in progress", detail="This may take a while...")
-
-            print(f"Computing library: {representation_dict[input.zs_rep_type()]}")
-            
-            prot = protein()
-
-            wt_seq = prot.seq
-            canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-            mutants, sequences = [], []
-            for pos in range(len(wt_seq)):
-                for aa in canonical_aas:
-                    if wt_seq[pos] != aa:
-                        mutants.append(wt_seq[pos] + str(pos+1) + aa)
-                        sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
-            
-            dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[input.zs_rep_type()]}")
-
-            lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[])
-            lib.compute(method=representation_dict[input.zs_rep_type()], dest=dest, batch_size=BATCH_SIZE)
-            
-            print("Done!")
-
-            # update representation selection
-            ui.update_select(
-                "model_rep_type",
-                choices=[inverted_reps[i] for i in lib.reps]
-            )
-
-            #ui.update_select(
-            #    "plot_rep_type",
-            #    choices=[inverted_reps[i] for i in lib.reps]
-            #)
-            available_reps.set([inverted_reps[i] for i in lib.reps])
+    
 
     ### structure mode 
     @render.ui
@@ -1042,7 +1054,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @output
     @render.plot
-    def pred_vs_true():
+    def pred_vs_true(alt=None):
         df = val_df()
         if model() != None:
             p = model().true_vs_predicted(y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list())
