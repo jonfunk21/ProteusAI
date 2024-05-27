@@ -144,6 +144,7 @@ dmypy.json
 *.txt
 *.pse
 .DS_Store
+*.json
 
 # from server
 *.err
