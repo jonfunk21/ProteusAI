@@ -86,16 +86,13 @@ class Model:
         self.test_r2 = []
         self.val_r2 = []
         self.rep_path = None
+        self.dest = None
 
         # check for device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
-
-        # Determine if the task is a classification or regression task
-        if self.library is not None:
-            self.y_type = self.library.y_type
 
     
     ### args
@@ -112,7 +109,8 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 42
+            'seed': 42,
+            'dest' : None
         }
         
         # Update defaults with provided keyword arguments
@@ -134,7 +132,8 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 42
+            'seed': 42,
+            'dest' : None
         }
         
         # Update defaults with provided keyword arguments
@@ -232,7 +231,10 @@ class Model:
         torch.cuda.manual_seed_all(self.seed)
 
         if rep_path is None:
-            rep_path = os.path.join(self.library.project, f"rep/{self.x}")
+            if self.library.rep_path:
+                rep_path = os.path.join(self.library.rep_path, f"{self.x}")
+            else:
+                rep_path = os.path.join(self.library.user, f"rep/{self.x}")
 
         file_names = [protein.name + ".pt" for protein in proteins]
 
@@ -252,7 +254,10 @@ class Model:
         model = None
 
         # Define the path for the params.json and model
-        params_path = f"{self.library.project}/models/{self.model_type}/params.json"
+        if self.dest != None:
+            params_path = f"{self.dest}/params.json"
+        else:
+            params_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/params.json")
 
         # Check if params.json exists
         if not os.path.exists(params_path):
@@ -340,13 +345,15 @@ class Model:
             self.y_val_pred = self._model.predict(x_val)
 
             # Save the model
-            model_save_path = f"{self.library.project}/models/{self.model_type}/model.joblib"
+            if self.dest != None:
+                model_save_path = f"{self.dest}/model.joblib"
+                csv_dest = f"{self.dest}"
+            else:
+                model_save_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/model.joblib")
+                csv_dest = os.path.join(f"{self.library.rep_path}",f"../models/{self.model_type}/{self.x}")
+
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
-
-            # create results directory
-            if not os.path.exists(f"{self.library.project}/models/{self.model_type}/data/"):
-                os.makedirs(f"{self.library.project}/models/{self.model_type}/data/")
 
             # Save the sequences, y-values, and predicted y-values to CSV
             def save_to_csv(proteins, y_values, y_pred_values, filename):
@@ -356,16 +363,16 @@ class Model:
                     for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
                         writer.writerow([protein.seq, y, y_pred])
 
-            save_to_csv(self.train_data, y_train, [None]*len(y_train), f"{self.library.project}/models/{self.model_type}/data/train_data.csv")
-            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
-            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
+            save_to_csv(self.train_data, y_train, [None]*len(y_train), f"{csv_dest}/train_data.csv")
+            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{csv_dest}/test_data.csv")
+            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{csv_dest}/val_data.csv")
 
             # Save results to a JSON file
             results = {
                 'test_r2': self.test_r2,
                 'val_r2': self.val_r2
             }
-            with open(f"{self.library.project}/models/{self.model_type}/results.json", 'w') as f:
+            with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
 
         else:
@@ -444,18 +451,23 @@ class Model:
         # prediction on validation set
         y_val_pred, y_val_sigma = predict_gp(self._model, likelihood, x_val)
         self.val_r2 = computeR2(y_val, y_val_pred)
+        self.y_train = y_train.cpu().numpy()
+        self.y_test_pred, self.y_test_sigma = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
         self.y_val_pred, self.y_val_sigma = y_val_pred.cpu().numpy(), y_val_sigma.cpu().numpy()
 
         self.y_val = y_val.cpu().numpy()
 
         # Save the model
-        model_save_path = f"{self.library.project}/models/{self.model_type}/model.pt"
+        if self.dest != None:
+            model_save_path = f"{self.dest}/model.pt"
+            csv_dest = self.dest
+        else:
+            model_save_path = os.path.join(f"{self.library.rep_path}",f"../models/{self.model_type}/{self.x}/model.pt")
+            csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
+
+        # Save the model
         os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
         torch.save(self._model.state_dict(), model_save_path)
-
-        # create results directory
-        if not os.path.exists(f"{self.library.project}/models/{self.model_type}/data/"):
-            os.makedirs(f"{self.library.project}/models/{self.model_type}/data/")
 
         # Save the sequences, y-values, and predicted y-values to CSV
         def save_to_csv(proteins, y_values, y_pred_values, y_pred_sigma, filename):
@@ -465,9 +477,9 @@ class Model:
                 for protein, y, y_pred, y_sig in zip(proteins, y_values, y_pred_values, y_pred_sigma):
                     writer.writerow([protein.seq, y, y_pred, y_sig])
 
-        save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{self.library.project}/models/{self.model_type}/data/train_data.csv")
-        save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{self.library.project}/models/{self.model_type}/data/test_data.csv")
-        save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{self.library.project}/models/{self.model_type}/data/val_data.csv")
+        save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{csv_dest}/train_data.csv")
+        save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
+        save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
 
         # Save results to a JSON file
         results = {
@@ -475,9 +487,9 @@ class Model:
             'val_r2': self.val_r2,
         }
 
-        with open(f"{self.library.project}/models/{self.model_type}/results.json", 'w') as f:
+        with open(f"{csv_dest}/results.json", 'w') as f:
             json.dump(results, f)
-      
+    
 
     def predict(self, proteins: list, rep_path = None):
         """
@@ -546,11 +558,12 @@ class Model:
             show_plot (bool): Choose to show the plot.
         """
         
-        if file is not None:
-            dest = os.path.join(self.library.project, f"plots/{self.model_type}")
-            file = os.path.join(dest, file)
-            if not os.path.exists(dest):
-                os.makedirs(dest)
+        if self.dest:
+            dest = os.path.join(self.dest, f"plots")
+        else:
+            dest = os.path.join(self.library.rep_path, f'../models/{self.model_type}/{self.x}/plots')
+        if not os.path.exists(dest):
+            os.makedirs(dest)
 
         fig, ax = vis.plot_predictions_vs_groundtruth(y_true, y_pred, title, x_label, 
                                             y_label, plot_grid, file, show_plot)

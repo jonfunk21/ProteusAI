@@ -33,6 +33,7 @@ FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 10
 ZS_MODELS = ["ESM-2", "ESM-1v"]
+USR_PATH = os.path.join(app_path, '../usrs')
 
 # TODO: check if Project path exists, create one if not
 # TODO: if no project path is provided create a temporary file system on the server - which can then be downloaded
@@ -50,18 +51,28 @@ app_ui = ui.page_fluid(
         ###############
         ui.nav_panel(
             "Data", 
-            
+
             ui.layout_sidebar(
                 ui.sidebar(
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_text('USER', 'Enter user name or proceed as guest', value='Guest'),
+                        ),
+                        ui.column(6,
+                            ui.input_action_button('login', 'Login'),
+                            style='padding:50px;'
+                        ),
+                        ui.column(6,
+                            ui.input_action_button('sign_up', 'Create account')
+                        )
+                    ),
+                    
                     
                     ui.navset_tab(
                         ui.nav_panel("Library",
 
                                 ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
-
-                               
-                               # CHANGE THIS TO EMPTY STRING LATER
-                               ui.input_text(id="project_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                                
                                "Data selection",
 
@@ -86,13 +97,13 @@ app_ui = ui.page_fluid(
                         ),
                         ui.nav_panel("Sequence",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
-                            ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
+                            #ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Continue'),
                             
                         ),
                         ui.nav_panel("Structure",
                             ui.input_file(id="structure_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
-                            ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
+                            #ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_structure', 'Continue'),
                             
                         ),
@@ -360,7 +371,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
     def _():
-        ys = dataset()[input.y_col()].to_list()
+        df = dataset()
+        f: list[FileInfo] = input.dataset_file()
+        file_name = f[0]['name']
+
+        ys = df[input.y_col()].to_list()
 
         # Determine if the data is numerical or categorical
         if is_numerical(ys):
@@ -373,10 +388,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             _y_type = "Categorical"
     
         # TRY TO FIND A MORE STABLE SOLUTION HERE
-        seqs = dataset()[input.seq_col()].to_list()
-        names = dataset()[input.description_col()].to_list()
+        seqs = df[input.seq_col()].to_list()
+        names = df[input.description_col()].to_list()
 
-        lib = pai.Library(project=input.project_path(), seqs=seqs, ys=ys, y_type=y_type, names=names, proteins=[])
+        usr_path = os.path.join(USR_PATH, input.USER().lower())
+        
+        lib = pai.Library(user=usr_path, seqs=seqs, ys=ys, y_type=y_type, names=names, proteins=[], file=file_name)
         
         library.set(lib)
 
@@ -419,7 +436,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.protein_file)
     def _():
         f: list[FileInfo] = input.protein_file()
-        prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
+        usr_path = os.path.join(USR_PATH, input.USER().lower())
+        prot = pai.Protein(fasta=f[0]["datapath"], user=usr_path)
         prot.name = f[0]["name"].split('.')[0]
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
@@ -434,7 +452,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             # initialize protein
             #prot = protein()
             f: list[FileInfo] = input.protein_file()
-            prot = pai.Protein(fasta=f[0]["datapath"], project=input.protein_path())
+            usr_path = os.path.join(USR_PATH, input.USER().lower())
+            prot = pai.Protein(fasta=f[0]["datapath"], user=usr_path)
             name = f[0]["name"].split('.')[0]
             prot.name = name
             
@@ -449,29 +468,36 @@ def server(input: Inputs, output: Outputs, session: Session):
             rep_computed = []
             for model in ZS_MODELS:
                 # check hash existence
-                zs_path = os.path.join(prot.project, f"zero_shot/{name}/{model_dict[model]}")
+                zs_path = os.path.join(prot.user, f"{name}/zero_shot/results/{model_dict[model]}")
 
                 if os.path.exists(zs_path):
                     if "zs_scores.csv" in os.listdir(zs_path):
                         zs_computed.append(model)
                 
                 for rep in representation_types:
-                    rep_path = os.path.join(zs_path, "rep", rep)
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
                     if os.path.exists(rep_path):
-                        rep_computed.append(rep)
+                        rep_computed.append(representation_dict[rep])
 
-                
+                ui.update_select(
+                        "model_rep_type",
+                        choices=[inverted_reps[i] for i in rep_computed]
+                    )
+
+                available_reps.set([inverted_reps[i] for i in rep_computed])
+
+            
             zs_results.set(zs_computed)
 
             # load zs-library if exists
             for model in ZS_MODELS:
                 try:
-                    rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.project, f"zero_shot/{prot.name}/{representation_dict[model]}/zs_scores.csv")
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[model]}")
+                    df_path = os.path.join(prot.user, f"{name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
                     
                     df = pd.read_csv(df_path)
                     p.set(message="Loading data...", detail="This may take a while...")
-                    lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                    lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
 
                     library.set(lib)
                     dataset.set(df)
@@ -482,10 +508,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                         choices=[inverted_reps[i] for i in lib.reps]
                     )
 
-                    #ui.update_select(
-                    #    "plot_rep_type",
-                    #    choices=[inverted_reps[i] for i in lib.reps]
-                    #)
                     available_reps.set([inverted_reps[i] for i in lib.reps])
                 except:
                     pass
@@ -520,7 +542,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Searching for available data...", detail="This may take a while...")
             prot = protein()
             f: list[FileInfo] = input.structure_file()
-            prot = pai.Protein(struc=f[0]["datapath"], project=input.project_path())
+            usr_path = os.path.join(USR_PATH, input.USER().lower())
+            prot = pai.Protein(struc=f[0]["datapath"], user=usr_path)
 
             name = f[0]["name"].split('.')[0]
             prot.name = name
@@ -533,12 +556,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             # load zs-library if exists
             for model in ZS_MODELS:
                 try:
-                    rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.project, f"zero_shot/{prot.name}/{representation_dict[model]}/zs_scores.csv")
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[model]}")
+                    df_path = os.path.join(prot.user, f"{name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
                     
                     df = pd.read_csv(df_path)
                     p.set(message="Loading data...", detail="This may take a while...")
-                    lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                    lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
 
                     library.set(lib)
                     dataset.set(df)
@@ -763,13 +786,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             # if no library was loaded one has to be created
             if mode == 'zero-shot':
-                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
-                lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
+                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
+                lib = pai.Library(user=prot.user, seqs=sequences, names=mutants, proteins=[], rep_path=dest)
 
             print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
             if mode == 'zero-shot':
-                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
+                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
             else:
                 dest = None
 
@@ -815,9 +838,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                         if wt_seq[pos] != aa:
                             mutants.append(wt_seq[pos] + str(pos+1) + aa)
                             sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
-                
-                dest = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.dat_rep_type()])
-                lib = pai.Library(project=input.protein_path(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
+
+                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
+                usr_path = os.path.join(USR_PATH, input.USER().lower())
+                lib = pai.Library(user=usr_path, seqs=sequences, names=mutants, proteins=[], rep_path=dest)
 
             names = lib.names
             y_upper = input.y_upper()
@@ -847,6 +871,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         method = input.zs_model()
         prot = protein()
+        usr_path = os.path.join(USR_PATH, input.USER().lower())
+
         with ui.Progress(min=1, max=len(prot.seq)) as p:
             p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             
@@ -856,9 +882,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
-            rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
+            rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.model_rep_type()])
 
-            lib = pai.Library(project=input.protein_path(), seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+            lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
             
             library.set(lib)
             dataset.set(df)
@@ -1026,19 +1052,41 @@ def server(input: Inputs, output: Outputs, session: Session):
                 split = "random"
 
             rep_type = representation_dict[input.model_rep_type()]
-            if MODE() in ["zero-shot", "structure"]:
-                prot = protein()
-                name = prot.name
-                rep_path = os.path.join(prot.project, f"zero_shot/{prot.name}/rep/", representation_dict[input.model_rep_type()])
-            else:
-                rep_path = None
+            prot = protein()
 
+            if MODE() == 'structure':
+                f: list[FileInfo] = input.structure_file()
+            else:
+                f: list[FileInfo] = input.dataset_file()
+            
+            #usr_path = os.path.join(USR_PATH, input.USER().lower())
+            #fname = f[0]["name"].split('.')[0]
+
+            #if MODE() in ["zero-shot", "structure"]:
+            #    prot = protein()
+            #    name = prot.name
+            #    
+            #    if MODE() == 'zero-shot':
+            #        dest = os.path.join(f"{usr_path}/{fname}/zero_shot/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
+            #    else:
+            #        dest = os.path.join(f"{usr_path}/{fname}/design/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
+            #    lib = pai.Library(user=input.USER(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
+            #else:
+            #    rep_path = None
+            #    dest = os.path.join(f"{usr_path}/{fname}/library/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
             lib = library()
+
+            if MODE() == 'zero-shot' and lib == None:
+                df = pd.read_csv(os.path.join(prot.user, prot.name, "zero_shot/results", rep_type, "zs_scores.csv"))
+                rep_path = os.path.join(prot.user, prot.name, "zero_shot/rep")
+                lib = pai.Library(user=prot.user, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                
 
             print(f"training {model_dict[input.model_type()]}")
 
+            #m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed(), dest=dest)
             m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed())
-            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], rep_path=rep_path)
+            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()])
 
             print("training done!")
 

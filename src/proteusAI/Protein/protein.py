@@ -31,7 +31,7 @@ class Protein:
         design (str): Output of design.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], project: Union[str, None] = None, y = None, fasta: str = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], user: Union[str, None] = 'guest', y = None, fasta: str = None):
         """
         Initialize a new protein object.
 
@@ -40,7 +40,7 @@ class Protein:
             seq (str): Protein sequence.
             struc (str, AtomArray): Protein structure.
             reps (list): List of available representations.
-            project (str): Path to the project. Will create one if the path does not exist.
+            user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
             fasta (str): path to fasta file
         """
@@ -49,7 +49,7 @@ class Protein:
         assert isinstance(name, (str, type(None)))
         assert isinstance(seq, (str, type(None)))
         assert isinstance(reps, (list, tuple))
-        assert isinstance(project, (str, type(None)))
+        assert isinstance(user, (str, type(None)))
 
         self.name = name
         self.seq = seq
@@ -61,16 +61,16 @@ class Protein:
         self.design = None
         
         # If path is not provided, use the directory of the calling script
-        if project is None:
+        if user is None:
             caller_path = os.path.dirname(self.get_caller_path())
-            self.project = os.path.join(caller_path)
-            self.rep_path = os.path.join(caller_path, 'rep')
+            self.user = os.path.join(caller_path)
+            self.rep_path = os.path.join(caller_path, 'protein/rep')
         else:
-            assert isinstance(project, str)
-            self.project = project
-            self.rep_path = os.path.join(project, 'rep')
-            if not os.path.exists(project):
-                os.makedirs(project)
+            assert isinstance(user, str)
+            self.user = user
+            self.rep_path = os.path.join(user, 'protein/rep')
+            if not os.path.exists(user):
+                os.makedirs(user)
 
         # If file is not None, then initialize load fasta
         if fasta is not None:
@@ -181,8 +181,12 @@ class Protein:
         # check scores for this protein and model have already been computed
         name = self.name
 
-        project_path = self.project
-        dest = os.path.join(project_path, "zero_shot", name, model)
+        user_path = self.user
+
+        if self.name:
+            dest = os.path.join(user_path, f"{self.name}/zero_shot/results", model)
+        else:
+            dest = os.path.join(user_path, f"protein/zero_shot/results", model)
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -227,7 +231,10 @@ class Protein:
         seq = self.seq
         name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", name, model)
+        if self.name:
+            dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
+        else:
+            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
@@ -276,7 +283,10 @@ class Protein:
         seq = self.seq
         name = self.name
 
-        dest = os.path.join(self.project, "zero_shot", name, model)
+        if self.name:
+            dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
+        else:
+            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))

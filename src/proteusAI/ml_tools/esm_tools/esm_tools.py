@@ -184,7 +184,7 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
                 torch.save(sequence_representations[j], _dest + '.pt')
         if pbar:
             counter += len(seqs[i:i + batch_size])
-            pbar.set(counter, message="Computing", detail=f"{counter}/|{len(seqs)} computed...")
+            pbar.set(counter, message="Computing", detail=f"{counter}/{len(seqs)} computed...")
 
 def mask_positions(sequence: str, mask_char: str='<mask>'):
     """

@@ -28,7 +28,7 @@ class Library:
     The library object serves as input to Model objects, to train machine learning models.
 
     Attributes:
-        project (str): Path to the project. Will create one if the path does not exist.
+        usr (str): User name - determines where data will be stored. default: Guest
         data (str): Path to data file ().
         proteins (list): List of proteins.
     """
@@ -38,22 +38,24 @@ class Library:
     representation_types = ['esm1v', 'esm2', 'ohe', 'blosum62', 'blosum50', 'vae']
     _allowed_y_types = ['class', 'num']
 
-    def __init__(self, project: str, overwrite: bool = False, names: list = [], seqs: list = [], 
+    def __init__(self, user: str = 'guest', file: Union[str,None] = None, overwrite: bool = False, names: list = [], seqs: list = [], 
                  proteins: list = [], ys: list=[], y_type: Union[str, None] = None, zs: bool = False, rep_path: Union[str, None] = None):
         """
         Initialize a new library.
 
         Args:
             name (str): Path to library.
+            file (str): Path to csv file
             overwrite (bool): Allow to overwrite files if True.
             names (list): List of protein names.
             seqs (list): List of sequences as strings.
             ys (list): List of y values.
             proteins (Protein, optional): List of proteusAI protein objects.
             y_type: Type of y values class ('class') or numeric ('num') 
-            self.rep_path (str): Use custom representation path else, will resume with default.
+            self.rep_path (str): Path to representations folder, containing all representations.
         """
-        self.project = project
+        self.user = user
+        self.file = file
         self.overwrite = overwrite
         self.proteins = proteins
         self.names = names
@@ -65,26 +67,34 @@ class Library:
         self.rep_path = rep_path
         
         # handle case if library does not exist
-        if not os.path.exists(self.project):
-            self.initialize_library()
+        if not os.path.exists(self.user):
+            self.initialize_user()
 
         # if the library already exists
         else:
             # load existing information
-            print(f"Library {project} already exists. Loading existing library...")
-            self.initialize_library()
+            print(f"User {user} already exists. Loading existing data...")
+            self.initialize_user()
             self.load_library()
 
-    def initialize_library(self):
+    def initialize_user(self):
         """
         initializing a new library.
         """
-        print(f"Initializing library '{self.project}'...")
+        print(f"Initializing user '{self.user}'...")
         
-        # create project library
-        if not os.path.exists(self.project):
-            os.makedirs(self.project)
-            print(f"library created at {self.project}")
+        # create user library
+        if not os.path.exists(self.user):
+            os.makedirs(self.user)
+            os.makedirs(os.path.join(self.user, 'data'))
+            if self.file and not os.path.exists(os.path.join(self.user, f'{fname}')):
+                fname = self.file.split('.')[0]
+                os.makedirs(os.path.join(self.user, f'{fname}'))
+                os.makedirs(os.path.join(self.user, f'{fname}/library'))
+                os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
+                os.makedirs(os.path.join(self.user, f'{fname}/design'))
+            print(f"User created at {self.user}")
+        
 
         # check if sequence have been provided
         if len(self.seqs) > 0:
@@ -110,34 +120,19 @@ class Library:
     ### IO ###
     def load_library(self):
         """
-        Load an existing library.
+        Checking the availability of precomputed representations.
         """
-        print(f"Loading library '{self.project}'...")
-
-        # Check for data
-        data_path = os.path.join(self.project, 'data')
-        if os.path.exists(data_path):
-            data_files = os.listdir(data_path)
-            if len(data_files) > 0:
-                for dat in data_files:
-                    print(f"- Found '{dat}' in 'data/'.")
-
-        # Check for models
-        models_path = os.path.join(self.project, 'models')
-        if os.path.exists(models_path):
-            cls_path = os.path.join(models_path, 'cls')
-            if os.path.exists(cls_path):
-                classifier_models = os.listdir(cls_path)
-                print(f"- Found {len(classifier_models)} classifier models in 'models/cls'.")
-
-            reg_path = os.path.join(models_path, 'reg')
-            if os.path.exists(reg_path):
-                regressor_models = os.listdir(reg_path)
-                print(f"- Found {len(regressor_models)} regressor models in 'models/reg'.")
+        print(f"Loading library '{self.user}'...")
 
         # Check for representations
         if self.rep_path == None:
-            rep_path = os.path.join(self.project, 'rep')
+            if self.file:
+                fname = self.file.split('.')[0]
+                rep_path = os.path.join(self.user, f'{fname}/library/rep')
+                self.rep_path = rep_path
+            else:
+                rep_path = os.path.join(self.user, 'rep')
+                self.rep_path = rep_path
         else:
             rep_path = '/'.join(self.rep_path.split('/')[:-1])
 
@@ -256,12 +251,12 @@ class Library:
         """
         Check for available representations, store in protein object if representation is found
         """
-        reps = [r for r in os.listdir(os.path.join(self.project, "rep")) if not r.startswith('.')]
+        reps = [r for r in os.listdir(os.path.join(self.user, "rep")) if not r.startswith('.')]
         if len(reps) > 0:
             rep = None
             for rep in reps:
                 computed = 0
-                rep_path = os.path.join(self.project, f"rep/{rep}")
+                rep_path = os.path.join(self.user, f"rep/{rep}")
                 proteins = []
                 rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
                 for protein in self.proteins:
@@ -357,9 +352,9 @@ class Library:
         if dest != None:
             dest = os.path.join(dest)
         elif self.rep_path is not None:
-            dest = self.rep_path
+            dest = os.path.join(self.rep_path, model)
         else:
-            dest = os.path.join(self.project, f"rep/{model}")
+            dest = os.path.join(self.user, f"rep/{model}")
 
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -370,7 +365,7 @@ class Library:
         print(f"computing {len(proteins_to_compute)} proteins")
         
         if pbar:
-            pbar.set(message=f"Computing {len(proteins_to_compute)}", detail=f"...")
+            pbar.set(message=f"Computing {len(proteins_to_compute)} representations", detail=f"...")
 
         # get names for and sequences for computation
         names = [protein.name for protein in proteins_to_compute]
@@ -398,15 +393,17 @@ class Library:
 
         if dest != None:
             dest = os.path.join(dest)
+        elif self.rep_path is not None:
+            dest = os.path.join(self.rep_path, 'ohe')
         else:
-            dest = os.path.join(self.project, "rep/ohe")
+            dest = os.path.join(self.user, "rep/ohe")
 
         if not os.path.exists(dest):
             os.makedirs(dest)
 
         proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
         
-        print(f"Computing {len(proteins_to_compute)} proteins")
+        print(f"Computing {len(proteins_to_compute)} representations")
 
         if pbar:
             pbar.set(message=f"Initializing computation", detail=f"{len(proteins_to_compute)}/{len(self.proteins)} to compute")
@@ -439,8 +436,10 @@ class Library:
         """
         if dest != None:
             dest = os.path.join(dest)
+        elif self.rep_path is not None:
+            dest = os.path.join(self.rep_path, f'{matrix_type.lower()}')
         else:
-            dest = os.path.join(self.project, f"rep/{matrix_type.lower()}")
+            dest = os.path.join(self.user, f"rep/{matrix_type.lower()}")
         if not os.path.exists(dest):
             os.makedirs(dest)
 
@@ -482,9 +481,9 @@ class Library:
         """
 
         if self.rep_path == None:
-            rep_path = os.path.join(self.project, f"rep/{rep}")
+            rep_path = os.path.join(self.user, f"rep/{rep}")
         else:
-            rep_path = self.rep_path
+            rep_path = os.path.join(self.rep_path, rep)
 
         if proteins == None:
             file_names = [protein.name + ".pt" for protein in self.proteins]
