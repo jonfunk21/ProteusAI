@@ -22,7 +22,7 @@ import os
 import matplotlib.pyplot as plt
 
 VERSION = "version " + "0.1"
-representation_types = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
+REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
 model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp"}
@@ -175,9 +175,6 @@ app_ui = ui.page_fluid(
                     ui.row(
                         ui.h5("Machine Learning Guided Directed Evolution"),
 
-                        ui.column(12,
-                            ui.output_ui("mlde_dynamic_ui")
-                        ),
                         ui.column(6,
                             ui.input_select("model_type", "Surrogate model", model_types)
                         ),
@@ -186,8 +183,11 @@ app_ui = ui.page_fluid(
                         ),
                         # TODO: Only show the computed representation types
                         ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", representation_types),
-                        )
+                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("mlde_dynamic_ui")
+                        ),
                         
                     ),
                     
@@ -366,7 +366,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     # Loading library data
     representation_path = reactive.Value(None)
-    available_reps = reactive.Value(representation_types)
+    available_reps = reactive.Value(REP_TYPES)
 
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
@@ -474,7 +474,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     if "zs_scores.csv" in os.listdir(zs_path):
                         zs_computed.append(model)
                 
-                for rep in representation_types:
+                for rep in REP_TYPES:
                     rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
                     if os.path.exists(rep_path):
                         rep_computed.append(representation_dict[rep])
@@ -554,31 +554,36 @@ def server(input: Inputs, output: Outputs, session: Session):
             MODE.set('structure')
 
             # load zs-library if exists
+            computed_zs = []
+            reps = []
+            # load reps
+            for rep in REP_TYPES:
+                rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
+                p.set(message="Loading data...", detail="This may take a while...")
+                if os.path.exists(rep_path):
+                    reps.append(rep)
+
+            
+            # load zs_scores
             for model in ZS_MODELS:
-                try:
-                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.user, f"{name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
-                    
+                df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
+                if os.path.exists(df_path):
                     df = pd.read_csv(df_path)
                     p.set(message="Loading data...", detail="This may take a while...")
-                    lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                    computed_zs.append(model)
 
-                    library.set(lib)
-                    dataset.set(df)
-                    zs_scores.set(df)
 
-                    ui.update_select(
-                        "model_rep_type",
-                        choices=[inverted_reps[i] for i in lib.reps]
-                    )
+            ui.update_select(
+                    "model_rep_type",
+                    choices=reps
+                )
 
-                    #ui.update_select(
-                    #    "plot_rep_type",
-                    #    choices=[inverted_reps[i] for i in lib.reps]
-                    #)
-                    available_reps.set([inverted_reps[i] for i in lib.reps])
-                except:
-                    pass
+            ui.update_select(
+                "computed_zs_scores",
+                choices=computed_zs
+            )
+
+            computed_zs_scores.set(computed_zs)
         
 
     @output
@@ -611,7 +616,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.h4("Representation Learning"),
                 ui.row(
                     ui.column(7,
-                        ui.input_select("dat_rep_type", "Compute representations", representation_types),
+                        ui.input_select("dat_rep_type", "Compute representations", REP_TYPES),
                     ),
                     ui.column(5,
                         ui.input_action_button("dat_compute_reps", "Compute"),
@@ -765,7 +770,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         lib = library()
         prot = protein()
 
-        if mode == 'zero-shot':
+        if mode in ['zero-shot', 'structure']:
             wt_seq = prot.seq
             method = input.dat_rep_type()
 
@@ -785,18 +790,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Computation in progress", detail="Initializing...")
 
             # if no library was loaded one has to be created
-            if mode == 'zero-shot':
-                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
+            if mode in ['zero-shot', 'structure']:
+                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/")
                 lib = pai.Library(user=prot.user, seqs=sequences, names=mutants, proteins=[], rep_path=dest)
 
             print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
-            if mode == 'zero-shot':
-                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
-            else:
-                dest = None
-
-            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p, dest=dest)
+            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
 
             library.set(lib)
             print("Done!")
@@ -876,6 +876,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         with ui.Progress(min=1, max=len(prot.seq)) as p:
             p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             
+            computed_zs = computed_zs_scores()
+
             model = representation_dict[method]
 
             print(f"computing zero shot scores using {model}")
@@ -889,7 +891,17 @@ def server(input: Inputs, output: Outputs, session: Session):
             library.set(lib)
             dataset.set(df)
             zs_scores.set(df)
-            print(df)
+            
+            if method not in computed_zs:
+                computed_zs.append(method)
+            
+
+            ui.update_select(
+                "computed_zs_scores",
+                choices=computed_zs
+            )
+
+            computed_zs_scores.set(computed_zs)
     
 
     # Output protein mode
@@ -965,8 +977,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update Scores"
             )
 
-    
-
     ### structure mode 
     @render.ui
     def struc3D():
@@ -976,17 +986,16 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
     
     ### MLDE tab ###
+    computed_zs_scores = reactive.Value([])
     @output
     @render.ui
     def mlde_dynamic_ui():        
-        if MODE() == "zero-shot":
+        if MODE() in ["zero-shot", "structure"]:
             return ui.TagList(
-                ui.h4("MLDE from zero-shot data")
+                ui.input_select("computed_zs_scores", "Choose zero-shot scores", computed_zs_scores())
             )
         if MODE() == "dataset":
-            return ui.TagList(
-                ui.h4("MLDE from experimental data")
-            )
+            return None
         
     model = reactive.Value(None)
     
@@ -1058,26 +1067,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 f: list[FileInfo] = input.structure_file()
             else:
                 f: list[FileInfo] = input.dataset_file()
-            
-            #usr_path = os.path.join(USR_PATH, input.USER().lower())
-            #fname = f[0]["name"].split('.')[0]
 
-            #if MODE() in ["zero-shot", "structure"]:
-            #    prot = protein()
-            #    name = prot.name
-            #    
-            #    if MODE() == 'zero-shot':
-            #        dest = os.path.join(f"{usr_path}/{fname}/zero_shot/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
-            #    else:
-            #        dest = os.path.join(f"{usr_path}/{fname}/design/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
-            #    lib = pai.Library(user=input.USER(), seqs=sequences, names=mutants, proteins=[], rep_path=dest)
-            #else:
-            #    rep_path = None
-            #    dest = os.path.join(f"{usr_path}/{fname}/library/models/", model_dict[input.model_type()], representation_dict[input.model_rep_type()])
             lib = library()
 
-            if MODE() == 'zero-shot' and lib == None:
-                df = pd.read_csv(os.path.join(prot.user, prot.name, "zero_shot/results", rep_type, "zs_scores.csv"))
+            if MODE() in ['zero-shot', 'structure']:
+                df = pd.read_csv(os.path.join(prot.user, prot.name, "zero_shot/results", representation_dict[input.computed_zs_scores()], "zs_scores.csv")) # TODO parse the ESM results that are wanted, add a button to MLDE
                 rep_path = os.path.join(prot.user, prot.name, "zero_shot/rep")
                 lib = pai.Library(user=prot.user, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
                 
