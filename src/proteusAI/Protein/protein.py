@@ -31,18 +31,19 @@ class Protein:
         design (str): Output of design.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], user: Union[str, None] = 'guest', y = None, fasta: str = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], user: Union[str, None] = 'guest', y = None, fasta: str = None, pdb_file: str = None):
         """
         Initialize a new protein object.
 
         Args:
             name (str): Name/id of the protein.
             seq (str): Protein sequence.
-            struc (str, AtomArray): Protein structure.
+            struc (AtomArray): Protein structure.
             reps (list): List of available representations.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
             fasta (str): path to fasta file
+            pdb_file (str): path to pdb_file
         """
 
         # assertions and checks
@@ -55,7 +56,7 @@ class Protein:
         self.seq = seq
         self.reps = list(reps)
         self.struc = struc
-        self.atom_array = None
+        self.pdb_file = pdb_file
         self.chains = []
         self.y = y
         self.design = None
@@ -78,7 +79,7 @@ class Protein:
         
         # If file is not None, then initialize load fasta
         if struc is not None:
-            self.atom_array = self.load_structure(struc)
+            self.struc = self.load_structure(struc)
 
     def get_caller_path(self):
         """Returns the path of the script that called the function."""
@@ -87,9 +88,9 @@ class Protein:
         return os.path.abspath(caller_path)
 
     def __str__(self):
-        if self.atom_array is not None:
+        if self.struc is not None:
             struc_loaded = "loaded"
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\nstruc:\t{self.struc}\n"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\nstruc:\t{self.pdb_file}\n"
     
     __repr__ = __str__
 
@@ -151,9 +152,10 @@ class Protein:
         seqs = get_sequences(prot_f)
         chains = chain_parser(self.struc)
 
+        self.pdb_file = prot_f
         self.seq = seqs[chains[0]]
         self.name = name
-        self.atom_array = prot
+        self.struc = prot
         self.chains = chains
 
     def view_struc(self, color=None, highlight=None, sticks=None):
@@ -163,7 +165,7 @@ class Protein:
         Args:
             color (str): Choose different coloration options
         """
-        view = show_pdb(self.struc, color=color, highlight=highlight, sticks=sticks)
+        view = show_pdb(self.pdb_file, color=color, highlight=highlight, sticks=sticks)
         return view
     
     ### Zero-shot prediction ###
@@ -264,19 +266,74 @@ class Protein:
         fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
         return fig
     
+    ### Structure prediction ###
+    def esm_fold(self, batch_size=100, dest=None, pbar=None): # If structure prediction will become available for libraries, set dest in library, create a protein dir under the file name
+        """
+        Compute zero-shot scores
+
+        Args:
+            batch_size (int): Batch size used to compute ZS-Scores
+            dest (str): custom destination for file
+            pbar: App progress bar
+            
+        """
+        seq = self.seq
+
+        # check scores for this protein and model have already been computed
+        name = self.name
+
+        user_path = self.user
+
+        if self.name and not dest:
+            dest = os.path.join(user_path, f"protein/")
+            pdb_file = os.path.join(dest, {self.name})
+        elif dest:
+            pdb_file = os.path.join(dest, f"{self.name}.pdb")
+
+        # Check if structure already exist
+        if os.path.exists(pdb_file):
+            self.pdb_file = pdb_file
+            self.struc = strucio.load_structure(pdb_file)
+            self.chains = chain_parser(self.struc)
+            # get ptsm and plddts from loaded files
+        else:
+            os.makedirs(dest, exist_ok=True)
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = structure_prediction(seqs = [self.seq], names=[self.name])
+            pdb = all_pdbs[0]
+            pdb.write(pdb_file)
+
+            self.pdb_file = pdb_file
+            self.struc = all_pdbs[0]
+            self.pTMs = pTMs[0]
+            self.pLDDT = mean_pLDDTs[0]
+            self.chains = chain_parser(self.struc)
+    
+        return self.struc
+    
     ### Inverse Folding ###
-    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, outpath=None, model=None, alphabet=None, pbar=None):
+    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None):
         """
         Perform inverse folding using ESM-IF
         """
-        pdbfile = self.struc
+        user_path = self.user
+
+        if dest:
+            csv_path = os.path.join(dest, f"{self.name}.csv")
+        else:
+            csv_path = os.path.join(user_path, f"protein/design/{self.name}.csv")
+
+        os.makedirs(dest, exist_ok=True)
 
         if chain == None:
             chain = self.chains[0]
 
-        out = esm_design(pdbfile, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, pbar=pbar)
+        out = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, pbar=pbar)
+
+        out.to_csv(csv_path)
+
+        self.designs = csv_path
         
-        return out
+        return csv_path
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
