@@ -17,7 +17,8 @@ import proteusAI.visual_tools as vis
 import pandas as pd
 from typing import Union, Optional
 import torch
-
+folder_path = os.path.dirname(os.path.realpath(__file__))
+USR_PATH = os.path.join(folder_path, '../../../usrs')
 
 
 class Library:
@@ -54,7 +55,7 @@ class Library:
             y_type: Type of y values class ('class') or numeric ('num') 
             self.rep_path (str): Path to representations folder, containing all representations.
         """
-        self.user = user
+        self.user = os.path.join(USR_PATH, user)
         self.file = file
         self.overwrite = overwrite
         self.proteins = proteins
@@ -83,12 +84,11 @@ class Library:
         """
         print(f"Initializing user '{self.user}'...")
         
-        # create user library
+        # create user library if user does not exist
         if not os.path.exists(self.user):
             os.makedirs(self.user)
-            os.makedirs(os.path.join(self.user, 'data'))
-            fname = self.file.split('.')[0]
-            if self.file and not os.path.exists(os.path.join(self.user, f'{fname}')):
+            if self.file and not os.path.exists(os.path.join(self.user, self.file.split('.')[0])):
+                fname = self.file.split('.')[0]
                 os.makedirs(os.path.join(self.user, f'{fname}'))
                 os.makedirs(os.path.join(self.user, f'{fname}/library'))
                 os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
@@ -165,6 +165,9 @@ class Library:
         
         # Determine file type based on extension
         file_ext = os.path.splitext(data)[1].lower()
+        self.file = data.split('/')[-1].split('.')[0]
+        
+        self.rep_path = os.path.join(self.user, self.file, "library/rep")
 
         if file_ext in ['.xlsx', '.xls', '.csv']:
             self._read_tabular_data(data=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
@@ -351,6 +354,8 @@ class Library:
         """
         if dest != None:
             dest = os.path.join(dest)
+        elif self.rep_path is not None and self.file is not None:
+            dest = os.path.join(self.rep_path, model)
         elif self.rep_path is not None:
             dest = os.path.join(self.rep_path, model)
         else:
@@ -517,3 +522,21 @@ class Library:
     def __len__(self):
         return len(self.seqs)
 
+
+    def top_n(self, n: int = 10, ascending=False):
+        """
+        Returns the top n-proteins by y-value.
+
+        Args:
+            n (int): Number of top variants. Default 10
+            ascending (bool): sort in ascending or descending order
+        """
+        
+        # Get the list of proteins
+        proteins = self.proteins
+        
+        # Sort the proteins by y-value
+        sorted_proteins = sorted(proteins, key=lambda protein: protein.y, reverse=not ascending)
+        
+        # Return the top n proteins
+        return sorted_proteins[:n]
