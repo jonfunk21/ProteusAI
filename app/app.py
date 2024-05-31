@@ -463,7 +463,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             dataset_path.set(f[0]["datapath"])
             MODE.set('zero-shot')
 
-            # check for zs-computations
+            # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
             zs_computed = []
             rep_computed = []
             for model in ZS_MODELS:
@@ -489,7 +489,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             
             zs_results.set(zs_computed)
 
-            # load zs-library if exists
+            # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
             for model in ZS_MODELS:
                 try:
                     rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[model]}")
@@ -543,7 +543,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             prot = protein()
             f: list[FileInfo] = input.structure_file()
             usr_path = os.path.join(USR_PATH, input.USER().lower())
-            prot = pai.Protein(struc=f[0]["datapath"], user=usr_path)
+            prot = pai.Protein(pdb_file=f[0]["datapath"], user=usr_path)
 
             name = f[0]["name"].split('.')[0]
             prot.name = name
@@ -884,7 +884,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
-            rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.model_rep_type()])
+            rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.zs_model()])
 
             lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
             
