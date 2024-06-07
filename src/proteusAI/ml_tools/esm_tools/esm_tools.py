@@ -721,26 +721,31 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     
     # adjust keys and values
     min_val = min(filtered_alphabet.values())
-    #filtered_alphabet = {char: i-min_val for char, i in filtered_alphabet.items()}
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
                       columns=[i for i in filtered_alphabet.keys()])
 
+    # Calculate the symmetric vmin and vmax around zero
+    abs_max = max(abs(df.min().min()), abs(df.max().max()))
+
     # colors
     if color_sheme == 'rwb':
         colors = ["red", "white", "blue"]
         cmap = LinearSegmentedColormap.from_list("red_white_blue", colors)
+        vmin, vmax = -abs_max, abs_max  # Symmetric range around zero
     elif color_sheme == 'r':
         cmap = "Reds"
+        vmin, vmax = None, None  # No centering for single color schemes
     else:
         cmap = "Blues"
+        vmin, vmax = None, None  # No centering for single color schemes
 
     # Create a heatmap using seaborn
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax = plt.gca()
-    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax)
+    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax, vmin=vmin, vmax=vmax)
     
     # Adjust x-axis ticks and labels if 'section' is specified
     if section is not None:
