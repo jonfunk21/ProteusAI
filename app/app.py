@@ -386,14 +386,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             y_type = "class"
             choice = "Classification"
             _y_type = "Categorical"
-    
-        # TRY TO FIND A MORE STABLE SOLUTION HERE
-        seqs = df[input.seq_col()].to_list()
-        names = df[input.description_col()].to_list()
-
-        usr_path = os.path.join(USR_PATH, input.USER().lower())
         
-        lib = pai.Library(user=usr_path, seqs=seqs, ys=ys, y_type=y_type, names=names, proteins=[], file=file_name)
+        lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
+                          y_type=y_type, names_col=input.description_col(), fname=file_name)
         
         library.set(lib)
 
@@ -404,10 +399,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices=[inverted_reps[i] for i in lib.reps]
         )
 
-        #ui.update_select(
-        #    "plot_rep_type",
-        #    choices=[inverted_reps[i] for i in lib.reps]
-        #)
         available_reps.set([inverted_reps[i] for i in lib.reps])
         
         # update available model tasks
@@ -427,6 +418,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         MODE.set("dataset")
 
+        library_plot.set(None)
+
     
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
@@ -437,8 +430,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         f: list[FileInfo] = input.protein_file()
         usr_path = os.path.join(USR_PATH, input.USER().lower())
-        prot = pai.Protein(fasta=f[0]["datapath"], user=usr_path)
-        prot.name = f[0]["name"].split('.')[0]
+        file_name = f[0]['name']
+        prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+
         protein.set(prot)
         dataset_path.set(f[0]["datapath"])
 
@@ -453,9 +447,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             #prot = protein()
             f: list[FileInfo] = input.protein_file()
             usr_path = os.path.join(USR_PATH, input.USER().lower())
-            prot = pai.Protein(fasta=f[0]["datapath"], user=usr_path)
-            name = f[0]["name"].split('.')[0]
-            prot.name = name
+            file_name = f[0]['name']
+
+            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+
             
             # set shiny variables
             protein.set(prot)
@@ -468,32 +463,22 @@ def server(input: Inputs, output: Outputs, session: Session):
             rep_computed = []
             for model in ZS_MODELS:
                 # check hash existence
-                zs_path = os.path.join(prot.user, f"{name}/zero_shot/results/{model_dict[model]}")
+                zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
 
                 if os.path.exists(zs_path):
                     if "zs_scores.csv" in os.listdir(zs_path):
                         zs_computed.append(model)
                 
                 for rep in REP_TYPES:
-                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
+                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
                     if os.path.exists(rep_path):
                         rep_computed.append(representation_dict[rep])
-
-                ui.update_select(
-                        "model_rep_type",
-                        choices=[inverted_reps[i] for i in rep_computed]
-                    )
-
-                available_reps.set([inverted_reps[i] for i in rep_computed])
-
-            
-            zs_results.set(zs_computed)
 
             # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
             for model in ZS_MODELS:
                 try:
-                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.user, f"{name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
+                    df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
                     
                     df = pd.read_csv(df_path)
                     p.set(message="Loading data...", detail="This may take a while...")
@@ -503,27 +488,34 @@ def server(input: Inputs, output: Outputs, session: Session):
                     dataset.set(df)
                     zs_scores.set(df)
                     
-                    ui.update_select(
-                        "model_rep_type",
-                        choices=[inverted_reps[i] for i in lib.reps]
-                    )
-
-                    available_reps.set([inverted_reps[i] for i in lib.reps])
                 except:
                     pass
+            
+            ui.update_select(
+                        "model_rep_type",
+                        choices=[inverted_reps[i] for i in rep_computed]
+                    )
+            
+            computed_zs_scores.set(zs_computed)
+
+            available_reps.set([inverted_reps[i] for i in rep_computed])
+
+            zs_results.set(zs_computed)
+
+            library_plot.set(None)
         
 
-        # update uis
-        ui.update_select(
-            "model_task",
-            choices=["Regression"]
-        )   
+            # update uis
+            ui.update_select(
+                "model_task",
+                choices=["Regression"]
+            )   
 
-        # update representation selection
-        ui.update_select(
-            "zs_scores",
-            choices=zs_computed
-        ) 
+            # update representation selection
+            ui.update_select(
+                "zs_scores",
+                choices=zs_computed
+            ) 
 
     @output
     @render.text
@@ -542,8 +534,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Searching for available data...", detail="This may take a while...")
             prot = protein()
             f: list[FileInfo] = input.structure_file()
+            file_name = f[0]['name']
+
             usr_path = os.path.join(USR_PATH, input.USER().lower())
-            prot = pai.Protein(pdb_file=f[0]["datapath"], user=usr_path)
+            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
             name = f[0]["name"].split('.')[0]
             prot.name = name
@@ -583,7 +577,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=computed_zs
             )
 
+            available_reps.set(reps)
+
             computed_zs_scores.set(computed_zs)
+
+            library_plot.set(None)
         
 
     @output
@@ -769,30 +767,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         mode = MODE()
         lib = library()
         prot = protein()
+        method = input.dat_rep_type()
 
+        # if no library was loaded one has to be created
         if mode in ['zero-shot', 'structure']:
-            wt_seq = prot.seq
-            method = input.dat_rep_type()
-
-            canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-            mutants, sequences = [], []
-            for pos in range(len(wt_seq)):
-                for aa in canonical_aas:
-                    if wt_seq[pos] != aa:
-                        mutants.append(wt_seq[pos] + str(pos+1) + aa)
-                        sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
-            pbar_max = len(mutants)
-        else:
-            pbar_max = len(lib)
+            data = prot.zs_library(model=model_dict[method])
+            lib = pai.Library(user=prot.user, source=data)
+            dest = os.path.join(prot.rep_path, model_dict[method])
+            pbar_max = len(data["df"]) - len(os.listdir(dest))
         
         with ui.Progress(min=1, max=pbar_max) as p:
 
             p.set(message="Computation in progress", detail="Initializing...")
-
-            # if no library was loaded one has to be created
-            if mode in ['zero-shot', 'structure']:
-                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/")
-                lib = pai.Library(user=prot.user, seqs=sequences, names=mutants, proteins=[], rep_path=dest)
 
             print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
             
@@ -818,41 +804,33 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         Render plot once button is pressed.
         """
-        with ui.Progress(min=1, max=15) as p:
-            #if MODE() == "dataset":
-            p.set(message="Plotting", detail="This may take a while...")
+        if input.plot_rep_type():
+            with ui.Progress(min=1, max=15) as p:
+                
+                #if MODE() == "dataset":
+                p.set(message="Plotting", detail="This may take a while...")
 
-            lib = library()
-            mode = MODE()
-            prot = protein()
+                lib = library()
+                mode = MODE()
+                prot = protein()
 
-            # if no library was loaded one has to be created
-            if mode == 'zero-shot' and lib == None:
-                wt_seq = prot.seq
-                method = input.dat_rep_type()
+                # if no library was loaded one has to be created
+                if mode in ['zero-shot', 'structure'] and lib == None:
+                    data = prot.zs_library(model = representation_dict[input.plot_rep_type()])
+                    lib = pai.Library(user=prot.user, source=data)
 
-                canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
-                mutants, sequences = [], []
-                for pos in range(len(wt_seq)):
-                    for aa in canonical_aas:
-                        if wt_seq[pos] != aa:
-                            mutants.append(wt_seq[pos] + str(pos+1) + aa)
-                            sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
+                names = lib.names
+                y_upper = input.y_upper()
+                y_lower = input.y_lower()
+                rep = representation_dict[input.plot_rep_type()]
+                
+                # Update to pass the new parameters
+                fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
-                dest = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.dat_rep_type()])
-                usr_path = os.path.join(USR_PATH, input.USER().lower())
-                lib = pai.Library(user=usr_path, seqs=sequences, names=mutants, proteins=[], rep_path=dest)
-
-            names = lib.names
-            y_upper = input.y_upper()
-            y_lower = input.y_lower()
-            rep = representation_dict[input.plot_rep_type()]
-            
-            # Update to pass the new parameters
-            fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
-
-            tsne_df.set(df)
-            library_plot.set((fig, ax))
+                tsne_df.set(df)
+                library_plot.set((fig, ax))
+        else:
+            pass
     
     @output
     @render.plot
@@ -882,15 +860,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             print(f"computing zero shot scores using {model}")
 
-            df = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
+            data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
-            rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/", representation_dict[input.zs_model()])
-
-            lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+            lib = pai.Library(user=prot.user, source=data)
             
             library.set(lib)
-            dataset.set(df)
-            zs_scores.set(df)
+            dataset.set(data['df'])
+            zs_scores.set(data['df'])
             
             if method not in computed_zs:
                 computed_zs.append(method)
@@ -1071,9 +1047,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             lib = library()
 
             if MODE() in ['zero-shot', 'structure']:
-                df = pd.read_csv(os.path.join(prot.user, prot.name, "zero_shot/results", representation_dict[input.computed_zs_scores()], "zs_scores.csv")) # TODO parse the ESM results that are wanted, add a button to MLDE
-                rep_path = os.path.join(prot.user, prot.name, "zero_shot/rep")
-                lib = pai.Library(user=prot.user, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                print(prot)
+                data = prot.zs_library(model=model_dict[input.computed_zs_scores()])
+                lib = pai.Library(user=prot.user, source=data)
                 
 
             print(f"training {model_dict[input.model_type()]}")
@@ -1142,7 +1118,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             prot = protein()
             print(prot)
             out = prot.esm_if(fixed=fixed_residues, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p)
-            design_output.set(out)
+            design_output.set(out['df'])
     
     design_output = reactive.Value('start')
 

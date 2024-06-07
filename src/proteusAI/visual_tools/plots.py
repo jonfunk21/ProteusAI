@@ -73,8 +73,10 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y if y is not None and any(y) else None  # Use y if it's informative
-    if names:
+    if len(names) == len(y):
         df['names'] = names
+    else:
+        df['names'] = [None] * len(y)
 
     cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
     hue = 'y' if df['y'].isnull().sum() != len(df['y']) else None  # Use hue only if y is informative

@@ -15,6 +15,8 @@ sys.path.append(root_path)
 from proteusAI.ml_tools.esm_tools import *
 from proteusAI.struc import *
 import hashlib
+folder_path = os.path.dirname(os.path.realpath(__file__))
+USR_PATH = os.path.join(folder_path, '../../../usrs')
 
 model_dict = {"rf":"Random Forrest", "knn":"KNN", "svm":"SVM", "vae":"VAE", "esm2":"ESM-2", "esm1v":"ESM-1v"}
 
@@ -31,7 +33,8 @@ class Protein:
         design (str): Output of design.
     """
 
-    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], user: Union[str, None] = 'guest', y = None, fasta: str = None, pdb_file: str = None):
+    def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], 
+    user: Union[str, None] = 'guest', y = None, source: Union[str,None] = None, fname: Union[str,None] = None):
         """
         Initialize a new protein object.
 
@@ -42,50 +45,39 @@ class Protein:
             reps (list): List of available representations.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
-            fasta (str): path to fasta file
-            pdb_file (str): path to pdb_file
+            source (str, or data): Source of data, either a file or a data package created from a diversification step.
+            fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
         """
 
-        # assertions and checks
-        assert isinstance(name, (str, type(None)))
-        assert isinstance(seq, (str, type(None)))
-        assert isinstance(reps, (list, tuple))
-        assert isinstance(user, (str, type(None)))
-
+        # Arguments
         self.name = name
         self.seq = seq
         self.reps = list(reps)
         self.struc = struc
-        self.pdb_file = pdb_file
-        self.chains = []
+        self.source = source
         self.y = y
+        self.fname = fname
+        self.user = os.path.join(USR_PATH, user)
+
+        # Parameters
+        self.pdb_file = None
+        self.fasta_file = None
+        self.reps = []
+        self.source_path = None
+        self.rep_path = None
         self.design = None
-        
-        # If path is not provided, use the directory of the calling script
-        if user is None:
-            caller_path = os.path.dirname(self.get_caller_path())
-            self.user = os.path.join(caller_path)
-            self.rep_path = os.path.join(caller_path, 'protein/rep')
-        else:
-            assert isinstance(user, str)
-            self.user = user
-            self.rep_path = os.path.join(user, 'protein/rep')
-            if not os.path.exists(user):
-                os.makedirs(user)
+        self.chains = []
+        self.zs_path = None
 
-        # If file is not None, then initialize load fasta
-        if fasta is not None:
-            self.load_fasta(file=fasta)
-        
-        # If file is not None, then initialize load fasta
-        if struc is not None:
-            self.struc = self.load_structure(struc)
+        # Create user if user does not exist
+        if not os.path.exists(self.user):
+            self.initialize_user()
 
-    def get_caller_path(self):
-        """Returns the path of the script that called the function."""
-        caller_frame = inspect.stack()[1]
-        caller_path = caller_frame[1]
-        return os.path.abspath(caller_path)
+        # Initialize library from file or from inheritance
+        if type(self.source) == str:
+            self.init_from_file()
+        elif self.source is not None:
+            self.init_from_inheritance()
 
     def __str__(self):
         if self.struc is not None:
@@ -94,6 +86,71 @@ class Protein:
     
     __repr__ = __str__
 
+    def initialize_user(self):
+        """
+        initializing a new library.
+        """
+        print(f"Initializing user '{self.user}'...")
+
+        # handle app case
+        if self.fname:
+            fname = self.fname.split('.')[0]
+            file_extension = self.fname.split('.')[-1]
+        else:
+            f = self.source.split('/')[-1]
+            fname = f.split('.')[0]
+            file_extension = f.split('.')[-1]
+
+        # set paths
+        self.source_path = os.path.join(USR_PATH, self.user, fname)
+        self.rep_path = os.path.join(self.source_path, 'zero_shot/rep')
+        
+        # create user library if user does not exist
+        if not os.path.exists(self.user):
+            os.makedirs(self.user)
+            if self.file and not os.path.exists(os.path.join(self.user, self.file.split('.')[0])):
+                fname = self.file.split('.')[0]
+                os.makedirs(os.path.join(self.user, f'{fname}'))
+                os.makedirs(os.path.join(self.user, f'{fname}/library'))
+                os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
+                os.makedirs(os.path.join(self.user, f'{fname}/design'))
+            print(f"User created at {self.user}")
+
+    def init_from_inheritance(self):
+        pass
+
+    # TODO: add protein specific loading functions of previously computed data (currently only handled in app)
+
+    def init_from_file(self):
+
+        # parse information
+        if self.fname:
+            fname = self.fname
+        else:
+            fname = self.source.split('/')[-1]
+
+        # Check for representations
+        if self.rep_path == None:
+            fname = fname.split('.')[0]
+            zs_path = os.path.join(self.user, f'{fname}/zero_shot')
+            rep_path = os.path.join(zs_path, 'rep')
+            self.zs_path = zs_path
+            self.rep_path = rep_path
+            self.name = fname
+        else:
+            rep_path = '/'.join(self.rep_path.split('/')[:-1])
+
+
+        # If file is not None, then initialize load fasta
+        if self.source.endswith('.fasta'):
+            self.load_fasta(file=self.source)
+        
+        # If file is not None, then initialize load fasta
+        if self.source.endswith('.pdb'):
+            self.load_structure(self.source, self.name)
+
+        
+    
     def load_fasta(self, file: str):
         """
         Load protein sequence from a FASTA file.
@@ -134,7 +191,12 @@ class Protein:
         seq = sequences[0]
 
         # Create and return a new Protein instance
-        self.name = name
+        if self.fname:
+            fname = self.fname.split('.')[0]
+            self.name = fname
+        else:
+            self.name = name
+            
         self.seq = seq
 
     def load_structure(self, prot_f, name = None):
@@ -150,7 +212,7 @@ class Protein:
 
         prot = load_struc(prot_f)
         seqs = get_sequences(prot_f)
-        chains = chain_parser(self.struc)
+        chains = chain_parser(prot_f)
 
         self.pdb_file = prot_f
         self.seq = seqs[chains[0]]
@@ -179,16 +241,9 @@ class Protein:
             pbar: App progress bar
         """
         seq = self.seq
-
-        # check scores for this protein and model have already been computed
-        name = self.name
-
-        user_path = self.user
-
-        if self.name:
-            dest = os.path.join(user_path, f"{self.name}/zero_shot/results", model)
-        else:
-            dest = os.path.join(user_path, f"protein/zero_shot/results", model)
+       
+        dest = os.path.join(self.zs_path, "results", model)
+        
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -226,7 +281,38 @@ class Protein:
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
-        return df
+        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+
+        return out
+    
+    def zs_library(self, model="esm2"):
+        """
+        Generate zero-shot library.
+        """
+
+        zs_results_path = os.path.join(self.zs_path, "results", model, "zs_scores.csv")
+
+        # load already computed zs scores
+        if os.path.exists(zs_results_path):
+            df = pd.read_csv(zs_results_path)
+
+        # generate df with blank y-values
+        else:
+            wt_seq = self.seq
+            canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+            mutants, sequences = [], []
+            for pos in range(len(wt_seq)):
+                for aa in canonical_aas:
+                    if wt_seq[pos] != aa:
+                        mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                        sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
+            ys = [None] * len(mutants)
+
+            df = pd.DataFrame({"mutant":mutants, "sequence":sequences ,"p":ys, "mmp":ys, "entropy":ys})
+        
+        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+
+        return out
 
     # Plot zero-shot entropy
     def plot_entropy(self, model='esm2', title=None, section=None):
@@ -320,20 +406,25 @@ class Protein:
         if dest:
             csv_path = os.path.join(dest, f"{self.name}.csv")
         else:
-            csv_path = os.path.join(user_path, f"protein/design/{self.name}.csv")
-
+            dest = os.path.join(user_path, f"protein/design/")
+            csv_path = os.path.join(dest, f"{self.name}.csv")
+            
         os.makedirs(dest, exist_ok=True)
 
+        # define chain
         if chain == None:
             chain = self.chains[0]
 
-        out = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, pbar=pbar)
+        # return dataframe of results
+        df = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, pbar=pbar)
 
-        out.to_csv(csv_path)
+        df.to_csv(csv_path)
 
         self.designs = csv_path
         
-        return csv_path
+        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+
+        return out
     
     # Plot 
     def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):

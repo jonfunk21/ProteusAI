@@ -39,44 +39,119 @@ class Library:
     representation_types = ['esm1v', 'esm2', 'ohe', 'blosum62', 'blosum50', 'vae']
     _allowed_y_types = ['class', 'num']
 
-    def __init__(self, user: str = 'guest', file: Union[str,None] = None, overwrite: bool = False, names: list = [], seqs: list = [], 
-                 proteins: list = [], ys: list=[], y_type: Union[str, None] = None, zs: bool = False, rep_path: Union[str, None] = None):
+    def __init__(self, user: str = 'guest', source: Union[str,dict,None] = None, seqs_col: Union[str,None] = None, names_col: Union[str,None] = None,
+                 y_col: Union[str,None] = None, y_type: Union[str,None] = None, sheet: Union[str,None] = None, fname: Union[str, None] = None):
         """
         Initialize a new library.
 
         Args:
-            name (str): Path to library.
-            file (str): Path to csv file
-            overwrite (bool): Allow to overwrite files if True.
-            names (list): List of protein names.
-            seqs (list): List of sequences as strings.
-            ys (list): List of y values.
-            proteins (Protein, optional): List of proteusAI protein objects.
-            y_type: Type of y values class ('class') or numeric ('num') 
-            self.rep_path (str): Path to representations folder, containing all representations.
+            user (str): User name.
+            source (str, or dict): Source of data, either a file or a data package created from a diversification step.
+            seqs_col (str): Column name for the sequences, if the source is a '.csv' or Excel file.
+            names_col (str): Column name for the names (sequence descriptions), if the source is a '.csv' or Excel file.
+            y_col (str): Column name for the y-values (e.g. fitness, stability, activity), if the source is a '.csv' or Excel file.
+            y_type (str): Specify the data type of y-values, either categorical or numerical. Will parse automatically if none is provided.
+            sheet (str): Specify the excel sheet name, if the source is an Excel file.
+            fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
+
+        Parameters:
+            seqs (list): list of sequence
+            y (list): list of y values
+            y_type (str): Type of y values ('class' or 'num').
+            names (list): names of sequences
+            reps (list): list of computed representations
+            proteins (list): list of protein objects
         """
+        # Arguments
         self.user = os.path.join(USR_PATH, user)
-        self.file = file
-        self.overwrite = overwrite
-        self.proteins = proteins
-        self.names = names
-        self.seqs = seqs
-        self.ys = ys
+        self.source = source
+        self.seq_col = seqs_col
+        self.names_col = names_col
+        self.y_col = y_col
+        self.y_type = y_type
+        self.sheet = sheet
+        self.fname = fname
+
+        # Parameters
+        self.seqs = None
+        self.y = None
+        self.names = None
         self.reps = []
-        self.y_type = y_type  
-        self.class_dict = {}
-        self.rep_path = rep_path
-        
-        # handle case if library does not exist
+        self.source_path = None
+        self.rep_path = None
+
+        # Create user if user does not exist
         if not os.path.exists(self.user):
             self.initialize_user()
 
-        # if the library already exists
+        # Initialize library from file or from inheritance
+        if type(self.source) == str:
+            self.init_from_file()
         else:
-            # load existing information
-            print(f"User {user} already exists. Loading existing data...")
-            self.initialize_user()
-            self.load_library()
+            self.init_from_inheritance()
+
+    
+    def init_from_file(self):
+        """
+        Initialize a library from a file.
+        """
+        
+        # handle app case
+        if self.fname:
+            fname = self.fname.split('.')[0]
+            file_extension = self.fname.split('.')[-1]
+        else:
+            f = self.source.split('/')[-1]
+            fname = f.split('.')[0]
+            file_extension = f.split('.')[-1]
+
+        # set paths
+        self.source_path = os.path.join(self.user, fname)
+        self.rep_path = os.path.join(self.source_path, 'library/rep')
+        
+        # create user library if user does not exist
+        if not os.path.exists(self.source_path):
+            os.makedirs(self.source_path)
+            os.makedirs(self.source_path, exist_ok=True)
+            os.makedirs(os.path.join(self.source_path, 'library/rep'), exist_ok=True)
+
+        # load the data
+        if file_extension in ['xlsx', 'xls', 'csv']:
+            self._read_tabular_data(in_file=self.source, seqs=self.seq_col, y=self.y_col, y_type=self.y_type, names=self.names_col, 
+                                    sheet=self.sheet, file_ext=file_extension)
+        elif file_extension in ['fasta', 'fa']:
+            self._read_fasta(self.source)
+        else:
+            raise ValueError(f"Unsupported file type: {file_extension}")
+        
+
+    def init_from_inheritance(self):
+        """
+        Initialize a library from another process.
+
+        Args:
+            data (dict): Contains parent path and path to data file.
+        """
+
+        # extract data from parent file
+        data = self.source
+
+        # Parsing parameters
+        self.rep_path = data['rep_path']
+        self.y_col = data['y_col']
+        self.seq_col = data['seqs_col']
+        self.names_col = data['names_col']
+        self.reps = data['reps']
+
+        # Parsing arguments
+        df = data['df']
+        self.seqs = df[self.seq_col]
+        self.names = df[self.names_col]
+        self.y = df[self.y_col]
+        self.y_type = data['y_type']
+
+        # create proteins
+        self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.y)]
 
     def initialize_user(self):
         """
@@ -105,8 +180,8 @@ class Library:
                 self.names = [f"protein_{i}" for i in range(len(self.seqs))]
 
             # create protein objects TODO: This is the slow step
-            if len(self.ys) == len(self.names):
-                for name, seq, y in zip(self.names, self.seqs, self.ys):
+            if len(self.y) == len(self.names):
+                for name, seq, y in zip(self.names, self.seqs, self.y):
                     protein = Protein(name, seq, y=y)
                     self.proteins.append(protein)
 
@@ -170,15 +245,15 @@ class Library:
         self.rep_path = os.path.join(self.user, self.file, "library/rep")
 
         if file_ext in ['.xlsx', '.xls', '.csv']:
-            self._read_tabular_data(data=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
+            self._read_tabular_data(in_file=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
         elif file_ext in ['.fasta', '.fa']:
             self._read_fasta(data)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-    def _read_tabular_data(self, data: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
+    def _read_tabular_data(self, in_file: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
                            names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None,
-                           check_rep: bool = False):
+                           check_rep: bool = True):
         """
         Reads data from a CSV, Excel, and populates the Library object. Called by read_data
 
@@ -192,21 +267,19 @@ class Library:
                 file_ext (str): file extension
                 check_rep (bool): Check if all representations have been computed.
         """
-        if file_ext in ['.xlsx', '.xls']:
+        if file_ext in ['xlsx', 'xls']:
             if sheet is None:
-                df = pd.read_excel(data)
+                df = pd.read_excel(in_file)
             else:
-                df = pd.read_excel(data, sheet_name=sheet)
-        elif file_ext == '.csv':
-            df = pd.read_csv(data)
+                df = pd.read_excel(in_file, sheet_name=sheet)
+        elif file_ext == 'csv':
+            df = pd.read_csv(in_file)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
         # Validate the columns exist
         if seqs not in df.columns or y not in df.columns:
             raise ValueError("The provided column names do not match the columns in the data file.")
-
-        
 
         # If names are not provided, generate dummy names
         if names not in df.columns:
@@ -215,23 +288,24 @@ class Library:
             self.names = df[names].tolist()
 
         self.seqs = df[seqs].tolist()
+
         # Handle y values
         if y is not None:
-            self.ys = df[y].tolist()
+            self.y = df[y].tolist()
             if y_type == 'class':
-                self.ys, self.class_dict = self._encode_categorical_labels(self.ys)
+                self.y, self.class_dict = self._encode_categorical_labels(self.y)
 
             # Create protein objects with y values
-            self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.ys)]
+            self.proteins = [Protein(name, seq, y=y, user=self.user) for name, seq, y in zip(self.names, self.seqs, self.y)]
         else:
             # Create protein objects without y values
-            self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+            self.proteins = [Protein(name, seq, user=self.user) for name, seq in zip(self.names, self.seqs)]
 
         if check_rep:
             self._check_reps()
 
 
-    def _read_fasta(self, data, check_rep: bool = False):
+    def _read_fasta(self, in_file, check_rep: bool = False):
         """
         Read fasta file and create protein objects.
 
@@ -239,12 +313,13 @@ class Library:
             data (str): Path to data.
             check_rep (bool): Check if all representations have been computed.
         """
-        names, sequences = io_tools.fasta.load_fasta(data)
+        names, sequences = io_tools.fasta.load_fasta(in_file)
         self.names = names
         self.seqs = sequences
 
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
+        self.y = [None] * len(self.proteins)
 
         if check_rep:
             self._check_reps()
@@ -254,24 +329,15 @@ class Library:
         """
         Check for available representations, store in protein object if representation is found
         """
-        reps = [r for r in os.listdir(os.path.join(self.user, "rep")) if not r.startswith('.')]
+        reps = [r for r in os.listdir(self.rep_path) if not r.startswith('.')]
         if len(reps) > 0:
-            rep = None
             for rep in reps:
-                computed = 0
-                rep_path = os.path.join(self.user, f"rep/{rep}")
-                proteins = []
-                rep_names = [f for f in os.listdir(rep_path) if f.endswith('.pt')]
-                for protein in self.proteins:
-                    f_name = protein.name + '.pt'
-                    if f_name in rep_names:
-                        protein._reps.append(rep)
-                        computed += 1
-                    proteins.append(protein)
-
-                self.proteins = proteins
-                print(f"{rep} representation {round(computed/len(self.proteins)*100,2)} % computed.")
-
+                rep_names = [f for f in os.listdir(os.path.join(self.rep_path, rep)) if f.endswith('.pt')]
+                if len(rep_names) == len(set(self.names)):
+                    self.reps.append(rep)
+                    for protein in self.proteins:
+                        f_name = protein.name + '.pt'
+                        protein._reps.append(rep) 
 
     def _encode_categorical_labels(self, ys):
         """
@@ -352,14 +418,8 @@ class Library:
             batch_size (int): Batch size for computation.
             dest (str): destination of representations
         """
-        if dest != None:
-            dest = os.path.join(dest)
-        elif self.rep_path is not None and self.file is not None:
-            dest = os.path.join(self.rep_path, model)
-        elif self.rep_path is not None:
-            dest = os.path.join(self.rep_path, model)
-        else:
-            dest = os.path.join(self.user, f"rep/{model}")
+        
+        dest = os.path.join(self.rep_path, model)
 
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -396,12 +456,7 @@ class Library:
             dest (str): destination of representations
         """
 
-        if dest != None:
-            dest = os.path.join(dest)
-        elif self.rep_path is not None:
-            dest = os.path.join(self.rep_path, 'ohe')
-        else:
-            dest = os.path.join(self.user, "rep/ohe")
+        dest = os.path.join(self.rep_path, "ohe")
 
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -439,12 +494,9 @@ class Library:
             matrix_type (str): Type of BLOSUM matrix to use.
             dest (str): destination
         """
-        if dest != None:
-            dest = os.path.join(dest)
-        elif self.rep_path is not None:
-            dest = os.path.join(self.rep_path, f'{matrix_type.lower()}')
-        else:
-            dest = os.path.join(self.user, f"rep/{matrix_type.lower()}")
+
+        dest = os.path.join(self.rep_path, matrix_type.lower())
+        
         if not os.path.exists(dest):
             os.makedirs(dest)
 
@@ -512,7 +564,7 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.ys
+        y = self.y
         
 
         fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
