@@ -140,7 +140,9 @@ app_ui = ui.page_fluid(
             
                     ui.output_plot("entropy_plot"),
 
-                    ui.output_plot("scores_plot")
+                    ui.output_plot("scores_plot"),
+
+                    ui.output_data_frame("zs_df")
                 ),
             ),
         ),
@@ -272,8 +274,9 @@ app_ui = ui.page_fluid(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
 
-                    ui.output_data_frame("design_out")
-                    
+                    ui.output_data_frame("design_out"),
+
+                    ui.output_ui("design_download_ui")
                 ),
             )
         ),
@@ -503,6 +506,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             zs_results.set(zs_computed)
 
             library_plot.set(None)
+
+            zs_scores.set(pd.DataFrame())
         
 
             # update uis
@@ -582,6 +587,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             computed_zs_scores.set(computed_zs)
 
             library_plot.set(None)
+
+            zs_scores.set(pd.DataFrame())
         
 
     @output
@@ -710,6 +717,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     
                     ui.h4("Visualize"),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("computed_zs_scores", "Computed Zero-shot scores", computed_zs_scores())
+                        )
+                    ),
                     
                     ui.row(
                         ui.column(6,
@@ -752,6 +765,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                                 ),
                             )
                         ),
+
+                        ui.column(6,
+                            ui.input_action_button("zs_table", "Table view")
+                        )
                     ),
                 ),
             )
@@ -879,6 +896,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             computed_zs_scores.set(computed_zs)
     
+    # render df
+    @output
+    @render.data_frame
+    @reactive.event(input.zs_table)
+    def zs_df(alt=None):
+        prot = protein()
+        method = representation_dict[input.zs_model()]
+        path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
+        df = pd.read_csv(path)
+        df = df.drop('sequence', axis=1)
+        return df
 
     # Output protein mode
     @output
@@ -905,7 +933,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             section = (len(seq) - width, len(seq))
 
         prot = protein()
-        fig = prot.plot_entropy(section=section)
+        fig = prot.plot_entropy(section=section, model=model_dict[input.computed_zs_scores()])
         return fig
     
     @reactive.Effect
@@ -941,7 +969,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb")
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=model_dict[input.computed_zs_scores()])
         return fig
     
     @reactive.Effect
@@ -1136,8 +1164,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def folding():
         out = design_output()
         if type(out) != str:
-            return ui.TagList(
-                ui.h5("Fold designs"),
+            return ui.TagList(  
+                ui.h5("Fold selected designs"),
+
                 ui.column(6,
                     ui.input_selectize("fold_these", "Select sequences to be folded", out.seqid.to_list(), multiple=True)
                 ),
@@ -1146,6 +1175,18 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
                 
             )
+    @output
+    @render.ui
+    def design_download_ui():
+        out = design_output()
+        if type(out) != str:
+            return ui.download_button("download_designs", "Download design results"),
+            
 
+    @render.download(
+        filename=lambda: f"{protein().name}_designs.csv"
+    )
+    def download_designs():
+        yield design_output().to_csv(index=False)
 
 app = App(app_ui, server)
