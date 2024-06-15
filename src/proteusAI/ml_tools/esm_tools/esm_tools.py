@@ -675,13 +675,15 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
         include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
         dest (str): Optional path to save the plot as an image file (default: None)
-        title (str): title of plot
-        remove_tokens (bool): Remove start of sequence and end of sequence tokens
+        title (str): Title of the plot (default: None)
+        remove_tokens (bool): Remove start of sequence and end of sequence tokens (default: False)
         show (bool): Display plot if True (default: True)
-        section (tuple): section which should be shown in the plot - low and high end of sequence to be displayed. show entire sequence if None
+        color_sheme (str): Color scheme for the heatmap ('rwb' for red-white-blue, 'r' for reds, 'b' for blues) (default: 'b')
+        highlight_positions (dict): Dictionary specifying positions to highlight with the format {position: residue} (default: None)
+        section (tuple): Section which should be shown in the plot - low and high end of sequence to be displayed. Show entire sequence if None (default: None)
 
     Returns:
-        None
+        fig (matplotlib.figure.Figure): The created matplotlib figure.
     """
 
     if type(alphabet) == dict:
@@ -775,6 +777,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         plt.show()
 
     return fig
+
 
 def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, 
                               show: bool = False, dest: str = None, title: str = None, section: tuple = None, 
