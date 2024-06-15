@@ -427,7 +427,21 @@ class Protein:
         return out
     
     # Plot 
-    def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None):
+    def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None, highlight_positions=None):
+        """
+        Plot the zero-shot prediction scores for a given model and sequence.
+
+        Args:
+            model (str): The name of the model to use for plotting (default: 'esm2').
+            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed. Show entire sequence if None (default: None).
+            color_scheme (str): Color scheme for the heatmap ('rwb' for red-white-blue, 'r' for reds, 'b' for blues) (default: None).
+            title (str): Title of the plot (default: None).
+            highlight_positions (dict): Dictionary specifying positions to highlight with the format {position: residue} (default: None).
+
+        Returns:
+            fig (matplotlib.figure.Figure): The created matplotlib figure.
+        """
+        
         seq = self.seq
         name = self.name
 
@@ -465,7 +479,7 @@ class Protein:
             title = f"{model_dict[model]} Zero-shot prediction scores"
 
         # Plot heatmap
-        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section)
+        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section, highlight_positions=highlight_positions)
         return fig
 
     
