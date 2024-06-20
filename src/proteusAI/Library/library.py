@@ -55,12 +55,13 @@ class Library:
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
 
         Parameters:
-            seqs (list): list of sequence
-            y (list): list of y values
+            data (df): dataframe of uploaded data (raw data).
+            seqs (list): list of sequence.
+            y (list): list of y values.
             y_type (str): Type of y values ('class' or 'num').
-            names (list): names of sequences
-            reps (list): list of computed representations
-            proteins (list): list of protein objects
+            names (list): names of sequences.
+            reps (list): list of computed representations.
+            proteins (list): list of protein objects.
         """
         # Arguments
         self.user = os.path.join(USR_PATH, user)
@@ -73,12 +74,15 @@ class Library:
         self.fname = fname
 
         # Parameters
+        self.data = None
         self.seqs = None
         self.y = None
         self.names = None
         self.reps = []
         self.source_path = None
         self.rep_path = None
+        self.strucs = None
+        self.struc_path = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -108,12 +112,14 @@ class Library:
         # set paths
         self.source_path = os.path.join(self.user, fname)
         self.rep_path = os.path.join(self.source_path, 'library/rep')
+        self.struc_path = os.path.join(self.source_path, 'library/struc')
         
         # create user library if user does not exist
         if not os.path.exists(self.source_path):
             os.makedirs(self.source_path)
             os.makedirs(self.source_path, exist_ok=True)
             os.makedirs(os.path.join(self.source_path, 'library/rep'), exist_ok=True)
+            os.makedirs(os.path.join(self.source_path, 'library/struc'), exist_ok=True)
 
         # load the data
         if file_extension in ['xlsx', 'xls', 'csv']:
@@ -138,6 +144,7 @@ class Library:
 
         # Parsing parameters
         self.rep_path = data['rep_path']
+        self.struc_path = data['struc_path']
         self.y_col = data['y_col']
         self.seq_col = data['seqs_col']
         self.names_col = data['names_col']
@@ -149,6 +156,7 @@ class Library:
         self.names = df[self.names_col]
         self.y = df[self.y_col]
         self.y_type = data['y_type']
+        self.data = df
 
         # create proteins
         self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.y)]
@@ -204,10 +212,14 @@ class Library:
             if self.file:
                 fname = self.file.split('.')[0]
                 rep_path = os.path.join(self.user, f'{fname}/library/rep')
+                struc_path = os.path.join(self.user, f'{fname}/library/struc')
                 self.rep_path = rep_path
+                self.struc_path = struc_path
             else:
                 rep_path = os.path.join(self.user, 'rep')
+                struc_path = os.path.join(self.user, 'struc')
                 self.rep_path = rep_path
+                self.struc_path = struc_path
         else:
             rep_path = '/'.join(self.rep_path.split('/')[:-1])
 
@@ -243,6 +255,7 @@ class Library:
         self.file = data.split('/')[-1].split('.')[0]
         
         self.rep_path = os.path.join(self.user, self.file, "library/rep")
+        self.struc_path = os.path.join(self.user, self.file, "library/struc")
 
         if file_ext in ['.xlsx', '.xls', '.csv']:
             self._read_tabular_data(in_file=data, seqs=seqs, y=y, y_type=y_type, names=names, sheet=sheet, file_ext=file_ext)
@@ -253,7 +266,7 @@ class Library:
 
     def _read_tabular_data(self, in_file: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
                            names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None,
-                           check_rep: bool = True):
+                           check_rep: bool = True, check_strucs: bool = True):
         """
         Reads data from a CSV, Excel, and populates the Library object. Called by read_data
 
@@ -266,6 +279,7 @@ class Library:
                 sheet (str, optional): Name of the Excel sheet to read.
                 file_ext (str): file extension
                 check_rep (bool): Check if all representations have been computed.
+                check_sturcs (bool): Check if structures have been computed.
         """
         if file_ext in ['xlsx', 'xls']:
             if sheet is None:
@@ -277,6 +291,7 @@ class Library:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
+        self.data = df
         # Validate the columns exist
         if seqs not in df.columns or y not in df.columns:
             raise ValueError("The provided column names do not match the columns in the data file.")
@@ -304,6 +319,9 @@ class Library:
         if check_rep:
             self._check_reps()
 
+        if check_strucs:
+            self._check_strucs()
+
 
     def _read_fasta(self, in_file, check_rep: bool = False):
         """
@@ -320,6 +338,8 @@ class Library:
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
         self.y = [None] * len(self.proteins)
+        df = pd.DataFrame({"names":names, "sequence":seqs, "y":y})
+        self.data = df
 
         if check_rep:
             self._check_reps()
@@ -338,6 +358,20 @@ class Library:
                     for protein in self.proteins:
                         f_name = protein.name + '.pt'
                         protein._reps.append(rep) 
+
+    def _check_strucs(self):
+        """
+        Check for available representations, store in protein object if representation is found
+        """
+        strucs = [r for r in os.listdir(self.struc_path) if not r.startswith('.')]
+        if len(strucs) > 0:
+            for struc in strucs:
+                struc_names = [f for f in os.listdir(os.path.join(self.struc_path, struc)) if f.endswith('.pt')]
+                if len(struc_names) == len(set(self.names)):
+                    self.strucs.append(struc)
+                    for protein in self.proteins:
+                        f_name = protein.name + '.pdb'
+                        protein._strucss.append(strucs) 
 
     def _encode_categorical_labels(self, ys):
         """
@@ -367,6 +401,7 @@ class Library:
         self.names = new_names
 
         self._check_reps()
+        self._check_strucs()
 
     
     def set_y_values(self, y_values: list):
@@ -551,6 +586,30 @@ class Library:
 
         return reps
     
+    ### Folding ###
+    def fold(self, names, model: str = 'esm_fold', num_recycles: int = 0, pbar=None):
+        """
+        Fold sequences by their names. 
+
+        Args:
+            names (list): list of names to fold
+            model (str): model used for folding, currently only esm_fold
+            num_recycles (int): number of recycling steps, default 0
+            pbar: progress bar for app
+        """
+        seqs = self.data[self.data[self.names_col].isin(names)][self.seq_col].to_list()
+        if len(seqs) > 0:
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar)
+
+            if not os.path.exists(self.struc_path):
+                os.makedirs(self.struc_path)
+
+            for i, name in enumerate(names):
+                dest = os.path.join(self.struc_path, name + '.pdb')
+                f = all_pdbs[i]
+                f.write(dest)
+
+
 
     def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None):
         """

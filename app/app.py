@@ -25,14 +25,15 @@ VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 train_test_val_splits = ["Random"]
 model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp"}
+model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 inverted_reps = {v: k for k, v in representation_dict.items()}
 design_models = {"ESM-IF":"esm_if"}
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 10
-ZS_MODELS = ["ESM-2", "ESM-1v"]
+BATCH_SIZE = 1
+ZS_MODELS = ["ESM-1v", "ESM-2"]
+FOLDING_MODELS = ["ESM-Fold"]
 USR_PATH = os.path.join(app_path, '../usrs')
 
 # TODO: check if Project path exists, create one if not
@@ -253,10 +254,7 @@ app_ui = ui.page_fluid(
                         ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
                     ),
 
-                    ui.input_text("design_res", "Select residues to be omitted from redesign, seperated by ','"),
-
-                    ui.input_text("design_sidechains", "Select residues for angle constraints during redesign ','"),
-
+                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
                     
                     ui.column(4,
                         ui.input_action_button("desgin_button", "Design")     
@@ -1125,29 +1123,50 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### Design mode ###
     @render.ui
     def struc3D_design():
-        sidechains = input.design_sidechains().strip().split(',')
-        # here all maked sidechains should also be highlighted
+        out = design_output()
+        if type(out) == str  or input.design_sidechains() == None:
+            sidechains = [] 
+        else:
+            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+            
+        
         highlights = list(set(input.design_res().strip().split(',') + sidechains))
         view = protein().view_struc(color="white", highlight=highlights, sticks=sidechains)
         return ui.TagList(
             ui.HTML(view.write_html())
         )
 
-    
+    fixed_residues = reactive.Value(None)
+    design_lib = reactive.Value(None)
     @reactive.Effect
     @reactive.event(input.desgin_button)
     def _():
         n_designs = int(input.n_designs())
         with ui.Progress(min=1, max=n_designs) as p:
-            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
-            residues_str = list(set(input.design_res().strip().split(',') + input.design_sidechains().strip().split(',')))
-            fixed_residues = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
-            print(fixed_residues)
             prot = protein()
+            seq = prot.seq
+            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
+            out = design_output()
+            if type(out) == str or input.design_sidechains() == None:
+                sidechains = []
+            else:
+                sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+
+            residues_str = list(set(input.design_res().strip().split(',') + sidechains))
+            fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+            fixed_ids.sort()
+
+            if len(fixed_ids) > 0:
+                fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
+
+            fixed_residues.set(fixed)
+            
             print(prot)
-            out = prot.esm_if(fixed=fixed_residues, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p)
+            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p)
+            lib = pai.Library(user=prot.user, source=out)
             design_output.set(out['df'])
-    
+            design_lib.set(lib)
+
     design_output = reactive.Value('start')
 
     @output
@@ -1166,13 +1185,27 @@ def server(input: Inputs, output: Outputs, session: Session):
         if type(out) != str:
             return ui.TagList(  
                 ui.h5("Fold selected designs"),
+                
+                
+                ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
+                
+                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=fixed_residues(), multiple=True),
 
-                ui.column(6,
-                    ui.input_selectize("fold_these", "Select sequences to be folded", out.seqid.to_list(), multiple=True)
+                ui.row(
+                    
+                    ui.column(6,
+                        ui.input_select("folding_model", "Select folding model", FOLDING_MODELS)      
+                    ),
+                    ui.column(6,
+                        ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8)
+                    ),
+                
                 ),
                 ui.column(6,
-                    ui.input_action_button("folding_button", "Fold")      
-                )
+                        ui.input_action_button("folding_button", "Fold")
+                ),
+                
+                
                 
             )
     @output
@@ -1188,5 +1221,23 @@ def server(input: Inputs, output: Outputs, session: Session):
     )
     def download_designs():
         yield design_output().to_csv(index=False)
+
+    @reactive.Effect
+    @reactive.event(input.folding_button)
+    def _():
+        """
+        Fold selected proteins
+        """
+        lib = design_lib()
+        out = design_output()
+        selection = input.fold_these()
+        with ui.Progress(min=1, max=len(selection)) as p:
+            p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
+            model = model_dict[input.folding_model()]
+            num_recycles = input.num_recycles()
+            to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
+            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, pbar=p)
+
+
 
 app = App(app_ui, server)

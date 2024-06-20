@@ -65,6 +65,7 @@ class Protein:
         self.reps = []
         self.source_path = None
         self.rep_path = None
+        self.struc_path = None
         self.design = None
         self.chains = []
         self.zs_path = None
@@ -104,6 +105,7 @@ class Protein:
         # set paths
         self.source_path = os.path.join(USR_PATH, self.user, fname)
         self.rep_path = os.path.join(self.source_path, 'zero_shot/rep')
+        self.struc_path = os.path.join(self.source_path, 'zero_shot/struc')
         
         # create user library if user does not exist
         if not os.path.exists(self.user):
@@ -134,8 +136,10 @@ class Protein:
             fname = fname.split('.')[0]
             zs_path = os.path.join(self.user, f'{fname}/zero_shot')
             rep_path = os.path.join(zs_path, 'rep')
+            struc_path = os.path.join(zs_path, 'struc')
             self.zs_path = zs_path
             self.rep_path = rep_path
+            self.struc_path = struc_path
             self.name = fname
         else:
             rep_path = '/'.join(self.rep_path.split('/')[:-1])
@@ -281,7 +285,7 @@ class Protein:
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
-        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
 
         return out
     
@@ -310,7 +314,7 @@ class Protein:
 
             df = pd.DataFrame({"mutant":mutants, "sequence":sequences ,"p":ys, "mmp":ys, "entropy":ys})
         
-        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
 
         return out
 
@@ -406,7 +410,7 @@ class Protein:
         if dest:
             csv_path = os.path.join(dest, f"{self.name}.csv")
         else:
-            dest = os.path.join(user_path, f"protein/design/")
+            dest = os.path.join(user_path, f"{self.name}/design/")
             csv_path = os.path.join(dest, f"{self.name}.csv")
             
         os.makedirs(dest, exist_ok=True)
@@ -421,8 +425,11 @@ class Protein:
         df.to_csv(csv_path)
 
         self.designs = csv_path
-        
-        out = {'df':df, 'rep_path':self.rep_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+
+        rep_path = os.path.join(dest, "rep")
+        struc_path = os.path.join(dest, "struc")
+
+        out = {'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 'seqs_col':'sequence', 'names_col':'names', 'reps':[]}
 
         return out
     

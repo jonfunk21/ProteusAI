@@ -30,6 +30,8 @@ import shutil
 import esm.inverse_folding
 import esm.inverse_folding.util
 from esm.inverse_folding.util import CoordBatchConverter, load_coords, score_sequence
+from pdbfixer import PDBFixer
+import openmm # move this and pdb fixer to struc tools
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
@@ -450,6 +452,18 @@ def tempfile_to_string(temp_file):
         data = file.read()
     return data
 
+def clean_pdb_with_pdbfixer(pdbfile):
+    fixer = PDBFixer(filename=pdbfile)
+    fixer.findMissingResidues()
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
+    fixer.removeHeterogens(keepWater=True)
+    fixer.addMissingHydrogens()
+
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.pdb') as temp_file:
+        openmm.app.PDBFile.writeFile(fixer.topology, fixer.positions, temp_file)
+        return temp_file.name
+
 
 def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None):
     """
@@ -472,7 +486,10 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
     if model is None or alphabet is None:
         model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
 
-    coords, native_seq = load_coords(pdbfile, chain)
+    # Clean the PDB file
+    cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
+
+    coords, native_seq = load_coords(cleaned_pdbfile, chain)
 
     print('Native sequence loaded from structure file:')
     print(native_seq)
@@ -530,13 +547,13 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
         ll, _ = score_sequence(model, alphabet, coords, s)
         
         if pbar:
-            pbar.set(i, message="Computing", detail=f"{i}/{num_samples} remaining...")
+            pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
 
-        print(f'>sampled_seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
+        print(f'>seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
         print(s, '\n')
         
         # Append the results to the list
-        results.append({'seqid': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': s})
+        results.append({'names': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': s})
 
     # Convert the list of dictionaries to a DataFrame
     df = pd.DataFrame(results)
@@ -565,7 +582,7 @@ def create_batched_sequence_datasest(
 
 def structure_prediction(
         seqs: list, names: list=None, chunk_size: int = 124,
-        max_tokens_per_batch: int = 1024, num_recycles: int = None):
+        max_tokens_per_batch: int = 1024, num_recycles: int = None, pbar = None):
     """
     Predict the structure of proteins. The pdb files are returned as 'biotite.structure.io.pdb.PDBFile' objects.
     They can be written to file with pdb.write(os.path.join(dest, "prot.pdb")).
@@ -576,10 +593,12 @@ def structure_prediction(
         chunck_size (int): Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). Recommended values: 128, 64, 32.
         max_tokens_per_batch (int): Maximum number of tokens per gpu forward-pass. This will group shorter sequences together.
         num_recycles (int): Number of recycles to run. Defaults to number used in training 4.
+        pbar: progress bar for app
 
     Returns:
         all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
     """
+    pbar.set(message="Loading model weights")
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
@@ -594,7 +613,9 @@ def structure_prediction(
     all_pdbs = []
     pTMs = []
     mean_pLDDTs = []
-    for headers, sequences in batched_sequences:
+    pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
+    for i, (headers, sequences) in enumerate(batched_sequences):
+        pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
