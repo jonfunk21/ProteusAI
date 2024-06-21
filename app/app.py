@@ -1185,12 +1185,12 @@ def server(input: Inputs, output: Outputs, session: Session):
         out = design_output()
         if type(out) != str:
             return ui.TagList(  
-                ui.h5("Fold selected designs"),
+                ui.h5("Fold designed sequences"),
                 
                 
                 ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
                 
-                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=fixed_residues(), multiple=True),
+                
 
                 ui.row(
                     
@@ -1202,11 +1202,25 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 
                 ),
-                ui.column(6,
+                ui.row(
+                    ui.column(6,
                         ui.input_action_button("folding_button", "Fold")
+                    ),
+                    ui.column(6,
+                        ui.input_checkbox("energy_minimization", "Energy minimization"),
+                        style='padding:10px;'
+                    )
+                    
                 ),
                 
                 
+                ui.h5("Analyze protein structures"),
+
+                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=fixed_residues(), multiple=True),
+
+                ui.column(6,
+                    ui.input_action_button("analyze_designs", "Analyze Strucures")
+                ),
                 
             )
     @output
@@ -1237,7 +1251,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = model_dict[input.folding_model()]
             num_recycles = input.num_recycles()
             to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
-            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, pbar=p)
+            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
 
 
 

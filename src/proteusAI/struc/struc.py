@@ -13,6 +13,14 @@ import biotite.structure as struc
 import biotite.structure.io.pdbx as pdbx
 import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
+import openmm as mm
+from openmm import app
+from openmm.unit import *
+from pdbfixer import PDBFixer
+from openmm.app import PDBFile
+import tempfile
+import os
+
 
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
@@ -231,3 +239,84 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
     view.zoomTo()
 
     return view
+
+def relax_pdb(file, dest='outputs/struc/relaxed'):
+    """
+    Processes and minimizes a protein structure file using molecular dynamics.
+
+    The function takes a PDB file, corrects its structure by adding missing residues and atoms,
+    and then performs an energy minimization. The minimization is carried out under specified
+    conditions using a Langevin integrator and a given force field. If CUDA is available,
+    the function attempts to use it for the computations; otherwise, it falls back to CPU.
+
+    Parameters:
+        file (str): The path to the PDB file to be processed.
+        dest (str, optional): The directory where the relaxed PDB file will be saved.
+                              Default is 'outputs/struc/relaxed'.
+
+    Returns:
+        str: The path to the relaxed PDB file, saved in the specified destination directory.
+
+    Raises:
+        EnvironmentError: If the CUDA platform is not available and the function falls back to CPU,
+                           this is not an error per se but might be relevant for performance-sensitive applications.
+
+    Example:
+        relaxed_path = relax_pdb('input/protein.pdb')
+        print(f'Relaxed structure saved to {relaxed_path}')
+
+    Note:
+        This function uses the Amber14 force field and assumes a pH of 7.0 for protonation states.
+    """
+    
+    name = file.split('/')[-1].split('.')[0]
+
+    fixer = PDBFixer(filename=file)
+    fixer.findMissingResidues()
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
+    fixer.addMissingHydrogens(7.0)  # pH value to decide protonation state of HIS, ASP, GLU
+
+    # Use a temporary file instead of a fixed file name
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdb', mode='w') as temp_file:
+        PDBFile.writeFile(fixer.topology, fixer.positions, temp_file)
+        temp_file_path = temp_file.name  # Store the temporary file name to use it later
+
+    # Now read the temporary PDB file
+    pdb = app.PDBFile(temp_file_path)
+
+    # Prepare the force field
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+
+    # Create a system
+    system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds)
+
+    # Create an integrator
+    integrator = mm.LangevinIntegrator(300*kelvin, 1.0/picoseconds, 2.0*femtoseconds)
+
+    # Try to use CUDA, otherwise fallback to CPU
+    try:
+        platform = mm.Platform.getPlatformByName('CUDA')
+        properties = {'CudaPrecision': 'mixed'}
+    except:
+        # Fallback to CPU if CUDA is not available
+        platform = mm.Platform.getPlatformByName('CPU')
+        properties = {}  # CPU does not need special properties
+
+    # Create a simulation context
+    simulation = app.Simulation(pdb.topology, system, integrator, platform, properties)
+
+    # Set the initial positions
+    simulation.context.setPositions(pdb.positions)
+
+    # Minimize the energy
+    simulation.minimizeEnergy()
+
+    # Get the final positions after minimization
+    positions = simulation.context.getState(getPositions=True).getPositions()
+
+    # Save the minimized structure to a new PDB file
+    relaxed_pdb = os.path.join(dest, f'{name}_relaxed.pdb')
+    app.PDBFile.writeFile(pdb.topology, positions, open(relaxed_pdb, 'w'))
+
+    return relaxed_pdb

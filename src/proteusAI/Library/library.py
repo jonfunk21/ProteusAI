@@ -14,6 +14,7 @@ import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
+import proteusAI.struc as pai_struc
 import pandas as pd
 from typing import Union, Optional
 import torch
@@ -587,7 +588,7 @@ class Library:
         return reps
     
     ### Folding ###
-    def fold(self, names, model: str = 'esm_fold', num_recycles: int = 0, pbar=None):
+    def fold(self, names, model: str = 'esm_fold', num_recycles: int = 0, pbar=None, relax: bool = False):
         """
         Fold sequences by their names. 
 
@@ -609,6 +610,19 @@ class Library:
                 f = all_pdbs[i]
                 f.write(dest)
 
+            if relax:
+                pbar.set(message="Initiating energy minimization", detail=f"Minimizing {len(names)} structures...")
+                for i, name in enumerate(names):
+                    pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
+                    self.relax_struc(name)
+
+    
+    def relax_struc(self, name: str):
+        """
+        Perform energy minimization on a protein structure.
+        """
+        f = os.path.join(self.struc_path, name + '.pdb')
+        pai_struc.relax_pdb(f, dest=self.struc_path)
 
 
     def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None):
