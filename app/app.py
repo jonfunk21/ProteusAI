@@ -1156,6 +1156,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
             fixed_ids.sort()
 
+            fixed = []
             if len(fixed_ids) > 0:
                 fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
 
