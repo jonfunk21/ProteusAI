@@ -155,3 +155,6 @@ Untitled.ipynb
 *.joblib
 demo/example_project/models/rf/params.json
 demo/example_project/models/rf/results.json
+
+# For env testing
+test.py
