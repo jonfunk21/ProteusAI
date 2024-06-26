@@ -20,7 +20,7 @@ from pdbfixer import PDBFixer
 from openmm.app import PDBFile
 import tempfile
 import os
-
+import numpy as np
 
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
@@ -119,7 +119,6 @@ def compute_rmsd(prot1, prot2):
     Returns:
         rmsd (float)
     """
-
     prot1 = load_struc(prot1)
     prot2 = load_struc(prot2)
 
@@ -166,13 +165,155 @@ def get_sequences(prot_f):
 
     return sequences
 
+
+def get_contacts(structure, chain=None, target='protein', dist=7.):
+    """
+    Get contacts within a protein structure or between a protein and ligands, based on the specified chain.
+    
+    Args:
+        structure (biotite.structure.AtomArray): The complete protein structure.
+        chain (str, optional): Specific chain for which to compute the contacts.
+            Default is None, which will use the first protein chain if not specified.
+        target (str): Specify 'protein' for protein-protein contacts or 'ligand'
+            for protein-ligand contacts. Default is 'protein'.
+        dist (float): Specified distance threshold in Angstroms. Default is 7.
+            
+    Returns:
+        list: Unique residue IDs in contact from the specified chain.
+    """
+    if chain is None:
+        chain = structure.chain_id[0]  # Default to the first chain if none specified
+
+    if target == 'protein':
+        # Select atoms from all other chains, excluding heteroatoms if needed
+        target_atoms = structure[(structure.chain_id != chain) & (structure.hetero == False)]
+    elif target == 'ligand':
+        # Assuming ligands are identified as heteroatoms
+        target_atoms = structure[structure.hetero == True]
+    else:
+        raise ValueError("Invalid target specified. Use 'protein' or 'ligand'.")
+
+    # Select the atoms in the target chain, excluding heteroatoms if needed
+    chain_atoms = structure[(structure.chain_id == chain) & (structure.hetero == False)]
+
+    # Initialize cell list with target atoms
+    cell_list = struc.CellList(target_atoms, cell_size=dist)
+    contact_indices = cell_list.get_atoms(chain_atoms.coord, radius=dist)
+
+    # Determine contact residue IDs
+    contact_residue_indices = np.where((contact_indices != -1).any(axis=1))[0]
+    contact_res_ids = chain_atoms.res_id[contact_residue_indices]
+
+    # Removing duplicate IDs by converting to a set, then back to sorted list
+    unique_contact_res_ids = sorted(set(contact_res_ids))
+
+    return unique_contact_res_ids
+
+
+def compute_chi_angles(protein, res_ids):
+    """
+    Compute the chi angles for specified residues in a protein.
+
+    Args:
+        protein: biotite.structure.AtomArray or path to pdb (str).
+        res_ids (list): List of residue IDs to compute chi angles for.
+        chi_atom_names (dict): Dictionary where keys are residue names and values 
+                               are lists of lists of atom names involved in each chi angle.
+
+    Returns:
+        A dictionary where keys are tuples of (residue name, residue ID) and values 
+        are lists of chi angles.
+    """
+
+    # Dictionary containing atom names involved in chi angle calculations for each amino acid
+    chi_atom_names = {
+        'ALA': [],  # Alanine has no chi angles
+        'ARG': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'NE'], ['CG', 'CD', 'NE', 'CZ']],
+        'ASN': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'OD1']],
+        'ASP': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'OD1']],
+        'CYS': [['N', 'CA', 'CB', 'SG']],
+        'GLN': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'OE1']],
+        'GLU': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'OE1']],
+        'GLY': [],  # Glycine has no chi angles
+        'HIS': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'ND1']],
+        'ILE': [['N', 'CA', 'CB', 'CG1'], ['CA', 'CB', 'CG1', 'CD1']],
+        'LEU': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
+        'LYS': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'CE'], ['CG', 'CD', 'CE', 'NZ']],
+        'MET': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'SD'], ['CB', 'CG', 'SD', 'CE']],
+        'PHE': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
+        'PRO': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD']],
+        'SER': [['N', 'CA', 'CB', 'OG']],
+        'THR': [['N', 'CA', 'CB', 'OG1']],
+        'TRP': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
+        'TYR': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
+        'VAL': [['N', 'CA', 'CB', 'CG1']],
+    }
+
+    if isinstance(protein, str):
+        protein = load_struc(protein)  # Assuming load_struc loads a structure
+    
+    chi_angles = {}
+    for res_id in res_ids:
+        # Extract residue name using the residue ID
+        res_name = protein.res_name[protein.res_id == res_id][0]
+        mask_res = (protein.res_id == res_id) & (protein.res_name == res_name)
+        chi_list = []
+        for atom_names in chi_atom_names.get(res_name, []):
+            mask_atoms = np.isin(protein.atom_name, atom_names)
+            atoms = protein[mask_res & mask_atoms]
+            if len(atoms) == len(atom_names):
+                chi = struc.dihedral(
+                    atoms[atoms.atom_name == atom_names[0]],
+                    atoms[atoms.atom_name == atom_names[1]],
+                    atoms[atoms.atom_name == atom_names[2]],
+                    atoms[atoms.atom_name == atom_names[3]]
+                )
+                chi_list.append(chi)
+        if chi_list:
+            chi_angles[(res_name, res_id)] = chi_list
+    return chi_angles
+
+
+def delta_chi(chi_angles_1, chi_angles_2):
+    """
+    Compute the delta between two sets of chi angles.
+
+    Args:
+        chi_angles_1 (dict): Dictionary with keys as (residue name, residue ID) 
+                             and values as lists of chi angles from the first structure.
+        chi_angles_2 (dict): Dictionary with keys as (residue name, residue ID) 
+                             and values as lists of chi angles from the second structure.
+
+    Returns:
+        float: Sum of absolute differences between corresponding chi angles.
+    """
+    total_difference = 0.0
+
+    for key in chi_angles_1:
+        if key in chi_angles_2:
+            angles_1 = chi_angles_1[key]
+            angles_2 = chi_angles_2[key]
+            # Ensure both lists of angles have the same length
+            if len(angles_1) == len(angles_2):
+                for a1, a2 in zip(angles_1, angles_2):
+                    total_difference += abs(a1 - a2)
+            else:
+                raise ValueError(f"Mismatch in number of chi angles for residue {key}.")
+        else:
+            raise ValueError(f"Residue {key} not found in both structures.")
+    
+    return total_difference
+
+
+
 def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=None, size=(800, 480),
              show_sidechains=False, show_mainchains=False, highlight=None, sticks=None):
     """
     This function displays the 3D structure of a protein from a given PDB file in a Jupyter notebook.
     The protein structure can be colored by chain, rainbow, pLDDT, or confidence value. The size of the
     display can be changed. The sidechains and mainchains can be displayed or hidden.
-    Additional functionality includes highlighting specific residues by passing their numbers in a list.
+    Additional functionality includes highlighting specific residues by passing their numbers in a list,
+    and displaying ligands as sticks and ions as spheres.
     Parameters:
         pdb_path (str): The filename of the PDB file that contains the protein structure.
         color (str, optional): The color scheme for the protein structure. Can be "chain", "rainbow", "pLDDT", "confidence". Defaults to "rainbow".
@@ -196,8 +337,6 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
 
     view.addModelsAsFrames(system)
     
-    
-    
     # Apply color styles based on function arguments
     if color == "pLDDT" or color == 'confidence':
         view.setStyle({}, {'cartoon': {'colorscheme': {'prop': 'b', 'gradient': 'rwb', 'min': vmin, 'max': vmax}}})
@@ -218,10 +357,13 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
             view.addStyle({'resi': str(resi)}, highlight_style)
     
     if sticks:
-        highlight_style = {'stick': {'radius': 0.3}}
+        stick_style = {'stick': {'radius': 0.3}}
         for resi in sticks:
-            view.addStyle({'resi': str(resi)}, highlight_style)
-        
+            view.addStyle({'resi': str(resi)}, stick_style)
+
+    # Display ligands as sticks and ions as spheres
+    view.addStyle({'hetflag': True, 'bonds': 0, 'atom': 'not O'}, {'sphere': {'colorscheme': 'ionic', 'radius': 0.5}})
+    view.addStyle({'hetflag': True}, {'stick': {'colorscheme': 'organic', 'radius': 0.3}})  # Display organic ligands as sticks
 
     if show_sidechains:
         BB = ['C', 'O', 'N']
@@ -239,6 +381,7 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
     view.zoomTo()
 
     return view
+
 
 def relax_pdb(file, dest='outputs/struc/relaxed'):
     """

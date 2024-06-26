@@ -201,6 +201,49 @@ class Library:
 
         print('Done!')
 
+    ### Structure ###
+    def struc_geom(self, ref, residues: list = []):
+        """
+        Compute the difference in geometry of a list of residues in a library compared to a reference structure.
+        The residues must be present in both structures, or the won't be compared.
+        
+        Args:
+            ref (proteusAI.Protein): Reference protein structure.
+            residues (list): List of residues to compare.
+        """
+
+        ref_struc = ref.struc
+        ref_chi = pai_struc.compute_chi_angles(ref_struc, residues)
+
+        rmsds = []
+        delta_chis = []
+
+        for prot in self.proteins:
+            target_path = os.path.join(self.struc_path, prot.name + '.pdb') 
+            ref_struc, target = pai_struc.align(ref.pdb_file, target_path)
+            rmsd = pai_struc.compute_rmsd(ref_struc, target)
+            target_chi = pai_struc.compute_chi_angles(target, residues)
+            if len(residues) > 0:
+                delta_chi = pai_struc.delta_chi(ref_chi, target_chi)
+                delta_chis.append(delta_chi.item())
+
+            rmsds.append(rmsds)
+        
+        if len(residues) == 0:
+            delta_chis = [None] * len(self.proteins)
+
+        results_path = os.path.join(self.rep_path, f'../{prot.name}_analysis.csv')
+
+        if not os.path.exists(self.rep_path):
+            os.makedirs(self.rep_path, exist_ok=True)
+
+        df = pd.DataFrame({"names":self.names, "RMSD":rmsds, "delta_chi":delta_chis})
+        df.to_csv(results_path)    
+
+        return df
+            
+
+
     ### IO ###
     def load_library(self):
         """
@@ -598,6 +641,8 @@ class Library:
             num_recycles (int): number of recycling steps, default 0
             pbar: progress bar for app
         """
+        out = False
+
         seqs = self.data[self.data[self.names_col].isin(names)][self.seq_col].to_list()
         if len(seqs) > 0:
             all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar)
@@ -615,6 +660,11 @@ class Library:
                 for i, name in enumerate(names):
                     pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
                     self.relax_struc(name)
+        
+            df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
+            out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps}
+            
+        return out
 
     
     def relax_struc(self, name: str):

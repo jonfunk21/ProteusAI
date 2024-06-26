@@ -203,18 +203,24 @@ class Protein:
             
         self.seq = seq
 
-    def load_structure(self, prot_f, name = None):
+    def load_structure(self, prot_f, name = None, filter_solvent = True):
         """
         Load a structure from a pdb or cif file or an AtomArray.
 
         Args:
             struc: path to structure file or AtomArray
             name: provide protein name, else name of the file is assumed.
+            filter_solvent (bool): True
         """
         if name is None and type(prot_f) == str:
             name = prot_f.split('/')[-1].split('.')[0]
 
         prot = load_struc(prot_f)
+
+        if filter_solvent:
+            non_solvent_mask = ~struc.filter_solvent(prot)
+            prot = prot[non_solvent_mask]
+
         seqs = get_sequences(prot_f)
         chains = chain_parser(prot_f)
 
@@ -489,7 +495,19 @@ class Protein:
         fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section, highlight_positions=highlight_positions)
         return fig
 
-    
+    # structure utils
+    def get_contacts(self, chain: Union[str, None] = None, target: str = 'protein', dist=7.):
+        """
+        Get protein protein contacts for a specific chain in a protein. 
+
+        Args:
+            chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
+            target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
+        """
+        return get_contacts(self.struc, chain, target, dist)
+
+
+
     ### getters and setters ###
     @property
     def name(self):

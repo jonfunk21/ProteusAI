@@ -244,22 +244,51 @@ app_ui = ui.page_fluid(
                 ui.row(
                     ui.h5("Structure Based Protein Design"),
 
-                    ui.input_select("design_models", "Choose model", list(design_models.keys())),
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
+                        ),
 
-                    ui.column(6,
-                        ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
+                        ui.column(6,
+                            ui.output_ui("design_chains")
+                        ),
+                        
+                        
+                        ui.column(6,
+                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
+                        ),
+
+                        ui.column(6,
+                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
+                        ),
                     ),
-
-                    ui.column(6,
-                        ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
-                    ),
-
                     ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
+
+                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
+
+                    ui.panel_conditional("input.design_interfaces === true",
+                        ui.row(
+                            ui.column(6,
+                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                            ui.column(6,
+                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                        ),
+                        
+
+                    ),
                     
                     ui.column(4,
                         ui.input_action_button("desgin_button", "Design")     
                     ),
-
+                
                     
                 ),
                 ui.output_ui(
@@ -272,6 +301,8 @@ app_ui = ui.page_fluid(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
 
+                    ui.output_text("fixed_res_text"),
+
                     ui.output_data_frame("design_out"),
 
                     ui.output_ui("design_download_ui")
@@ -279,10 +310,10 @@ app_ui = ui.page_fluid(
             )
         ),
 
-        ui.nav_panel(
-            "Download",
-            ui.h4("Download results")
-        ),
+        #ui.nav_panel(
+        #    "Download",
+        #    ui.h4("Download results")
+        #),
     )
 )
 
@@ -424,6 +455,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
+    chains = reactive.Value(None)
 
     # reading protein fasta
     @reactive.Effect
@@ -506,7 +538,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             library_plot.set(None)
 
             zs_scores.set(pd.DataFrame())
-        
+
 
             # update uis
             ui.update_select(
@@ -587,6 +619,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             library_plot.set(None)
 
             zs_scores.set(pd.DataFrame())
+
+            chains.set(prot.chains)
+        
         
 
     @output
@@ -1129,12 +1164,43 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
             
-        
+
         highlights = list(set(input.design_res().strip().split(',') + sidechains))
+
+        if prot_interface():
+            highlights = highlights + prot_interface()
+
+        if lig_interface():
+            highlights = highlights + lig_interface()
+
+
         view = protein().view_struc(color="white", highlight=highlights, sticks=sidechains)
         return ui.TagList(
             ui.HTML(view.write_html())
         )
+
+    prot_interface = reactive.Value(None)
+    @reactive.Effect
+    @reactive.event(input.design_protein_interface)
+    def _():
+        prot = protein()
+        if input.design_protein_interface():
+            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'protein')
+            prot_interface.set(prot_contacts) # here will be a function that selects the interface values
+        else:
+            prot_interface.set(None)
+
+    lig_interface = reactive.Value(None)
+    @reactive.Effect
+    @reactive.event(input.design_ligand_interface)
+    def _():
+        prot = protein()
+        if input.design_ligand_interface():
+            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'ligand')
+            prot_interface.set(prot_contacts) # here will be a function that selects the interface values
+        else:
+            lig_interface.set(None)
+        
 
     fixed_residues = reactive.Value(None)
     design_lib = reactive.Value(None)
@@ -1181,6 +1247,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @output
     @render.ui
+    def design_chains():
+        num_chains = len(chains())
+        return ui.input_select("mutlichain_chain", "Design chain", choices=chains())
+        
+
+    @output
+    @render.ui
     def folding():
         out = design_output()
         if type(out) != str:
@@ -1189,7 +1262,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
                 
                 ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
-                
                 
 
                 ui.row(
@@ -1212,8 +1284,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     )
                     
                 ),
-                
-                
+
                 ui.h5("Analyze protein structures"),
 
                 ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=fixed_residues(), multiple=True),
@@ -1223,12 +1294,23 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ),
                 
             )
+
     @output
     @render.ui
     def design_download_ui():
         out = design_output()
         if type(out) != str:
-            return ui.download_button("download_designs", "Download design results"),
+            return ui.download_button("download_designs", "Download design results")
+
+    
+    @output
+    @render.text
+    def fixed_res_text(alt=None):
+        out = design_output()
+        if type(out) != str:
+            msg = "Residues that were fixed during design: \n"+ ", ".join(fixed_residues())
+            return msg
+        
             
 
     @render.download(
@@ -1236,6 +1318,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     )
     def download_designs():
         yield design_output().to_csv(index=False)
+
+    fold_library = reactive.Value(None)
 
     @reactive.Effect
     @reactive.event(input.folding_button)
@@ -1245,6 +1329,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         lib = design_lib()
         out = design_output()
+        prot = protein()
         selection = input.fold_these()
         with ui.Progress(min=1, max=len(selection)) as p:
             p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
@@ -1252,6 +1337,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             num_recycles = input.num_recycles()
             to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
             out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
+            fold_lib = pai.Library(user=prot.user, source=out)
+            fold_library.set(fold_lib)
+    
+    @reactive.Effect
+    @reactive.event(input.analyze_designs)
+    def _():
+        if input.design_sidechains() == None:
+            sidechains = [] 
+        else:
+            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+        
+        lib = fold_library()
+        prot = protein()
+        lib.struc_geom(ref=prot, residues=sidechains)
 
 
 
