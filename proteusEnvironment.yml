@@ -29,6 +29,7 @@ dependencies:
  - pip 
  - pip:
     - fair-esm
+  #  - deepspeed==0.10.3
     - "fair-esm[esmfold]"
     - 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
     - 'openfold @ git+https://github.com/aqlaboratory/openfold.git@310f240c0045310f399b7a4f388e3cd5da3e497d'
