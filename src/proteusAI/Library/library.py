@@ -116,11 +116,10 @@ class Library:
         self.struc_path = os.path.join(self.source_path, 'library/struc')
         
         # create user library if user does not exist
-        if not os.path.exists(self.source_path):
-            os.makedirs(self.source_path)
-            os.makedirs(self.source_path, exist_ok=True)
-            os.makedirs(os.path.join(self.source_path, 'library/rep'), exist_ok=True)
-            os.makedirs(os.path.join(self.source_path, 'library/struc'), exist_ok=True)
+        os.makedirs(self.source_path, exist_ok=True)
+        os.makedirs(self.source_path, exist_ok=True)
+        os.makedirs(os.path.join(self.source_path, 'library/rep'), exist_ok=True)
+        os.makedirs(os.path.join(self.source_path, 'library/struc'), exist_ok=True)
 
         # load the data
         if file_extension in ['xlsx', 'xls', 'csv']:
