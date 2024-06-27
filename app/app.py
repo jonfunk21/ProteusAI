@@ -1173,8 +1173,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         if lig_interface():
             highlights = highlights + lig_interface()
 
+        highlights_dict = {input.mutlichain_chain():highlights}
 
-        view = protein().view_struc(color="white", highlight=highlights, sticks=sidechains)
+        view = protein().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
         return ui.TagList(
             ui.HTML(view.write_html())
         )
@@ -1197,7 +1198,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = protein()
         if input.design_ligand_interface():
             prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'ligand')
-            prot_interface.set(prot_contacts) # here will be a function that selects the interface values
+            lig_interface.set(prot_contacts) # here will be a function that selects the interface values
         else:
             lig_interface.set(None)
         
