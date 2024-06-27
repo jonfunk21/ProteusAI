@@ -1173,6 +1173,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         if lig_interface():
             highlights = highlights + lig_interface()
 
+        highlights = [i for i in set(highlights) if type(i) != str]
+
         highlights_dict = {input.mutlichain_chain():highlights}
 
         view = protein().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
@@ -1221,6 +1223,15 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             residues_str = list(set(input.design_res().strip().split(',') + sidechains))
             fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+
+            if prot_interface():
+                fixed_ids = fixed_ids + prot_interface()
+
+            if lig_interface():
+                fixed_ids = fixed_ids + lig_interface()
+
+            fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
+
             fixed_ids.sort()
 
             fixed = []
@@ -1229,8 +1240,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             fixed_residues.set(fixed)
             
-            print(prot)
-            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p)
+
+            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p, chain=input.mutlichain_chain())
             lib = pai.Library(user=prot.user, source=out)
             design_output.set(out['df'])
             design_lib.set(lib)
@@ -1351,7 +1362,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         lib = fold_library()
         prot = protein()
-        lib.struc_geom(ref=prot, residues=sidechains)
+
+        sidechains_dict = {input.mutlichain_chain():sidechains}
+        lib.struc_geom(ref=prot, residues=sidechains_dict)
 
 
 

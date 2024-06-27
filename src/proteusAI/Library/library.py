@@ -200,49 +200,7 @@ class Library:
 
         print('Done!')
 
-    ### Structure ###
-    def struc_geom(self, ref, residues: list = []):
-        """
-        Compute the difference in geometry of a list of residues in a library compared to a reference structure.
-        The residues must be present in both structures, or the won't be compared.
-        
-        Args:
-            ref (proteusAI.Protein): Reference protein structure.
-            residues (list): List of residues to compare.
-        """
-
-        ref_struc = ref.struc
-        ref_chi = pai_struc.compute_chi_angles(ref_struc, residues)
-
-        rmsds = []
-        delta_chis = []
-
-        for prot in self.proteins:
-            target_path = os.path.join(self.struc_path, prot.name + '.pdb') 
-            ref_struc, target = pai_struc.align(ref.pdb_file, target_path)
-            rmsd = pai_struc.compute_rmsd(ref_struc, target)
-            target_chi = pai_struc.compute_chi_angles(target, residues)
-            if len(residues) > 0:
-                delta_chi = pai_struc.delta_chi(ref_chi, target_chi)
-                delta_chis.append(delta_chi.item())
-
-            rmsds.append(rmsds)
-        
-        if len(residues) == 0:
-            delta_chis = [None] * len(self.proteins)
-
-        results_path = os.path.join(self.rep_path, f'../{prot.name}_analysis.csv')
-
-        if not os.path.exists(self.rep_path):
-            os.makedirs(self.rep_path, exist_ok=True)
-
-        df = pd.DataFrame({"names":self.names, "RMSD":rmsds, "delta_chi":delta_chis})
-        df.to_csv(results_path)    
-
-        return df
             
-
-
     ### IO ###
     def load_library(self):
         """
@@ -666,12 +624,64 @@ class Library:
         return out
 
     
+    ### Structure ###
     def relax_struc(self, name: str):
         """
         Perform energy minimization on a protein structure.
         """
         f = os.path.join(self.struc_path, name + '.pdb')
         pai_struc.relax_pdb(f, dest=self.struc_path)
+
+    
+   
+    def struc_geom(self, ref, residues: dict = {}):
+        """
+        Compute the difference in geometry of a dictionary of residues in a library compared to a reference structure.
+        The residues must be present in both structures, or they won't be compared.
+
+        Args:
+            ref (proteusAI.Protein): Reference protein structure.
+            residues (dict): Dictionary where keys are chain identifiers and values are lists of residues to compare.
+
+        Returns:
+            A DataFrame containing comparison results for each protein in the library.
+        """
+
+        ref_struc = ref.struc
+        ref_chi = pai_struc.compute_chi_angles(ref_struc, residues)
+
+        rmsds = []
+        delta_chis = []
+
+        for prot in self.proteins:
+            target_path = os.path.join(self.struc_path, prot.name + '.pdb') 
+            ref_struc, target = pai_struc.align(ref.pdb_file, target_path)
+            rmsd = pai_struc.compute_rmsd(ref_struc, target)
+            target_chi = pai_struc.compute_chi_angles(target, residues)
+
+            # Calculate delta chi for each chain and residue specified
+            delta_chi = {}
+            for chain, res_list in residues.items():
+                for res_id in res_list:
+                    if (chain, res_id) in ref_chi and (chain, res_id) in target_chi:
+                        # Compute difference for each chi angle
+                        chi_differences = [
+                            abs(ref_angle - tar_angle) for ref_angle, tar_angle in zip(ref_chi[(chain, res_id)], target_chi[(chain, res_id)])
+                        ]
+                        delta_chi[(chain, res_id)] = chi_differences
+
+            delta_chis.append(delta_chi)
+            rmsds.append(rmsd)
+
+        results_path = os.path.join(self.rep_path, f'{prot.name}_analysis.csv')
+
+        if not os.path.exists(self.rep_path):
+            os.makedirs(self.rep_path, exist_ok=True)
+
+        df = pd.DataFrame({"names": [prot.name for prot in self.proteins], "RMSD": rmsds, "delta_chi": delta_chis})
+        df.to_csv(results_path)    
+
+        return df
 
 
     def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None):

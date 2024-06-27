@@ -212,16 +212,17 @@ def get_contacts(structure, chain=None, target='protein', dist=7.):
 
 def compute_chi_angles(protein, res_ids):
     """
-    Compute the chi angles for specified residues in a protein.
+    Compute the chi angles for specified residues in a protein by chain.
 
     Args:
         protein: biotite.structure.AtomArray or path to pdb (str).
-        res_ids (list): List of residue IDs to compute chi angles for.
-        chi_atom_names (dict): Dictionary where keys are residue names and values 
-                               are lists of lists of atom names involved in each chi angle.
+        res_ids (dict): Dictionary where keys are chain identifiers and values are lists of residue IDs 
+                        to compute chi angles for in each chain.
+        chi_atom_names (dict): Dictionary where keys are residue names and values are lists of lists of 
+                               atom names involved in each chi angle.
 
     Returns:
-        A dictionary where keys are tuples of (residue name, residue ID) and values 
+        A dictionary where keys are tuples of (chain identifier, residue name, residue ID) and values 
         are lists of chi angles.
     """
 
@@ -253,24 +254,23 @@ def compute_chi_angles(protein, res_ids):
         protein = load_struc(protein)  # Assuming load_struc loads a structure
     
     chi_angles = {}
-    for res_id in res_ids:
-        # Extract residue name using the residue ID
-        res_name = protein.res_name[protein.res_id == res_id][0]
-        mask_res = (protein.res_id == res_id) & (protein.res_name == res_name)
-        chi_list = []
-        for atom_names in chi_atom_names.get(res_name, []):
-            mask_atoms = np.isin(protein.atom_name, atom_names)
-            atoms = protein[mask_res & mask_atoms]
-            if len(atoms) == len(atom_names):
-                chi = struc.dihedral(
-                    atoms[atoms.atom_name == atom_names[0]],
-                    atoms[atoms.atom_name == atom_names[1]],
-                    atoms[atoms.atom_name == atom_names[2]],
-                    atoms[atoms.atom_name == atom_names[3]]
-                )
-                chi_list.append(chi)
-        if chi_list:
-            chi_angles[(res_name, res_id)] = chi_list
+    for chain, residues in res_ids.items():
+        for res_id in residues:
+            # Filter protein by chain and residue ID
+            mask = (protein.chain_id == chain) & (protein.res_id == res_id)
+            res_protein = protein[mask]
+            res_name = res_protein.res_name[0] if len(res_protein) > 0 else None
+
+            if res_name and res_name in chi_atom_names:
+                chi_list = []
+                for atom_names in chi_atom_names[res_name]:
+                    if all(atom in res_protein.atom_name for atom in atom_names):
+                        atoms = [res_protein[res_protein.atom_name == atom][0] for atom in atom_names]
+                        chi = struc.dihedral(*atoms)
+                        chi_list.append(chi)
+                if chi_list:
+                    chi_angles[(chain, res_name, res_id)] = chi_list
+
     return chi_angles
 
 
