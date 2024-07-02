@@ -935,7 +935,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.zs_table)
     def zs_df(alt=None):
         prot = protein()
-        method = representation_dict[input.zs_model()]
+        method = representation_dict[input.computed_zs_scores()]
         path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
