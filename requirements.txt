@@ -1,4 +1,4 @@
-torch
+uvicorn
 pandas
 numpy
 requests
