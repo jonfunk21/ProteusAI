@@ -66,7 +66,11 @@ Restart the shiny server with the following command to apply the server configur
 ```
 sudo systemctl restart shiny-server
 ```
-If you deploy the app on your local machine, be sure that the port 80 is open and not blocked by a firewall. If you deploy the app on your Azure Virtual Machine (VM), please add an Inbound Port rule in the <i>Networking - Network Settings</i> section on Azure Portal. Set the following properties:
+If you deploy the app on your local machine, be sure that the port 80 is open and not blocked by a firewall. You can check it with `netstat`:
+```
+nc <your-ip-address> 80
+```
+If you deploy the app on your Azure Virtual Machine (VM), please add an Inbound Port rule in the <i>Networking - Network Settings</i> section on Azure Portal. Set the following properties:
 ```
 Source: Any
 Source port ranges: *
