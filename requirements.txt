@@ -1,4 +1,8 @@
 uvicorn
+asgiref
+starlette
+pdbfixer
+shiny
 pandas
 numpy
 requests
@@ -11,3 +15,5 @@ scikit-learn
 optuna
 seaborn
 openpyxl
+py3Dmol
+gpytorch
