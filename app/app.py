@@ -29,7 +29,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 inverted_reps = {v: k for k, v in representation_dict.items()}
 design_models = {"ESM-IF":"esm_if"}
-REP_VISUAL = ["UMAP","t-SNE"]
+REP_VISUAL = ["UMAP","t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 1
@@ -880,6 +880,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                     fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
                 elif input.vis_method() == 'UMAP':
                     fig, ax, df = lib.plot_umap(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                elif input.vis_method() == 'PCA':
+                    fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
                 tsne_df.set(df)
                 library_plot.set((fig, ax))
