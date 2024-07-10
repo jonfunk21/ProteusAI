@@ -20,6 +20,7 @@ sys.path.append(os.path.join(app_path, '/home/jonfunk/ProteusAI/src/'))
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
+import time
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
@@ -403,57 +404,62 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
-    def _():
+    async def _():
         df = dataset()
-        f: list[FileInfo] = input.dataset_file()
-        file_name = f[0]['name']
-
-        ys = df[input.y_col()].to_list()
-
-        # Determine if the data is numerical or categorical
-        if is_numerical(ys):
-            y_type = "num"
-            choice = "Regression"
-            _y_type = "Numeric"
+        if input.dataset_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+                
         else:
-            y_type = "class"
-            choice = "Classification"
-            _y_type = "Categorical"
-        
-        lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
-                          y_type=y_type, names_col=input.description_col(), fname=file_name)
-        
-        library.set(lib)
+            f: list[FileInfo] = input.dataset_file()
+            file_name = f[0]['name']
 
-        # update representation selection
-        # TODO: Make sure these have to be 100% computed
-        ui.update_select(
-            "model_rep_type",
-            choices=[inverted_reps[i] for i in lib.reps]
-        )
+            ys = df[input.y_col()].to_list()
 
-        available_reps.set([inverted_reps[i] for i in lib.reps])
-        
-        # update available model tasks
-        ui.update_select(
-            "model_task",
-            choices=[choice]
-        )
+            # Determine if the data is numerical or categorical
+            if is_numerical(ys):
+                y_type = "num"
+                choice = "Regression"
+                _y_type = "Numeric"
+            else:
+                y_type = "class"
+                choice = "Classification"
+                _y_type = "Categorical"
+            
+            lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
+                            y_type=y_type, names_col=input.description_col(), fname=file_name)
+            
+            library.set(lib)
 
-        ui.update_select(
-            "y_type",
-            choices=[_y_type]
-        )
+            # update representation selection
+            # TODO: Make sure these have to be 100% computed
+            ui.update_select(
+                "model_rep_type",
+                choices=[inverted_reps[i] for i in lib.reps]
+            )
 
-        protein.set(None)
-        
-        representation_path.set(None) # used in train
-        
-        MODE.set("dataset")
+            available_reps.set([inverted_reps[i] for i in lib.reps])
+            
+            # update available model tasks
+            ui.update_select(
+                "model_task",
+                choices=[choice]
+            )
 
-        library_plot.set(None)
+            ui.update_select(
+                "y_type",
+                choices=[_y_type]
+            )
 
-    
+            protein.set(None)
+            
+            representation_path.set(None) # used in train
+            
+            MODE.set("dataset")
+
+            library_plot.set(None)
+
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
     chains = reactive.Value(None)
@@ -473,85 +479,90 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Confirm protein
     @reactive.Effect
     @reactive.event(input.confirm_protein)
-    def _():
-        with ui.Progress(min=1, max=15) as p:
-            library.set(None)
-            p.set(message="Searching for available data...", detail="This may take a while...")
-            # initialize protein
-            #prot = protein()
-            f: list[FileInfo] = input.protein_file()
-            usr_path = os.path.join(USR_PATH, input.USER().lower())
-            file_name = f[0]['name']
+    async def _():
+        if input.protein_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+        else:
+            with ui.Progress(min=1, max=15) as p:
+                library.set(None)
+                p.set(message="Searching for available data...", detail="This may take a while...")
+                # initialize protein
+                #prot = protein()
+                f: list[FileInfo] = input.protein_file()
+                usr_path = os.path.join(USR_PATH, input.USER().lower())
+                file_name = f[0]['name']
 
-            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+                prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-            
-            # set shiny variables
-            protein.set(prot)
-            print(protein())
-            dataset_path.set(f[0]["datapath"])
-            MODE.set('zero-shot')
-
-            # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
-            zs_computed = []
-            rep_computed = []
-            for model in ZS_MODELS:
-                # check hash existence
-                zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
-
-                if os.path.exists(zs_path):
-                    if "zs_scores.csv" in os.listdir(zs_path):
-                        zs_computed.append(model)
                 
-                for rep in REP_TYPES:
-                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
-                    if os.path.exists(rep_path):
-                        rep_computed.append(representation_dict[rep])
+                # set shiny variables
+                protein.set(prot)
+                print(protein())
+                dataset_path.set(f[0]["datapath"])
+                MODE.set('zero-shot')
 
-            # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
-            for model in ZS_MODELS:
-                try:
-                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
+                zs_computed = []
+                rep_computed = []
+                for model in ZS_MODELS:
+                    # check hash existence
+                    zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
+
+                    if os.path.exists(zs_path):
+                        if "zs_scores.csv" in os.listdir(zs_path):
+                            zs_computed.append(model)
                     
-                    df = pd.read_csv(df_path)
-                    p.set(message="Loading data...", detail="This may take a while...")
-                    lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                    for rep in REP_TYPES:
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
+                        if os.path.exists(rep_path):
+                            rep_computed.append(representation_dict[rep])
 
-                    library.set(lib)
-                    dataset.set(df)
-                    zs_scores.set(df)
-                    
-                except:
-                    pass
-            
-            ui.update_select(
-                        "model_rep_type",
-                        choices=[inverted_reps[i] for i in rep_computed]
-                    )
-            
-            computed_zs_scores.set(zs_computed)
+                # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
+                for model in ZS_MODELS:
+                    try:
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
+                        df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                        
+                        df = pd.read_csv(df_path)
+                        p.set(message="Loading data...", detail="This may take a while...")
+                        lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
 
-            available_reps.set([inverted_reps[i] for i in rep_computed])
+                        library.set(lib)
+                        dataset.set(df)
+                        zs_scores.set(df)
+                        
+                    except:
+                        pass
+                
+                ui.update_select(
+                            "model_rep_type",
+                            choices=[inverted_reps[i] for i in rep_computed]
+                        )
+                
+                computed_zs_scores.set(zs_computed)
 
-            zs_results.set(zs_computed)
+                available_reps.set([inverted_reps[i] for i in rep_computed])
 
-            library_plot.set(None)
+                zs_results.set(zs_computed)
 
-            zs_scores.set(pd.DataFrame())
+                library_plot.set(None)
+
+                zs_scores.set(pd.DataFrame())
 
 
-            # update uis
-            ui.update_select(
-                "model_task",
-                choices=["Regression"]
-            )   
+                # update uis
+                ui.update_select(
+                    "model_task",
+                    choices=["Regression"]
+                )   
 
-            # update representation selection
-            ui.update_select(
-                "zs_scores",
-                choices=zs_computed
-            ) 
+                # update representation selection
+                ui.update_select(
+                    "zs_scores",
+                    choices=zs_computed
+                ) 
 
     @output
     @render.text
@@ -565,63 +576,68 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Confirm structure
     @reactive.Effect
     @reactive.event(input.confirm_structure)
-    def _():
-        with ui.Progress(min=1, max=15) as p:
-            p.set(message="Searching for available data...", detail="This may take a while...")
-            prot = protein()
-            f: list[FileInfo] = input.structure_file()
-            file_name = f[0]['name']
+    async def _():
+        if input.structure_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+        else:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="Searching for available data...", detail="This may take a while...")
+                prot = protein()
+                f: list[FileInfo] = input.structure_file()
+                file_name = f[0]['name']
 
-            usr_path = os.path.join(USR_PATH, input.USER().lower())
-            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+                usr_path = os.path.join(USR_PATH, input.USER().lower())
+                prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-            name = f[0]["name"].split('.')[0]
-            prot.name = name
-            
-            # set shiny variables
-            protein.set(prot)
-            dataset_path.set(f[0]["datapath"])
-            MODE.set('structure')
+                name = f[0]["name"].split('.')[0]
+                prot.name = name
+                
+                # set shiny variables
+                protein.set(prot)
+                dataset_path.set(f[0]["datapath"])
+                MODE.set('structure')
 
-            # load zs-library if exists
-            computed_zs = []
-            reps = []
-            # load reps
-            for rep in REP_TYPES:
-                rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
-                p.set(message="Loading data...", detail="This may take a while...")
-                if os.path.exists(rep_path):
-                    reps.append(rep)
-
-            
-            # load zs_scores
-            for model in ZS_MODELS:
-                df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
-                if os.path.exists(df_path):
-                    df = pd.read_csv(df_path)
+                # load zs-library if exists
+                computed_zs = []
+                reps = []
+                # load reps
+                for rep in REP_TYPES:
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
                     p.set(message="Loading data...", detail="This may take a while...")
-                    computed_zs.append(model)
+                    if os.path.exists(rep_path):
+                        reps.append(rep)
+
+                
+                # load zs_scores
+                for model in ZS_MODELS:
+                    df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
+                    if os.path.exists(df_path):
+                        df = pd.read_csv(df_path)
+                        p.set(message="Loading data...", detail="This may take a while...")
+                        computed_zs.append(model)
 
 
-            ui.update_select(
-                    "model_rep_type",
-                    choices=reps
+                ui.update_select(
+                        "model_rep_type",
+                        choices=reps
+                    )
+
+                ui.update_select(
+                    "computed_zs_scores",
+                    choices=computed_zs
                 )
 
-            ui.update_select(
-                "computed_zs_scores",
-                choices=computed_zs
-            )
+                available_reps.set(reps)
 
-            available_reps.set(reps)
+                computed_zs_scores.set(computed_zs)
 
-            computed_zs_scores.set(computed_zs)
+                library_plot.set(None)
 
-            library_plot.set(None)
+                zs_scores.set(pd.DataFrame())
 
-            zs_scores.set(pd.DataFrame())
-
-            chains.set(prot.chains)
+                chains.set(prot.chains)
         
         
 
