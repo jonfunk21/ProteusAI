@@ -18,6 +18,7 @@ import proteusAI.struc as pai_struc
 import pandas as pd
 from typing import Union, Optional
 import torch
+from sklearn.preprocessing import LabelEncoder
 folder_path = os.path.dirname(os.path.realpath(__file__))
 USR_PATH = os.path.join(folder_path, '../../../usrs')
 
@@ -379,7 +380,7 @@ class Library:
         Encode categorical labels into numerical format.
         """
         label_encoder = LabelEncoder()
-        encoded_labels = label_encoder.fit_transform(ys)
+        encoded_labels = label_encoder.fit_transform(ys).tolist()
         class_mapping = {index: label for index, label in enumerate(label_encoder.classes_)}
         return encoded_labels, class_mapping
 

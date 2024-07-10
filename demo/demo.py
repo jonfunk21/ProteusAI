@@ -6,10 +6,12 @@ sys.path.append('src/')
 import proteusAI as pai
 
 # will initiate storage space - else in memory
-library = pai.Library(user='guest', overwrite=False) 
+#library = pai.Library(user='guest') 
 
 # load data from csv or excel: x should be sequences, y should be labels, y_type class or num
-library.read_data(data='demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv', seqs='Sequence', y='Data', y_type='num', names='Description')
+library = pai.Library(user='guest', source='demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv', seqs_col='Sequence', y_col='Description', 
+                    y_type='class', names_col='Description')
+
 
 # compute and save ESM-2 representations at example_lib/representations/esm2
 library.compute(method='esm2', batch_size=10)
