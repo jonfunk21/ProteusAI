@@ -177,61 +177,9 @@ app_ui = ui.page_fluid(
         ui.nav_panel("MLDE", 
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.row(
-                        ui.h5("Machine Learning Guided Directed Evolution"),
-
-                        ui.column(6,
-                            ui.input_select("model_type", "Surrogate model", model_types)
-                        ),
-                        ui.column(6,
-                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
-                        ),
-                        # TODO: Only show the computed representation types
-                        ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
-                        ),
-                        ui.column(6,
-                            ui.output_ui("mlde_dynamic_ui")
-                        ),
-                        
-                    ),
-                    
-                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
-                    
-
-                    
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                        ),
-                        ui.column(6,
-                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
-                        ),
-                        ui.column(12,
-                            "Cross-validation split:"
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
-                        ),
-                        ui.column(8,
-                            ui.input_action_button("review_data", "Review data")
-                        ),
-                        ui.column(4,
-                            ui.input_action_button("train_button", "Train")
-                        )
-                    ),
-
-                width=SIDEBAR_WIDTH
+                    ui.output_ui("mlde_ui"),
+                    width=SIDEBAR_WIDTH
                 ),
-                ui.output_ui("pred_vs_true_ui"),
-
-                ui.output_data_frame("model_table")
             )
         ),
 
@@ -243,60 +191,7 @@ app_ui = ui.page_fluid(
             "Design",
             ui.layout_sidebar(
                 ui.sidebar(
-                ui.row(
-                    ui.h5("Structure Based Protein Design"),
-
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
-                        ),
-
-                        ui.column(6,
-                            ui.output_ui("design_chains")
-                        ),
-                        
-                        
-                        ui.column(6,
-                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
-                        ),
-
-                        ui.column(6,
-                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
-                        ),
-                    ),
-                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
-
-                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
-
-                    ui.panel_conditional("input.design_interfaces === true",
-                        ui.row(
-                            ui.column(6,
-                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                            ui.column(6,
-                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                        ),
-                        
-
-                    ),
-                    
-                    ui.column(4,
-                        ui.input_action_button("desgin_button", "Design")     
-                    ),
-                
-                    
-                ),
-                ui.output_ui(
-                        "folding"
-                    ),
-                
+                    ui.output_ui("design_ui"),
                 width=SIDEBAR_WIDTH),
                 
                 ui.panel_conditional(
@@ -1060,8 +955,78 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.TagList(
             ui.HTML(view.write_html())
         )
-    
+    ################
     ### MLDE tab ###
+    ################
+
+    @output
+    @render.ui
+    def mlde_ui():
+        if MODE() != 'start':
+            return ui.TagList(
+            
+                
+                    ui.row(
+                        ui.h5("Machine Learning Guided Directed Evolution"),
+
+                        ui.column(6,
+                            ui.input_select("model_type", "Surrogate model", model_types)
+                        ),
+                        ui.column(6,
+                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
+                        ),
+                        # TODO: Only show the computed representation types
+                        ui.column(6,
+                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("mlde_dynamic_ui")
+                        ),
+                        
+                    ),
+                    
+                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                    
+
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
+                        ),
+                        ui.column(6,
+                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
+                        ),
+                        ui.column(12,
+                            "Cross-validation split:"
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(8,
+                            ui.input_action_button("review_data", "Review data")
+                        ),
+                        ui.column(4,
+                            ui.input_action_button("train_button", "Train")
+                        )
+                    ),
+
+                
+                ui.output_ui("pred_vs_true_ui"),
+
+                ui.output_data_frame("model_table")
+                
+            )
+        else:
+            return ui.TagList(
+                "Upload data in the 'Data' tab to proceed."
+            )
+
     computed_zs_scores = reactive.Value([])
     @output
     @render.ui
@@ -1194,7 +1159,73 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             return df
 
+    ###################
     ### Design mode ###
+    ###################
+
+    @output
+    @render.ui
+    def design_ui():
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.row(
+                    ui.h5("Structure Based Protein Design"),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
+                        ),
+
+                        ui.column(6,
+                            ui.output_ui("design_chains")
+                        ),
+                        
+                        
+                        ui.column(6,
+                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
+                        ),
+
+                        ui.column(6,
+                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
+                        ),
+                    ),
+                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
+
+                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
+
+                    ui.panel_conditional("input.design_interfaces === true",
+                        ui.row(
+                            ui.column(6,
+                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                            ui.column(6,
+                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                        ),
+                        
+
+                    ),
+                    
+                    ui.column(4,
+                        ui.input_action_button("desgin_button", "Design")     
+                    ),
+                
+                    
+                ),
+                ui.output_ui(
+                        "folding"
+                    ),
+            )
+        else:
+            return ui.TagList("Upload a protein structure in the 'Data' tab to proceed.")
+
+
     @render.ui
     def struc3D_design():
         out = design_output()
