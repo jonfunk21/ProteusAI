@@ -614,9 +614,11 @@ class Library:
                 f.write(dest)
 
             if relax:
-                pbar.set(message="Initiating energy minimization", detail=f"Minimizing {len(names)} structures...")
+                if pbar:
+                    pbar.set(message="Initiating energy minimization", detail=f"Minimizing {len(names)} structures...")
                 for i, name in enumerate(names):
-                    pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
+                    if pbar:
+                        pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
                     self.relax_struc(name)
         
             df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
