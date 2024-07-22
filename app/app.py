@@ -422,10 +422,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 y_type = "num"
                 choice = "Regression"
                 _y_type = "Numeric"
+                _model_types = model_types
             else:
                 y_type = "class"
                 choice = "Classification"
                 _y_type = "Categorical"
+                _model_types = [x for x in model_types if x != "Gaussian Process"]
             
             lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
                             y_type=y_type, names_col=input.description_col(), fname=file_name)
@@ -445,6 +447,11 @@ def server(input: Inputs, output: Outputs, session: Session):
             ui.update_select(
                 "model_task",
                 choices=[choice]
+            )
+
+            ui.update_select(
+                "model_type",
+                choices = _model_types
             )
 
             ui.update_select(
@@ -562,7 +569,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.update_select(
                     "zs_scores",
                     choices=zs_computed
-                ) 
+                )
+
+                ui.update_select(
+                    "model_type",
+                    choices = model_types
+                )
 
     @output
     @render.text
@@ -627,6 +639,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.update_select(
                     "computed_zs_scores",
                     choices=computed_zs
+                )
+
+                ui.update_select(
+                    "model_type",
+                    choices = model_types
                 )
 
                 available_reps.set(reps)
