@@ -598,7 +598,8 @@ def structure_prediction(
     Returns:
         all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
     """
-    pbar.set(message="Loading model weights")
+    if pbar:
+        pbar.set(message="Loading model weights")
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
@@ -613,9 +614,11 @@ def structure_prediction(
     all_pdbs = []
     pTMs = []
     mean_pLDDTs = []
-    pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
+    if pbar:
+        pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
     for i, (headers, sequences) in enumerate(batched_sequences):
-        pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
+        if pbar:
+            pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
