@@ -407,7 +407,7 @@ class Protein:
         return self.struc
     
     ### Inverse Folding ###
-    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None):
+    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2):
         """
         Perform inverse folding using ESM-IF
         """
@@ -426,7 +426,7 @@ class Protein:
             chain = self.chains[0]
 
         # return dataframe of results
-        df = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, pbar=pbar)
+        df = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
 
         df.to_csv(csv_path)
 

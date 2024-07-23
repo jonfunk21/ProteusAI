@@ -16,10 +16,11 @@ import pandas as pd
 import sys
 import os
 app_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(app_path, '../src/'))
+sys.path.append(os.path.join(app_path, '/home/jonfunk/ProteusAI/src/'))
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
+import time
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
@@ -29,6 +30,7 @@ model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 inverted_reps = {v: k for k, v in representation_dict.items()}
 design_models = {"ESM-IF":"esm_if"}
+REP_VISUAL = ["UMAP","t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE = 1
@@ -175,61 +177,9 @@ app_ui = ui.page_fluid(
         ui.nav_panel("MLDE", 
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.row(
-                        ui.h5("Machine Learning Guided Directed Evolution"),
-
-                        ui.column(6,
-                            ui.input_select("model_type", "Surrogate model", model_types)
-                        ),
-                        ui.column(6,
-                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
-                        ),
-                        # TODO: Only show the computed representation types
-                        ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
-                        ),
-                        ui.column(6,
-                            ui.output_ui("mlde_dynamic_ui")
-                        ),
-                        
-                    ),
-                    
-                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
-                    
-
-                    
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                        ),
-                        ui.column(6,
-                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
-                        ),
-                        ui.column(12,
-                            "Cross-validation split:"
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
-                        ),
-                        ui.column(8,
-                            ui.input_action_button("review_data", "Review data")
-                        ),
-                        ui.column(4,
-                            ui.input_action_button("train_button", "Train")
-                        )
-                    ),
-
-                width=SIDEBAR_WIDTH
+                    ui.output_ui("mlde_ui"),
+                    width=SIDEBAR_WIDTH
                 ),
-                ui.output_ui("pred_vs_true_ui"),
-
-                ui.output_data_frame("model_table")
             )
         ),
 
@@ -241,60 +191,7 @@ app_ui = ui.page_fluid(
             "Design",
             ui.layout_sidebar(
                 ui.sidebar(
-                ui.row(
-                    ui.h5("Structure Based Protein Design"),
-
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
-                        ),
-
-                        ui.column(6,
-                            ui.output_ui("design_chains")
-                        ),
-                        
-                        
-                        ui.column(6,
-                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
-                        ),
-
-                        ui.column(6,
-                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
-                        ),
-                    ),
-                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
-
-                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
-
-                    ui.panel_conditional("input.design_interfaces === true",
-                        ui.row(
-                            ui.column(6,
-                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                            ui.column(6,
-                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                        ),
-                        
-
-                    ),
-                    
-                    ui.column(4,
-                        ui.input_action_button("desgin_button", "Design")     
-                    ),
-                
-                    
-                ),
-                ui.output_ui(
-                        "folding"
-                    ),
-                
+                    ui.output_ui("design_ui"),
                 width=SIDEBAR_WIDTH),
                 
                 ui.panel_conditional(
@@ -402,57 +299,69 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
-    def _():
+    async def _():
         df = dataset()
-        f: list[FileInfo] = input.dataset_file()
-        file_name = f[0]['name']
-
-        ys = df[input.y_col()].to_list()
-
-        # Determine if the data is numerical or categorical
-        if is_numerical(ys):
-            y_type = "num"
-            choice = "Regression"
-            _y_type = "Numeric"
+        if input.dataset_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+                
         else:
-            y_type = "class"
-            choice = "Classification"
-            _y_type = "Categorical"
-        
-        lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
-                          y_type=y_type, names_col=input.description_col(), fname=file_name)
-        
-        library.set(lib)
+            f: list[FileInfo] = input.dataset_file()
+            file_name = f[0]['name']
 
-        # update representation selection
-        # TODO: Make sure these have to be 100% computed
-        ui.update_select(
-            "model_rep_type",
-            choices=[inverted_reps[i] for i in lib.reps]
-        )
+            ys = df[input.y_col()].to_list()
 
-        available_reps.set([inverted_reps[i] for i in lib.reps])
-        
-        # update available model tasks
-        ui.update_select(
-            "model_task",
-            choices=[choice]
-        )
+            # Determine if the data is numerical or categorical
+            if is_numerical(ys):
+                y_type = "num"
+                choice = "Regression"
+                _y_type = "Numeric"
+                _model_types = model_types
+            else:
+                y_type = "class"
+                choice = "Classification"
+                _y_type = "Categorical"
+                _model_types = [x for x in model_types if x != "Gaussian Process"]
+            
+            lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
+                            y_type=y_type, names_col=input.description_col(), fname=file_name)
+            
+            library.set(lib)
 
-        ui.update_select(
-            "y_type",
-            choices=[_y_type]
-        )
+            # update representation selection
+            # TODO: Make sure these have to be 100% computed
+            ui.update_select(
+                "model_rep_type",
+                choices=[inverted_reps[i] for i in lib.reps]
+            )
 
-        protein.set(None)
-        
-        representation_path.set(None) # used in train
-        
-        MODE.set("dataset")
+            available_reps.set([inverted_reps[i] for i in lib.reps])
+            
+            # update available model tasks
+            ui.update_select(
+                "model_task",
+                choices=[choice]
+            )
 
-        library_plot.set(None)
+            ui.update_select(
+                "model_type",
+                choices = _model_types
+            )
 
-    
+            ui.update_select(
+                "y_type",
+                choices=[_y_type]
+            )
+
+            protein.set(None)
+            
+            representation_path.set(None) # used in train
+            
+            MODE.set("dataset")
+
+            library_plot.set(None)
+
     protein = reactive.Value(None)
     zs_results = reactive.Value([])
     chains = reactive.Value(None)
@@ -472,85 +381,95 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Confirm protein
     @reactive.Effect
     @reactive.event(input.confirm_protein)
-    def _():
-        with ui.Progress(min=1, max=15) as p:
-            library.set(None)
-            p.set(message="Searching for available data...", detail="This may take a while...")
-            # initialize protein
-            #prot = protein()
-            f: list[FileInfo] = input.protein_file()
-            usr_path = os.path.join(USR_PATH, input.USER().lower())
-            file_name = f[0]['name']
+    async def _():
+        if input.protein_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+        else:
+            with ui.Progress(min=1, max=15) as p:
+                library.set(None)
+                p.set(message="Searching for available data...", detail="This may take a while...")
+                # initialize protein
+                #prot = protein()
+                f: list[FileInfo] = input.protein_file()
+                usr_path = os.path.join(USR_PATH, input.USER().lower())
+                file_name = f[0]['name']
 
-            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+                prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-            
-            # set shiny variables
-            protein.set(prot)
-            print(protein())
-            dataset_path.set(f[0]["datapath"])
-            MODE.set('zero-shot')
-
-            # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
-            zs_computed = []
-            rep_computed = []
-            for model in ZS_MODELS:
-                # check hash existence
-                zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
-
-                if os.path.exists(zs_path):
-                    if "zs_scores.csv" in os.listdir(zs_path):
-                        zs_computed.append(model)
                 
-                for rep in REP_TYPES:
-                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
-                    if os.path.exists(rep_path):
-                        rep_computed.append(representation_dict[rep])
+                # set shiny variables
+                protein.set(prot)
+                print(protein())
+                dataset_path.set(f[0]["datapath"])
+                MODE.set('zero-shot')
 
-            # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
-            for model in ZS_MODELS:
-                try:
-                    rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
-                    df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
+                zs_computed = []
+                rep_computed = []
+                for model in ZS_MODELS:
+                    # check hash existence
+                    zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
+
+                    if os.path.exists(zs_path):
+                        if "zs_scores.csv" in os.listdir(zs_path):
+                            zs_computed.append(model)
                     
-                    df = pd.read_csv(df_path)
-                    p.set(message="Loading data...", detail="This may take a while...")
-                    lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                    for rep in REP_TYPES:
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
+                        if os.path.exists(rep_path):
+                            rep_computed.append(representation_dict[rep])
 
-                    library.set(lib)
-                    dataset.set(df)
-                    zs_scores.set(df)
-                    
-                except:
-                    pass
-            
-            ui.update_select(
-                        "model_rep_type",
-                        choices=[inverted_reps[i] for i in rep_computed]
-                    )
-            
-            computed_zs_scores.set(zs_computed)
+                # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
+                for model in ZS_MODELS:
+                    try:
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
+                        df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                        
+                        df = pd.read_csv(df_path)
+                        p.set(message="Loading data...", detail="This may take a while...")
+                        lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
 
-            available_reps.set([inverted_reps[i] for i in rep_computed])
+                        library.set(lib)
+                        dataset.set(df)
+                        zs_scores.set(df)
+                        
+                    except:
+                        pass
+                
+                ui.update_select(
+                            "model_rep_type",
+                            choices=[inverted_reps[i] for i in rep_computed]
+                        )
+                
+                computed_zs_scores.set(zs_computed)
 
-            zs_results.set(zs_computed)
+                available_reps.set([inverted_reps[i] for i in rep_computed])
 
-            library_plot.set(None)
+                zs_results.set(zs_computed)
 
-            zs_scores.set(pd.DataFrame())
+                library_plot.set(None)
+
+                zs_scores.set(pd.DataFrame())
 
 
-            # update uis
-            ui.update_select(
-                "model_task",
-                choices=["Regression"]
-            )   
+                # update uis
+                ui.update_select(
+                    "model_task",
+                    choices=["Regression"]
+                )   
 
-            # update representation selection
-            ui.update_select(
-                "zs_scores",
-                choices=zs_computed
-            ) 
+                # update representation selection
+                ui.update_select(
+                    "zs_scores",
+                    choices=zs_computed
+                )
+
+                ui.update_select(
+                    "model_type",
+                    choices = model_types
+                )
 
     @output
     @render.text
@@ -564,63 +483,73 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Confirm structure
     @reactive.Effect
     @reactive.event(input.confirm_structure)
-    def _():
-        with ui.Progress(min=1, max=15) as p:
-            p.set(message="Searching for available data...", detail="This may take a while...")
-            prot = protein()
-            f: list[FileInfo] = input.structure_file()
-            file_name = f[0]['name']
+    async def _():
+        if input.structure_file() == None:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="No data uploaded", detail="Upload data to continue")
+                time.sleep(2.5)
+        else:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="Searching for available data...", detail="This may take a while...")
+                prot = protein()
+                f: list[FileInfo] = input.structure_file()
+                file_name = f[0]['name']
 
-            usr_path = os.path.join(USR_PATH, input.USER().lower())
-            prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
+                usr_path = os.path.join(USR_PATH, input.USER().lower())
+                prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-            name = f[0]["name"].split('.')[0]
-            prot.name = name
-            
-            # set shiny variables
-            protein.set(prot)
-            dataset_path.set(f[0]["datapath"])
-            MODE.set('structure')
+                name = f[0]["name"].split('.')[0]
+                prot.name = name
+                
+                # set shiny variables
+                protein.set(prot)
+                dataset_path.set(f[0]["datapath"])
+                MODE.set('structure')
 
-            # load zs-library if exists
-            computed_zs = []
-            reps = []
-            # load reps
-            for rep in REP_TYPES:
-                rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
-                p.set(message="Loading data...", detail="This may take a while...")
-                if os.path.exists(rep_path):
-                    reps.append(rep)
-
-            
-            # load zs_scores
-            for model in ZS_MODELS:
-                df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
-                if os.path.exists(df_path):
-                    df = pd.read_csv(df_path)
+                # load zs-library if exists
+                computed_zs = []
+                reps = []
+                # load reps
+                for rep in REP_TYPES:
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
                     p.set(message="Loading data...", detail="This may take a while...")
-                    computed_zs.append(model)
+                    if os.path.exists(rep_path):
+                        reps.append(rep)
+
+                
+                # load zs_scores
+                for model in ZS_MODELS:
+                    df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
+                    if os.path.exists(df_path):
+                        df = pd.read_csv(df_path)
+                        p.set(message="Loading data...", detail="This may take a while...")
+                        computed_zs.append(model)
 
 
-            ui.update_select(
-                    "model_rep_type",
-                    choices=reps
+                ui.update_select(
+                        "model_rep_type",
+                        choices=reps
+                    )
+
+                ui.update_select(
+                    "computed_zs_scores",
+                    choices=computed_zs
                 )
 
-            ui.update_select(
-                "computed_zs_scores",
-                choices=computed_zs
-            )
+                ui.update_select(
+                    "model_type",
+                    choices = model_types
+                )
 
-            available_reps.set(reps)
+                available_reps.set(reps)
 
-            computed_zs_scores.set(computed_zs)
+                computed_zs_scores.set(computed_zs)
 
-            library_plot.set(None)
+                library_plot.set(None)
 
-            zs_scores.set(pd.DataFrame())
+                zs_scores.set(pd.DataFrame())
 
-            chains.set(prot.chains)
+                chains.set(prot.chains)
         
         
 
@@ -674,7 +603,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.input_action_button("train_vae", "Train VAE")
                     ),
                 
-                    ui.input_select("vis_method","Visualization Method",["t-SNE", "PCA"]),
+                    ui.input_select("vis_method","Visualization Method", REP_VISUAL),
                     
                     ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
                     
@@ -875,7 +804,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 rep = representation_dict[input.plot_rep_type()]
                 
                 # Update to pass the new parameters
-                fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                if input.vis_method() == 't-SNE':
+                    fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                elif input.vis_method() == 'UMAP':
+                    fig, ax, df = lib.plot_umap(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                elif input.vis_method() == 'PCA':
+                    fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
                 tsne_df.set(df)
                 library_plot.set((fig, ax))
@@ -1021,8 +955,78 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.TagList(
             ui.HTML(view.write_html())
         )
-    
+    ################
     ### MLDE tab ###
+    ################
+
+    @output
+    @render.ui
+    def mlde_ui():
+        if MODE() != 'start':
+            return ui.TagList(
+            
+                
+                    ui.row(
+                        ui.h5("Machine Learning Guided Directed Evolution"),
+
+                        ui.column(6,
+                            ui.input_select("model_type", "Surrogate model", model_types)
+                        ),
+                        ui.column(6,
+                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
+                        ),
+                        # TODO: Only show the computed representation types
+                        ui.column(6,
+                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("mlde_dynamic_ui")
+                        ),
+                        
+                    ),
+                    
+                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                    
+
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
+                        ),
+                        ui.column(6,
+                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
+                        ),
+                        ui.column(12,
+                            "Cross-validation split:"
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
+                        ),
+                        ui.column(8,
+                            ui.input_action_button("review_data", "Review data")
+                        ),
+                        ui.column(4,
+                            ui.input_action_button("train_button", "Train")
+                        )
+                    ),
+
+                
+                ui.output_ui("pred_vs_true_ui"),
+
+                ui.output_data_frame("model_table")
+                
+            )
+        else:
+            return ui.TagList(
+                "Upload data in the 'Data' tab to proceed."
+            )
+
     computed_zs_scores = reactive.Value([])
     @output
     @render.ui
@@ -1155,7 +1159,73 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             return df
 
+    ###################
     ### Design mode ###
+    ###################
+
+    @output
+    @render.ui
+    def design_ui():
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.row(
+                    ui.h5("Structure Based Protein Design"),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
+                        ),
+
+                        ui.column(6,
+                            ui.output_ui("design_chains")
+                        ),
+                        
+                        
+                        ui.column(6,
+                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
+                        ),
+
+                        ui.column(6,
+                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
+                        ),
+                    ),
+                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
+
+                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
+
+                    ui.panel_conditional("input.design_interfaces === true",
+                        ui.row(
+                            ui.column(6,
+                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                            ui.column(6,
+                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
+                            ),
+                        ),
+                        
+
+                    ),
+                    
+                    ui.column(4,
+                        ui.input_action_button("desgin_button", "Design")     
+                    ),
+                
+                    
+                ),
+                ui.output_ui(
+                        "folding"
+                    ),
+            )
+        else:
+            return ui.TagList("Upload a protein structure in the 'Data' tab to proceed.")
+
+
     @render.ui
     def struc3D_design():
         out = design_output()

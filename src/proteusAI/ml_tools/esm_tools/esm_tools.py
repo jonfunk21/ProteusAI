@@ -465,7 +465,7 @@ def clean_pdb_with_pdbfixer(pdbfile):
         return temp_file.name
 
 
-def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None):
+def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, noise=0.2, pbar=None):
     """
     Perform structure-based protein design using ESM-IF.
 
@@ -477,6 +477,7 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
         num_samples (int): Number of samples
         model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
         alphabet (esm.data.Alphabet): If None alphabet will be loaded
+        noise (float): add gaussian noise to coordinates. Default 0.2 angstroms.
         pbar: Progress bar for shiny app
 
     Return:
@@ -490,6 +491,9 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
     cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
 
     coords, native_seq = load_coords(cleaned_pdbfile, chain)
+    if noise != None:
+        coord_noise = np.random.normal(0, noise, coords.shape).astype(coords.dtype)
+        coords = coords + coord_noise
 
     print('Native sequence loaded from structure file:')
     print(native_seq)
@@ -598,7 +602,8 @@ def structure_prediction(
     Returns:
         all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
     """
-    pbar.set(message="Loading model weights")
+    if pbar:
+        pbar.set(message="Loading model weights")
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
@@ -613,9 +618,11 @@ def structure_prediction(
     all_pdbs = []
     pTMs = []
     mean_pLDDTs = []
-    pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
+    if pbar:
+        pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
     for i, (headers, sequences) in enumerate(batched_sequences):
-        pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
+        if pbar:
+            pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)

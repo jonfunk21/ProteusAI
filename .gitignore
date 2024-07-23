@@ -158,3 +158,9 @@ demo/example_project/models/rf/results.json
 
 # For env testing
 test.py
+demo/mpnn_test.py
+demo/mpnn_validation.py
+demo/design_demo.py
+mpnn.sh
+test1.cif
+test2.cif

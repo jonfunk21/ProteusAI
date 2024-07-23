@@ -18,6 +18,7 @@ import proteusAI.struc as pai_struc
 import pandas as pd
 from typing import Union, Optional
 import torch
+from sklearn.preprocessing import LabelEncoder
 folder_path = os.path.dirname(os.path.realpath(__file__))
 USR_PATH = os.path.join(folder_path, '../../../usrs')
 
@@ -379,7 +380,7 @@ class Library:
         Encode categorical labels into numerical format.
         """
         label_encoder = LabelEncoder()
-        encoded_labels = label_encoder.fit_transform(ys)
+        encoded_labels = label_encoder.fit_transform(ys).tolist()
         class_mapping = {index: label for index, label in enumerate(label_encoder.classes_)}
         return encoded_labels, class_mapping
 
@@ -613,9 +614,11 @@ class Library:
                 f.write(dest)
 
             if relax:
-                pbar.set(message="Initiating energy minimization", detail=f"Minimizing {len(names)} structures...")
+                if pbar:
+                    pbar.set(message="Initiating energy minimization", detail=f"Minimizing {len(names)} structures...")
                 for i, name in enumerate(names):
-                    pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
+                    if pbar:
+                        pbar.set(i+1, message="Minimizing energy", detail=f"{i+1}/{len(names)} remaining...")
                     self.relax_struc(name)
         
             df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
@@ -700,6 +703,44 @@ class Library:
         
 
         fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+
+        return fig, ax, df
+
+    def plot_umap(self, rep: str, y_upper=None, y_lower=None, names=None):
+        """
+        Plot representations with optional thresholds and point names.
+
+        Args:
+            rep (str): Representation type to plot.
+            y_upper (float, optional): Upper threshold for special coloring.
+            y_lower (float, optional): Lower threshold for special coloring.
+            names (List[str], optional): List of names for each point.
+        """
+
+        x = self.load_representations(rep)
+        y = self.y
+        
+
+        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+
+        return fig, ax, df
+
+    def plot_pca(self, rep: str, y_upper=None, y_lower=None, names=None):
+        """
+        Plot representations with optional thresholds and point names.
+
+        Args:
+            rep (str): Representation type to plot.
+            y_upper (float, optional): Upper threshold for special coloring.
+            y_lower (float, optional): Lower threshold for special coloring.
+            names (List[str], optional): List of names for each point.
+        """
+
+        x = self.load_representations(rep)
+        y = self.y
+        
+
+        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
 
         return fig, ax, df
     
