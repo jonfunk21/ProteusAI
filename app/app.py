@@ -16,7 +16,7 @@ import pandas as pd
 import sys
 import os
 app_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(app_path, '../src/'))
+sys.path.append(os.path.join(app_path, '../src/')) # for server '/home/jonfunk/ProteusAI/src/'
 import proteusAI as pai
 import os
 import matplotlib.pyplot as plt
