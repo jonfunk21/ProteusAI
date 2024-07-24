@@ -36,6 +36,7 @@ SIDEBAR_WIDTH = 450
 BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
+ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 USR_PATH = os.path.join(app_path, '../usrs')
 
 # TODO: check if Project path exists, create one if not
@@ -178,9 +179,23 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.output_ui("mlde_ui"),
+
+                    ui.output_ui("mlde_search_ui"),
+
                     width=SIDEBAR_WIDTH
                 ),
-            )
+                ui.navset_tab(
+                    ui.nav_panel("Model Diagnostics",
+                        ui.output_ui("pred_vs_true_ui"),
+
+                        ui.output_data_frame("model_table")
+                    ),
+
+                    ui.nav_panel("Search Results",
+
+                    )
+                )
+            ),    
         ),
 
         #################
@@ -234,7 +249,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     dummy = pd.DataFrame({
         "Sequence":["MGVARGTV...G", "AGVARGTV...G", "...", "MGVARGTV...V"],
         "Description":["wt", "M1A", "...", "G142V"],
-        "Activity":["0.5", "0.32", "...", "0.7"]
+        "Activity":["0.0", "0.32", "...", "-0.21"]
     })
 
     # dummy dataset until real dataset is entere
@@ -265,19 +280,19 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         ui.update_select(
             "seq_col",
-            label="Select Sequences",
+            label="Sequences",
             choices=cols,
             selected=cols[0],
         )
         ui.update_select(
             "description_col",
-            label="Select Descriptions",
+            label="Descriptions",
             choices=cols,
             selected=cols[1],
         )
         ui.update_select(
             "y_col",
-            label=f"Select Y-values",
+            label=f"Y-values",
             choices=cols,
             selected=cols[-1],
         )
@@ -990,9 +1005,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                     
                     ui.row(
-                        ui.column(6,
-                            ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                        ),
+                        #ui.column(6,
+                        #    ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
+                        #),
                         ui.column(6,
                             ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
                         ),
@@ -1015,16 +1030,41 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_action_button("train_button", "Train")
                         )
                     ),
-
-                
-                ui.output_ui("pred_vs_true_ui"),
-
-                ui.output_data_frame("model_table")
                 
             )
         else:
             return ui.TagList(
                 "Upload data in the 'Data' tab to proceed."
+            )
+
+    @output
+    @render.ui
+    def mlde_search_ui(alt=None):
+        if model() != None:
+            inv_model_dict = {value: key for key, value in model_dict.items()}
+            model_type = inv_model_dict[model().model_type]
+            return ui.TagList(
+                ui.h5("Search new mutants"),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("acquisition_fn", "Acquisition Function", ACQUISITION_FNS),
+                    ),
+                    ui.column(6,
+                        ui.input_select("search_model", "Model", [model_type]),
+                    ),
+                    ui.column(6,
+                        ui.input_select("optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
+                    ),
+
+                    ui.column(6,
+                        ui.input_numeric("wt_val", "Baseline Y-value", 0),
+                    ),
+
+                    ui.column(6,
+                        ui.input_action_button("search", "Search"),
+                        #style='padding:25px;',
+                    )
+                )
             )
 
     computed_zs_scores = reactive.Value([])
@@ -1095,12 +1135,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Training model", detail="This may take a while...")
 
-            if input.train_split() == "Random":
-                split = "random"
-            else:
-                print(f"{input.train_split()} is not implemented yet - choosing random split")
-                split = "random"
-
             rep_type = representation_dict[input.model_rep_type()]
             prot = protein()
 
@@ -1120,7 +1154,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             print(f"training {model_dict[input.model_type()]}")
 
             #m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed(), dest=dest)
-            m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed())
+            split = (input.n_train(), input.n_test(), input.n_val())
+            m = pai.Model(model_type=model_dict[input.model_type()])
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()])
 
             print("training done!")
