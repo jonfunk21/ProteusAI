@@ -17,6 +17,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
+import proteusAI.ml_tools.bo_tools as BO
 import random
 from typing import Union
 import json
@@ -25,6 +26,7 @@ import csv
 import torch
 import pandas as pd
 import gpytorch
+import numpy as np
 
 
 class Model:
@@ -87,6 +89,7 @@ class Model:
         self.val_r2 = []
         self.rep_path = None
         self.dest = None
+        self.y_best = None
 
         # check for device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -102,7 +105,7 @@ class Model:
             'model_type': 'rf',
             'x': 'ohe',
             'rep_path': None,
-            'split': 'random',
+            'split': (80,10,10),
             'k_folds': None,
             'grid_search': False,
             'custom_params': None,
@@ -125,7 +128,7 @@ class Model:
             'model_type': 'rf',
             'x': 'ohe',
             'rep_path': None,
-            'split': 'random',
+            'split': (80,10,10),
             'k_folds': None,
             'grid_search': False,
             'custom_params': None,
@@ -151,7 +154,9 @@ class Model:
             model_type (str): choose the model type ['rf', 'svm', 'knn', 'ffnn'],
             x (str): choose the representation type ['esm2', 'esm1v', 'ohe', 'blosum50', 'blosum62'].
             rep_path (str): Path to representations. Default None - will extract from library object.
-            split (str): Choose a method to split your data ['random'].
+            split (tuple or dict): Choose the split ratio of training, testing and validation data as a tuple. Default (80,10,10).
+                                   Alternatively, provide a dictionary of proteins, with the keys 'train', 'test', and 'val', with
+                                   list of proteins as values for custom data splitting. 
             k_folds (int): Number of folds for cross validation.
             grid_search: Enable grid search.
             custom_params: None. Not implemented yet.
@@ -181,7 +186,7 @@ class Model:
     ### Helpers ###
     def split_data(self):
         """
-        Split data into train, test, and validation sets. Performs a 80:10:10 split.
+        Split data into train, test, and validation sets.
 
             1. 'random': Randomly splits data points
             2. 'site': Splits data by sites in the protein,
@@ -197,19 +202,28 @@ class Model:
 
         random.seed(self.seed)
 
-        train_size = int(0.80 * len(proteins))
-        test_size = int(0.10 * len(proteins))
-
         train_data, test_data, val_data = [], [], []
-        if self.split == 'random':
+
+        if type(self.split) == tuple:
+            train_ratio, test_ratio, val_ratio = tuple(value / sum(self.split) for value in self.split)
+            train_size = int(train_ratio * len(proteins))
+            test_size = int(test_ratio * len(proteins))
+
             random.shuffle(proteins)
+
             # Split the data
             train_data = proteins[:train_size]
             test_data = proteins[train_size:train_size + test_size]
             val_data = proteins[train_size + test_size:]
 
+        # custom datasplit
+        elif type(self.split) == dict:
+            train_data = self.split['train']
+            test_data = self.split['test']
+            val_data = self.split['val']
+            
         # TODO: implement other splitting methods
-        if self.split != 'random':
+        else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
         
         return train_data, test_data, val_data
@@ -410,20 +424,20 @@ class Model:
         y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
         self.val_names = [protein.name for protein in self.val_data]
 
-        likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
-        self._model = GP(x_train, y_train, likelihood).to(device=self.device)
+        self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
+        self._model = GP(x_train, y_train, self.likelihood).to(device=self.device)
         fix_mean = True
         
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
-        mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, self._model)
+        mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
 
         for param in self._model.named_parameters(): 
             print(param)
 
         # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
         self._model.train()
-        likelihood.train()
+        self.likelihood.train()
         prev_loss = float('inf')
         #TODO: abstract this away
         for _ in range(epochs):
@@ -444,18 +458,21 @@ class Model:
         print(f'Training completed. Final loss: {loss.item()}')   
         
         # prediction on test set
-        y_test_pred, y_test_sigma = predict_gp(self._model, likelihood, x_test)
+        y_test_pred, y_test_sigma = predict_gp(self._model, self.likelihood, x_test)
         self.test_r2 = computeR2(self.y_test, y_test_pred)
         self.y_test_pred, self.y_test_sigma  = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
 
         # prediction on validation set
-        y_val_pred, y_val_sigma = predict_gp(self._model, likelihood, x_val)
+        y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
         self.val_r2 = computeR2(y_val, y_val_pred)
         self.y_train = y_train.cpu().numpy()
         self.y_test_pred, self.y_test_sigma = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
         self.y_val_pred, self.y_val_sigma = y_val_pred.cpu().numpy(), y_val_sigma.cpu().numpy()
 
         self.y_val = y_val.cpu().numpy()
+        self.y_test = self.y_test.cpu().numpy()
+
+        self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
 
         # Save the model
         if self.dest != None:
@@ -491,7 +508,7 @@ class Model:
             json.dump(results, f)
     
 
-    def predict(self, proteins: list, rep_path = None):
+    def predict(self, proteins: list, rep_path=None, acq_fn='greedy'):
         """
         Scores the R-squared value for a list of proteins.
 
@@ -508,11 +525,35 @@ class Model:
             raise ValueError(f"Model is 'None'")
 
         reps = self.load_representations(proteins, rep_path)
-        x = torch.stack(reps).cpu().numpy()
+        
+        if acq_fn == 'ei':
+            acq = BO.expected_improvement
+        elif acq_fn == 'greedy':
+            acq = BO.greedy
 
-        predictions = self._model.predict(x)
+        if self.model_type == 'gp':
+            self.likelihood.eval()
+            x = torch.stack(reps).to(device=self.device)
+            y_pred, sigma_pred = predict_gp(self._model, self.likelihood, x)
+            y_pred = y_pred.cpu().numpy()
+            sigma_pred = sigma_pred.cpu().numpy()
+            acq_score = acq(y_pred, sigma_pred, self.y_best)
+        else:
+            x = torch.stack(reps).cpu().numpy()
+            y_pred = self._model.predict(x)
+            sigma_pred = np.zeros_like(y_pred)
+            acq_score = acq(y_pred, sigma_pred, self.y_best)
 
-        return predictions
+        # Sort acquisition scores and get sorted indices
+        sorted_indices = np.argsort(acq_score)[::-1]
+
+        # Sort all lists/arrays by the sorted indices
+        sorted_proteins = [proteins[i] for i in sorted_indices]
+        sorted_y_pred = y_pred[sorted_indices]
+        sorted_sigma_pred = sigma_pred[sorted_indices]
+        sorted_acq_score = acq_score[sorted_indices]
+
+        return sorted_proteins, sorted_y_pred, sorted_sigma_pred, sorted_acq_score
     
 
     def score(self, proteins: list, rep_path = None):

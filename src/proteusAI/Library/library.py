@@ -422,7 +422,7 @@ class Library:
 
     
     ### Representation builders ###
-    def compute(self, method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None):
+    def compute(self, method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None, device=None):
         """
         Compute representations for proteins.
 
@@ -431,6 +431,8 @@ class Library:
             batch_size (int, optional): Batch size for representation computation.
             dest (str): destination of representations
             pbar: Progress bar for shiny app.
+            device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
         """
         simple_rep_types = ['ohe', 'blosum62', 'blosum50']
         supported_methods = self.representation_types + simple_rep_types
@@ -439,14 +441,14 @@ class Library:
         assert isinstance(batch_size, (int, type(None)))
 
         if method in ["esm2", "esm1v"]:
-            self.esm_builder(model=method, batch_size=batch_size, dest=dest, pbar=pbar)
+            self.esm_builder(model=method, batch_size=batch_size, dest=dest, pbar=pbar, device=device)
         elif method == 'ohe':
             self.ohe_builder(dest=dest, pbar=pbar)
         elif method in ['blosum62', 'blosum50']:
             self.blosum_builder(matrix_type=method.upper(), dest=dest, pbar=pbar)
 
     
-    def esm_builder(self, model: str="esm2", batch_size: int=10, dest: Union[str, None] = None, pbar=None):
+    def esm_builder(self, model: str="esm2", batch_size: int=10, dest: Union[str, None] = None, pbar=None, device=None):
         """
         Computes esm representations.
 
@@ -454,6 +456,9 @@ class Library:
             model (str): Supports esm2 and esm1v.
             batch_size (int): Batch size for computation.
             dest (str): destination of representations
+            pbar: Progress bar for shiny app.
+            device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
         """
         
         dest = os.path.join(self.rep_path, model)
@@ -474,7 +479,7 @@ class Library:
         seqs = [protein.seq for protein in proteins_to_compute]
         
         # compute representations
-        esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size, pbar=pbar)
+        esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size, pbar=pbar, device=device)
         
         for protein in proteins_to_compute:
             if model not in protein.reps:
