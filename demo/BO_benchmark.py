@@ -144,13 +144,18 @@ def plot_results(found_counts, name, iter, dest, sample_size):
 
 first_discovered_data = {}
 for i in range(len(datasets)):
+
     for N in Ns:
         d = os.path.join(BENCHMARK_FOLDER, datasets[i])
         f = os.path.join(BENCHMARK_FOLDER, fastas[i])
         name = datasets[i][:-4]
-        first_discovered_data[name] = {N:[]}
-        found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
 
+        if N == Ns[0]:
+            first_discovered_data[name] = {N:[]}
+        else:
+            first_discovered_data[name][N] = []
+            
+        found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
         # save first discovered data
         with open(os.path.join('usrs/benchmark/', 'first_discovered_data.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
