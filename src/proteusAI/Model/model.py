@@ -390,9 +390,55 @@ class Model:
                 json.dump(results, f)
 
         else:
-            #kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
-            #for train_index, test_index in kf.split(X):
-            raise ValueError(f"K-fold cross validation has not been implemented yet")
+            kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            fold_results = []
+            ensemble = []
+
+            for train_index, test_index in kf.split(x_train):
+                x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
+                y_train_fold, y_test_fold = np.array(y_train)[train_index], np.array(y_train)[test_index]
+
+                self._model.fit(x_train_fold, y_train_fold)
+                test_r2 = self._model.score(x_test_fold, y_test_fold)
+                fold_results.append(test_r2)
+                ensemble.append(self._model)
+
+            avg_test_r2 = np.mean(fold_results)
+
+            # Store model ensemble as model
+            self._model = ensemble
+
+            # Prediction on validation set
+            self.val_data, self.y_val_pred, self.y_val_test, self.y_val_sigma = self.predict(self.val_data)
+
+            # Save the model
+            if self.dest is not None:
+                csv_dest = f"{self.dest}"
+            else:
+                csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
+
+            for i, model in enumerate(ensemble):
+                if self.dest is not None:
+                    model_save_path = f"{self.dest}/model_{i}.joblib"
+                else:
+                    model_save_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/model_{i}.joblib")
+
+                os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+                dump(model, model_save_path)
+
+            # Save the sequences, y-values, and predicted y-values to CSV
+            save_to_csv(self.train_data, y_train, [None] * len(y_train), f"{csv_dest}/train_data.csv")
+            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{csv_dest}/test_data.csv")
+            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{csv_dest}/val_data.csv")
+
+            # Save results to a JSON file
+            results = {
+                'k_fold_test_r2': fold_results,
+                'avg_test_r2': avg_test_r2,
+                'val_r2': self.val_r2
+            }
+            with open(f"{csv_dest}/results.json", 'w') as f:
+                json.dump(results, f)
     
     
     def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):

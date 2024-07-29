@@ -1005,12 +1005,15 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                     
                     ui.row(
-                        #ui.column(6,
-                        #    ui.input_select("train_split","Train, test, validation split method", train_test_val_splits)
-                        #),
                         ui.column(6,
                             ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
                         ),
+                        ui.panel_conditional("input.model_type !== 'Gaussian Process'",
+                            ui.column(6,
+                                ui.input_numeric("k_folds", "K-Fold cross validation", value=1, min=1, max=10)
+                            ),
+                        ),
+                        
                         ui.column(12,
                             "Cross-validation split:"
                         ),
@@ -1023,9 +1026,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.column(4,
                             ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
                         ),
-                        ui.column(8,
-                            ui.input_action_button("review_data", "Review data")
-                        ),
+                        
                         ui.column(4,
                             ui.input_action_button("train_button", "Train")
                         )
@@ -1155,8 +1156,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             #m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed(), dest=dest)
             split = (input.n_train(), input.n_test(), input.n_val())
+            k_folds = input.k_folds()
             m = pai.Model(model_type=model_dict[input.model_type()])
-            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()])
+            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], k_folds=k_folds)
 
             print("training done!")
 
