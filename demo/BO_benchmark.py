@@ -4,6 +4,7 @@ sys.path.append('src/')
 import proteusAI as pai
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 
 # hyperparams
 USER = 'benchmark'
@@ -14,7 +15,7 @@ BENCHMARK_FOLDER = 'demo/demo_data/DMS/'
 SEED = 42
 MAX_ITER = 20
 DEVICE = 'cuda'
-BATCH_SIZE = 45
+BATCH_SIZE = 20
 
 # benchmark data
 datasets = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.csv')]
@@ -139,9 +140,9 @@ def plot_results(found_counts, name, iter, dest, sample_size):
         plt.text(x_positions[i], count + 0.1, str(count), ha='center')
 
     plt.savefig(os.path.join(dest, f'top_variants_{iter}_iterations_{name}.png'))
+    
 
 first_discovered_data = {}
-
 for i in range(len(datasets)):
     for N in Ns:
         d = os.path.join(BENCHMARK_FOLDER, datasets[i])
@@ -150,3 +151,6 @@ for i in range(len(datasets)):
         first_discovered_data[name] = {N:[]}
         found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
 
+        # save first discovered data
+        with open(os.path.join('usrs/benchmark/', 'first_discovered_data.json'), 'w') as file:
+            json.dump(first_discovered_data, file)   
