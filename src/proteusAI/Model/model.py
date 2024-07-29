@@ -531,6 +531,7 @@ class Model:
         elif acq_fn == 'greedy':
             acq = BO.greedy
 
+        # GP
         if self.model_type == 'gp':
             self.likelihood.eval()
             x = torch.stack(reps).to(device=self.device)
@@ -538,6 +539,8 @@ class Model:
             y_pred = y_pred.cpu().numpy()
             sigma_pred = sigma_pred.cpu().numpy()
             acq_score = acq(y_pred, sigma_pred, self.y_best)
+        
+        # sklearn models
         else:
             x = torch.stack(reps).cpu().numpy()
             y_pred = self._model.predict(x)
