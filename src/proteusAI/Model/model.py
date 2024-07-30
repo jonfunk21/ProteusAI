@@ -357,6 +357,8 @@ class Model:
             # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
+            self.y_val_sigma = [None]*len(self.y_val)
+            self.y_test_sigma = [None]*len(self.y_test)
 
             # Save the model
             if self.dest != None:
@@ -369,17 +371,11 @@ class Model:
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
 
-            # Save the sequences, y-values, and predicted y-values to CSV
-            def save_to_csv(proteins, y_values, y_pred_values, filename):
-                with open(filename, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(['sequence', 'y-value', 'y-predicted'])  # CSV header
-                    for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
-                        writer.writerow([protein.seq, y, y_pred])
+            
 
-            save_to_csv(self.train_data, y_train, [None]*len(y_train), f"{csv_dest}/train_data.csv")
-            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{csv_dest}/test_data.csv")
-            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{csv_dest}/val_data.csv")
+            self.save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{csv_dest}/train_data.csv")
+            self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
+            self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
 
             # Save results to a JSON file
             results = {
@@ -389,8 +385,11 @@ class Model:
             with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
 
+        # handle ensembles
         else:
             kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            x_train = np.concatenate([x_train, x_test])
+            y_train = y_train + self.y_test
             fold_results = []
             ensemble = []
 
@@ -409,7 +408,8 @@ class Model:
             self._model = ensemble
 
             # Prediction on validation set
-            self.val_data, self.y_val_pred, self.y_val_test, self.y_val_sigma = self.predict(self.val_data)
+            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = self.predict(self.val_data)
+            self.val_r2 = self.score(self.val_data)
 
             # Save the model
             if self.dest is not None:
@@ -427,9 +427,8 @@ class Model:
                 dump(model, model_save_path)
 
             # Save the sequences, y-values, and predicted y-values to CSV
-            save_to_csv(self.train_data, y_train, [None] * len(y_train), f"{csv_dest}/train_data.csv")
-            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{csv_dest}/test_data.csv")
-            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{csv_dest}/val_data.csv")
+            self.save_to_csv(self.train_data, y_train, [None] * len(y_train), [None] * len(y_train), f"{csv_dest}/train_data.csv")
+            self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
 
             # Save results to a JSON file
             results = {
@@ -440,7 +439,14 @@ class Model:
             with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
     
-    
+    # Save the sequences, y-values, and predicted y-values to CSV
+    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values ,filename):
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['sequence', 'y-value', 'y-predicted'])  # CSV header
+            for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
+                writer.writerow([protein.seq, y, y_pred])
+
     def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):
         """
         Train a Gaussian Process model and save the model.
@@ -585,8 +591,21 @@ class Model:
             y_pred = y_pred.cpu().numpy()
             sigma_pred = sigma_pred.cpu().numpy()
             acq_score = acq(y_pred, sigma_pred, self.y_best)
+
+        # handle ensembles
+        elif type(self._model) == list:
+            ys = []
+            for model in self._model:
+                x = torch.stack(reps).cpu().numpy()
+                y_pred = model.predict(x)
+                ys.append(y_pred)
+    
+            y_stack = np.stack(ys)
+            y_pred = np.mean(y_stack, axis=0)
+            sigma_pred = np.std(y_stack, axis=0)
+            acq_score = acq(y_pred, sigma_pred, self.y_best)
         
-        # sklearn models
+        # handle single model
         else:
             x = torch.stack(reps).cpu().numpy()
             y_pred = self._model.predict(x)
@@ -597,12 +616,13 @@ class Model:
         sorted_indices = np.argsort(acq_score)[::-1]
 
         # Sort all lists/arrays by the sorted indices
-        sorted_proteins = [proteins[i] for i in sorted_indices]
-        sorted_y_pred = y_pred[sorted_indices]
-        sorted_sigma_pred = sigma_pred[sorted_indices]
+        val_data = [proteins[i] for i in sorted_indices]
+        y_val = [self.y_val[i] for i in sorted_indices]
+        y_val_pred = y_pred[sorted_indices]
+        y_val_sigma = sigma_pred[sorted_indices]
         sorted_acq_score = acq_score[sorted_indices]
 
-        return sorted_proteins, sorted_y_pred, sorted_sigma_pred, sorted_acq_score
+        return val_data, y_val_pred , y_val_sigma, y_val, sorted_acq_score
     
 
     def score(self, proteins: list, rep_path = None):
@@ -626,7 +646,17 @@ class Model:
         x = torch.stack(reps).cpu().numpy()
         y = [protein.y for protein in proteins]
 
-        scores = self._model.score(x, y)
+        # ensemble
+        ensemble_scores = []
+        if type(self._model) == list:
+            for model in self._model:
+                score = model.score(x,y)
+                ensemble_scores.append(score)
+            ensemble_scores = np.stack(ensemble_scores)
+            scores = np.mean(ensemble_scores, axis=0)
+        else:
+            scores = self._model.score(x, y)
+        
 
         return scores
     

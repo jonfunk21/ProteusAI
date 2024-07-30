@@ -116,7 +116,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         m.train(library=lib, x=EMB, split=split, seed=SEED, model_type=MODEL)
 
         # re-score the new search space
-        ranked_search_space, sorted_y_pred, sorted_sigma_pred, sorted_acq_score = m.predict(ranked_search_space)
+        ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = m.predict(ranked_search_space)
     
     # save when the first datapoints for each dataset and category have been discvered
     first_discovered_data[name][sample_size] = first_discovered

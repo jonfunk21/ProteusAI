@@ -769,6 +769,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             lib = pai.Library(user=prot.user, source=data)
             dest = os.path.join(prot.rep_path, model_dict[method])
             pbar_max = len(data["df"]) - len(os.listdir(dest))
+        else:
+            pbar_max = len(lib)
         
         with ui.Progress(min=1, max=pbar_max) as p:
 
@@ -1010,7 +1012,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                         ui.panel_conditional("input.model_type !== 'Gaussian Process'",
                             ui.column(6,
-                                ui.input_numeric("k_folds", "K-Fold cross validation", value=1, min=1, max=10)
+                                ui.input_numeric("k_folds", "K-Fold cross validation", value=5, min=1, max=10)
                             ),
                         ),
                         
@@ -1127,7 +1129,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         data_reviewed.set('reviewed')
 
     # Training models
-    val_df = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[]}))
+    val_df = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
 
     # Train model
     @reactive.Effect
@@ -1157,13 +1159,16 @@ def server(input: Inputs, output: Outputs, session: Session):
             #m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed(), dest=dest)
             split = (input.n_train(), input.n_test(), input.n_val())
             k_folds = input.k_folds()
+            if k_folds <= 1:
+                k_folds = None
+
             m = pai.Model(model_type=model_dict[input.model_type()])
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], k_folds=k_folds)
 
             print("training done!")
 
             model.set(m)
-            val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred}))
+            val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
 
     @output
     @render.ui
