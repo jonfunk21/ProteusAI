@@ -24,6 +24,7 @@ import time
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
+IN_MEMORY = ["One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
 model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
@@ -351,7 +352,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[inverted_reps[i] for i in lib.reps]
             )
 
-            available_reps.set([inverted_reps[i] for i in lib.reps])
+            reps = [inverted_reps[i] for i in lib.reps]
+            for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
+            available_reps.set(reps)
             
             # update available model tasks
             ui.update_select(
@@ -460,7 +465,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
                 computed_zs_scores.set(zs_computed)
 
-                available_reps.set([inverted_reps[i] for i in rep_computed])
+                reps = rep_computed
+                for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
+
+                available_reps.set(reps)
 
                 zs_results.set(zs_computed)
 
@@ -555,7 +565,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "model_type",
                     choices = model_types
                 )
-
+                for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
                 available_reps.set(reps)
 
                 computed_zs_scores.set(computed_zs)
@@ -789,7 +801,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[inverted_reps[i] for i in lib.reps]
             )
 
-            available_reps.set([inverted_reps[i] for i in lib.reps])
+            reps = [inverted_reps[i] for i in lib.reps]
+            for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
+            available_reps.set(reps)
 
     # Output dataset mode
     library_plot = reactive.Value(None)
@@ -994,7 +1010,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                         # TODO: Only show the computed representation types
                         ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", REP_TYPES),
+                            ui.input_select("model_rep_type", "Representaion type", available_reps()),
                         ),
                         ui.column(6,
                             ui.output_ui("mlde_dynamic_ui")

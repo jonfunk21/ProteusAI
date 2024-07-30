@@ -244,15 +244,7 @@ class Model:
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
 
-        if rep_path is None:
-            if self.library.rep_path:
-                rep_path = os.path.join(self.library.rep_path, f"{self.x}")
-            else:
-                rep_path = os.path.join(self.library.user, f"rep/{self.x}")
-
-        file_names = [protein.name + ".pt" for protein in proteins]
-
-        _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+        reps = self.library.load_representations(rep=self.x, proteins=proteins)
 
         return reps
 
@@ -577,6 +569,9 @@ class Model:
             raise ValueError(f"Model is 'None'")
 
         reps = self.load_representations(proteins, rep_path)
+
+        if len(reps[0].shape) == 2:
+            reps = [x.view(-1) for x in reps]
         
         if acq_fn == 'ei':
             acq = BO.expected_improvement
@@ -643,6 +638,10 @@ class Model:
             raise ValueError(f"Model is 'None'")
         
         reps = self.load_representations(proteins, rep_path)
+
+        if len(reps[0].shape) == 2:
+            reps = [x.view(-1) for x in reps]
+
         x = torch.stack(reps).cpu().numpy()
         y = [protein.y for protein in proteins]
 

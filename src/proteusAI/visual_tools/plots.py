@@ -112,12 +112,13 @@ def plot_umap(x: List[np.ndarray], y: Union[List[float], None] = None,
         rep_type (str): Representation type used for plotting.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
-    assert isinstance(x, list), "x should be a list of numpy arrays"
     
     x = np.array([t.numpy() if hasattr(t, 'numpy') else t for t in x])
 
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
+    
+    #assert isinstance(x, list), "x should be a list of numpy arrays"
 
     umap_model = umap.UMAP(n_components=2, random_state=random_state)
     z = umap_model.fit_transform(x)
