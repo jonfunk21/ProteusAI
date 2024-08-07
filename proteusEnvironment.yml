@@ -1,4 +1,4 @@
-name: proteusAI
+name: proteusAI_depl
 
 channels: 
    - pytorch
@@ -20,41 +20,23 @@ dependencies:
  - jupyter
  - jupyterlab
  - shiny
- - pytorch::pytorch
- - pyg::pyg
- - pyg::pytorch-scatter
+ #- pytorch::pytorch
+ - pyg
+ - torch-scatter
+ - pytorch_scatter
  - openmm
  - pdbfixer
  - py3dmol
+ - uvicorn
+ - asgiref
+ - starlette
+ - requests
+ - scipy
+ - optuna
+ - seaborn
+ - openpyxl
+ - gpytorch
+ - umap-learn
  - pip 
  - pip:
     - fair-esm
-  #  - deepspeed==0.10.3
-    - "fair-esm[esmfold]"
-    - 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
-    - 'openfold @ git+https://github.com/aqlaboratory/openfold.git@310f240c0045310f399b7a4f388e3cd5da3e497d'
-    - seaborn
-    - gpytorch
-  
- 
-
-#TODO: 
-# - Figure out how to actually run openfold
-# - pyg for Arm64?
-# Stuff I ran 21/05/24
-#conda install cuda-nvcc -c nvidia 
-#conda install conda-forge::cudatoolkit==11.3.*
-#conda install conda-forge::mkl=2024.0.0
- #  The following packages will be DOWNGRADED:
-
-#  pyg                            2.5.2-py38_torch_2.2.0_cpu --> 2.5.2-py38_torch_2.1.0_cu121 
- # torchaudio                                 2.2.2-py38_cpu --> 2.1.2-py38_cpu 
-  #torchvision                               0.17.2-py38_cpu --> 0.16.2-py38_cpu 
-
-#export CUDA_HOME=/usr/local/cuda
-#PATH=$CUDA_HOME/bin:$PATH
-#LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRAH
-
-# 22/05/24:
-
-# Adding gpyTorch pip install gpytorch
