@@ -1519,5 +1519,4 @@ def server(input: Inputs, output: Outputs, session: Session):
         return all(isinstance(x, (int, float, complex)) for x in data)
 
 
-
 app = App(app_ui, server)
