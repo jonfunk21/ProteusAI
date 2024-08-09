@@ -1512,6 +1512,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         sidechains_dict = {input.mutlichain_chain():sidechains}
         lib.struc_geom(ref=prot, residues=sidechains_dict)
 
+
     ###############
     ### HELPERS ###
     ###############
