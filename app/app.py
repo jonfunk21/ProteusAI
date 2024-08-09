@@ -40,11 +40,9 @@ FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 USR_PATH = os.path.join(app_path, '../usrs')
 
-# TODO: check if Project path exists, create one if not
-# TODO: if no project path is provided create a temporary file system on the server - which can then be downloaded
 
 app_ui = ui.page_fluid(
-    
+
     #ui.panel_title("ProteusAI"),
     ui.output_image("image", inline=True),
     VERSION,
@@ -667,13 +665,15 @@ def server(input: Inputs, output: Outputs, session: Session):
         DATASET.set(df)
         DATASET_PATH.set(f[0]["datapath"])
 
+
     ### RENDER DATASET TABLE ###
     @output
     @render.data_frame
     def dataset_table():
         df = render.DataTable(DATASET(), summary=True)
         return df
-    
+
+
     ### EXTRACT DATASET COLUMNS ###
     @reactive.Effect()
     def _():
@@ -700,6 +700,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices=cols,
             selected=cols[-1],
         )
+
 
     ### CONFIRM DATASET ###
     @reactive.Effect
@@ -1101,7 +1102,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             DATASET.set(data['df'])
             ZS_SCORES.set(data['df'])
             COMP_ZS_SCORES.set(computed_zs)
-    
+
+
     ### RENDER ZS-DATAFRAME ###
     @output
     @render.data_frame
@@ -1143,6 +1145,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.COMP_ZS_SCORES()])
         return fig
 
+
     ### UPDATE ENTROPY PLOT ###
     @reactive.Effect
     @reactive.event(input.plot_entropy_section)
@@ -1152,6 +1155,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "plot_entropy",
                 label="Update Entropy"
             )
+
 
     ### UPDATE SCORES PLOT ###
     @output
@@ -1180,6 +1184,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.COMP_ZS_SCORES()])
         return fig
+
 
     ### PLOT SCORES ###
     @reactive.Effect
@@ -1235,6 +1240,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             max = new_val_max,
             value = new_val_max
         )
+
 
     ### N-TEST COMPUTATION ###
     @reactive.Effect
@@ -1318,6 +1324,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             p = None
         return p
+
 
     ### RENDER PREDICTED VERSUS TURE DATAFRAME ###
     @output
