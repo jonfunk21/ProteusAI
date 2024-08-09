@@ -2,16 +2,15 @@
 # under the MIT License.
 
 """
-The proteusAI shiny app.
+ProteusAI Shiny App.
 """
 
-__name__ = "proteusAI"
+__name__ = "ProteusAI"
 __author__ = "Jonathan Funk"
 
 import shiny
 from shiny import App, ui, render, Inputs, Outputs, Session, reactive
 from shiny.types import FileInfo, ImgData
-from shiny.plotutils import brushed_points, near_points
 import pandas as pd
 import sys
 import os
@@ -19,14 +18,15 @@ app_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(app_path, '../src/')) # for server '/home/jonfunk/ProteusAI/src/'
 import proteusAI as pai
 import os
-import matplotlib.pyplot as plt
 import time
+from pathlib import Path
+
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 IN_MEMORY = ["One-hot", "BLOSUM50", "BLOSUM62"]
 train_test_val_splits = ["Random"]
-model_types = ["Gaussian Process", "Random Forrest", "KNN", "SVM"]
+model_types = ["Gaussian Process", "Random Forrest", "SVM"] # removed KNN
 model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
 representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 inverted_reps = {v: k for k, v in representation_dict.items()}
@@ -49,17 +49,14 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     
+    ###############
+    ## DATA PAGE ##
+    ###############
     ui.navset_card_tab(
-
-        ###############
-        ## DATA PAGE ##
-        ###############
-        ui.nav_panel(
-            "Data", 
-
+        ui.nav_panel("Data", 
+            ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
-                    
                     ui.row(
                         ui.column(6,
                             ui.input_text('USER', 'Enter user name or proceed as guest', value='Guest'),
@@ -69,228 +66,634 @@ app_ui = ui.page_fluid(
                             style='padding:50px;'
                         ),
                         ui.column(6,
-                            ui.input_action_button('sign_up', 'Create account')
-                        )
+                            ui.input_action_button('sign_up', 'Create account'),
+                        ),
                     ),
-                    
-                    
+
+                    ### NAVSET ###
                     ui.navset_tab(
                         ui.nav_panel("Library",
-
                                 ui.input_file(id="dataset_file", label="Select dataset (Default: demo dataset)", accept=['.csv', '.xlsx', '.xls'], placeholder="None"),
-                               
                                "Data selection",
-
-                               ui.row(
-                                   ui.column(6,
-                                       ui.input_select("seq_col", "Sequence column", []),
-                                   ),
-                                   ui.column(6,
-                                       ui.input_select("description_col", "Description column", []),
-                                   ),
-                                   ui.column(6,
+                                ui.row(
+                                    ui.column(6,
+                                        ui.input_select("seq_col", "Sequence column", []),
+                                    ),
+                                    ui.column(6,
+                                        ui.input_select("description_col", "Description column", []),
+                                    ),
+                                    ui.column(6,
                                         ui.input_select("y_col", "Y-values", []),
-                                   ),
-                                   ui.column(6,
-                                       ui.input_select("y_type", "Data type", ["Numeric", "Categorical"])
-                                   ),
-                               ),
-                    
+                                    ),
+                                    ui.column(6,
+                                        ui.input_select("y_type", "Data type", ["Numeric", "Categorical"]),
+                                    ),
+                                ),
                                ui.input_action_button('confirm_dataset', 'Continue'),
-                               
-                               
                         ),
+
                         ui.nav_panel("Sequence",
                             ui.input_file(id="protein_file", label="Upload FASTA", accept=['.fasta'], placeholder="None"),
-                            #ui.input_text(id="protein_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_protein', 'Continue'),
                             
                         ),
+
                         ui.nav_panel("Structure",
                             ui.input_file(id="structure_file", label="Upload Structure", accept=['.pdb'], placeholder="None"),
-                            #ui.input_text(id="structure_path", label="Project Path (Default: demo path)", value="demo/example_project"),
                             ui.input_action_button('confirm_structure', 'Continue'),
-                            
                         ),
-                        
                     ),
                 width=SIDEBAR_WIDTH
                 ),
-                # Main panel
+
+                ### MAIN PANEL ###
                 ui.panel_conditional("typeof output.protein_fasta !== 'string'",
                     "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
                     ui.output_data_frame("dataset_table"),
                 ),
-                
+
                 ui.output_text("protein_fasta"),
                 ui.output_text("protein_struc")
 
             ),
         ),
 
-        ####################
-        ## Zero-shot PAGE ##
-        ####################
-        ui.nav_panel(
-            "Zero-Shot",
 
+        #################
+        ## DESIGN PAGE ##
+        #################
+        ui.nav_panel("Design",
+            ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
+                    ui.output_ui("design_ui"),
+                width=SIDEBAR_WIDTH
+                ),
 
+                ### MAIN PANEL ###
+                ui.panel_conditional("typeof output.protein_struc === 'string'",
+                    ui.output_ui("struc3D_design"),
+                    ui.output_text("fixed_res_text"),
+                    ui.output_data_frame("design_out"),
+                    ui.output_ui("design_download_ui"),
+                ),
+            ),
+        ),
+
+
+        ####################
+        ## ZERO-SHOT PAGE ##
+        ####################
+        ui.nav_panel("Zero-Shot",
+            ui.layout_sidebar(
+                ui.sidebar(
                     ui.output_ui("zero_shot_ui"),
                     width=SIDEBAR_WIDTH
                 ),
 
                 ui.panel_conditional("typeof output.protein_fasta === 'string'",
-            
                     ui.output_plot("entropy_plot"),
-
                     ui.output_plot("scores_plot"),
-
                     ui.output_data_frame("zs_df")
                 ),
             ),
         ),
 
+
         ##########################
-        ## Representations PAGE ##
+        ## REPRESENTATIONS PAGE ##
         ##########################
         ui.nav_panel("Representations", 
+                ### SIDEBAR ###
                 ui.layout_sidebar(
                     ui.sidebar(
                         ui.output_ui("representations_ui"),
-                    width=SIDEBAR_WIDTH
+                    width=SIDEBAR_WIDTH,
                 ),
 
+                ### MAIN PANEL ###
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D"),
                 ),
 
-                #ui.output_ui("struc3D"),
-                ui.output_plot('tsne_plot'),
-                              
-            )
+                ui.output_plot('tsne_plot'),                              
+            ),
         ),
+
 
         ################
         ## MLDE PAGE ##
         ################
         ui.nav_panel("MLDE", 
+            ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.output_ui("mlde_ui"),
-
                     ui.output_ui("mlde_search_ui"),
-
-                    width=SIDEBAR_WIDTH
+                    width=SIDEBAR_WIDTH,
                 ),
+
+                ### MAIN PANEL ###
                 ui.navset_tab(
                     ui.nav_panel("Model Diagnostics",
                         ui.output_ui("pred_vs_true_ui"),
-
-                        ui.output_data_frame("model_table")
+                        ui.output_data_frame("model_table"),
                     ),
-
                     ui.nav_panel("Search Results",
-
-                    )
-                )
+                        # empty
+                    ),
+                ),
             ),    
         ),
 
-        #################
-        ## Design PAGE ##
-        #################
-        
-        ui.nav_panel(
-            "Design",
+
+        ####################
+        ## DISCOVERY PAGE ##
+        ####################
+        ui.nav_panel("Discovery",
+            ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.output_ui("design_ui"),
-                width=SIDEBAR_WIDTH),
-                
-                ui.panel_conditional(
-                    "typeof output.protein_struc === 'string'",
-                    ui.output_ui("struc3D_design"),
-
-                    ui.output_text("fixed_res_text"),
-
-                    ui.output_data_frame("design_out"),
-
-                    ui.output_ui("design_download_ui")
+                    ui.output_ui("discovery_ui"),
+                    width=SIDEBAR_WIDTH,
                 ),
-            )
-        ),
 
-        #ui.nav_panel(
-        #    "Download",
-        #    ui.h4("Download results")
-        #),
-    )
+            ### MAIN PANEL ###
+            ui.navset_tab(
+                    ui.nav_panel("Model Diagnostics",
+                        ui.output_ui("classification_ui"),
+                        ui.output_data_frame("classification_table"),
+                    ),
+                    ui.nav_panel("Sampling Results",
+                        # empty
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 def server(input: Inputs, output: Outputs, session: Session):
+    #######################
+    ### Reactive Values ###
+    #######################
 
-    # Operation mode
-    MODE = reactive.Value('start')
-
-    ### Homepage ###
-    # App logo
-    @output
-    @render.image
-    def image():
-        from pathlib import Path
-
-        dir = Path(__file__).resolve().parent
-        img: ImgData = {"src": str(dir / "logo.png"),  "height": "75px"}
-        return img
-    
-    # dummy data set for demo purposes
+    # DUMMY DATA
     dummy = pd.DataFrame({
         "Sequence":["MGVARGTV...G", "AGVARGTV...G", "...", "MGVARGTV...V"],
         "Description":["wt", "M1A", "...", "G142V"],
         "Activity":["0.0", "0.32", "...", "-0.21"]
     })
 
-    # dummy dataset until real dataset is entere
-    #dataset = reactive.Value(pd.read_csv("app/demo_data.csv"))
-    dataset = reactive.Value(dummy)
-    dataset_path = reactive.Value(str)
-    library = reactive.Value(None)
+    # INPUT
+    MODE = reactive.Value('start')
+    DATASET = reactive.Value(dummy)
+    DATASET_PATH = reactive.Value(str)
+    LIBRARY = reactive.Value(None)
+    REP_PATH = reactive.Value(None)
+    REPS_AVAIL = reactive.Value(REP_TYPES)
+    PROTEIN = reactive.Value(None)
+    ZS_RESULTS = reactive.Value([])
+    CHAINS = reactive.Value(None)
+
+    # REPRESENTATIONS
+    TSNE_DF = reactive.Value() 
+    LIBRARY_PLOT = reactive.Value(None)
+
+    # ZER0-SHOT
+    ZS_SCORES = reactive.Value(pd.DataFrame())
+    COMP_ZS_SCORES = reactive.Value([])
+
+    # MLDE
+    MODEL = reactive.Value(None)
+    VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
+    DATA_REVIEWED = reactive.value(None)
+
+    # DESIGN
+    PROT_INTERFACE = reactive.Value(None)
+    LIG_INTERFACE = reactive.Value(None)
+    DESIGN_OUTPUT = reactive.Value('start')
+    FOLD_LIB = reactive.Value(None)
+    FIXED_RES = reactive.Value(None)
+    DESIGN_LIB = reactive.Value(None)
+
+    ##############
+    ## FRONTEND ##
+    ##############
+
+    ##################
+    ### DESIGN TAB ###
+    ##################
+    @output
+    @render.ui
+    def design_ui():
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.row(
+                    ui.h5("Structure Based Protein Design"),
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("design_models", "Choose model", list(design_models.keys())),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("design_chains"),
+                        ),
+                        ui.column(6,
+                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20),
+                        ),
+                        ui.column(6,
+                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1),
+                        ),
+                    ),
+
+                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
+
+                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
+
+                    ui.panel_conditional("input.design_interfaces === true",
+                        ui.row(
+                            ui.column(6,
+                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7),
+                            ),
+                            ui.column(6,
+                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
+                            ),
+                            ui.column(6,
+                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7),
+                            ),
+                        ),
+
+                    ),
+                    
+                    ui.column(4,
+                        ui.input_action_button("desgin_button", "Design"),  
+                    ),                
+                ),
+
+                ui.output_ui(
+                        "folding",
+                    ),
+            )
+
+        else:
+            return ui.TagList("Upload a protein structure in the 'Data' tab to proceed.")
+
+
+    ### DYNAMIC DESIGN OUTPUT ###
+    @output
+    @render.ui
+    def folding():
+        out = DESIGN_OUTPUT()
+        if type(out) != str:
+            return ui.TagList(  
+                ui.h5("Fold designed sequences"),
+                ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("folding_model", "Select folding model", FOLDING_MODELS),  
+                    ),
+                    ui.column(6,
+                        ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8),
+                    ),
+                
+                ),
+                ui.row(
+                    ui.column(6,
+                        ui.input_action_button("folding_button", "Fold")
+                    ),
+                    ui.column(6,
+                        ui.input_checkbox("energy_minimization", "Energy minimization"),
+                        style='padding:10px;',
+                    ),  
+                ),
+
+                ui.h5("Analyze protein structures"),
+                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=FIXED_RES(), multiple=True),
+                ui.column(6,
+                    ui.input_action_button("analyze_designs", "Analyze Strucures"),
+                ),
+            )
+
+
+    ###########################
+    ### REPRESENTATIONS TAB ###
+    ###########################
+    @output
+    @render.ui
+    def representations_ui():
+        if MODE() != "start":
+            return ui.TagList(
+                ui.h4("Representation Learning"),
+                ui.row(
+                    ui.column(7,
+                        ui.input_select("dat_rep_type", "Compute representations", REP_TYPES),
+                    ),
+                    ui.column(5,
+                        ui.input_action_button("dat_compute_reps", "Compute"),
+                            style='padding:25px;',
+                        ),
+                    ),
+
+                    ui.h4("Visualization"),
+
+                    ui.panel_conditional("input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
+                        ui.input_file("MSA_vae_training", "Upload MSA file"),
+                    ),
+
+                    ui.panel_conditional("input.dat_rep_type === 'VAE'",
+                        ui.input_checkbox("custom_vae", "Customize VAE parameters"),
+                        ui.input_action_button("train_vae", "Train VAE")
+                    ),
+                
+                    ui.input_select("vis_method","Visualization Method", REP_VISUAL),
+                    
+                    ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
+                    
+                    # Conditional panel for Site
+                    ui.panel_conditional("input.color_by === 'Site'",
+                            ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)"),
+                        ),
+                    
+                    # Conditional panel for Y-value with numeric data
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
+                            ui.row(
+                                ui.column(6,
+                                        ui.input_numeric("y_upper", "Choose an upper limit for y", value=None),
+                                    ),
+                                ui.column(6,
+                                        ui.input_numeric("y_lower", "Choose an lower limit for y", value=None),
+                                    ),
+                            ),
+                        ),
+
+                    # Conditional panel fo Y-value with categorical data
+                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
+                            ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)"),
+                        ),
+                    
+                    ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
+
+                    ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
+
+                    ui.panel_conditional("input.hide_by_y === true",
+                        ui.row(
+                        # change these to be the min and max values observed in the library
+                        ui.column(6,
+                                    ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100),
+                            ),
+                        ui.column(6,
+                                    ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0),
+                            ),
+                        ),
+                    ),
+
+                    ui.row(
+                        ui.column(12, "Visualize representations"),
+                        ui.column(7,
+                            ui.input_select("plot_rep_type", "", REPS_AVAIL()),
+                        ),
+                            ui.column(5,
+                            ui.input_action_button("update_plot", "Update plot"),
+                        ),
+                    ),
+            )
+
+        else:
+            return ui.TagList(
+               "Upload a Library in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options.",
+            )
         
-    # Reading dataset
+
+    #####################
+    ### ZERO-SHOT TAB ###
+    #####################
+    @output
+    @render.ui
+    def zero_shot_ui():
+        if MODE() == "zero-shot" or MODE() == "structure":
+            return ui.TagList(
+                ui.h4("Representation Learning"),
+                ui.row(
+                    ui.h5("Compute a zero-shot Library"),
+                    ui.column(7,
+                        ui.input_select("zs_model", "Choose a model", ZS_MODELS),
+                    ),
+
+                    ui.column(5,
+                        ui.input_action_button("compute_zs", "Compute"),
+                        style='padding:25px;',
+                    ),
+
+                    ui.h4("Visualize"),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_select("computed_zs_scores", "Computed Zero-shot scores", COMP_ZS_SCORES()),
+                        ),
+                    ),
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_action_button("plot_entropy", "Plot Entropy"),
+                        ),
+                        ui.column(6,
+                            ui.input_checkbox("plot_entropy_section", "Customize plot"),
+                            style='padding:10px;'
+                        ),
+
+                        ui.panel_conditional("input.plot_entropy_section === true",
+                            ui.row(
+                                ui.column(6,
+                                    ui.input_slider("entropy_slider", "Sliding window", min=0, max=len(PROTEIN().seq), value=0),
+                                ),
+                                ui.column(6,
+                                    ui.input_numeric("entropy_width", "Sliding window width", value=10),
+                                ),
+                            ),
+                        ),
+                    ),
+
+                    ui.row(
+                        ui.column(6,
+                            ui.input_action_button("plot_scores", "Plot Scores"),
+                        ),
+
+                        ui.column(6,
+                            ui.input_checkbox("plot_scores_section", "Customize plot"),
+                            style='padding:10px;'
+                        ),
+
+                        ui.panel_conditional("input.plot_scores_section === true", 
+                            ui.row(
+                                ui.column(6,
+                                    ui.input_slider("scores_slider", "Sliding window", min=0, max=len(PROTEIN().seq), value=0),
+                                ),
+                                ui.column(6,
+                                    ui.input_numeric("scores_width", "Sliding window width", value=10),
+                                ),
+                            ),
+                        ),
+
+                        ui.column(6,
+                            ui.input_action_button("zs_table", "Table view"),
+                        ),
+                    ),
+                ),
+            )
+
+        else:
+            return ui.TagList(
+                "The zero-shot mode is available for individual proteins and structures."
+            )
+    
+
+    ################
+    ### MLDE tab ###
+    ################
+    @output
+    @render.ui
+    def mlde_ui():
+        if MODE() != 'start':
+            return ui.TagList(
+                    ui.row(
+                        ui.h5("Machine Learning Guided Directed Evolution"),
+
+                        ui.column(6,
+                            ui.input_select("model_type", "Surrogate model", model_types)
+                        ),
+
+                        ui.column(6,
+                            ui.input_select("model_rep_type", "Representaion type", REPS_AVAIL()),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("mlde_dynamic_ui"),
+                        ),
+                        
+                    ),
+                    
+                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
+                        ),
+                        ui.panel_conditional("input.model_type !== 'Gaussian Process'",
+                            ui.column(6,
+                                ui.input_numeric("k_folds", "K-Fold cross validation", value=5, min=1, max=10),
+                            ),
+                        ),
+                        
+                        ui.column(12,
+                            "Cross-validation split:",
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100),
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100),
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100),
+                        ),
+                        
+                        ui.column(4,
+                            ui.input_action_button("train_button", "Train"),
+                        ),
+                    ),
+                
+            )
+        else:
+            return ui.TagList(
+                "Upload data in the 'Data' tab to proceed."
+            )    
+
+
+    ### MLDE SEARCH UI ###
+    @output
+    @render.ui
+    def mlde_search_ui(alt=None):
+        if MODEL() != None:
+            inv_model_dict = {value: key for key, value in model_dict.items()}
+            model_type = inv_model_dict[MODEL().model_type]
+            return ui.TagList(
+                ui.h5("Search new mutants"),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("acquisition_fn", "Acquisition Function", ACQUISITION_FNS),
+                    ),
+                    ui.column(6,
+                        ui.input_select("search_model", "Model", [model_type]),
+                    ),
+                    ui.column(6,
+                        ui.input_select("optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
+                    ),
+
+                    ui.column(6,
+                        ui.input_numeric("wt_val", "Baseline Y-value", 0),
+                    ),
+
+                    ui.column(6,
+                        ui.input_action_button("search", "Search"),
+                    )
+                )
+            )
+
+    ###############
+    ### BACKEND ###
+    ###############
+
+    ### APP LOGO ###
+    @output
+    @render.image
+    def image():
+        dir = Path(__file__).resolve().parent
+        img: ImgData = {"src": str(dir / "logo.png"),  "height": "75px"}
+        return img
+
+
+    ### READING DATASET ###
     @reactive.Effect
     @reactive.event(input.dataset_file)
     def _():
-        df = dataset()
+        df = DATASET()
         f: list[FileInfo] = input.dataset_file()
         df = pd.read_csv(f[0]["datapath"])
-        dataset.set(df)
-        dataset_path.set(f[0]["datapath"])
 
+        # set reactive variables
+        DATASET.set(df)
+        DATASET_PATH.set(f[0]["datapath"])
+
+    ### RENDER DATASET TABLE ###
     @output
     @render.data_frame
     def dataset_table():
-        df = render.DataTable(dataset(), summary=True)
+        df = render.DataTable(DATASET(), summary=True)
         return df
     
+    ### EXTRACT DATASET COLUMNS ###
     @reactive.Effect()
     def _():
-        cols = list(dataset().columns)
+        cols = list(DATASET().columns)
 
+        # set reactive variables
         ui.update_select(
             "seq_col",
             label="Sequences",
             choices=cols,
             selected=cols[0],
         )
+
         ui.update_select(
             "description_col",
             label="Descriptions",
             choices=cols,
             selected=cols[1],
         )
+
         ui.update_select(
             "y_col",
             label=f"Y-values",
@@ -298,34 +701,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             selected=cols[-1],
         )
 
-    # check if data is numerical
-    def is_numerical(data):
-        """
-        Check if the data is numerical.
-        Args:
-            data: List of data values.
-        Returns:
-            Boolean: True if all data is numerical (int, float, complex), False otherwise.
-        """
-        return all(isinstance(x, (int, float, complex)) for x in data)
-    
-    # Loading library data
-    representation_path = reactive.Value(None)
-    available_reps = reactive.Value(REP_TYPES)
-
+    ### CONFIRM DATASET ###
     @reactive.Effect
     @reactive.event(input.confirm_dataset)
     async def _():
-        df = dataset()
+        df = DATASET()
         if input.dataset_file() == None:
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
-                time.sleep(2.5)
-                
+                time.sleep(2.5)                
         else:
             f: list[FileInfo] = input.dataset_file()
             file_name = f[0]['name']
-
             ys = df[input.y_col()].to_list()
 
             # Determine if the data is numerical or categorical
@@ -339,26 +726,26 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choice = "Classification"
                 _y_type = "Categorical"
                 _model_types = [x for x in model_types if x != "Gaussian Process"]
-            
+
             lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
                             y_type=y_type, names_col=input.description_col(), fname=file_name)
-            
-            library.set(lib)
 
-            # update representation selection
-            # TODO: Make sure these have to be 100% computed
+
+            # set reactive variables
+            LIBRARY.set(lib)
             ui.update_select(
                 "model_rep_type",
                 choices=[inverted_reps[i] for i in lib.reps]
             )
 
             reps = [inverted_reps[i] for i in lib.reps]
+
             for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
-            available_reps.set(reps)
+
+            REPS_AVAIL.set(reps)
             
-            # update available model tasks
             ui.update_select(
                 "model_task",
                 choices=[choice]
@@ -374,19 +761,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[_y_type]
             )
 
-            protein.set(None)
+            PROTEIN.set(None)
             
-            representation_path.set(None) # used in train
+            REP_PATH.set(None) # used in train
             
             MODE.set("dataset")
 
-            library_plot.set(None)
+            LIBRARY_PLOT.set(None)
 
-    protein = reactive.Value(None)
-    zs_results = reactive.Value([])
-    chains = reactive.Value(None)
 
-    # reading protein fasta
+    ### READING PROTEIN FILE ###
     @reactive.Effect
     @reactive.event(input.protein_file)
     def _():
@@ -395,10 +779,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         file_name = f[0]['name']
         prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-        protein.set(prot)
-        dataset_path.set(f[0]["datapath"])
+        PROTEIN.set(prot)
+        DATASET_PATH.set(f[0]["datapath"])
 
-    # Confirm protein
+
+    ### CONFIRM PROTEIN ###
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     async def _():
@@ -408,7 +793,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 time.sleep(2.5)
         else:
             with ui.Progress(min=1, max=15) as p:
-                library.set(None)
+                LIBRARY.set(None)
                 p.set(message="Searching for available data...", detail="This may take a while...")
                 # initialize protein
                 #prot = protein()
@@ -418,11 +803,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 prot = pai.Protein(source=f[0]["datapath"], user=usr_path, fname=file_name)
 
-                
                 # set shiny variables
-                protein.set(prot)
-                print(protein())
-                dataset_path.set(f[0]["datapath"])
+                PROTEIN.set(prot)
+
+                DATASET_PATH.set(f[0]["datapath"])
                 MODE.set('zero-shot')
 
                 # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
@@ -451,41 +835,40 @@ def server(input: Inputs, output: Outputs, session: Session):
                         p.set(message="Loading data...", detail="This may take a while...")
                         lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
 
-                        library.set(lib)
-                        dataset.set(df)
-                        zs_scores.set(df)
+                        # set reactive variables
+                        LIBRARY.set(lib)
+                        DATASET.set(df)
+                        ZS_SCORES.set(df)
                         
                     except:
                         pass
-                
-                ui.update_select(
-                            "model_rep_type",
-                            choices=[inverted_reps[i] for i in rep_computed]
-                        )
-                
-                computed_zs_scores.set(zs_computed)
 
                 reps = rep_computed
                 for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
+                
+                # set reactive variables
+                ui.update_select(
+                            "model_rep_type",
+                            choices=[inverted_reps[i] for i in rep_computed]
+                        )
 
-                available_reps.set(reps)
+                COMP_ZS_SCORES.set(zs_computed)
 
-                zs_results.set(zs_computed)
+                REPS_AVAIL.set(reps)
 
-                library_plot.set(None)
+                ZS_RESULTS.set(zs_computed)
 
-                zs_scores.set(pd.DataFrame())
+                LIBRARY_PLOT.set(None)
 
+                ZS_SCORES.set(pd.DataFrame())
 
-                # update uis
                 ui.update_select(
                     "model_task",
                     choices=["Regression"]
                 )   
 
-                # update representation selection
                 ui.update_select(
                     "zs_scores",
                     choices=zs_computed
@@ -496,16 +879,19 @@ def server(input: Inputs, output: Outputs, session: Session):
                     choices = model_types
                 )
 
+
+    ### RENDER FASTA ###
     @output
     @render.text
     def protein_fasta():
-        if protein() == None:
+        if PROTEIN() == None:
             seq = None
         else:
-            seq = 'Protein name: ' + protein().name + '\n' + protein().seq
+            seq = 'Protein name: ' + PROTEIN().name + '\n' + PROTEIN().seq
         return seq
-    
-    # Confirm structure
+
+
+    ### CONFIRM STRUCTURE ###
     @reactive.Effect
     @reactive.event(input.confirm_structure)
     async def _():
@@ -516,7 +902,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="Searching for available data...", detail="This may take a while...")
-                prot = protein()
+                prot = PROTEIN()
                 f: list[FileInfo] = input.structure_file()
                 file_name = f[0]['name']
 
@@ -525,22 +911,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 name = f[0]["name"].split('.')[0]
                 prot.name = name
-                
-                # set shiny variables
-                protein.set(prot)
-                dataset_path.set(f[0]["datapath"])
-                MODE.set('structure')
 
                 # load zs-library if exists
                 computed_zs = []
                 reps = []
+
                 # load reps
                 for rep in REP_TYPES:
                     rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
                     p.set(message="Loading data...", detail="This may take a while...")
                     if os.path.exists(rep_path):
                         reps.append(rep)
-
                 
                 # load zs_scores
                 for model in ZS_MODELS:
@@ -550,6 +931,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                         p.set(message="Loading data...", detail="This may take a while...")
                         computed_zs.append(model)
 
+                # set reactive variables
+                PROTEIN.set(prot)
+                DATASET_PATH.set(f[0]["datapath"])
+                MODE.set('structure')
 
                 ui.update_select(
                         "model_rep_type",
@@ -568,211 +953,38 @@ def server(input: Inputs, output: Outputs, session: Session):
                 for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
-                available_reps.set(reps)
+                REPS_AVAIL.set(reps)
 
-                computed_zs_scores.set(computed_zs)
+                COMP_ZS_SCORES.set(computed_zs)
 
-                library_plot.set(None)
+                LIBRARY_PLOT.set(None)
 
-                zs_scores.set(pd.DataFrame())
+                ZS_SCORES.set(pd.DataFrame())
 
-                chains.set(prot.chains)
-        
-        
+                CHAINS.set(prot.chains)
 
+
+    ### STRUCTURE OUTPUT CHECK ###
     @output
     @render.text
     def protein_struc():
-        if protein() == None:
+        if PROTEIN() == None:
             struc = None
-
-        elif protein().struc != None:
+        elif PROTEIN().struc != None:
             struc = 'Structure loaded'
-
         else:
             struc = None
+
         return struc
 
-    #########################
-    ## Representations TAB ##
-    #########################
-    
-    # Dataset case
-    # Visualizations
-    tsne_df = reactive.Value()   
 
-    # Dynamic sidebar tab for Zero-shot tab
-    @output
-    @render.ui
-    def representations_ui():
-        if MODE() != "start":
-            return ui.TagList(
-                ui.h4("Representation Learning"),
-                ui.row(
-                    ui.column(7,
-                        ui.input_select("dat_rep_type", "Compute representations", REP_TYPES),
-                    ),
-                    ui.column(5,
-                        ui.input_action_button("dat_compute_reps", "Compute"),
-                            #f"Representations 100 % computed",
-                            style='padding:25px;'
-                        )
-                    ),
-
-                    ui.h4("Visualization"),
-
-                    ui.panel_conditional("input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
-                        ui.input_file("MSA_vae_training", "Upload MSA file")
-                    ),
-
-                    ui.panel_conditional("input.dat_rep_type === 'VAE'",
-                        ui.input_checkbox("custom_vae", "Customize VAE parameters"),
-                        ui.input_action_button("train_vae", "Train VAE")
-                    ),
-                
-                    ui.input_select("vis_method","Visualization Method", REP_VISUAL),
-                    
-                    ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
-                    
-                    # Conditional panel for Site
-                    ui.panel_conditional("input.color_by === 'Site'",
-                            ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)")
-                        ),
-                    
-                    # Conditional panel for Y-value with numeric data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
-                            ui.row(
-                                ui.column(6,
-                                        ui.input_numeric("y_upper", "Choose an upper limit for y", value=None)  
-                                    ),
-                                ui.column(6,
-                                        ui.input_numeric("y_lower", "Choose an lower limit for y", value=None)  
-                                    ),
-                            )
-                        ),
-                    # Conditional panel fo Y-value with categorical data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
-                            ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)")
-                        ),
-                    
-                    ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
-
-                    ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
-                    ui.panel_conditional("input.hide_by_y === true",
-                        ui.row(
-                        # change these to be the min and max values observed in the library
-                        ui.column(6,
-                                    ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100)
-                            ),
-                        ui.column(6,
-                                    ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0)
-                            )
-                    ),
-
-                    ),
-                    ui.row(
-                        ui.column(12, "Visualize representations"),
-                        ui.column(7,
-                            ui.input_select("plot_rep_type", "", available_reps()),
-                        ),
-                            ui.column(5,
-                            ui.input_action_button("update_plot", "Update plot")
-                        )
-                    )
-            )
-        else:
-            return ui.TagList(
-               "Upload a Library in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options."
-            )
-        
-
-    # Dynamic sidebar tab for Zero-shot tab
-    @output
-    @render.ui
-    def zero_shot_ui():
-        if MODE() == "zero-shot" or MODE() == "structure":
-            return ui.TagList(
-                ui.h4("Representation Learning"),
-                ui.row(
-                    ui.h5("Compute a zero-shot Library"),
-                    ui.column(7,
-                        # add MSA-Transformer and VAE later
-                        ui.input_select("zs_model", "Choose a model", ZS_MODELS)
-                    ),
-
-                    ui.column(5,
-                        ui.input_action_button("compute_zs", "Compute"),
-                        style='padding:25px;'
-                    ),
-                    
-                    ui.h4("Visualize"),
-
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("computed_zs_scores", "Computed Zero-shot scores", computed_zs_scores())
-                        )
-                    ),
-                    
-                    ui.row(
-                        ui.column(6,
-                            ui.input_action_button("plot_entropy", "Plot Entropy")
-                        ),
-                        ui.column(6,
-                            ui.input_checkbox("plot_entropy_section", "Customize plot"),
-                            style='padding:10px;'
-                        ),
-                        ui.panel_conditional("input.plot_entropy_section === true",
-                            ui.row(
-                                ui.column(6,
-                                    ui.input_slider("entropy_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
-                                ),
-                                ui.column(6,
-                                    ui.input_numeric("entropy_width", "Sliding window width", value=10)
-                                )
-                            )
-
-                        )
-                    ),
-
-                    ui.row(
-                        ui.column(6,
-                            ui.input_action_button("plot_scores", "Plot Scores")
-                        ),
-
-                        ui.column(6,
-                            ui.input_checkbox("plot_scores_section", "Customize plot"),
-                            style='padding:10px;'
-                        ),
-
-                        ui.panel_conditional("input.plot_scores_section === true", 
-                            ui.row(
-                                ui.column(6,
-                                    ui.input_slider("scores_slider", "Sliding window", min=0, max=len(protein().seq), value=0)
-                                ),
-                                ui.column(6,
-                                    ui.input_numeric("scores_width", "Sliding window width", value=10)
-                                ),
-                            )
-                        ),
-
-                        ui.column(6,
-                            ui.input_action_button("zs_table", "Table view")
-                        )
-                    ),
-                ),
-            )
-        else:
-            return ui.TagList(
-                "The zero-shot mode is available for individual proteins and structures."
-            )
-
-    # Compute representations
+    ### COMPUTE REPRESENTATIONS ###
     @reactive.Effect
     @reactive.event(input.dat_compute_reps)
     async def _():
         mode = MODE()
-        lib = library()
-        prot = protein()
+        lib = LIBRARY()
+        prot = PROTEIN()
         method = input.dat_rep_type()
 
         # if no library was loaded one has to be created
@@ -792,7 +1004,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             
             lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
 
-            library.set(lib)
+            LIBRARY.set(lib)
             print("Done!")
 
             # update representation selection
@@ -805,11 +1017,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
-            available_reps.set(reps)
+            REPS_AVAIL.set(reps)
 
-    # Output dataset mode
-    library_plot = reactive.Value(None)
 
+    ### UPDATE REPRESENTATIONS PLOT ###
     @reactive.Effect
     @reactive.event(input.update_plot)
     def _():
@@ -822,9 +1033,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                 #if MODE() == "dataset":
                 p.set(message="Plotting", detail="This may take a while...")
 
-                lib = library()
+                lib = LIBRARY()
                 mode = MODE()
-                prot = protein()
+                prot = PROTEIN()
 
                 # if no library was loaded one has to be created
                 if mode in ['zero-shot', 'structure'] and lib == None:
@@ -844,71 +1055,67 @@ def server(input: Inputs, output: Outputs, session: Session):
                 elif input.vis_method() == 'PCA':
                     fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
 
-                tsne_df.set(df)
-                library_plot.set((fig, ax))
+                TSNE_DF.set(df)
+                LIBRARY_PLOT.set((fig, ax))
         else:
             pass
-    
+
+
+    ### RENDER REPRESENTATIONS PLOT ###
     @output
     @render.plot
     def tsne_plot(alt=None):
-        if library_plot():
-            fig, ax = library_plot()
+        if LIBRARY_PLOT():
+            fig, ax = LIBRARY_PLOT()
             return fig, ax
     
-        
-    # Zero-shot modeling
-    zs_scores = reactive.Value(pd.DataFrame())
 
-    # compute zero-shot scores
+    ### COMPUTE ZS-SCORES ###
     @reactive.Effect
     @reactive.event(input.compute_zs)
     def _():
         method = input.zs_model()
-        prot = protein()
-        usr_path = os.path.join(USR_PATH, input.USER().lower())
+        prot = PROTEIN()
 
         with ui.Progress(min=1, max=len(prot.seq)) as p:
             p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             
-            computed_zs = computed_zs_scores()
+            computed_zs = COMP_ZS_SCORES()
 
             model = representation_dict[method]
-
-            print(f"computing zero shot scores using {model}")
 
             data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
             lib = pai.Library(user=prot.user, source=data)
             
-            library.set(lib)
-            dataset.set(data['df'])
-            zs_scores.set(data['df'])
-            
             if method not in computed_zs:
                 computed_zs.append(method)
             
-
+            # set reactive values
             ui.update_select(
                 "computed_zs_scores",
                 choices=computed_zs
             )
 
-            computed_zs_scores.set(computed_zs)
+            LIBRARY.set(lib)
+            DATASET.set(data['df'])
+            ZS_SCORES.set(data['df'])
+            COMP_ZS_SCORES.set(computed_zs)
     
-    # render df
+    ### RENDER ZS-DATAFRAME ###
     @output
     @render.data_frame
     @reactive.event(input.zs_table)
     def zs_df(alt=None):
-        prot = protein()
-        method = representation_dict[input.computed_zs_scores()]
+        prot = PROTEIN()
+        method = representation_dict[input.COMP_ZS_SCORES()]
         path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
         return df
 
-    # Output protein mode
+
+    ### OUTPUT PROTEIN MODE ###
     @output
     @render.plot
     @reactive.event(input.plot_entropy)
@@ -916,7 +1123,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         Create the per position entropy plot
         """
-        prot = protein()
+        prot = PROTEIN()
         seq = prot.seq
 
         if input.plot_entropy_section():
@@ -932,10 +1139,11 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
 
-        prot = protein()
-        fig = prot.plot_entropy(section=section, model=model_dict[input.computed_zs_scores()])
+        prot = PROTEIN()
+        fig = prot.plot_entropy(section=section, model=model_dict[input.COMP_ZS_SCORES()])
         return fig
-    
+
+    ### UPDATE ENTROPY PLOT ###
     @reactive.Effect
     @reactive.event(input.plot_entropy_section)
     def _():
@@ -945,6 +1153,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update Entropy"
             )
 
+    ### UPDATE SCORES PLOT ###
     @output
     @render.plot
     @reactive.event(input.plot_scores)
@@ -952,7 +1161,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         Create the per position entropy plot
         """
-        prot = protein()
+        prot = PROTEIN()
         seq = prot.seq
 
         if input.plot_scores_section():
@@ -969,9 +1178,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=model_dict[input.computed_zs_scores()])
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=model_dict[input.COMP_ZS_SCORES()])
         return fig
-    
+
+    ### PLOT SCORES ###
     @reactive.Effect
     @reactive.event(input.plot_scores_section)
     def _():
@@ -981,124 +1191,29 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Update Scores"
             )
 
-    ### structure mode 
+
+    ### STRUCTURE MODE ###
     @render.ui
     def struc3D():
-        view = protein().view_struc(color="confidence") # TODO: Add coloring options
+        view = PROTEIN().view_struc(color="confidence") # TODO: Add coloring options
         return ui.TagList(
             ui.HTML(view.write_html())
         )
-    ################
-    ### MLDE tab ###
-    ################
 
-    @output
-    @render.ui
-    def mlde_ui():
-        if MODE() != 'start':
-            return ui.TagList(
-            
-                
-                    ui.row(
-                        ui.h5("Machine Learning Guided Directed Evolution"),
 
-                        ui.column(6,
-                            ui.input_select("model_type", "Surrogate model", model_types)
-                        ),
-                        ui.column(6,
-                            ui.input_select("model_task", "Model task", ["Regression", "Classification"])
-                        ),
-                        # TODO: Only show the computed representation types
-                        ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", available_reps()),
-                        ),
-                        ui.column(6,
-                            ui.output_ui("mlde_dynamic_ui")
-                        ),
-                        
-                    ),
-                    
-                    ui.input_checkbox("customize_model_params", "Customize model parameters", value=False),
-                    
-
-                    
-                    ui.row(
-                        ui.column(6,
-                            ui.input_slider("random_seed", "Random seed", min=0, max=1024, value=42)
-                        ),
-                        ui.panel_conditional("input.model_type !== 'Gaussian Process'",
-                            ui.column(6,
-                                ui.input_numeric("k_folds", "K-Fold cross validation", value=5, min=1, max=10)
-                            ),
-                        ),
-                        
-                        ui.column(12,
-                            "Cross-validation split:"
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_train", "Training (%)", value=80, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_test", "Test (%)", value=10, min=0, max=100)
-                        ),
-                        ui.column(4,
-                            ui.input_numeric("n_val", "Validation (%)", value=10, min=0, max=100)
-                        ),
-                        
-                        ui.column(4,
-                            ui.input_action_button("train_button", "Train")
-                        )
-                    ),
-                
-            )
-        else:
-            return ui.TagList(
-                "Upload data in the 'Data' tab to proceed."
-            )
-
-    @output
-    @render.ui
-    def mlde_search_ui(alt=None):
-        if model() != None:
-            inv_model_dict = {value: key for key, value in model_dict.items()}
-            model_type = inv_model_dict[model().model_type]
-            return ui.TagList(
-                ui.h5("Search new mutants"),
-                ui.row(
-                    ui.column(6,
-                        ui.input_select("acquisition_fn", "Acquisition Function", ACQUISITION_FNS),
-                    ),
-                    ui.column(6,
-                        ui.input_select("search_model", "Model", [model_type]),
-                    ),
-                    ui.column(6,
-                        ui.input_select("optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
-                    ),
-
-                    ui.column(6,
-                        ui.input_numeric("wt_val", "Baseline Y-value", 0),
-                    ),
-
-                    ui.column(6,
-                        ui.input_action_button("search", "Search"),
-                        #style='padding:25px;',
-                    )
-                )
-            )
-
-    computed_zs_scores = reactive.Value([])
+    ### MLDE TAB OUTPUT CONTROL ###
     @output
     @render.ui
     def mlde_dynamic_ui():        
         if MODE() in ["zero-shot", "structure"]:
             return ui.TagList(
-                ui.input_select("computed_zs_scores", "Choose zero-shot scores", computed_zs_scores())
+                ui.input_select("computed_zs_scores", "Choose zero-shot scores", COMP_ZS_SCORES())
             )
         if MODE() == "dataset":
             return None
         
-    model = reactive.Value(None)
-    
+
+    ### N-TRAIN COMPUTATION ###
     @reactive.Effect
     @reactive.event(input.n_train)
     def _():
@@ -1121,6 +1236,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             value = new_val_max
         )
 
+    ### N-TEST COMPUTATION ###
     @reactive.Effect
     @reactive.event(input.n_test)
     def _():
@@ -1133,21 +1249,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             value = n_val_max
         )
 
-    # Reviewing data
-    data_reviewed = reactive.value(None)
 
+    ### REVIEWING DATA ###
     @reactive.Effect
     @reactive.event(input.review_data)
     def _():
         print("button pressed")
-        print(dataset())
-        print(zs_results())
-        data_reviewed.set('reviewed')
+        print(DATASET())
+        print(ZS_RESULTS())
+        DATA_REVIEWED.set('reviewed')
 
-    # Training models
-    val_df = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
 
-    # Train model
+    ### TRAIN MODEL ###
     @reactive.Effect
     @reactive.event(input.train_button)
     async def _():
@@ -1155,24 +1268,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Training model", detail="This may take a while...")
 
             rep_type = representation_dict[input.model_rep_type()]
-            prot = protein()
+            prot = PROTEIN()
 
             if MODE() == 'structure':
                 f: list[FileInfo] = input.structure_file()
             else:
                 f: list[FileInfo] = input.dataset_file()
 
-            lib = library()
+            lib = LIBRARY()
 
             if MODE() in ['zero-shot', 'structure']:
                 print(prot)
-                data = prot.zs_library(model=model_dict[input.computed_zs_scores()])
+                data = prot.zs_library(model=model_dict[input.COMP_ZS_SCORES()])
                 lib = pai.Library(user=prot.user, source=data)
-                
 
-            print(f"training {model_dict[input.model_type()]}")
-
-            #m = pai.Model(model_type=model_dict[input.model_type()], seed=input.random_seed(), dest=dest)
             split = (input.n_train(), input.n_test(), input.n_val())
             k_folds = input.k_folds()
             if k_folds <= 1:
@@ -1180,12 +1289,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             m = pai.Model(model_type=model_dict[input.model_type()])
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], k_folds=k_folds)
+            
+            # set reactive variables
+            MODEL.set(m)
+            VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
 
-            print("training done!")
 
-            model.set(m)
-            val_df.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
-
+    ### PREPARE PREDICTED VERSUS TRUE PLOT ###
     @output
     @render.ui
     def pred_vs_true_ui():
@@ -1197,96 +1307,33 @@ def server(input: Inputs, output: Outputs, session: Session):
             "pred_vs_true",
             hover=ui.hover_opts(**hover_opts_kwargs),
         )
-    
+
+    ### RENDER PREDICTED VERSUS TRUE DATAFRAME ###
     @output
     @render.plot
     def pred_vs_true(alt=None):
-        df = val_df()
-        if model() != None:
-            p = model().true_vs_predicted(y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list())
+        df = VAL_DF()
+        if MODEL() != None:
+            p = MODEL().true_vs_predicted(y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list())
         else:
             p = None
         return p
 
+    ### RENDER PREDICTED VERSUS TURE DATAFRAME ###
     @output
     @render.data_frame
     def model_table():
-        df = val_df()
+        df = VAL_DF()
         if len(df) == 0:
             return None
         else:
             return df
 
-    ###################
-    ### Design mode ###
-    ###################
 
-    @output
-    @render.ui
-    def design_ui():
-        if MODE() == 'structure':
-            return ui.TagList(
-                ui.row(
-                    ui.h5("Structure Based Protein Design"),
-
-                    ui.row(
-                        ui.column(6,
-                            ui.input_select("design_models", "Choose model", list(design_models.keys()))
-                        ),
-
-                        ui.column(6,
-                            ui.output_ui("design_chains")
-                        ),
-                        
-                        
-                        ui.column(6,
-                            ui.input_numeric("n_designs", "Number of samples", min=1, value=20)
-                        ),
-
-                        ui.column(6,
-                            ui.input_numeric("sampling_temp", "Sampling temperature", min=10e-9, value=0.1)
-                        ),
-                    ),
-                    ui.input_text("design_res", "Select residues by ID that should remain unchanged during redesign','"),
-
-                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
-
-                    ui.panel_conditional("input.design_interfaces === true",
-                        ui.row(
-                            ui.column(6,
-                                ui.input_checkbox("design_protein_interface", "Protein-protein interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_protein_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                            ui.column(6,
-                                ui.input_checkbox("design_ligand_interface", "Ligand interfaces"),
-                            ),
-                            ui.column(6,
-                                ui.input_numeric("design_ligand_interface_distance", "Distance cut-off (Angstroms)", value=7)
-                            ),
-                        ),
-                        
-
-                    ),
-                    
-                    ui.column(4,
-                        ui.input_action_button("desgin_button", "Design")     
-                    ),
-                
-                    
-                ),
-                ui.output_ui(
-                        "folding"
-                    ),
-            )
-        else:
-            return ui.TagList("Upload a protein structure in the 'Data' tab to proceed.")
-
-
+    ### DESIGN TAB OUTPUT CONTROL ###
     @render.ui
     def struc3D_design():
-        out = design_output()
+        out = DESIGN_OUTPUT()
         if type(out) == str  or input.design_sidechains() == None:
             sidechains = [] 
         else:
@@ -1295,55 +1342,56 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         highlights = list(set(input.design_res().strip().split(',') + sidechains))
 
-        if prot_interface():
-            highlights = highlights + prot_interface()
+        if PROT_INTERFACE():
+            highlights = highlights + PROT_INTERFACE()
 
-        if lig_interface():
-            highlights = highlights + lig_interface()
+        if LIG_INTERFACE():
+            highlights = highlights + LIG_INTERFACE()
 
         highlights = [i for i in set(highlights) if type(i) != str]
 
         highlights_dict = {input.mutlichain_chain():highlights}
 
-        view = protein().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
+        view = PROTEIN().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
         return ui.TagList(
             ui.HTML(view.write_html())
         )
 
-    prot_interface = reactive.Value(None)
+
+    ### SELECT PROTEIN-PROTEIN INTERFACE ###
     @reactive.Effect
     @reactive.event(input.design_protein_interface)
     def _():
-        prot = protein()
+        prot = PROTEIN()
         if input.design_protein_interface():
             prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'protein')
-            prot_interface.set(prot_contacts) # here will be a function that selects the interface values
+            PROT_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
         else:
-            prot_interface.set(None)
+            PROT_INTERFACE.set(None)
 
-    lig_interface = reactive.Value(None)
+
+    ### SELECT PROTEIN LIGAND INTERFACE ###
     @reactive.Effect
     @reactive.event(input.design_ligand_interface)
     def _():
-        prot = protein()
+        prot = PROTEIN()
         if input.design_ligand_interface():
             prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'ligand')
-            lig_interface.set(prot_contacts) # here will be a function that selects the interface values
+            LIG_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
         else:
-            lig_interface.set(None)
+            LIG_INTERFACE.set(None)
         
 
-    fixed_residues = reactive.Value(None)
-    design_lib = reactive.Value(None)
+    ### DESIGN BUTTON LOGIC ###
     @reactive.Effect
     @reactive.event(input.desgin_button)
     def _():
         n_designs = int(input.n_designs())
         with ui.Progress(min=1, max=n_designs) as p:
-            prot = protein()
+            prot = PROTEIN()
             seq = prot.seq
             p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
-            out = design_output()
+            out = DESIGN_OUTPUT()
             if type(out) == str or input.design_sidechains() == None:
                 sidechains = []
             else:
@@ -1352,11 +1400,11 @@ def server(input: Inputs, output: Outputs, session: Session):
             residues_str = list(set(input.design_res().strip().split(',') + sidechains))
             fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
 
-            if prot_interface():
-                fixed_ids = fixed_ids + prot_interface()
+            if PROT_INTERFACE():
+                fixed_ids = fixed_ids + PROT_INTERFACE()
 
-            if lig_interface():
-                fixed_ids = fixed_ids + lig_interface()
+            if LIG_INTERFACE():
+                fixed_ids = fixed_ids + LIG_INTERFACE()
 
             fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
 
@@ -1365,111 +1413,72 @@ def server(input: Inputs, output: Outputs, session: Session):
             fixed = []
             if len(fixed_ids) > 0:
                 fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
-
-            fixed_residues.set(fixed)
             
-
             out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p, chain=input.mutlichain_chain())
             lib = pai.Library(user=prot.user, source=out)
-            design_output.set(out['df'])
-            design_lib.set(lib)
 
-    design_output = reactive.Value('start')
+            # set reactive values
+            FIXED_RES.set(fixed)
+            DESIGN_OUTPUT.set(out['df'])
+            DESIGN_LIB.set(lib)
 
+
+    ### RENDER DESIGN DATAFRAME ###
     @output
     @render.data_frame
     def design_out():
-        out = design_output()
+        out = DESIGN_OUTPUT()
         if type(out) == str:
             return None
         else:
             return render.DataTable(out, summary=True) 
-    
+
+
+    ### CHAIN SELECTION MENU ###
     @output
     @render.ui
     def design_chains():
-        num_chains = len(chains())
-        return ui.input_select("mutlichain_chain", "Design chain", choices=chains())
-        
+        num_chains = len(CHAINS())
+        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
 
-    @output
-    @render.ui
-    def folding():
-        out = design_output()
-        if type(out) != str:
-            return ui.TagList(  
-                ui.h5("Fold designed sequences"),
-                
-                
-                ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
-                
 
-                ui.row(
-                    
-                    ui.column(6,
-                        ui.input_select("folding_model", "Select folding model", FOLDING_MODELS)      
-                    ),
-                    ui.column(6,
-                        ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8)
-                    ),
-                
-                ),
-                ui.row(
-                    ui.column(6,
-                        ui.input_action_button("folding_button", "Fold")
-                    ),
-                    ui.column(6,
-                        ui.input_checkbox("energy_minimization", "Energy minimization"),
-                        style='padding:10px;'
-                    )
-                    
-                ),
-
-                ui.h5("Analyze protein structures"),
-
-                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=fixed_residues(), multiple=True),
-
-                ui.column(6,
-                    ui.input_action_button("analyze_designs", "Analyze Strucures")
-                ),
-                
-            )
-
+    ### DOWNLOAD DESIGN RESULTS
     @output
     @render.ui
     def design_download_ui():
-        out = design_output()
+        out = DESIGN_OUTPUT()
         if type(out) != str:
             return ui.download_button("download_designs", "Download design results")
 
-    
+
+    ### DOWNLOAD LOGIC FOR DESIGN RESULTS ###
+    @render.download(
+        filename=lambda: f"{PROTEIN().name}_designs.csv"
+    )
+    def download_designs():
+        yield DESIGN_OUTPUT().to_csv(index=False)
+
+
+    ### OUTPUT TEXED FOR FIXED RESIDUES ###
     @output
     @render.text
     def fixed_res_text(alt=None):
-        out = design_output()
+        out = DESIGN_OUTPUT()
         if type(out) != str:
-            msg = "Residues that were fixed during design: \n"+ ", ".join(fixed_residues())
-            return msg
-        
-            
+            msg = "Residues that were fixed during design: \n"+ ", ".join(FIXED_RES())
+            return msg     
 
-    @render.download(
-        filename=lambda: f"{protein().name}_designs.csv"
-    )
-    def download_designs():
-        yield design_output().to_csv(index=False)
 
-    fold_library = reactive.Value(None)
-
+    ### FOLDING BUTTON ###
     @reactive.Effect
     @reactive.event(input.folding_button)
     def _():
         """
         Fold selected proteins
         """
-        lib = design_lib()
-        out = design_output()
-        prot = protein()
+        lib = DESIGN_LIB()
+        out = DESIGN_OUTPUT()
+        prot = PROTEIN()
         selection = input.fold_these()
         with ui.Progress(min=1, max=len(selection)) as p:
             p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
@@ -1478,8 +1487,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
             out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
             fold_lib = pai.Library(user=prot.user, source=out)
-            fold_library.set(fold_lib)
-    
+            FOLD_LIB.set(fold_lib)
+
+
+    ### ANALYZE DESIGNS ###
     @reactive.Effect
     @reactive.event(input.analyze_designs)
     def _():
@@ -1488,11 +1499,24 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
         
-        lib = fold_library()
-        prot = protein()
+        lib = FOLD_LIB()
+        prot = PROTEIN()
 
         sidechains_dict = {input.mutlichain_chain():sidechains}
         lib.struc_geom(ref=prot, residues=sidechains_dict)
+
+    ###############
+    ### HELPERS ###
+    ###############
+    def is_numerical(data):
+        """
+        Check if the data is numerical.
+        Args:
+            data: List of data values.
+        Returns:
+            Boolean: True if all data is numerical (int, float, complex), False otherwise.
+        """
+        return all(isinstance(x, (int, float, complex)) for x in data)
 
 
 
