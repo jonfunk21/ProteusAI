@@ -25,12 +25,12 @@ from pathlib import Path
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 IN_MEMORY = ["One-hot", "BLOSUM50", "BLOSUM62"]
-train_test_val_splits = ["Random"]
-model_types = ["Gaussian Process", "Random Forrest", "SVM"] # removed KNN
-model_dict = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
-representation_dict = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
-inverted_reps = {v: k for k, v in representation_dict.items()}
-design_models = {"ESM-IF":"esm_if"}
+TRAIN_TEST_VAL_SPLITS = ["Random"]
+MODEL_TYPES = ["Gaussian Process", "Random Forrest", "SVM"] # removed KNN
+MODEL_DICT = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
+REP_DICT = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
+INVERTED_REPS = {v: k for k, v in REP_DICT.items()}
+DESIGN_MODELS = {"ESM-IF":"esm_if"}
 REP_VISUAL = ["UMAP","t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
@@ -294,7 +294,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.h5("Structure Based Protein Design"),
                     ui.row(
                         ui.column(6,
-                            ui.input_select("design_models", "Choose model", list(design_models.keys())),
+                            ui.input_select("design_models", "Choose model", list(DESIGN_MODELS.keys())),
                         ),
                         ui.column(6,
                             ui.output_ui("design_chains"),
@@ -563,7 +563,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.h5("Machine Learning Guided Directed Evolution"),
 
                         ui.column(6,
-                            ui.input_select("model_type", "Surrogate model", model_types)
+                            ui.input_select("model_type", "Surrogate model", MODEL_TYPES)
                         ),
 
                         ui.column(6,
@@ -617,7 +617,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def mlde_search_ui(alt=None):
         if MODEL() != None:
-            inv_model_dict = {value: key for key, value in model_dict.items()}
+            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
             model_type = inv_model_dict[MODEL().model_type]
             return ui.TagList(
                 ui.h5("Search new mutants"),
@@ -720,12 +720,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 y_type = "num"
                 choice = "Regression"
                 _y_type = "Numeric"
-                _model_types = model_types
+                _MODEL_TYPES = MODEL_TYPES
             else:
                 y_type = "class"
                 choice = "Classification"
                 _y_type = "Categorical"
-                _model_types = [x for x in model_types if x != "Gaussian Process"]
+                _MODEL_TYPES = [x for x in MODEL_TYPES if x != "Gaussian Process"]
 
             lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
                             y_type=y_type, names_col=input.description_col(), fname=file_name)
@@ -735,10 +735,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             LIBRARY.set(lib)
             ui.update_select(
                 "model_rep_type",
-                choices=[inverted_reps[i] for i in lib.reps]
+                choices=[INVERTED_REPS[i] for i in lib.reps]
             )
 
-            reps = [inverted_reps[i] for i in lib.reps]
+            reps = [INVERTED_REPS[i] for i in lib.reps]
 
             for rep in IN_MEMORY:
                     if rep not in reps:
@@ -753,7 +753,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             ui.update_select(
                 "model_type",
-                choices = _model_types
+                choices = _MODEL_TYPES
             )
 
             ui.update_select(
@@ -814,22 +814,22 @@ def server(input: Inputs, output: Outputs, session: Session):
                 rep_computed = []
                 for model in ZS_MODELS:
                     # check hash existence
-                    zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{model_dict[model]}")
+                    zs_path = os.path.join(prot.user, f"{prot.name}/zero_shot/results/{MODEL_DICT[model]}")
 
                     if os.path.exists(zs_path):
                         if "zs_scores.csv" in os.listdir(zs_path):
                             zs_computed.append(model)
                     
                     for rep in REP_TYPES:
-                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[rep]}")
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{REP_DICT[rep]}")
                         if os.path.exists(rep_path):
-                            rep_computed.append(representation_dict[rep])
+                            rep_computed.append(REP_DICT[rep])
 
                 # load zs-library if exists # TODO: test if the number of computations match with the number of sequences.
                 for model in ZS_MODELS:
                     try:
-                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{representation_dict[model]}")
-                        df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{representation_dict[model]}/zs_scores.csv")
+                        rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{REP_DICT[model]}")
+                        df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{REP_DICT[model]}/zs_scores.csv")
                         
                         df = pd.read_csv(df_path)
                         p.set(message="Loading data...", detail="This may take a while...")
@@ -851,7 +851,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # set reactive variables
                 ui.update_select(
                             "model_rep_type",
-                            choices=[inverted_reps[i] for i in rep_computed]
+                            choices=[INVERTED_REPS[i] for i in rep_computed]
                         )
 
                 COMP_ZS_SCORES.set(zs_computed)
@@ -876,7 +876,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 ui.update_select(
                     "model_type",
-                    choices = model_types
+                    choices = MODEL_TYPES
                 )
 
 
@@ -918,14 +918,14 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # load reps
                 for rep in REP_TYPES:
-                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{representation_dict[rep]}")
+                    rep_path = os.path.join(prot.user, f"{name}/zero_shot/rep/{REP_DICT[rep]}")
                     p.set(message="Loading data...", detail="This may take a while...")
                     if os.path.exists(rep_path):
                         reps.append(rep)
                 
                 # load zs_scores
                 for model in ZS_MODELS:
-                    df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{representation_dict[model]}/zs_scores.csv")
+                    df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{REP_DICT[model]}/zs_scores.csv")
                     if os.path.exists(df_path):
                         df = pd.read_csv(df_path)
                         p.set(message="Loading data...", detail="This may take a while...")
@@ -948,7 +948,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 ui.update_select(
                     "model_type",
-                    choices = model_types
+                    choices = MODEL_TYPES
                 )
                 for rep in IN_MEMORY:
                     if rep not in reps:
@@ -989,9 +989,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         # if no library was loaded one has to be created
         if mode in ['zero-shot', 'structure']:
-            data = prot.zs_library(model=model_dict[method])
+            data = prot.zs_library(model=MODEL_DICT[method])
             lib = pai.Library(user=prot.user, source=data)
-            dest = os.path.join(prot.rep_path, model_dict[method])
+            dest = os.path.join(prot.rep_path, MODEL_DICT[method])
             pbar_max = len(data["df"]) - len(os.listdir(dest))
         else:
             pbar_max = len(lib)
@@ -1000,9 +1000,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             p.set(message="Computation in progress", detail="Initializing...")
 
-            print(f"Computing library: {representation_dict[input.dat_rep_type()]}")
+            print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
             
-            lib.compute(method=representation_dict[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
+            lib.compute(method=REP_DICT[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
 
             LIBRARY.set(lib)
             print("Done!")
@@ -1010,10 +1010,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             # update representation selection
             ui.update_select(
                 "model_rep_type",
-                choices=[inverted_reps[i] for i in lib.reps]
+                choices=[INVERTED_REPS[i] for i in lib.reps]
             )
 
-            reps = [inverted_reps[i] for i in lib.reps]
+            reps = [INVERTED_REPS[i] for i in lib.reps]
             for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
@@ -1039,13 +1039,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # if no library was loaded one has to be created
                 if mode in ['zero-shot', 'structure'] and lib == None:
-                    data = prot.zs_library(model = representation_dict[input.plot_rep_type()])
+                    data = prot.zs_library(model = REP_DICT[input.plot_rep_type()])
                     lib = pai.Library(user=prot.user, source=data)
 
                 names = lib.names
                 y_upper = input.y_upper()
                 y_lower = input.y_lower()
-                rep = representation_dict[input.plot_rep_type()]
+                rep = REP_DICT[input.plot_rep_type()]
                 
                 # Update to pass the new parameters
                 if input.vis_method() == 't-SNE':
@@ -1082,7 +1082,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             
             computed_zs = COMP_ZS_SCORES()
 
-            model = representation_dict[method]
+            model = REP_DICT[method]
 
             data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
             
@@ -1108,7 +1108,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.zs_table)
     def zs_df(alt=None):
         prot = PROTEIN()
-        method = representation_dict[input.COMP_ZS_SCORES()]
+        method = REP_DICT[input.COMP_ZS_SCORES()]
         path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
@@ -1140,7 +1140,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             section = (len(seq) - width, len(seq))
 
         prot = PROTEIN()
-        fig = prot.plot_entropy(section=section, model=model_dict[input.COMP_ZS_SCORES()])
+        fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.COMP_ZS_SCORES()])
         return fig
 
     ### UPDATE ENTROPY PLOT ###
@@ -1178,7 +1178,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=model_dict[input.COMP_ZS_SCORES()])
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.COMP_ZS_SCORES()])
         return fig
 
     ### PLOT SCORES ###
@@ -1267,7 +1267,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Training model", detail="This may take a while...")
 
-            rep_type = representation_dict[input.model_rep_type()]
+            rep_type = REP_DICT[input.model_rep_type()]
             prot = PROTEIN()
 
             if MODE() == 'structure':
@@ -1279,7 +1279,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             if MODE() in ['zero-shot', 'structure']:
                 print(prot)
-                data = prot.zs_library(model=model_dict[input.COMP_ZS_SCORES()])
+                data = prot.zs_library(model=MODEL_DICT[input.COMP_ZS_SCORES()])
                 lib = pai.Library(user=prot.user, source=data)
 
             split = (input.n_train(), input.n_test(), input.n_val())
@@ -1287,8 +1287,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(model_type=model_dict[input.model_type()])
-            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=model_dict[input.model_type()], k_folds=k_folds)
+            m = pai.Model(model_type=MODEL_DICT[input.model_type()])
+            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=MODEL_DICT[input.model_type()], k_folds=k_folds)
             
             # set reactive variables
             MODEL.set(m)
@@ -1482,7 +1482,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         selection = input.fold_these()
         with ui.Progress(min=1, max=len(selection)) as p:
             p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
-            model = model_dict[input.folding_model()]
+            model = MODEL_DICT[input.folding_model()]
             num_recycles = input.num_recycles()
             to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
             out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
