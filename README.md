@@ -43,6 +43,12 @@ python /home/jonfunk/miniforge3/envs/proteusAI_depl/bin/python;
 # Instruct Shiny Server to run applications as the user "shiny"
 run_as shiny;
 
+# Never delete logs regardless of the their exit code
+preserve_logs true;
+
+# Do not replace errors with the generic error message, show them as they are
+sanitize_errors false;
+
 # Define a server that listens on port 80
 server {
   listen 80;
