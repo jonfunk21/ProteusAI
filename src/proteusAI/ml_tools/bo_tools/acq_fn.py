@@ -23,7 +23,7 @@ def greedy(mean, std=None, current_best=None, xi=None):
     return mean
 
 
-def EI(mean, std, current_best, xi):
+def EI(mean, std, current_best, xi=1e-6):
     """
     Expected Improvement acquisition function.
 
