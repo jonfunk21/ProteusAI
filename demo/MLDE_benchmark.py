@@ -22,6 +22,7 @@ parser.add_argument('--max-iter', type=int, default=None, help='Maximum number o
 parser.add_argument('--device', type=str, default='cuda', help='Device to run the model on (e.g., cuda, cpu).')
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for processing.')
 parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50, 'improved'], help='List of improvements.')
+parser.add_argument('--acquisition_fn', type=str, default='ei', help='ProteusAI acquisition functions')
 
 
 def benchmark(dataset, fasta, model, embedding, name, sample_size):
@@ -58,12 +59,12 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         n_test = 1
         n_train = n_train - n_test
 
-    m = pai.Model(model_type=MODEL)
-    m.train(library=lib, x=EMB, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
+    m = pai.Model(model_type=model)
+    m.train(library=lib, x=EMB, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=model)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
-    ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_vals, sorted_acq_score = m.predict(search_space) # here is the BO strategy that needs to be inserted
+    ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_vals, sorted_acq_score = m.predict(search_space, acq_fn=ACQ_FN)
 
     # Prepare the tracking of top N variants, 
     top_variants_counts = IMPROVEMENT
@@ -127,7 +128,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         m.train(library=lib, x=EMB, split=split, seed=SEED, model_type=MODEL)
 
         # re-score the new search space
-        ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = m.predict(ranked_search_space)
+        ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = m.predict(ranked_search_space, acq_fn=ACQ_FN)
     
     # save when the first datapoints for each dataset and category have been discvered
     first_discovered_data[name][sample_size] = first_discovered
@@ -169,6 +170,7 @@ MAX_ITER = args.max_iter
 DEVICE = args.device
 BATCH_SIZE = args.batch_size
 IMPROVEMENT = args.improvement
+ACQ_FN = args.acquisition_fn
 
 # benchmark data
 datasets = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.csv')]
@@ -179,7 +181,7 @@ fastas.sort()
 first_discovered_data = {}
 for i in range(len(datasets)):
     for N in SAMPLE_SIZES:
-        
+        print(ACQ_FN)
         d = os.path.join(BENCHMARK_FOLDER, datasets[i])
         f = os.path.join(BENCHMARK_FOLDER, fastas[i])
         name = datasets[i][:-4]
@@ -191,5 +193,5 @@ for i in range(len(datasets)):
             
         found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
         # save first discovered data
-        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{EMB}_{MODEL}.json'), 'w') as file:
+        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{EMB}_{MODEL}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
