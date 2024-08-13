@@ -5,23 +5,23 @@ import proteusAI as pai
 import matplotlib.pyplot as plt
 import numpy as np
 import json
+import argparse
 
-# hyperparams
-USER = 'benchmark'
-Ns = [10, 20, 100, 1000]
-MODEL = 'gp'
-EMB = 'esm2'
-BENCHMARK_FOLDER = 'demo/demo_data/DMS/'
-SEED = 42
-MAX_ITER = 20
-DEVICE = 'cuda'
-BATCH_SIZE = 20
+# Initialize the argparse parser
+parser = argparse.ArgumentParser(description="Benchmarking ProteusAI MLDE")
 
-# benchmark data
-datasets = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.csv')]
-fastas = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.fasta')]
-datasets.sort()
-fastas.sort()
+# Add arguments corresponding to the variables
+parser.add_argument('--user', type=str, default='benchmark', help='User name or identifier.')
+parser.add_argument('--sample-sizes', type=int, nargs='+', default=[5, 10, 20, 100], help='List of sample sizes.')
+parser.add_argument('--model', type=str, default='gp', help='Model name.')
+parser.add_argument('--emb', type=str, default='esm2', help='Embedding type.')
+parser.add_argument('--zs-model', type=str, default='esm1v', help='Zero-shot model name.')
+parser.add_argument('--benchmark-folder', type=str, default='demo/demo_data/DMS/', help='Path to the benchmark folder.')
+parser.add_argument('--seed', type=int, default=42, help='Random seed.')
+parser.add_argument('--max-iter', type=int, default=None, help='Maximum number of iterations (None for unlimited).')
+parser.add_argument('--device', type=str, default='cuda', help='Device to run the model on (e.g., cuda, cpu).')
+parser.add_argument('--batch-size', type=int, default=1, help='Batch size for processing.')
+parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50, 'improved'], help='List of improvements.')
 
 
 def benchmark(dataset, fasta, model, embedding, name, sample_size):
@@ -30,14 +30,14 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
                       y_type='num', names_col='mutant')
 
     # plot destination
-    plot_dest = os.path.join(lib.user, name, 'plots', str(sample_size))
+    plot_dest = os.path.join(lib.user, name, embedding, 'plots', str(sample_size))
     os.makedirs(plot_dest, exist_ok=True)
 
     # wt sequence
     protein = pai.Protein(user=USER, source=fasta)
 
     # zero-shot scores
-    out = protein.zs_prediction(model=embedding, batch_size=BATCH_SIZE, device=DEVICE)
+    out = protein.zs_prediction(model=ZS_MODEL, batch_size=BATCH_SIZE, device=DEVICE)
     zs_lib = pai.Library(user=USER, source=out)
 
     # Simulate selection of top N ZS-predictions for the initial library
@@ -52,15 +52,21 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
     zs_selected = [prot for prot in lib.proteins if prot.name in top_N_zs_names]
     n_train = int(sample_size*0.8)
     n_test = int(sample_size*0.1)
+
+    # handle the very low data results
+    if n_test == 0:
+        n_test = 1
+        n_train = n_train - n_test
+
     m = pai.Model(model_type=MODEL)
     m.train(library=lib, x=EMB, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
-    ranked_search_space, sorted_y_pred, sorted_sigma_pred, sorted_acq_score = m.predict(search_space) # here is the BO strategy that needs to be inserted
+    ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_vals, sorted_acq_score = m.predict(search_space) # here is the BO strategy that needs to be inserted
 
     # Prepare the tracking of top N variants, 
-    top_variants_counts = [5, 10, 20, 50, 'improved']
+    top_variants_counts = IMPROVEMENT
     found_counts = {count: 0 for count in top_variants_counts}
     first_discovered = [None] * len(top_variants_counts)
 
@@ -85,7 +91,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
             if found > 0 and first_discovered[c] == None:
                 first_discovered[c] = iteration
         
-        plot_results(found_counts, name, iteration, plot_dest, sample_size)
+        # plot_results(found_counts, name, iteration, plot_dest, sample_size)
 
         # Break if maximum number of iterations have been reached
         if iteration == MAX_ITER:
@@ -105,6 +111,11 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         # split into train, test and val
         n_train = int(len(sampled_data)*0.8)
         n_test = int(len(sampled_data)*0.1)
+        
+        # handle the very low data results
+        if n_test == 0:
+            n_test = 1
+            n_train = n_train - n_test
 
         split = {
             'train': sampled_data[:n_train],
@@ -123,6 +134,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
 
     return found_counts
 
+
 def plot_results(found_counts, name, iter, dest, sample_size):
     counts = list(found_counts.keys())
     found = [found_counts[count] for count in counts]
@@ -140,22 +152,44 @@ def plot_results(found_counts, name, iter, dest, sample_size):
         plt.text(x_positions[i], count + 0.1, str(count), ha='center')
 
     plt.savefig(os.path.join(dest, f'top_variants_{iter}_iterations_{name}.png'))
-    
+
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Assign parsed arguments to capitalized variable names
+USER = args.user
+SAMPLE_SIZES = args.sample_sizes
+MODEL = args.model
+EMB = args.emb
+ZS_MODEL = args.zs_model
+BENCHMARK_FOLDER = args.benchmark_folder
+SEED = args.seed
+MAX_ITER = args.max_iter
+DEVICE = args.device
+BATCH_SIZE = args.batch_size
+IMPROVEMENT = args.improvement
+
+# benchmark data
+datasets = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.csv')]
+fastas = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.fasta')]
+datasets.sort()
+fastas.sort()
 
 first_discovered_data = {}
 for i in range(len(datasets)):
-
-    for N in Ns:
+    for N in SAMPLE_SIZES:
+        
         d = os.path.join(BENCHMARK_FOLDER, datasets[i])
         f = os.path.join(BENCHMARK_FOLDER, fastas[i])
         name = datasets[i][:-4]
-
-        if N == Ns[0]:
+        
+        if N == SAMPLE_SIZES[0]:
             first_discovered_data[name] = {N:[]}
         else:
             first_discovered_data[name][N] = []
             
         found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
         # save first discovered data
-        with open(os.path.join('usrs/benchmark/', 'first_discovered_data.json'), 'w') as file:
+        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{EMB}_{MODEL}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
