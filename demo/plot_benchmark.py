@@ -3,13 +3,33 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import argparse
 
-# Representation_type
-TYPE = 'blosum62'
-MAX_SAMPLE = 50
+# Initialize the argparse parser
+parser = argparse.ArgumentParser(description="Plot the benchmark results.")
+
+# Add arguments
+parser.add_argument('--rep', type=str, default='blosum62', help='Representation type.')
+parser.add_argument('--max-sample', type=int, default=100, help='Maximum sample size.')
+parser.add_argument('--model', type=str, default='gp', help='Model name.')
+parser.add_argument('--acquisition-fn', type=str, default='ei', help='Acquisition function name.')
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Assign parsed arguments to variables
+REP = args.rep
+MAX_SAMPLE = args.max_sample
+MODEL = args.model
+ACQ_FN = args.acquisition_fn
+
+# Dictionaries for pretty names
+rep_dict = {"ohe":"One-hot", "blosum50":"BLOSUM50", "blosum62":"BLOSUM62", "esm2":"ESM-2", "esm1v":"ESM-1v", "vae":"VAE"}
+model_dict = {"rf":"Random Forest", "knn":"KNN", "svm":"SVM", "esm2":"ESM-2", "esm1v":"ESM-1v", "gp":"Gaussian Process"}
+acq_dict = {"ei":"Expected Improvement", "ucb":"Upper Confidence Bound", "greedy":"Greedy", "random":"Random"}
 
 # Load data from JSON file
-with open(f'usrs/benchmark/first_discovered_data_{TYPE}.json') as f:
+with open(f'usrs/benchmark/first_discovered_data_{REP}_{MODEL}_{ACQ_FN}.json') as f:
     data = json.load(f)
 
 # Define the top N variants and sample sizes
@@ -68,7 +88,15 @@ for ax in g.axes.flatten():
 # Adjust the title and layout
 g.set_titles(col_template="Sample Size: {col_name}")
 g.set_axis_labels("Top N Variants", "Rounds")
-g.fig.suptitle('Rounds to Discover Top N Variants Across Different Sample Sizes', y=1.02)
+
+rep = rep_dict[REP]
+model = model_dict[MODEL]
+acq_fn = acq_dict[ACQ_FN]
+subtitle = f'Representation: {rep}, Model: {model}, Acquisition Function: {acq_fn}'
+
+# Set the main title and subtitle
+g.fig.suptitle(f'Rounds to Discover Top N Variants Across Different Sample Sizes', y=1.05)
+plt.text(0.5, 1.01, subtitle, ha='center', va='center', fontsize=10, transform=g.fig.transFigure)
 
 # Adjust the layout
 plt.tight_layout()
@@ -78,7 +106,7 @@ g.fig.subplots_adjust(top=0.9, right=0.85)
 g.add_legend(title="Dataset", bbox_to_anchor=(0.75, 0.5), loc='center left', borderaxespad=0)
 
 # Save the plot
-plt.savefig(f'box_and_strip_plot_with_shared_y_axis_{TYPE}.png', bbox_inches='tight', dpi=300)
+plt.savefig(f'usrs/benchmark/box_and_strip_plot_with_shared_y_axis_{REP}_{MODEL}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
 
 # Show the plot
 plt.show()

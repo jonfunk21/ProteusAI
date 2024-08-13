@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="Benchmarking ProteusAI MLDE")
 parser.add_argument('--user', type=str, default='benchmark', help='User name or identifier.')
 parser.add_argument('--sample-sizes', type=int, nargs='+', default=[5, 10, 20, 100], help='List of sample sizes.')
 parser.add_argument('--model', type=str, default='gp', help='Model name.')
-parser.add_argument('--emb', type=str, default='esm2', help='Embedding type.')
+parser.add_argument('--rep', type=str, default='esm2', help='Representation type.')
 parser.add_argument('--zs-model', type=str, default='esm1v', help='Zero-shot model name.')
 parser.add_argument('--benchmark-folder', type=str, default='demo/demo_data/DMS/', help='Path to the benchmark folder.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
@@ -60,7 +60,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         n_train = n_train - n_test
 
     m = pai.Model(model_type=model)
-    m.train(library=lib, x=EMB, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=model)
+    m.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=model)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
@@ -125,7 +125,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         }
 
         # train model on new data
-        m.train(library=lib, x=EMB, split=split, seed=SEED, model_type=MODEL)
+        m.train(library=lib, x=REP, split=split, seed=SEED, model_type=MODEL)
 
         # re-score the new search space
         ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = m.predict(ranked_search_space, acq_fn=ACQ_FN)
@@ -162,7 +162,7 @@ args = parser.parse_args()
 USER = args.user
 SAMPLE_SIZES = args.sample_sizes
 MODEL = args.model
-EMB = args.emb
+REP = args.rep
 ZS_MODEL = args.zs_model
 BENCHMARK_FOLDER = args.benchmark_folder
 SEED = args.seed
@@ -191,7 +191,7 @@ for i in range(len(datasets)):
         else:
             first_discovered_data[name][N] = []
             
-        found_counts = benchmark(d, f, model=MODEL, embedding=EMB, name=name, sample_size=N)
+        found_counts = benchmark(d, f, model=MODEL, embedding=REP, name=name, sample_size=N)
         # save first discovered data
-        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{EMB}_{MODEL}_{ACQ_FN}.json'), 'w') as file:
+        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{REP}_{MODEL}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   

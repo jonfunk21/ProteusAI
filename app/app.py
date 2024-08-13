@@ -844,11 +844,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     except:
                         pass
 
-                reps = rep_computed
                 for rep in IN_MEMORY:
-                    if rep not in reps:
-                        reps.append(rep)
-                
+                    if rep not in rep_computed:
+                        rep_computed.append(rep)
+
                 # set reactive variables
                 ui.update_select(
                             "model_rep_type",
@@ -857,7 +856,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 COMP_ZS_SCORES.set(zs_computed)
 
-                REPS_AVAIL.set(reps)
+                REPS_AVAIL.set(rep_computed)
 
                 ZS_RESULTS.set(zs_computed)
 
@@ -1284,7 +1283,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             lib = LIBRARY()
 
             if MODE() in ['zero-shot', 'structure']:
-                print(prot)
                 data = prot.zs_library(model=MODEL_DICT[input.COMP_ZS_SCORES()])
                 lib = pai.Library(user=prot.user, source=data)
 
@@ -1313,6 +1311,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             "pred_vs_true",
             hover=ui.hover_opts(**hover_opts_kwargs),
         )
+
 
     ### RENDER PREDICTED VERSUS TRUE DATAFRAME ###
     @output

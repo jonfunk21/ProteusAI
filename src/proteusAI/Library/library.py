@@ -163,6 +163,7 @@ class Library:
         # create proteins
         self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.y)]
 
+
     def initialize_user(self):
         """
         initializing a new library.
@@ -179,7 +180,6 @@ class Library:
                 os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
                 os.makedirs(os.path.join(self.user, f'{fname}/design'))
             print(f"User created at {self.user}")
-        
 
         # check if sequence have been provided
         if len(self.seqs) > 0:
@@ -266,6 +266,7 @@ class Library:
             self._read_fasta(data)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
+
 
     def _read_tabular_data(self, in_file: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
                            names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None,
@@ -362,6 +363,7 @@ class Library:
                         f_name = protein.name + '.pt'
                         protein._reps.append(rep) 
 
+
     def _check_strucs(self):
         """
         Check for available representations, store in protein object if representation is found
@@ -376,6 +378,7 @@ class Library:
                         f_name = protein.name + '.pdb'
                         protein._strucss.append(strucs) 
 
+
     def _encode_categorical_labels(self, ys):
         """
         Encode categorical labels into numerical format.
@@ -384,6 +387,7 @@ class Library:
         encoded_labels = label_encoder.fit_transform(ys).tolist()
         class_mapping = {index: label for index, label in enumerate(label_encoder.classes_)}
         return encoded_labels, class_mapping
+
 
     ### Utility ###
     def rename_proteins(self, new_names: Union[list, tuple]):
@@ -503,7 +507,7 @@ class Library:
         """
         if proteins:
             seqs = [prot.seq for prot in proteins]
-            ohe_representations = torch_tools.one_hot_encoder(self.seqs, pbar=pbar)
+            ohe_representations = torch_tools.one_hot_encoder(seqs, pbar=pbar)
         else:
             ohe_representations = torch_tools.one_hot_encoder(self.seqs, pbar=pbar)
         return ohe_representations
@@ -524,6 +528,7 @@ class Library:
         else:
             blosum_representations = torch_tools.blosum_encoding(self.seqs, matrix=matrix_type, pbar=pbar)
         return blosum_representations
+
 
     def load_representations(self, rep: Union[str, None], proteins: Union[list, None] = None):
         """
