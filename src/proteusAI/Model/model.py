@@ -122,6 +122,7 @@ class Model:
         for key, value in defaults.items():
             setattr(self, key, value)
 
+
     def _update_attributes(self, **kwargs):
         defaults = {
             'library': None,
@@ -144,6 +145,7 @@ class Model:
         
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def train(self, **kwargs):
         """
@@ -301,7 +303,6 @@ class Model:
                     model = 'GP_MODEL'
 
             return model
-        
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
 
@@ -332,7 +333,6 @@ class Model:
         x_val = torch.stack(val).cpu().numpy()
 
         # TODO: For representations that are stored in memory the computation happens here:
-
         y_train = [protein.y for protein in self.train_data]
         self.y_test = [protein.y for protein in self.test_data]
         self.y_val = [protein.y for protein in self.val_data]
