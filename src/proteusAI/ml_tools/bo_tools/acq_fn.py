@@ -23,7 +23,7 @@ def greedy(mean, std=None, current_best=None, xi=None):
     return mean
 
 
-def EI(mean, std, current_best, xi=1e-6):
+def EI(mean, std, current_best, xi=0.1):
     """
     Expected Improvement acquisition function.
 
@@ -54,7 +54,7 @@ def EI(mean, std, current_best, xi=1e-6):
     return EI
 
 
-def UCB(mean, std, current_best=None, kappa=0):
+def UCB(mean, std, current_best=None, kappa=1.5):
     """
     Upper-Confidence Bound acquisition function.
 
