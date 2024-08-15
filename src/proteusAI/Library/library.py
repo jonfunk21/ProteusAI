@@ -141,6 +141,7 @@ class Library:
             data (dict): Contains parent path and path to data file.
         """
 
+        # For the future adapt this so it can handle multi-factor optimization
         # extract data from parent file
         data = self.source
 
@@ -342,7 +343,7 @@ class Library:
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
         self.y = [None] * len(self.proteins)
-        df = pd.DataFrame({"names":names, "sequence":seqs, "y":y})
+        df = pd.DataFrame({"names":names, "sequence":self.seqs, "y":self.y})
         self.data = df
 
         if check_rep:
@@ -507,9 +508,15 @@ class Library:
         """
         if proteins:
             seqs = [prot.seq for prot in proteins]
-            ohe_representations = torch_tools.one_hot_encoder(seqs, pbar=pbar)
         else:
-            ohe_representations = torch_tools.one_hot_encoder(self.seqs, pbar=pbar)
+            seqs = self.seqs
+        
+        # Determine the maximum sequence length for padding
+        max_sequence_length = max(len(seq) for seq in self.seqs)
+        
+        # Compute the one-hot encoding with the calculated padding
+        ohe_representations = torch_tools.one_hot_encoder(seqs, pbar=pbar, padding=max_sequence_length)
+        
         return ohe_representations
 
 
@@ -524,9 +531,15 @@ class Library:
         """
         if proteins:
             seqs = [prot.seq for prot in proteins]
-            blosum_representations = torch_tools.blosum_encoding(seqs, matrix=matrix_type, pbar=pbar)
         else:
-            blosum_representations = torch_tools.blosum_encoding(self.seqs, matrix=matrix_type, pbar=pbar)
+            seqs = self.seqs
+        
+        # Determine the maximum sequence length for padding
+        max_sequence_length = max(len(seq) for seq in self.seqs)
+        
+        # Compute the BLOSUM encoding with the calculated padding
+        blosum_representations = torch_tools.blosum_encoding(seqs, matrix=matrix_type, pbar=pbar, padding=max_sequence_length)
+        
         return blosum_representations
 
 

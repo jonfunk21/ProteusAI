@@ -90,6 +90,7 @@ class Model:
         self.rep_path = None
         self.dest = None
         self.y_best = None
+        self.out_df = None
 
         # check for device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -177,13 +178,15 @@ class Model:
         self._model = self.model()
 
         # train
+        out = None
         if self.model_type in self._sklearn_models:
-            self.train_sklearn(rep_path=self.rep_path)
+            out = self.train_sklearn(rep_path=self.rep_path)
         elif self.model_type in self._pt_models:
-            self.train_gp(rep_path=self.rep_path)
+            out = self.train_gp(rep_path=self.rep_path)
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
+        return out
   
     ### Helpers ###
     def split_data(self):
@@ -345,10 +348,12 @@ class Model:
             # prediction on test set
             self.test_r2 = self._model.score(x_test, self.y_test)
             self.y_test_pred = self._model.predict(x_test)
+            self.y_train_pred = self._model.predict(x_train)
 
             # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
+            self.y_train_sigma = [None]*len(self.y_val)
             self.y_val_sigma = [None]*len(self.y_val)
             self.y_test_sigma = [None]*len(self.y_test)
 
@@ -363,10 +368,10 @@ class Model:
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
 
-            self.save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{csv_dest}/train_data.csv")
-            self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
-            self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
-
+            train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+            test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
+            val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
+            
             # Save results to a JSON file
             results = {
                 'test_r2': self.test_r2,
@@ -374,6 +379,14 @@ class Model:
             }
             with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
+            
+            # add split information to df
+            train_df['split'] = 'train'
+            test_df['split'] = 'test'
+            val_df['split'] = 'val'
+
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
 
         # handle ensembles
         else:
@@ -399,6 +412,7 @@ class Model:
 
             # Prediction on validation set
             self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = self.predict(self.val_data)
+            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = self.predict(self.train_data)
             self.val_r2 = self.score(self.val_data)
 
             # Save the model
@@ -417,8 +431,8 @@ class Model:
                 dump(model, model_save_path)
 
             # Save the sequences, y-values, and predicted y-values to CSV
-            self.save_to_csv(self.train_data, y_train, [None] * len(y_train), [None] * len(y_train), f"{csv_dest}/train_data.csv")
-            self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
+            train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma, f"{csv_dest}/train_data.csv")
+            val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
 
             # Save results to a JSON file
             results = {
@@ -428,15 +442,17 @@ class Model:
             }
             with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
-    
 
-    # Save the sequences, y-values, and predicted y-values to CSV
-    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values ,filename):
-        with open(filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(['sequence', 'y-value', 'y-predicted'])  # CSV header
-            for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
-                writer.writerow([protein.seq, y, y_pred])
+            # add split information to df
+            train_df['split'] = 'train'
+            val_df['split'] = 'val'
+
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
+
+        out = {'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':'num', 'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps}
+
+        return out
 
 
     def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):
@@ -500,6 +516,10 @@ class Model:
             prev_loss = loss.item()
 
         print(f'Training completed. Final loss: {loss.item()}')   
+
+        # prediction on train set
+        y_train_pred, y_train_sigma = predict_gp(self._model, self.likelihood, x_train)
+        self.y_train_pred, self.y_train_sigma  = y_train_pred.cpu().numpy(), y_train_sigma.cpu().numpy()
         
         # prediction on test set
         y_test_pred, y_test_sigma = predict_gp(self._model, self.likelihood, x_test)
@@ -530,17 +550,9 @@ class Model:
         os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
         torch.save(self._model.state_dict(), model_save_path)
 
-        # Save the sequences, y-values, and predicted y-values to CSV
-        def save_to_csv(proteins, y_values, y_pred_values, y_pred_sigma, filename):
-            with open(filename, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(['sequence', 'y-value', 'y-predicted', 'sigma'])  # CSV header
-                for protein, y, y_pred, y_sig in zip(proteins, y_values, y_pred_values, y_pred_sigma):
-                    writer.writerow([protein.seq, y, y_pred, y_sig])
-
-        save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{csv_dest}/train_data.csv")
-        save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
-        save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
+        train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+        test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
+        val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
 
         # Save results to a JSON file
         results = {
@@ -550,6 +562,37 @@ class Model:
 
         with open(f"{csv_dest}/results.json", 'w') as f:
             json.dump(results, f)
+        
+        # add split information to df
+        train_df['split'] = 'train'
+        test_df['split'] = 'test'
+        val_df['split'] = 'val'
+
+        # Concatenate the DataFrames
+        self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
+
+        out = {'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':'num', 'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps}
+
+        return out
+
+
+    # Save the sequences, y-values, and predicted y-values to CSV
+    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values, filename):
+        # Prepare data for CSV and DataFrame
+        data = []
+        names = [prot.name for prot in proteins]
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['name', 'sequence', 'y-value', 'y-predicted', 'y-sigma'])  # CSV header
+            for name, protein, y, y_pred, y_sigma in zip(names, proteins, y_values, y_pred_values, y_sigma_values):
+                row = [name, protein.seq, y, y_pred, y_sigma]
+                writer.writerow(row)
+                data.append(row)
+        
+        # Create a DataFrame from the collected data
+        df = pd.DataFrame(data, columns=['name', 'sequence', 'y_true', 'y_predicted', 'y_sigma'])
+        
+        return df
     
 
     def predict(self, proteins: list, rep_path=None, acq_fn='greedy', batch_size=1000):

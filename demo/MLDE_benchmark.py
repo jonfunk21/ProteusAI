@@ -18,7 +18,7 @@ parser.add_argument('--rep', type=str, default='esm2', help='Representation type
 parser.add_argument('--zs-model', type=str, default='esm1v', help='Zero-shot model name.')
 parser.add_argument('--benchmark-folder', type=str, default='demo/demo_data/DMS/', help='Path to the benchmark folder.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--max-iter', type=int, default=None, help='Maximum number of iterations (None for unlimited).')
+parser.add_argument('--max-iter', type=int, default=100, help='Maximum number of iterations (None for unlimited).')
 parser.add_argument('--device', type=str, default='cuda', help='Device to run the model on (e.g., cuda, cpu).')
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for processing.')
 parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50, 'improved'], help='List of improvements.')
@@ -46,8 +46,8 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
     sorted_zs_prots = sorted(zs_prots, key=lambda prot: prot.y, reverse=True)
     top_N_zs_names = [prot.name for prot in sorted_zs_prots[:sample_size]]
 
-    # compute and save ESM-2 representations for this dataset
-    lib.compute(method='esm2', batch_size=BATCH_SIZE, device=DEVICE)
+    # compute representations for this dataset
+    lib.compute(method=REP, batch_size=BATCH_SIZE, device=DEVICE)
 
     # train on the ZS-selected initial library (assume that they have been assayed now) train with 80:10:10 split
     zs_selected = [prot for prot in lib.proteins if prot.name in top_N_zs_names]
@@ -60,11 +60,11 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         n_train = n_train - n_test
 
     m = pai.Model(model_type=model)
-    m.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=model)
+    m.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
-    ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_vals, sorted_acq_score = m.predict(search_space, acq_fn=ACQ_FN)
+    ranked_search_space, _, _, _, _ = m.predict(search_space, acq_fn=ACQ_FN)
 
     # Prepare the tracking of top N variants, 
     top_variants_counts = IMPROVEMENT
@@ -193,5 +193,5 @@ for i in range(len(datasets)):
             
         found_counts = benchmark(d, f, model=MODEL, embedding=REP, name=name, sample_size=N)
         # save first discovered data
-        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{REP}_{MODEL}_{ACQ_FN}.json'), 'w') as file:
+        with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{MODEL}_{REP}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   

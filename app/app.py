@@ -24,9 +24,9 @@ from pathlib import Path
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
-IN_MEMORY = ["One-hot", "BLOSUM50", "BLOSUM62"]
+IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
-MODEL_TYPES = ["Gaussian Process", "Random Forrest", "SVM"] # removed KNN
+MODEL_TYPES = ["KNN", "Gaussian Process", "Random Forrest", "SVM"]
 MODEL_DICT = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
 REP_DICT = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 INVERTED_REPS = {v: k for k, v in REP_DICT.items()}
@@ -220,15 +220,17 @@ app_ui = ui.page_fluid(
             ### MAIN PANEL ###
             ui.navset_tab(
                     ui.nav_panel("Model Diagnostics",
-                        ui.output_ui("classification_ui"),
-                        ui.output_data_frame("classification_table"),
+                        ui.output_plot("discovery_plot"),
+                        ui.output_data_frame("discovery_table"),
                     ),
                     ui.nav_panel("Sampling Results",
-                        # empty
+                        "placeholder"
                     ),
                 ),
             ),
         ),
+
+
     ),
 )
 
@@ -254,19 +256,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     PROTEIN = reactive.Value(None)
     ZS_RESULTS = reactive.Value([])
     CHAINS = reactive.Value(None)
-
-    # REPRESENTATIONS
-    TSNE_DF = reactive.Value() 
-    LIBRARY_PLOT = reactive.Value(None)
-
-    # ZER0-SHOT
-    ZS_SCORES = reactive.Value(pd.DataFrame())
-    COMP_ZS_SCORES = reactive.Value([])
-
-    # MLDE
-    MODEL = reactive.Value(None)
-    VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
-    DATA_REVIEWED = reactive.value(None)
+    Y_TYPE = reactive.Value(None)
+    _MODEL_TYPES = reactive.Value(MODEL_TYPES.copy())
 
     # DESIGN
     PROT_INTERFACE = reactive.Value(None)
@@ -275,6 +266,26 @@ def server(input: Inputs, output: Outputs, session: Session):
     FOLD_LIB = reactive.Value(None)
     FIXED_RES = reactive.Value(None)
     DESIGN_LIB = reactive.Value(None)
+
+    # ZER0-SHOT
+    ZS_SCORES = reactive.Value(pd.DataFrame())
+    COMP_ZS_SCORES = reactive.Value([])
+
+    # REPRESENTATIONS
+    TSNE_DF = reactive.Value(None) 
+    LIBRARY_PLOT = reactive.Value(None)
+
+    # MLDE
+    MODEL = reactive.Value(None)
+    VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
+    DATA_REVIEWED = reactive.value(None)
+    MODEL_LIB = reactive.Value(None)
+    DISCOVERY_LIB = reactive.Value(None)
+
+    # Discovery
+    DISCOVERY_TSNE_DF = reactive.Value(None)
+    DISCOVERY_LIBRARY_PLOT = reactive.Value(None)
+
 
     ##############
     ## FRONTEND ##
@@ -555,13 +566,18 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def mlde_ui():
-        if MODE() != 'start':
+        if Y_TYPE() == 'class':
+            return ui.TagList(
+                "The MLDE workflow is available for numerical Y-Values. Please use the Discovery workflow for categorical Y-values"
+            ) 
+    
+        elif MODE() != 'start':
             return ui.TagList(
                     ui.row(
                         ui.h5("Machine Learning Guided Directed Evolution"),
 
                         ui.column(6,
-                            ui.input_select("model_type", "Surrogate model", MODEL_TYPES)
+                            ui.input_select("model_type", "Surrogate model", _MODEL_TYPES())
                         ),
 
                         ui.column(6,
@@ -603,7 +619,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                 
-            )
+            ) 
+        
         else:
             return ui.TagList(
                 "Upload data in the 'Data' tab to proceed."
@@ -639,6 +656,108 @@ def server(input: Inputs, output: Outputs, session: Session):
                     )
                 )
             )
+
+    ###################
+    ## DISCOVERY TAB ##
+    ###################
+    @output
+    @render.ui
+    def discovery_ui(alt=None):
+        if Y_TYPE == 'num':
+            return ui.TagList(
+                "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
+            )
+
+        elif MODE() != 'start':
+            return ui.TagList(
+                    ui.row(
+                        ui.h5("Protein Discovery and Annotation"),
+
+                        ui.column(6,
+                            ui.input_select("discovery_model_type", "Surrogate model", _MODEL_TYPES())
+                        ),
+
+                        ui.column(6,
+                            ui.input_select("discovery_model_rep_type", "Representaion type", REPS_AVAIL()),
+                        ),
+                        ui.panel_conditional("input.discovery_model_type !== 'Gaussian Process'",
+                            ui.column(6,
+                                ui.input_numeric("discovery_k_folds", "K-Fold cross validation", value=5, min=1, max=10),
+                            ),
+                        ),
+                        ui.column(6,
+                            ui.output_ui("discovery_dynamic_ui"),
+                        ),
+                        
+                    ),
+                    
+                    ui.input_checkbox("discovery_model_params", "Customize model parameters", value=False),
+                    
+                    ui.row(
+                        ui.column(6,
+                            ui.input_slider("discovery_random_seed", "Random seed", min=0, max=1024, value=42)
+                        ),
+
+                        ui.column(6,
+                            ui.input_select("discovery_vis_method", "Visualization method", choices=REP_VISUAL), 
+                        ),
+                        
+                        ui.column(12,
+                            "Cross-validation split:",
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("discovery_n_train", "Training (%)", value=80, min=0, max=100),
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("discovery_n_test", "Test (%)", value=10, min=0, max=100),
+                        ),
+                        ui.column(4,
+                            ui.input_numeric("discovery_n_val", "Validation (%)", value=10, min=0, max=100),
+                        ),
+                        
+                        ui.column(4,
+                            ui.input_action_button("discovery_train_button", "Train"),
+                        ),
+                    ),
+                
+            )
+        
+        else:
+            return ui.TagList(
+                "Upload data in the 'Data' tab to proceed."
+            ) 
+
+
+    ### Discovery SEARCH UI ###
+    @output
+    @render.ui
+    def discovery_search_ui(alt=None):
+        if MODEL() != None:
+            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
+            model_type = inv_model_dict[MODEL().model_type]
+            return ui.TagList(
+                ui.h5("Search new mutants"),
+                ui.row(
+                    ui.column(6,
+                        ui.input_select("discovery_acquisition_fn", "Acquisition Function", ACQUISITION_FNS),
+                    ),
+                    ui.column(6,
+                        ui.input_select("discovery_search_model", "Model", [model_type]),
+                    ),
+                    ui.column(6,
+                        ui.input_select("discovery_optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
+                    ),
+
+                    ui.column(6,
+                        ui.input_numeric("discovery_wt_val", "Baseline Y-value", 0),
+                    ),
+
+                    ui.column(6,
+                        ui.input_action_button("discovery_search", "Search"),
+                    )
+                )
+            )
+
 
     ###############
     ### BACKEND ###
@@ -721,12 +840,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 y_type = "num"
                 choice = "Regression"
                 _y_type = "Numeric"
-                _MODEL_TYPES = MODEL_TYPES
+                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "KNN"])
             else:
                 y_type = "class"
                 choice = "Classification"
                 _y_type = "Categorical"
-                _MODEL_TYPES = [x for x in MODEL_TYPES if x != "Gaussian Process"]
+                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
 
             lib = pai.Library(user=input.USER().lower(), source=f[0]["datapath"], seqs_col=input.seq_col(), y_col=input.y_col(), 
                             y_type=y_type, names_col=input.description_col(), fname=file_name)
@@ -738,6 +857,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "model_rep_type",
                 choices=[INVERTED_REPS[i] for i in lib.reps]
             )
+
+            Y_TYPE.set(y_type)
 
             reps = [INVERTED_REPS[i] for i in lib.reps]
 
@@ -754,7 +875,12 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             ui.update_select(
                 "model_type",
-                choices = _MODEL_TYPES
+                choices = _MODEL_TYPES()
+            )
+
+            ui.update_select(
+                "discovery_model_type",
+                choices = _MODEL_TYPES()
             )
 
             ui.update_select(
@@ -876,7 +1002,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 ui.update_select(
                     "model_type",
-                    choices = MODEL_TYPES
+                    choices = [x for x in MODEL_TYPES if x != "KNN"]
                 )
 
 
@@ -948,7 +1074,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 ui.update_select(
                     "model_type",
-                    choices = MODEL_TYPES
+                    choices = [x for x in MODEL_TYPES if x != "KNN"]
                 )
                 for rep in IN_MEMORY:
                     if rep not in reps:
@@ -1204,6 +1330,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             ui.HTML(view.write_html())
         )
 
+    ##########
+    ## MLDE ##
+    ##########
 
     ### MLDE TAB OUTPUT CONTROL ###
     @output
@@ -1325,12 +1454,114 @@ def server(input: Inputs, output: Outputs, session: Session):
         return p
 
 
+    ###############
+    ## DISCOVERY ##
+    ###############
+   
+    ### N-TRAIN COMPUTATION ###
+    @reactive.Effect
+    @reactive.event(input.discovery_n_train)
+    def _():
+        n_train = input.discovery_n_train()
+        
+        n_test_max = 100 - n_train
+            
+        new_test = round((n_test_max)/2, 2)
+
+        ui.update_numeric(
+            "discovery_n_test",
+            min=0,
+            max = n_test_max,
+            value = new_test
+        )
+        new_val_max = 100 - n_train - new_test
+        ui.update_numeric(
+            "discovery_n_val",
+            min=0,
+            max = new_val_max,
+            value = new_val_max
+        )
+
+
+    ### N-TEST COMPUTATION ###
+    @reactive.Effect
+    @reactive.event(input.discovery_n_test)
+    def _():
+        n_train = input.discovery_n_train()
+        n_test = input.discovery_n_test()
+        n_val_max = 100 - n_train - n_test
+
+        ui.update_numeric(
+            "n_val",
+            max = n_val_max,
+            value = n_val_max
+        )
+
+
+    ### REVIEWING DATA ###
+    @reactive.Effect
+    @reactive.event(input.discovery_review_data)
+    def _():
+        print("button pressed")
+        print(DATASET())
+        print(ZS_RESULTS())
+        DATA_REVIEWED.set('reviewed')
+
+
+    ### TRAIN DISCOVERY MODEL ###
+    @reactive.Effect
+    @reactive.event(input.discovery_train_button)
+    async def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Training model", detail="This may take a while...")
+            
+            rep_type = REP_DICT[input.discovery_model_rep_type()]
+            lib = LIBRARY()
+
+            split = (input.discovery_n_train(), input.discovery_n_test(), input.discovery_n_val())
+            k_folds = input.discovery_k_folds()
+            if k_folds <= 1:
+                k_folds = None
+
+            m = pai.Model(model_type=MODEL_DICT[input.discovery_model_type()])
+            out = m.train(library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), model_type=MODEL_DICT[input.discovery_model_type()], k_folds=k_folds)
+            model_lib = pai.Library(user=lib.user, source=out)
+
+            # set reactive variables
+            DISCOVERY_LIB.set(model_lib)
+
+            MODEL.set(m)
+            VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
+
+
+    ### RENDER DISCOVERY PLOT ###
+    @output
+    @render.plot
+    def discovery_plot(alt=None):
+        if DISCOVERY_LIB():
+            lib = DISCOVERY_LIB()
+            model = MODEL()
+            with ui.Progress(min=1, max=15) as p:
+                p.set(message="Visualizing results", detail="This may take a while...")
+                names = lib.names
+                #rep = REP_DICT[input.discovery_plot_rep_type()]
+                
+                # Update to pass the new parameters
+                if input.discovery_vis_method() == 't-SNE':
+                    fig, ax, df = lib.plot_tsne(rep=model.x, names=names)
+                elif input.discovery_vis_method() == 'UMAP':
+                    fig, ax, df = lib.plot_umap(rep=model.x, names=names)
+                elif input.discovery_vis_method() == 'PCA':
+                    fig, ax, df = lib.plot_pca(rep=model.x, names=names)
+                return fig, ax
+
+
     ### RENDER PREDICTED VERSUS TURE DATAFRAME ###
     @output
     @render.data_frame
-    def model_table():
+    def discovery_table(alt=None):
         df = VAL_DF()
-        if len(df) == 0:
+        if MODEL() == None:
             return None
         else:
             return df

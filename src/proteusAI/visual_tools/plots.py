@@ -62,7 +62,6 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None,
         rep_type (str): Representation type used for plotting.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
-    assert isinstance(x, list), "x should be a list of numpy arrays"
     
     x = np.array([t.numpy() if hasattr(t, 'numpy') else t for t in x])
 
@@ -162,7 +161,6 @@ def plot_pca(x: List[np.ndarray], y: Union[List[float], None] = None,
         rep_type (str): Representation type used for plotting.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
-    assert isinstance(x, list), "x should be a list of numpy arrays"
     
     x = np.array([t.numpy() if hasattr(t, 'numpy') else t for t in x])
 
