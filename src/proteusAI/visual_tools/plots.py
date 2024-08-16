@@ -43,7 +43,8 @@ def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str
     # Return the figure and axes
     return fig, ax
 
-def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None, 
+
+def plot_tsne(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
               y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
               names: Union[List[str], None] = None, y_type: str = 'num', 
               random_state: int = 42, rep_type: Union[str, None] = None):
@@ -53,7 +54,7 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
-        y (List[float]): List of y values, can be None or contain None.
+        y (List[Union[float, str]]): List of y values, can be None or contain None.
         y_upper (float): Upper threshold for special coloring.
         y_lower (float): Lower threshold for special coloring.
         names (List[str]): List of names for each point.
@@ -73,12 +74,17 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y if y is not None and any(y) else None  # Use y if it's informative
-    if len(names) == len(y):
+    if names and len(names) == len(y):
         df['names'] = names
     else:
         df['names'] = [None] * len(y)
 
-    cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    # Handle the palette based on whether y is numerical or categorical
+    if isinstance(y[0], (int, float)):  # If y is numerical
+        cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    else:  # If y is categorical
+        cmap = sns.color_palette("Set2", as_cmap=False)
+    
     hue = 'y' if df['y'].isnull().sum() != len(df['y']) else None  # Use hue only if y is informative
     scatter = sns.scatterplot(x='z1', y='z2', hue=hue, palette=cmap if hue else None, data=df)
 
@@ -92,7 +98,8 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[float], None] = None,
     return fig, ax, df
 
 
-def plot_umap(x: List[np.ndarray], y: Union[List[float], None] = None, 
+
+def plot_umap(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
               y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
               names: Union[List[str], None] = None, y_type: str = 'num', 
               random_state: int = 42, rep_type: Union[str, None] = None):
@@ -102,7 +109,7 @@ def plot_umap(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
-        y (List[float]): List of y values, can be None or contain None.
+        y (List[Union[float, str]]): List of y values, can be None or contain None.
         y_upper (float): Upper threshold for special coloring.
         y_lower (float): Lower threshold for special coloring.
         names (List[str]): List of names for each point.
@@ -117,19 +124,22 @@ def plot_umap(x: List[np.ndarray], y: Union[List[float], None] = None,
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
     
-    #assert isinstance(x, list), "x should be a list of numpy arrays"
-
     umap_model = umap.UMAP(n_components=2, random_state=random_state)
     z = umap_model.fit_transform(x)
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y if y is not None and any(y) else None  # Use y if it's informative
-    if len(names) == len(y):
+    if names and len(names) == len(y):
         df['names'] = names
     else:
         df['names'] = [None] * len(y)
-
-    cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    
+    # Handle the palette based on whether y is numerical or categorical
+    if isinstance(y[0], (int, float)):  # If y is numerical
+        cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    else:  # If y is categorical
+        cmap = sns.color_palette("Set2", as_cmap=False)
+    
     hue = 'y' if df['y'].isnull().sum() != len(df['y']) else None  # Use hue only if y is informative
     scatter = sns.scatterplot(x='z1', y='z2', hue=hue, palette=cmap if hue else None, data=df)
 
@@ -142,7 +152,8 @@ def plot_umap(x: List[np.ndarray], y: Union[List[float], None] = None,
     scatter.set_title(f"UMAP projection of {rep_type if rep_type else 'data'}")
     return fig, ax, df
 
-def plot_pca(x: List[np.ndarray], y: Union[List[float], None] = None, 
+
+def plot_pca(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
             y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
             names: Union[List[str], None] = None, y_type: str = 'num', 
             random_state: int = 42, rep_type: Union[str, None] = None):
@@ -152,7 +163,7 @@ def plot_pca(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
-        y (List[float]): List of y values, can be None or contain None.
+        y (List[Union[float, str]]): List of y values, can be None or contain None.
         y_upper (float): Upper threshold for special coloring.
         y_lower (float): Lower threshold for special coloring.
         names (List[str]): List of names for each point.
@@ -172,12 +183,17 @@ def plot_pca(x: List[np.ndarray], y: Union[List[float], None] = None,
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y if y is not None and any(y) else None  # Use y if it's informative
-    if len(names) == len(y):
+    if names and len(names) == len(y):
         df['names'] = names
     else:
         df['names'] = [None] * len(y)
 
-    cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    # Handle the palette based on whether y is numerical or categorical
+    if isinstance(y[0], (int, float)):  # If y is numerical
+        cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+    else:  # If y is categorical
+        cmap = sns.color_palette("Set2", as_cmap=False)
+    
     hue = 'y' if df['y'].isnull().sum() != len(df['y']) else None  # Use hue only if y is informative
     scatter = sns.scatterplot(x='z1', y='z2', hue=hue, palette=cmap if hue else None, data=df)
 

@@ -29,7 +29,7 @@ model_dict = {"rf":"Random Forest", "knn":"KNN", "svm":"SVM", "esm2":"ESM-2", "e
 acq_dict = {"ei":"Expected Improvement", "ucb":"Upper Confidence Bound", "greedy":"Greedy", "random":"Random"}
 
 # Load data from JSON file
-with open(f'usrs/benchmark/first_discovered_data_{REP}_{MODEL}_{ACQ_FN}.json') as f:
+with open(f'usrs/benchmark/first_discovered_data_{MODEL}_{REP}_{ACQ_FN}.json') as f:
     data = json.load(f)
 
 # Define the top N variants and sample sizes
@@ -106,7 +106,7 @@ g.fig.subplots_adjust(top=0.9, right=0.85)
 g.add_legend(title="Dataset", bbox_to_anchor=(0.75, 0.5), loc='center left', borderaxespad=0)
 
 # Save the plot
-plt.savefig(f'usrs/benchmark/box_and_strip_plot_with_shared_y_axis_{REP}_{MODEL}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
+plt.savefig(f'usrs/benchmark/box_and_strip_plot_with_shared_y_axis_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
 
 # Show the plot
 plt.show()

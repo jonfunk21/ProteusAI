@@ -86,6 +86,7 @@ class Library:
         self.rep_path = None
         self.strucs = None
         self.struc_path = None
+        self.class_dict = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -152,12 +153,13 @@ class Library:
         self.seq_col = data['seqs_col']
         self.names_col = data['names_col']
         self.reps = data['reps']
+        self.class_dict = data['class_dict']
 
         # Parsing arguments
         df = data['df']
-        self.seqs = df[self.seq_col]
-        self.names = df[self.names_col]
-        self.y = df[self.y_col]
+        self.seqs = df[self.seq_col].to_list()
+        self.names = df[self.names_col].to_list()
+        self.y = df[self.y_col].to_list()
         self.y_type = data['y_type']
         self.data = df
 
@@ -312,6 +314,7 @@ class Library:
         # Handle y values
         if y is not None:
             self.y = df[y].tolist()
+
             if y_type == 'class':
                 self.y, self.class_dict = self._encode_categorical_labels(self.y)
 
@@ -605,7 +608,10 @@ class Library:
                     self.relax_struc(name)
         
             df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
-            out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps}
+            out = {
+                'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 
+                'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps, 'class_dict':self.library.class_dict
+            }
             
         return out
 
@@ -683,9 +689,11 @@ class Library:
 
         x = self.load_representations(rep)
         y = self.y
-        
 
-        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
+
+        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
 
         return fig, ax, df
 
@@ -703,8 +711,14 @@ class Library:
         x = self.load_representations(rep)
         y = self.y
         
+        print(type(y))
+        print(y)
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
+        print(type(y))
+        print(y)
 
-        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
 
         return fig, ax, df
 
@@ -722,8 +736,10 @@ class Library:
         x = self.load_representations(rep)
         y = self.y
         
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
 
-        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
 
         return fig, ax, df
     

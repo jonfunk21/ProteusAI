@@ -277,6 +277,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     # MLDE
     MODEL = reactive.Value(None)
+    DISCOVERY_MODEL = reactive.Value(None)
     VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
     DATA_REVIEWED = reactive.value(None)
     MODEL_LIB = reactive.Value(None)
@@ -1530,7 +1531,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             # set reactive variables
             DISCOVERY_LIB.set(model_lib)
 
-            MODEL.set(m)
+            DISCOVERY_MODEL.set(m)
             VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
 
 
@@ -1540,7 +1541,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def discovery_plot(alt=None):
         if DISCOVERY_LIB():
             lib = DISCOVERY_LIB()
-            model = MODEL()
+            model = DISCOVERY_MODEL()
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="Visualizing results", detail="This may take a while...")
                 names = lib.names
@@ -1561,7 +1562,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.data_frame
     def discovery_table(alt=None):
         df = VAL_DF()
-        if MODEL() == None:
+        if DISCOVERY_MODEL() == None:
             return None
         else:
             return df

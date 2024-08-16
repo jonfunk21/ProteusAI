@@ -450,8 +450,11 @@ class Model:
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
 
-        out = {'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':'num', 'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps}
-
+        out = {
+            'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
+            }
+            
         return out
 
 
@@ -571,7 +574,10 @@ class Model:
         # Concatenate the DataFrames
         self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
 
-        out = {'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':'num', 'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps}
+        out = {
+            'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
+            }
 
         return out
 
