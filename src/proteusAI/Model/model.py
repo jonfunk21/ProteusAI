@@ -454,7 +454,7 @@ class Model:
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
             'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
             }
-            
+
         return out
 
 
@@ -495,14 +495,14 @@ class Model:
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
 
-        for param in self._model.named_parameters(): 
-            print(param)
+        #for param in self._model.named_parameters(): 
+        #    print(param)
 
         # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
         self._model.train()
         self.likelihood.train()
         prev_loss = float('inf')
-        #TODO: abstract this away
+        
         for _ in range(epochs):
             optimizer.zero_grad()
             output = self._model(x_train)
@@ -513,13 +513,13 @@ class Model:
 
             # Check for convergence
             if abs(prev_loss - loss.item()) < 0.0001:
-                print(f'Convergence reached. Stopping training...')
+            #    print(f'Convergence reached. Stopping training...')
                 break
             
             prev_loss = loss.item()
 
         print(f'Training completed. Final loss: {loss.item()}')   
-
+        
         # prediction on train set
         y_train_pred, y_train_sigma = predict_gp(self._model, self.likelihood, x_train)
         self.y_train_pred, self.y_train_sigma  = y_train_pred.cpu().numpy(), y_train_sigma.cpu().numpy()
@@ -755,7 +755,32 @@ class Model:
                                             y_label, plot_grid, file, show_plot)
         
         return fig, ax
-    
+
+
+    def search(self, N=10, labels=['all'], method='ga', pbar=None):
+        """
+        Sample diverse sequences.
+        """
+
+        class_dict = self.library.class_dict
+
+        if 'all' in labels or len(labels) < 1:
+            labels = list(class_dict.keys())
+            proteins = self.library.proteins
+        else:
+            proteins = [prot for prot in self.library.proteins if class_dict[prot.y] in labels]
+
+        print(proteins)
+
+        vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
+
+        pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
+        
+        selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
+        print("Selected Indices:", selected_indices)
+        print(f"Diversity Score: {diversity}")
+
+
     ### Getters and Setters ###
     # Getter and Setter for library
     @property
