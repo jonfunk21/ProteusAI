@@ -39,6 +39,7 @@ ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 USR_PATH = os.path.join(app_path, '../usrs')
+SEARCH_HEURISTICS = ['Diversity']
 
 
 app_ui = ui.page_fluid(
@@ -214,6 +215,7 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.output_ui("discovery_ui"),
+                    ui.output_ui("discovery_search_ui"),
                     width=SIDEBAR_WIDTH,
                 ),
 
@@ -223,7 +225,7 @@ app_ui = ui.page_fluid(
                         ui.output_plot("discovery_plot"),
                         ui.output_data_frame("discovery_table"),
                     ),
-                    ui.nav_panel("Sampling Results",
+                    ui.nav_panel("Search Results",
                         "placeholder"
                     ),
                 ),
@@ -279,6 +281,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     MODEL = reactive.Value(None)
     DISCOVERY_MODEL = reactive.Value(None)
     VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
+    DISCOVERY_VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
     DATA_REVIEWED = reactive.value(None)
     MODEL_LIB = reactive.Value(None)
     DISCOVERY_LIB = reactive.Value(None)
@@ -658,6 +661,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
             )
 
+
     ###################
     ## DISCOVERY TAB ##
     ###################
@@ -733,28 +737,33 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def discovery_search_ui(alt=None):
-        if MODEL() != None:
+        model = DISCOVERY_MODEL()
+        if model != None:
+            clusters = list(model.library.class_dict.values())
+            sample_from = ['All'] + clusters
             inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[MODEL().model_type]
+            model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
+
             return ui.TagList(
                 ui.h5("Search new mutants"),
                 ui.row(
                     ui.column(6,
-                        ui.input_select("discovery_acquisition_fn", "Acquisition Function", ACQUISITION_FNS),
+                        ui.input_select("discovery_search_criteria", "Search heuristic", SEARCH_HEURISTICS),
                     ),
                     ui.column(6,
                         ui.input_select("discovery_search_model", "Model", [model_type]),
                     ),
                     ui.column(6,
-                        ui.input_select("discovery_optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
+                        ui.input_selectize("sample_from", "Sample from Cluster", sample_from, multiple=True),
                     ),
 
                     ui.column(6,
-                        ui.input_numeric("discovery_wt_val", "Baseline Y-value", 0),
+                        ui.input_numeric("n_samples", "Number of sequences", value=10, min=2),
                     ),
 
                     ui.column(6,
                         ui.input_action_button("discovery_search", "Search"),
+                        style='padding:25px;'
                     )
                 )
             )
@@ -1532,7 +1541,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             DISCOVERY_LIB.set(model_lib)
 
             DISCOVERY_MODEL.set(m)
-            VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
+            DISCOVERY_VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
 
 
     ### RENDER DISCOVERY PLOT ###
@@ -1561,7 +1570,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.data_frame
     def discovery_table(alt=None):
-        df = VAL_DF()
+        df = DISCOVERY_VAL_DF()
         if DISCOVERY_MODEL() == None:
             return None
         else:
@@ -1743,6 +1752,23 @@ def server(input: Inputs, output: Outputs, session: Session):
         sidechains_dict = {input.mutlichain_chain():sidechains}
         lib.struc_geom(ref=prot, residues=sidechains_dict)
 
+    
+    ########################
+    ### SEARCH DISCOVERY ###
+    ########################
+    @reactive.Effect
+    @reactive.event(input.discovery_search)
+    def _():
+        with ui.Progress(min=1, max=10000) as p:
+            p.set(message="Sampling diverse sequences", detail=f"...")
+            
+            labels = input.sample_from()
+            if labels == ():
+                labels = ['all']
+                
+            model = DISCOVERY_MODEL()
+
+            model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
 
     ###############
     ### HELPERS ###
