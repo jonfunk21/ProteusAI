@@ -226,7 +226,7 @@ app_ui = ui.page_fluid(
                         ui.output_data_frame("discovery_table"),
                     ),
                     ui.nav_panel("Search Results",
-                        "placeholder"
+                        ui.output_plot("discovery_search_plot")
                     ),
                 ),
             ),
@@ -289,6 +289,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Discovery
     DISCOVERY_TSNE_DF = reactive.Value(None)
     DISCOVERY_LIBRARY_PLOT = reactive.Value(None)
+    DISCOVERY_SEARCH = reactive.Value(None)
 
 
     ##############
@@ -1779,7 +1780,31 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
             model = DISCOVERY_MODEL()
 
-            model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
+            DISCOVERY_SEARCH.set(model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p))
+
+
+    ### RENDER SEARCH PLOT ###
+    @output
+    @render.plot
+    def discovery_search_plot(alt=None):
+        highlight_mask = DISCOVERY_SEARCH()
+        if type(highlight_mask) != None:
+            with ui.Progress() as p:
+                p.set(message="Visualizing search results", detail="...")
+                model = DISCOVERY_MODEL()
+                lib = DISCOVERY_LIB()
+                vis_method = input.discovery_vis_method()
+                names = lib.names
+                
+                # Update to pass the new parameters
+                if vis_method == 't-SNE':
+                    fig, ax, df = lib.plot_tsne(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
+                elif vis_method == 'UMAP':
+                    fig, ax, df = lib.plot_umap(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
+                elif vis_method == 'PCA':
+                    fig, ax, df = lib.plot_pca(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
+                return fig, ax
+
 
 
     ###############

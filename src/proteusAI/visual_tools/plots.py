@@ -44,13 +44,20 @@ def plot_predictions_vs_groundtruth(y_true: list, y_pred: list, title: Union[str
     return fig, ax
 
 
-def plot_tsne(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
-              y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
-              names: Union[List[str], None] = None, y_type: str = 'num', 
-              random_state: int = 42, rep_type: Union[str, None] = None):
+def plot_tsne(x: List[np.ndarray], 
+              y: Union[List[Union[float, str]], None] = None, 
+              y_upper: Union[float, None] = None, 
+              y_lower: Union[float, None] = None, 
+              names: Union[List[str], None] = None, 
+              y_type: str = 'num', 
+              random_state: int = 42, 
+              rep_type: Union[str, None] = None, 
+              highlight_mask: Union[List[Union[int, float]], None] = None,
+              highlight_label: str = 'Highlighted'):
     """
     Create a t-SNE plot and optionally color by y values, with special coloring for points outside given thresholds.
     Handles cases where y is None or a list of Nones by not applying hue.
+    Optionally highlights points based on the highlight_mask.
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
@@ -61,6 +68,8 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = Non
         y_type (str): 'class' for categorical labels or 'num' for numerical labels.
         random_state (int): Random state.
         rep_type (str): Representation type used for plotting.
+        highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
+        highlight_label (str): Text for the legend entry of highlighted points.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
     
@@ -94,18 +103,38 @@ def plot_tsne(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = Non
         outlier_mask |= (df['y'] < y_lower) if y_lower is not None else np.zeros(len(df), dtype=bool)
         scatter.scatter(df['z1'][outlier_mask], df['z2'][outlier_mask], color='lightgrey')
 
+    # Highlight points based on the highlight_mask
+    if highlight_mask is not None:
+        highlight_mask = np.array(highlight_mask)
+        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+        scatter.scatter(df['z1'][highlight_points], df['z2'][highlight_points], color='red', marker='x', s=60, alpha=0.7, label=highlight_label)
+
     scatter.set_title(f"t-SNE projection of {rep_type if rep_type else 'data'}")
+    
+    # Add the legend, making sure to include highlighted points
+    handles, labels = scatter.get_legend_handles_labels()
+    if highlight_label in labels:
+        ax.legend(handles, labels, title='Legend')
+    else:
+        ax.legend(title='Legend')
+
     return fig, ax, df
 
 
-
-def plot_umap(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
-              y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
-              names: Union[List[str], None] = None, y_type: str = 'num', 
-              random_state: int = 42, rep_type: Union[str, None] = None):
+def plot_umap(x: List[np.ndarray], 
+              y: Union[List[Union[float, str]], None] = None, 
+              y_upper: Union[float, None] = None, 
+              y_lower: Union[float, None] = None, 
+              names: Union[List[str], None] = None, 
+              y_type: str = 'num', 
+              random_state: int = 42, 
+              rep_type: Union[str, None] = None, 
+              highlight_mask: Union[List[Union[int, float]], None] = None,
+              highlight_label: str = 'Highlighted'):
     """
     Create a UMAP plot and optionally color by y values, with special coloring for points outside given thresholds.
     Handles cases where y is None or a list of Nones by not applying hue.
+    Optionally highlights points based on the highlight_mask.
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
@@ -116,6 +145,8 @@ def plot_umap(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = Non
         y_type (str): 'class' for categorical labels or 'num' for numerical labels.
         random_state (int): Random state.
         rep_type (str): Representation type used for plotting.
+        highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
+        highlight_label (str): Text for the legend entry of highlighted points.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
     
@@ -129,7 +160,7 @@ def plot_umap(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = Non
 
     df = pd.DataFrame(z, columns=['z1', 'z2'])
     df['y'] = y if y is not None and any(y) else None  # Use y if it's informative
-    if names and len(names) == len(y):
+    if names and len(names) is not None and len(names) == len(y):
         df['names'] = names
     else:
         df['names'] = [None] * len(y)
@@ -149,17 +180,38 @@ def plot_umap(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = Non
         outlier_mask |= (df['y'] < y_lower) if y_lower is not None else np.zeros(len(df), dtype=bool)
         scatter.scatter(df['z1'][outlier_mask], df['z2'][outlier_mask], color='lightgrey')
 
+    # Highlight points based on the highlight_mask
+    if highlight_mask is not None:
+        highlight_mask = np.array(highlight_mask)
+        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+        scatter.scatter(df['z1'][highlight_points], df['z2'][highlight_points], color='red', marker='x', s=60, alpha=0.7, label=highlight_label)
+
     scatter.set_title(f"UMAP projection of {rep_type if rep_type else 'data'}")
+    
+    # Add the legend, making sure to include highlighted points
+    handles, labels = scatter.get_legend_handles_labels()
+    if highlight_label in labels:
+        ax.legend(handles, labels, title='Legend')
+    else:
+        ax.legend(title='Legend')
+
     return fig, ax, df
 
 
-def plot_pca(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None, 
-            y_upper: Union[float, None] = None, y_lower: Union[float, None] = None, 
-            names: Union[List[str], None] = None, y_type: str = 'num', 
-            random_state: int = 42, rep_type: Union[str, None] = None):
+def plot_pca(x: List[np.ndarray], 
+             y: Union[List[Union[float, str]], None] = None, 
+             y_upper: Union[float, None] = None, 
+             y_lower: Union[float, None] = None, 
+             names: Union[List[str], None] = None, 
+             y_type: str = 'num', 
+             random_state: int = 42, 
+             rep_type: Union[str, None] = None, 
+             highlight_mask: Union[List[Union[int, float]], None] = None,
+             highlight_label: str = 'Highlighted'):
     """
     Create a PCA plot and optionally color by y values, with special coloring for points outside given thresholds.
     Handles cases where y is None or a list of Nones by not applying hue.
+    Optionally highlights points based on the highlight_mask.
 
     Args:
         x (List[np.ndarray]): List of sequence representations as numpy arrays.
@@ -170,6 +222,8 @@ def plot_pca(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None
         y_type (str): 'class' for categorical labels or 'num' for numerical labels.
         random_state (int): Random state.
         rep_type (str): Representation type used for plotting.
+        highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
+        highlight_label (str): Text for the legend entry of highlighted points.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
     
@@ -203,5 +257,19 @@ def plot_pca(x: List[np.ndarray], y: Union[List[Union[float, str]], None] = None
         outlier_mask |= (df['y'] < y_lower) if y_lower is not None else np.zeros(len(df), dtype=bool)
         scatter.scatter(df['z1'][outlier_mask], df['z2'][outlier_mask], color='lightgrey')
 
+    # Highlight points based on the highlight_mask
+    if highlight_mask is not None:
+        highlight_mask = np.array(highlight_mask)
+        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+        scatter.scatter(df['z1'][highlight_points], df['z2'][highlight_points], color='red', marker='x', s=60, alpha=0.7, label=highlight_label)
+
     scatter.set_title(f"PCA projection of {rep_type if rep_type else 'data'}")
+    
+    # Add the legend, making sure to include highlighted points
+    handles, labels = scatter.get_legend_handles_labels()
+    if highlight_label in labels:
+        ax.legend(handles, labels, title='Legend')
+    else:
+        ax.legend(title='Legend')
+
     return fig, ax, df

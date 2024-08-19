@@ -686,7 +686,7 @@ class Library:
         return df
 
 
-    def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None):
+    def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
         """
         Plot representations with optional thresholds and point names.
 
@@ -695,6 +695,8 @@ class Library:
             y_upper (float, optional): Upper threshold for special coloring.
             y_lower (float, optional): Lower threshold for special coloring.
             names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
         """
 
         x = self.load_representations(rep)
@@ -703,11 +705,13 @@ class Library:
         if self.y_type == 'class':
             y = [self.class_dict[i] for i in y]
 
-        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
+        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42,
+                                    highlight_mask=highlight_mask, highlight_label=highlight_label)
 
         return fig, ax, df
 
-    def plot_umap(self, rep: str, y_upper=None, y_lower=None, names=None):
+
+    def plot_umap(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
         """
         Plot representations with optional thresholds and point names.
 
@@ -716,6 +720,33 @@ class Library:
             y_upper (float, optional): Upper threshold for special coloring.
             y_lower (float, optional): Lower threshold for special coloring.
             names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
+        """
+
+        x = self.load_representations(rep)
+        y = self.y
+
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
+
+        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42, 
+                                    highlight_mask=highlight_mask, highlight_label=highlight_label)
+
+        return fig, ax, df
+
+
+    def plot_pca(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
+        """
+        Plot representations with optional thresholds and point names.
+
+        Args:
+            rep (str): Representation type to plot.
+            y_upper (float, optional): Upper threshold for special coloring.
+            y_lower (float, optional): Lower threshold for special coloring.
+            names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
         """
 
         x = self.load_representations(rep)
@@ -724,28 +755,8 @@ class Library:
         if self.y_type == 'class':
             y = [self.class_dict[i] for i in y]
 
-        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
-
-        return fig, ax, df
-
-    def plot_pca(self, rep: str, y_upper=None, y_lower=None, names=None):
-        """
-        Plot representations with optional thresholds and point names.
-
-        Args:
-            rep (str): Representation type to plot.
-            y_upper (float, optional): Upper threshold for special coloring.
-            y_lower (float, optional): Lower threshold for special coloring.
-            names (List[str], optional): List of names for each point.
-        """
-
-        x = self.load_representations(rep)
-        y = self.y
-        
-        if self.y_type == 'class':
-            y = [self.class_dict[i] for i in y]
-
-        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
+        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42,
+                                   highlight_mask=highlight_mask, highlight_label=highlight_label)
 
         return fig, ax, df
     

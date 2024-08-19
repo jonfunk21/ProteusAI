@@ -403,8 +403,11 @@ class Model:
 
         # handle ensembles
         else:
-            kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            # combine train and test
+            self.train_data = self.train_data + self.test_data
             x_train = np.concatenate([x_train, x_test])
+
+            kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
             y_train = y_train + self.y_test
             fold_results = []
             ensemble = []
@@ -478,7 +481,7 @@ class Model:
 
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'y_pred_col':'y_pred', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
             'class_dict':self.library.class_dict
             }
 
@@ -622,7 +625,8 @@ class Model:
 
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
             }
 
         return out
@@ -805,7 +809,7 @@ class Model:
 
     def search(self, N=10, labels=['all'], method='ga', pbar=None):
         """
-        Sample diverse sequences.
+        Sample diverse sequences and return a mask with 1 for selected indices and 0 for non-selected.
         """
 
         class_dict = self.library.class_dict
@@ -816,15 +820,19 @@ class Model:
         else:
             proteins = [prot for prot in self.library.proteins if class_dict[prot.y] in labels]
 
-        print(proteins)
-
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
         
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
-        print("Selected Indices:", selected_indices)
-        print(f"Diversity Score: {diversity}")
+        
+        # Create a mask with the same length as the number of proteins
+        mask = np.zeros(len(proteins), dtype=int)
+        
+        # Set the selected indices to 1
+        mask[selected_indices] = 1
+        
+        return mask
 
 
     ### Getters and Setters ###
