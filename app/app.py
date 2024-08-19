@@ -740,7 +740,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         model = DISCOVERY_MODEL()
         if model != None:
             clusters = list(model.library.class_dict.values())
-            sample_from = ['All'] + clusters
+            sample_from = clusters
             inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
             model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
 
@@ -1700,16 +1700,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
 
 
-    ### REVIEWING DATA ###
-    @reactive.Effect
-    @reactive.event(input.discovery_review_data)
-    def _():
-        print("button pressed")
-        print(DATASET())
-        print(ZS_RESULTS())
-        DATA_REVIEWED.set('reviewed')
-
-
     ################
     ##  DISCOVERY ##
     ################
@@ -1735,7 +1725,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             # set reactive variables
             DISCOVERY_LIB.set(model_lib)
-
             DISCOVERY_MODEL.set(m)
             DISCOVERY_VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
 
@@ -1747,17 +1736,17 @@ def server(input: Inputs, output: Outputs, session: Session):
         if DISCOVERY_LIB():
             lib = DISCOVERY_LIB()
             model = DISCOVERY_MODEL()
+            vis_method = input.discovery_vis_method()
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="Visualizing results", detail="This may take a while...")
                 names = lib.names
-                #rep = REP_DICT[input.discovery_plot_rep_type()]
                 
                 # Update to pass the new parameters
-                if input.discovery_vis_method() == 't-SNE':
+                if vis_method == 't-SNE':
                     fig, ax, df = lib.plot_tsne(rep=model.x, names=names)
-                elif input.discovery_vis_method() == 'UMAP':
+                elif vis_method == 'UMAP':
                     fig, ax, df = lib.plot_umap(rep=model.x, names=names)
-                elif input.discovery_vis_method() == 'PCA':
+                elif vis_method == 'PCA':
                     fig, ax, df = lib.plot_pca(rep=model.x, names=names)
                 return fig, ax
 
@@ -1776,7 +1765,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             df['y_pred'] = [class_dict[i] for i in df['y_pred']]
             return df
 
-    
+
+    ### DISCOVERY SEARCH ###    
     @reactive.Effect
     @reactive.event(input.discovery_search)
     def _():
