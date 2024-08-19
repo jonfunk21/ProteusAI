@@ -9,3 +9,4 @@ __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
 from .acq_fn import *
+from .genetic_algorithm import *
