@@ -61,6 +61,7 @@ class Library:
             data (df): dataframe of uploaded data (raw data).
             seqs (list): list of sequence.
             y (list): list of y values.
+            y_pred (list): list of predicted y values.
             y_type (str): Type of y values ('class' or 'num').
             names (list): names of sequences.
             reps (list): list of computed representations.
@@ -80,6 +81,7 @@ class Library:
         self.data = None
         self.seqs = None
         self.y = None
+        self.y_pred = None
         self.names = None
         self.reps = self.in_memory.copy()
         self.source_path = None
@@ -163,8 +165,15 @@ class Library:
         self.y_type = data['y_type']
         self.data = df
 
+        # if predicted values are there
+        if 'y_pred_col' in data.keys():
+            self.y_pred_col = data['y_pred_col']
+            self.y_pred = df[self.y_pred_col].to_list()
+        else:
+            self.y_pred = [None] * len(self.y)
+
         # create proteins
-        self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.y)]
+        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred) for name, seq, y, y_pred in zip(self.names, self.seqs, self.y, self.y_pred)]
 
 
     def initialize_user(self):

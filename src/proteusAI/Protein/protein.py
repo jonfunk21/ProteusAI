@@ -34,7 +34,7 @@ class Protein:
     """
 
     def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], 
-    user: Union[str, None] = 'guest', y = None, source: Union[str,None] = None, fname: Union[str,None] = None):
+    user: Union[str, None] = 'guest', y = None, y_pred = None,source: Union[str,None] = None, fname: Union[str,None] = None):
         """
         Initialize a new protein object.
 
@@ -45,8 +45,12 @@ class Protein:
             reps (list): List of available representations.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
+            y_pred (float, int, str): Predicted y_value.
             source (str, or data): Source of data, either a file or a data package created from a diversification step.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
+        
+        Parameters:
+            
         """
 
         # Arguments
@@ -56,6 +60,7 @@ class Protein:
         self.struc = struc
         self.source = source
         self.y = y
+        self.y_pred = None
         self.fname = fname
         self.user = os.path.join(USR_PATH, user)
 

@@ -397,6 +397,10 @@ class Model:
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
 
+            # Add predictions to test proteins
+            for i in range(len(test)):
+                test[i].y_pred = self.y_test_pred[i].item()
+
         # handle ensembles
         else:
             kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
@@ -464,9 +468,18 @@ class Model:
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
 
+        # Add predictions to proteins 
+        for i in range(len(train)):
+            train[i].y_pred = self.y_train_pred[i].item()
+
+        # Add predictions to test proteins
+        for i in range(len(val)):
+            val[i].y_pred = self.y_val_pred[i].item()
+
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
+            'y_col':'y_true', 'y_pred_col':'y_pred', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
             }
 
         return out
@@ -561,6 +574,18 @@ class Model:
         self.y_test = self.y_test.cpu().numpy()
 
         self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+
+        # Add predictions to proteins 
+        for i in range(len(train)):
+            train[i].y_pred = self.y_train_pred[i].item()
+        
+        # Add predictions to test proteins
+        for i in range(len(test)):
+            test[i].y_pred = self.y_test_pred[i].item()
+
+        # Add predictions to test proteins
+        for i in range(len(val)):
+            val[i].y_pred = self.y_val_pred[i].item()
 
         # Save the model
         if self.dest != None:
