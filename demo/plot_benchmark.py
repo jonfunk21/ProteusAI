@@ -106,7 +106,7 @@ g.fig.subplots_adjust(top=0.9, right=0.85)
 g.add_legend(title="Dataset", bbox_to_anchor=(0.75, 0.5), loc='center left', borderaxespad=0)
 
 # Save the plot
-plt.savefig(f'usrs/benchmark/box_and_strip_plot_with_shared_y_axis_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
+plt.savefig(f'usrs/benchmark/firs_discovered_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
 
 # Show the plot
 plt.show()
