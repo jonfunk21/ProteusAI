@@ -69,6 +69,7 @@ class Protein:
         self.design = None
         self.chains = []
         self.zs_path = None
+        self.class_dict = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -293,7 +294,10 @@ class Protein:
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
-        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+        out = {
+            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 
+            'names_col':'mutant', 'reps':self.reps, 'class_dict':self.class_dict
+        }
 
         return out
     
@@ -322,7 +326,10 @@ class Protein:
 
             df = pd.DataFrame({"mutant":mutants, "sequence":sequences ,"p":ys, "mmp":ys, "entropy":ys})
         
-        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+        out = {
+            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 
+            'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps, 'class_dict':self.library.class_dict
+        }
 
         return out
 
@@ -437,7 +444,10 @@ class Protein:
         rep_path = os.path.join(dest, "rep")
         struc_path = os.path.join(dest, "struc")
 
-        out = {'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 'seqs_col':'sequence', 'names_col':'names', 'reps':[]}
+        out = {
+            'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 
+            'seqs_col':'sequence', 'names_col':'names', 'reps':[], 'class_dict':self.class_dict
+        }
 
         return out
     
