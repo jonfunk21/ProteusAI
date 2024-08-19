@@ -782,6 +782,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         return img
 
 
+    ########
+    ## IO ##
+    ########
+
     ### READING DATASET ###
     @reactive.Effect
     @reactive.event(input.dataset_file)
@@ -1114,97 +1118,189 @@ def server(input: Inputs, output: Outputs, session: Session):
         return struc
 
 
-    ### COMPUTE REPRESENTATIONS ###
-    @reactive.Effect
-    @reactive.event(input.dat_compute_reps)
-    async def _():
-        mode = MODE()
-        lib = LIBRARY()
-        prot = PROTEIN()
-        method = input.dat_rep_type()
+    ############
+    ## DESIGN ##
+    ############
 
-        # if no library was loaded one has to be created
-        if mode in ['zero-shot', 'structure']:
-            data = prot.zs_library(model=MODEL_DICT[method])
-            lib = pai.Library(user=prot.user, source=data)
-            dest = os.path.join(prot.rep_path, MODEL_DICT[method])
-            pbar_max = len(data["df"]) - len(os.listdir(dest))
+    ### DESIGN TAB OUTPUT CONTROL ###
+    @render.ui
+    def struc3D_design():
+        out = DESIGN_OUTPUT()
+        if type(out) == str  or input.design_sidechains() == None:
+            sidechains = [] 
         else:
-            pbar_max = len(lib)
-        
-        with ui.Progress(min=1, max=pbar_max) as p:
-
-            p.set(message="Computation in progress", detail="Initializing...")
-
-            print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
+            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
             
-            lib.compute(method=REP_DICT[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
 
-            LIBRARY.set(lib)
-            print("Done!")
+        highlights = list(set(input.design_res().strip().split(',') + sidechains))
 
-            # update representation selection
-            ui.update_select(
-                "model_rep_type",
-                choices=[INVERTED_REPS[i] for i in lib.reps]
-            )
+        if PROT_INTERFACE():
+            highlights = highlights + PROT_INTERFACE()
 
-            reps = [INVERTED_REPS[i] for i in lib.reps]
-            for rep in IN_MEMORY:
-                    if rep not in reps:
-                        reps.append(rep)
-            REPS_AVAIL.set(reps)
+        if LIG_INTERFACE():
+            highlights = highlights + LIG_INTERFACE()
+
+        highlights = [i for i in set(highlights) if type(i) != str]
+
+        highlights_dict = {input.mutlichain_chain():highlights}
+
+        view = PROTEIN().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
+        return ui.TagList(
+            ui.HTML(view.write_html())
+        )
 
 
-    ### UPDATE REPRESENTATIONS PLOT ###
+    ### SELECT PROTEIN-PROTEIN INTERFACE ###
     @reactive.Effect
-    @reactive.event(input.update_plot)
+    @reactive.event(input.design_protein_interface)
+    def _():
+        prot = PROTEIN()
+        if input.design_protein_interface():
+            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'protein')
+            PROT_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
+        else:
+            PROT_INTERFACE.set(None)
+
+
+    ### SELECT PROTEIN LIGAND INTERFACE ###
+    @reactive.Effect
+    @reactive.event(input.design_ligand_interface)
+    def _():
+        prot = PROTEIN()
+        if input.design_ligand_interface():
+            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'ligand')
+            LIG_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
+        else:
+            LIG_INTERFACE.set(None)
+        
+
+    ### DESIGN BUTTON LOGIC ###
+    @reactive.Effect
+    @reactive.event(input.desgin_button)
+    def _():
+        n_designs = int(input.n_designs())
+        with ui.Progress(min=1, max=n_designs) as p:
+            prot = PROTEIN()
+            seq = prot.seq
+            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
+            out = DESIGN_OUTPUT()
+            if type(out) == str or input.design_sidechains() == None:
+                sidechains = []
+            else:
+                sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+
+            residues_str = list(set(input.design_res().strip().split(',') + sidechains))
+            fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+
+            if PROT_INTERFACE():
+                fixed_ids = fixed_ids + PROT_INTERFACE()
+
+            if LIG_INTERFACE():
+                fixed_ids = fixed_ids + LIG_INTERFACE()
+
+            fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
+
+            fixed_ids.sort()
+
+            fixed = []
+            if len(fixed_ids) > 0:
+                fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
+            
+            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p, chain=input.mutlichain_chain())
+            lib = pai.Library(user=prot.user, source=out)
+
+            # set reactive values
+            FIXED_RES.set(fixed)
+            DESIGN_OUTPUT.set(out['df'])
+            DESIGN_LIB.set(lib)
+
+
+    ### RENDER DESIGN DATAFRAME ###
+    @output
+    @render.data_frame
+    def design_out():
+        out = DESIGN_OUTPUT()
+        if type(out) == str:
+            return None
+        else:
+            return render.DataTable(out, summary=True) 
+
+
+    ### CHAIN SELECTION MENU ###
+    @output
+    @render.ui
+    def design_chains():
+        num_chains = len(CHAINS())
+        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
+
+
+    ### DOWNLOAD DESIGN RESULTS
+    @output
+    @render.ui
+    def design_download_ui():
+        out = DESIGN_OUTPUT()
+        if type(out) != str:
+            return ui.download_button("download_designs", "Download design results")
+
+
+    ### DOWNLOAD LOGIC FOR DESIGN RESULTS ###
+    @render.download(
+        filename=lambda: f"{PROTEIN().name}_designs.csv"
+    )
+    def download_designs():
+        yield DESIGN_OUTPUT().to_csv(index=False)
+
+
+    ### OUTPUT TEXED FOR FIXED RESIDUES ###
+    @output
+    @render.text
+    def fixed_res_text(alt=None):
+        out = DESIGN_OUTPUT()
+        if type(out) != str:
+            msg = "Residues that were fixed during design: \n"+ ", ".join(FIXED_RES())
+            return msg     
+
+
+    ### FOLDING BUTTON ###
+    @reactive.Effect
+    @reactive.event(input.folding_button)
     def _():
         """
-        Render plot once button is pressed.
+        Fold selected proteins
         """
-        if input.plot_rep_type():
-            with ui.Progress(min=1, max=15) as p:
-                
-                #if MODE() == "dataset":
-                p.set(message="Plotting", detail="This may take a while...")
+        lib = DESIGN_LIB()
+        out = DESIGN_OUTPUT()
+        prot = PROTEIN()
+        selection = input.fold_these()
+        with ui.Progress(min=1, max=len(selection)) as p:
+            p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
+            model = MODEL_DICT[input.folding_model()]
+            num_recycles = input.num_recycles()
+            to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
+            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
+            fold_lib = pai.Library(user=prot.user, source=out)
+            FOLD_LIB.set(fold_lib)
 
-                lib = LIBRARY()
-                mode = MODE()
-                prot = PROTEIN()
 
-                # if no library was loaded one has to be created
-                if mode in ['zero-shot', 'structure'] and lib == None:
-                    data = prot.zs_library(model = REP_DICT[input.plot_rep_type()])
-                    lib = pai.Library(user=prot.user, source=data)
-
-                names = lib.names
-                y_upper = input.y_upper()
-                y_lower = input.y_lower()
-                rep = REP_DICT[input.plot_rep_type()]
-                
-                # Update to pass the new parameters
-                if input.vis_method() == 't-SNE':
-                    fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
-                elif input.vis_method() == 'UMAP':
-                    fig, ax, df = lib.plot_umap(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
-                elif input.vis_method() == 'PCA':
-                    fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
-
-                TSNE_DF.set(df)
-                LIBRARY_PLOT.set((fig, ax))
+    ### ANALYZE DESIGNS ###
+    @reactive.Effect
+    @reactive.event(input.analyze_designs)
+    def _():
+        if input.design_sidechains() == None:
+            sidechains = [] 
         else:
-            pass
+            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+        
+        lib = FOLD_LIB()
+        prot = PROTEIN()
+
+        sidechains_dict = {input.mutlichain_chain():sidechains}
+        lib.struc_geom(ref=prot, residues=sidechains_dict)
 
 
-    ### RENDER REPRESENTATIONS PLOT ###
-    @output
-    @render.plot
-    def tsne_plot(alt=None):
-        if LIBRARY_PLOT():
-            fig, ax = LIBRARY_PLOT()
-            return fig, ax
-    
+    ###############
+    ## ZERO-SHOT ##
+    ###############
 
     ### COMPUTE ZS-SCORES ###
     @reactive.Effect
@@ -1339,6 +1435,102 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.TagList(
             ui.HTML(view.write_html())
         )
+
+
+    #####################
+    ## REPRESENTATIONS ##
+    #####################
+
+    ### COMPUTE REPRESENTATIONS ###
+    @reactive.Effect
+    @reactive.event(input.dat_compute_reps)
+    async def _():
+        mode = MODE()
+        lib = LIBRARY()
+        prot = PROTEIN()
+        method = input.dat_rep_type()
+
+        # if no library was loaded one has to be created
+        if mode in ['zero-shot', 'structure']:
+            data = prot.zs_library(model=MODEL_DICT[method])
+            lib = pai.Library(user=prot.user, source=data)
+            dest = os.path.join(prot.rep_path, MODEL_DICT[method])
+            pbar_max = len(data["df"]) - len(os.listdir(dest))
+        else:
+            pbar_max = len(lib)
+        
+        with ui.Progress(min=1, max=pbar_max) as p:
+
+            p.set(message="Computation in progress", detail="Initializing...")
+
+            print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
+            
+            lib.compute(method=REP_DICT[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
+
+            LIBRARY.set(lib)
+            print("Done!")
+
+            # update representation selection
+            ui.update_select(
+                "model_rep_type",
+                choices=[INVERTED_REPS[i] for i in lib.reps]
+            )
+
+            reps = [INVERTED_REPS[i] for i in lib.reps]
+            for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
+            REPS_AVAIL.set(reps)
+
+
+    ### UPDATE REPRESENTATIONS PLOT ###
+    @reactive.Effect
+    @reactive.event(input.update_plot)
+    def _():
+        """
+        Render plot once button is pressed.
+        """
+        if input.plot_rep_type():
+            with ui.Progress(min=1, max=15) as p:
+                
+                #if MODE() == "dataset":
+                p.set(message="Plotting", detail="This may take a while...")
+
+                lib = LIBRARY()
+                mode = MODE()
+                prot = PROTEIN()
+
+                # if no library was loaded one has to be created
+                if mode in ['zero-shot', 'structure'] and lib == None:
+                    data = prot.zs_library(model = REP_DICT[input.plot_rep_type()])
+                    lib = pai.Library(user=prot.user, source=data)
+
+                names = lib.names
+                y_upper = input.y_upper()
+                y_lower = input.y_lower()
+                rep = REP_DICT[input.plot_rep_type()]
+                
+                # Update to pass the new parameters
+                if input.vis_method() == 't-SNE':
+                    fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                elif input.vis_method() == 'UMAP':
+                    fig, ax, df = lib.plot_umap(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                elif input.vis_method() == 'PCA':
+                    fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+
+                TSNE_DF.set(df)
+                LIBRARY_PLOT.set((fig, ax))
+        else:
+            pass
+
+
+    ### RENDER REPRESENTATIONS PLOT ###
+    @output
+    @render.plot
+    def tsne_plot(alt=None):
+        if LIBRARY_PLOT():
+            fig, ax = LIBRARY_PLOT()
+            return fig, ax
 
     ##########
     ## MLDE ##
@@ -1518,6 +1710,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         DATA_REVIEWED.set('reviewed')
 
 
+    ################
+    ##  DISCOVERY ##
+    ################
+
     ### TRAIN DISCOVERY MODEL ###
     @reactive.Effect
     @reactive.event(input.discovery_train_button)
@@ -1534,7 +1730,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 k_folds = None
 
             m = pai.Model(model_type=MODEL_DICT[input.discovery_model_type()])
-            out = m.train(library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), model_type=MODEL_DICT[input.discovery_model_type()], k_folds=k_folds)
+            out = m.train(library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), model_type=MODEL_DICT[input.discovery_model_type()], k_folds=k_folds, pbar=p)
             model_lib = pai.Library(user=lib.user, source=out)
 
             # set reactive variables
@@ -1574,188 +1770,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         if DISCOVERY_MODEL() == None:
             return None
         else:
+            model = DISCOVERY_MODEL()
+            class_dict = model.library.class_dict
+            df['y_true'] = [class_dict[i] for i in df['y_true']]
+            df['y_pred'] = [class_dict[i] for i in df['y_pred']]
             return df
 
-
-    ### DESIGN TAB OUTPUT CONTROL ###
-    @render.ui
-    def struc3D_design():
-        out = DESIGN_OUTPUT()
-        if type(out) == str  or input.design_sidechains() == None:
-            sidechains = [] 
-        else:
-            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-            
-
-        highlights = list(set(input.design_res().strip().split(',') + sidechains))
-
-        if PROT_INTERFACE():
-            highlights = highlights + PROT_INTERFACE()
-
-        if LIG_INTERFACE():
-            highlights = highlights + LIG_INTERFACE()
-
-        highlights = [i for i in set(highlights) if type(i) != str]
-
-        highlights_dict = {input.mutlichain_chain():highlights}
-
-        view = PROTEIN().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
-        return ui.TagList(
-            ui.HTML(view.write_html())
-        )
-
-
-    ### SELECT PROTEIN-PROTEIN INTERFACE ###
-    @reactive.Effect
-    @reactive.event(input.design_protein_interface)
-    def _():
-        prot = PROTEIN()
-        if input.design_protein_interface():
-            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'protein')
-            PROT_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
-        else:
-            PROT_INTERFACE.set(None)
-
-
-    ### SELECT PROTEIN LIGAND INTERFACE ###
-    @reactive.Effect
-    @reactive.event(input.design_ligand_interface)
-    def _():
-        prot = PROTEIN()
-        if input.design_ligand_interface():
-            prot_contacts = prot.get_contacts(chain=input.mutlichain_chain(), dist=input.design_protein_interface_distance(), target = 'ligand')
-            LIG_INTERFACE.set(prot_contacts) # here will be a function that selects the interface values
-        else:
-            LIG_INTERFACE.set(None)
-        
-
-    ### DESIGN BUTTON LOGIC ###
-    @reactive.Effect
-    @reactive.event(input.desgin_button)
-    def _():
-        n_designs = int(input.n_designs())
-        with ui.Progress(min=1, max=n_designs) as p:
-            prot = PROTEIN()
-            seq = prot.seq
-            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
-            out = DESIGN_OUTPUT()
-            if type(out) == str or input.design_sidechains() == None:
-                sidechains = []
-            else:
-                sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-
-            residues_str = list(set(input.design_res().strip().split(',') + sidechains))
-            fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
-
-            if PROT_INTERFACE():
-                fixed_ids = fixed_ids + PROT_INTERFACE()
-
-            if LIG_INTERFACE():
-                fixed_ids = fixed_ids + LIG_INTERFACE()
-
-            fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
-
-            fixed_ids.sort()
-
-            fixed = []
-            if len(fixed_ids) > 0:
-                fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
-            
-            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p, chain=input.mutlichain_chain())
-            lib = pai.Library(user=prot.user, source=out)
-
-            # set reactive values
-            FIXED_RES.set(fixed)
-            DESIGN_OUTPUT.set(out['df'])
-            DESIGN_LIB.set(lib)
-
-
-    ### RENDER DESIGN DATAFRAME ###
-    @output
-    @render.data_frame
-    def design_out():
-        out = DESIGN_OUTPUT()
-        if type(out) == str:
-            return None
-        else:
-            return render.DataTable(out, summary=True) 
-
-
-    ### CHAIN SELECTION MENU ###
-    @output
-    @render.ui
-    def design_chains():
-        num_chains = len(CHAINS())
-        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
-
-
-    ### DOWNLOAD DESIGN RESULTS
-    @output
-    @render.ui
-    def design_download_ui():
-        out = DESIGN_OUTPUT()
-        if type(out) != str:
-            return ui.download_button("download_designs", "Download design results")
-
-
-    ### DOWNLOAD LOGIC FOR DESIGN RESULTS ###
-    @render.download(
-        filename=lambda: f"{PROTEIN().name}_designs.csv"
-    )
-    def download_designs():
-        yield DESIGN_OUTPUT().to_csv(index=False)
-
-
-    ### OUTPUT TEXED FOR FIXED RESIDUES ###
-    @output
-    @render.text
-    def fixed_res_text(alt=None):
-        out = DESIGN_OUTPUT()
-        if type(out) != str:
-            msg = "Residues that were fixed during design: \n"+ ", ".join(FIXED_RES())
-            return msg     
-
-
-    ### FOLDING BUTTON ###
-    @reactive.Effect
-    @reactive.event(input.folding_button)
-    def _():
-        """
-        Fold selected proteins
-        """
-        lib = DESIGN_LIB()
-        out = DESIGN_OUTPUT()
-        prot = PROTEIN()
-        selection = input.fold_these()
-        with ui.Progress(min=1, max=len(selection)) as p:
-            p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
-            model = MODEL_DICT[input.folding_model()]
-            num_recycles = input.num_recycles()
-            to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
-            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
-            fold_lib = pai.Library(user=prot.user, source=out)
-            FOLD_LIB.set(fold_lib)
-
-
-    ### ANALYZE DESIGNS ###
-    @reactive.Effect
-    @reactive.event(input.analyze_designs)
-    def _():
-        if input.design_sidechains() == None:
-            sidechains = [] 
-        else:
-            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-        
-        lib = FOLD_LIB()
-        prot = PROTEIN()
-
-        sidechains_dict = {input.mutlichain_chain():sidechains}
-        lib.struc_geom(ref=prot, residues=sidechains_dict)
-
     
-    ########################
-    ### SEARCH DISCOVERY ###
-    ########################
     @reactive.Effect
     @reactive.event(input.discovery_search)
     def _():
@@ -1769,6 +1790,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = DISCOVERY_MODEL()
 
             model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
+
 
     ###############
     ### HELPERS ###

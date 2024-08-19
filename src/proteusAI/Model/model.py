@@ -138,7 +138,8 @@ class Model:
             'optim': 'adam',
             'lr': 10e-4,
             'seed': 42,
-            'dest' : None
+            'dest' : None,
+            'pbar' : None
         }
         
         # Update defaults with provided keyword arguments
@@ -167,6 +168,7 @@ class Model:
             optim (str): Choose optimizer for feed forward neural network. e.g. 'adam'.
             lr (float): Choose a learning rate for feed forward neural networks. e.g. 10e-4.
             seed (int): Choose a random seed. e.g. 42
+            pbar: Progress bar for shiny app.
         """
         # Update attributes if new values are provided
         self._update_attributes(**kwargs)
@@ -180,9 +182,9 @@ class Model:
         # train
         out = None
         if self.model_type in self._sklearn_models:
-            out = self.train_sklearn(rep_path=self.rep_path)
+            out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
         elif self.model_type in self._pt_models:
-            out = self.train_gp(rep_path=self.rep_path)
+            out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
@@ -311,14 +313,18 @@ class Model:
 
     
 
-    def train_sklearn(self, rep_path):
+    def train_sklearn(self, rep_path, pbar=None):
         """
         Train sklearn models and save the model.
 
         Args:
             rep_path (str): representation path
+            pbar: Progress bar for shiny app.
         """
         assert self._model is not None
+
+        if pbar:
+            pbar.set(message="Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -342,6 +348,9 @@ class Model:
         self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
+            if pbar:
+                pbar.set(message=f"Training {self.model_type}", detail=f"...")
+            
             # train model
             self._model.fit(x_train, y_train)
 
@@ -396,7 +405,12 @@ class Model:
             fold_results = []
             ensemble = []
 
-            for train_index, test_index in kf.split(x_train):
+            for i, data in enumerate(kf.split(x_train)):
+                train_index, test_index = data
+
+                if pbar:
+                    pbar.set(message=f"Training {self.model_type} {i+1}/{self.k_folds}", detail=f"...")
+
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
                 y_train_fold, y_test_fold = np.array(y_train)[train_index], np.array(y_train)[test_index]
 
@@ -458,14 +472,18 @@ class Model:
         return out
 
 
-    def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):
+    def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1, pbar=None):
         """
         Train a Gaussian Process model and save the model.
 
         Args:
             rep_path (str): representation path
+            pbar: Progress bar for shiny app.
         """
         assert self._model is not None
+
+        if pbar:
+            pbar.set(message=f"Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -502,6 +520,9 @@ class Model:
         self._model.train()
         self.likelihood.train()
         prev_loss = float('inf')
+        
+        if pbar:
+            pbar.set(message=f"Training {self.model_type}", detail=f"...")
         
         for _ in range(epochs):
             optimizer.zero_grad()
