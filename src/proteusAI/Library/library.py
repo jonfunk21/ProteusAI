@@ -361,11 +361,12 @@ class Library:
         if len(reps) > 0:
             for rep in reps:
                 rep_names = [f for f in os.listdir(os.path.join(self.rep_path, rep)) if f.endswith('.pt')]
-                if len(rep_names) == len(set(self.names)):
-                    self.reps.append(rep)
+                if len(rep_names) >= len(set(self.names)):
+                    self.reps.insert(0, rep)  # Insert representation at the front
                     for protein in self.proteins:
                         f_name = protein.name + '.pt'
-                        protein._reps.append(rep) 
+                        if os.path.exists(os.path.join(self.rep_path, rep, f_name)):
+                            protein._reps.insert(0, rep)
 
 
     def _check_strucs(self):
@@ -711,12 +712,8 @@ class Library:
         x = self.load_representations(rep)
         y = self.y
         
-        print(type(y))
-        print(y)
         if self.y_type == 'class':
             y = [self.class_dict[i] for i in y]
-        print(type(y))
-        print(y)
 
         fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42)
 
