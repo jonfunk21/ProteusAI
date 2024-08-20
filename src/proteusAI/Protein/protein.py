@@ -46,6 +46,7 @@ class Protein:
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
             y_pred (float, int, str): Predicted y_value.
+            y_sigma (float, int, str): Predicted y_value.
             source (str, or data): Source of data, either a file or a data package created from a diversification step.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
         
@@ -61,6 +62,7 @@ class Protein:
         self.source = source
         self.y = y
         self.y_pred = None
+        self.y_sigma = None
         self.fname = fname
         self.user = os.path.join(USR_PATH, user)
 

@@ -91,6 +91,7 @@ class Model:
         self.dest = None
         self.y_best = None
         self.out_df = None
+        self.search_df = None
 
         # check for device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -378,6 +379,12 @@ class Model:
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
 
+            # Add predictions to test proteins
+            for i in range(len(test)):
+                self.test_data[i].y_pred = self.y_test_pred[i].item()
+                self.test_data[i].y_sigma = self.y_test_sigma[i].item()
+
+            # Save dataframes
             train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
             test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
             val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
@@ -397,10 +404,6 @@ class Model:
 
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
-
-            # Add predictions to test proteins
-            for i in range(len(test)):
-                test[i].y_pred = self.y_test_pred[i].item()
 
         # handle ensembles
         else:
@@ -474,16 +477,18 @@ class Model:
 
         # Add predictions to proteins 
         for i in range(len(train)):
-            train[i].y_pred = self.y_train_pred[i].item()
+            self.train_data[i].y_pred = self.y_train_pred[i].item()
+            self.train_data[i].y_sigma = self.y_train_sigma[i].item()
 
         # Add predictions to test proteins
         for i in range(len(val)):
-            val[i].y_pred = self.y_val_pred[i].item()
+            self.val_data[i].y_pred = self.y_val_pred[i].item()
+            self.val_data[i].y_sigma = self.y_val_sigma[i].item()
 
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'y_pred_col':'y_predicted', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
-            'class_dict':self.library.class_dict
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 
+            'reps':self.library.reps, 'class_dict':self.library.class_dict
             }
 
         return out
@@ -581,15 +586,18 @@ class Model:
 
         # Add predictions to proteins 
         for i in range(len(train)):
-            train[i].y_pred = self.y_train_pred[i].item()
+            self.train_data[i].y_pred = self.y_train_pred[i].item()
+            self.train_data[i].y_sigma = self.y_train_sigma[i].item()
         
         # Add predictions to test proteins
         for i in range(len(test)):
-            test[i].y_pred = self.y_test_pred[i].item()
+            self.test_data[i].y_pred = self.y_test_pred[i].item()
+            self.test_data[i].y_sigma = self.y_test_sigma[i].item()
 
         # Add predictions to test proteins
         for i in range(len(val)):
-            val[i].y_pred = self.y_val_pred[i].item()
+            self.val_data[i].y_pred = self.y_val_pred[i].item()
+            self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # Save the model
         if self.dest != None:
@@ -603,6 +611,7 @@ class Model:
         os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
         torch.save(self._model.state_dict(), model_save_path)
 
+        # save dataframes
         train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
         test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
         val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
@@ -626,7 +635,7 @@ class Model:
 
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'y_pred_col':'y_predicted', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
             'class_dict':self.library.class_dict
             }
 
@@ -640,7 +649,7 @@ class Model:
         names = [prot.name for prot in proteins]
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['name', 'sequence', 'y-value', 'y-predicted', 'y-sigma'])  # CSV header
+            writer.writerow(['name', 'sequence', 'y_value', 'y_predicted', 'y_sigma'])  # CSV header
             for name, protein, y, y_pred, y_sigma in zip(names, proteins, y_values, y_pred_values, y_sigma_values):
                 row = [name, protein.seq, y, y_pred, y_sigma]
                 writer.writerow(row)
@@ -821,6 +830,8 @@ class Model:
         else:
             proteins = [prot for prot in self.library.proteins if class_dict[prot.y] in labels]
 
+        labels_name = "_".join([class_dict[i] for i in labels])
+
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
@@ -832,8 +843,28 @@ class Model:
         
         # Set the selected indices to 1
         mask[selected_indices] = 1
-        
-        return mask
+
+        # Select the proteins based on the mask
+        selected_proteins = [proteins[i] for i in selected_indices]
+        ys = [prot.y for prot in selected_proteins]
+        y_pred = [prot.y_pred for prot in selected_proteins]
+        y_sigma = [prot.y_sigma for prot in selected_proteins]
+
+        # Save the search_results
+        if self.dest != None:
+            csv_dest = self.dest
+        else:
+            csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
+    
+        self.search_df = self.save_to_csv(selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results_{labels_name}.csv")
+
+        out = {
+            'df':self.search_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
+            }
+
+        return out, mask
 
 
     ### Getters and Setters ###

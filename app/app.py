@@ -226,7 +226,8 @@ app_ui = ui.page_fluid(
                         ui.output_data_frame("discovery_table"),
                     ),
                     ui.nav_panel("Search Results",
-                        ui.output_plot("discovery_search_plot")
+                        ui.output_plot("discovery_search_plot"),
+                        ui.output_ui("discovery_download_ui")
                     ),
                 ),
             ),
@@ -290,6 +291,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     DISCOVERY_TSNE_DF = reactive.Value(None)
     DISCOVERY_LIBRARY_PLOT = reactive.Value(None)
     DISCOVERY_SEARCH = reactive.Value(None)
+    DISCOVERY_DF = reactive.Value(None)
 
 
     ##############
@@ -1626,9 +1628,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             m = pai.Model(model_type=MODEL_DICT[input.model_type()])
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=MODEL_DICT[input.model_type()], k_folds=k_folds)
             
+            val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
+            print(val_df)
+
             # set reactive variables
             MODEL.set(m)
-            VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
+            VAL_DF.set(val_df)
 
 
     ### PREPARE PREDICTED VERSUS TRUE PLOT ###
@@ -1723,11 +1728,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             m = pai.Model(model_type=MODEL_DICT[input.discovery_model_type()])
             out = m.train(library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), model_type=MODEL_DICT[input.discovery_model_type()], k_folds=k_folds, pbar=p)
             model_lib = pai.Library(user=lib.user, source=out)
+            val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
 
             # set reactive variables
             DISCOVERY_LIB.set(model_lib)
             DISCOVERY_MODEL.set(m)
-            DISCOVERY_VAL_DF.set(pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma}))
+            DISCOVERY_VAL_DF.set(val_df)
 
 
     ### RENDER DISCOVERY PLOT ###
@@ -1777,10 +1783,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             labels = input.sample_from()
             if labels == ():
                 labels = ['all']
-                
+            
             model = DISCOVERY_MODEL()
+            out, search_results = model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
 
-            DISCOVERY_SEARCH.set(model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p))
+            DISCOVERY_DF.set(out['df'])
+
+            DISCOVERY_SEARCH.set(search_results)
 
 
     ### RENDER SEARCH PLOT ###
@@ -1788,7 +1797,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def discovery_search_plot(alt=None):
         highlight_mask = DISCOVERY_SEARCH()
-        if type(highlight_mask) != None:
+        if highlight_mask is not None:
             with ui.Progress() as p:
                 p.set(message="Visualizing search results", detail="...")
                 model = DISCOVERY_MODEL()
@@ -1805,6 +1814,36 @@ def server(input: Inputs, output: Outputs, session: Session):
                     fig, ax, df = lib.plot_pca(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
                 return fig, ax
 
+
+    ### RENDER DISCOVERY TABLE ###
+    @output
+    @render.data_frame
+    def discovery_search_table(alt=None):
+        table = DISCOVERY_DF()
+        model = DISCOVERY_MODEL()
+        seq_col = model.library.seq_col
+        table = table.drop(seq_col, axis=1)
+        return table
+
+
+    ### DOWNLOAD DISCOVERY RESULTS ###
+    @output
+    @render.ui
+    def discovery_download_ui():
+        out = DISCOVERY_DF()
+        if out is not None:
+            return ui.TagList(
+                ui.output_data_frame("discovery_search_table"),
+                ui.download_button("download_discovery", "Download discovery results"),
+            )
+
+
+    ### DOWNLOAD LOGIC FOR DESIGN RESULTS ###
+    @render.download(
+        filename=lambda: f"{LIBRARY().fname}_discovery.csv"
+    )
+    def download_discovery():
+        yield DISCOVERY_DF().to_csv(index=False)
 
 
     ###############

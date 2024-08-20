@@ -159,6 +159,7 @@ class Library:
 
         # Parsing arguments
         df = data['df']
+        print(df)
         self.seqs = df[self.seq_col].to_list()
         self.names = df[self.names_col].to_list()
         self.y = df[self.y_col].to_list()
