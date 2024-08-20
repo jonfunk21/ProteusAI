@@ -61,7 +61,7 @@ df['Top N Variants'] = pd.Categorical(df['Top N Variants'], categories=top_n_var
 sns.set(style="whitegrid")
 
 # Create a grid of box plots for each sample size with shared y-axis
-g = sns.FacetGrid(df, col="Sample Size", col_wrap=2, height=4, aspect=1.5, sharey=True)
+g = sns.FacetGrid(df, col="Sample Size", col_wrap=2, height=5.5, aspect=1.8, sharey=True)  # Adjusted height and aspect
 
 # Function to create box plot and strip plot
 def plot_box_and_strip(data, x, y, **kwargs):
@@ -94,16 +94,16 @@ model = model_dict[MODEL]
 acq_fn = acq_dict[ACQ_FN]
 subtitle = f'Representation: {rep}, Model: {model}, Acquisition Function: {acq_fn}'
 
-# Set the main title and subtitle
-g.fig.suptitle(f'Rounds to Discover Top N Variants Across Different Sample Sizes', y=1.05)
-plt.text(0.5, 1.01, subtitle, ha='center', va='center', fontsize=10, transform=g.fig.transFigure)
-
-# Adjust the layout
-plt.tight_layout()
-g.fig.subplots_adjust(top=0.9, right=0.85)
-
 # Move legend to the right side
-g.add_legend(title="Dataset", bbox_to_anchor=(0.75, 0.5), loc='center left', borderaxespad=0)
+g.add_legend(title="Dataset", bbox_to_anchor=(0.87, 0.47), loc='center left', borderaxespad=0)
+
+# Set the main title and subtitle
+g.fig.suptitle(f'Rounds to Discover Top N Variants Across Different Sample Sizes', y=0.94, x=0.44)
+plt.text(0.44, 0.9, subtitle, ha='center', va='center', fontsize=10, transform=g.fig.transFigure)
+
+# Adjust the layout to optimize spacing
+plt.tight_layout(pad=2.0)  # Adjusted padding
+g.fig.subplots_adjust(top=0.85, right=0.85, hspace=0.3, wspace=0.3)  # Adjusted spacing
 
 # Save the plot
 plt.savefig(f'usrs/benchmark/firs_discovered_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
