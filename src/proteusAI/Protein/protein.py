@@ -305,7 +305,8 @@ class Protein:
         }
 
         return out
-    
+
+
     def zs_library(self, model="esm2"):
         """
         Generate zero-shot library.
