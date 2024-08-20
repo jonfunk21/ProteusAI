@@ -114,7 +114,8 @@ class Model:
             'optim': 'adam',
             'lr': 10e-4,
             'seed': 42,
-            'dest' : None
+            'dest' : None,
+            'pbar' : None
         }
         
         # Update defaults with provided keyword arguments
