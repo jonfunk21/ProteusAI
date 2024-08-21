@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 import argparse
+import pandas as pd
 
 # Initialize the argparse parser
 parser = argparse.ArgumentParser(description="Benchmarking ProteusAI MLDE")
@@ -25,7 +26,9 @@ parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50
 parser.add_argument('--acquisition_fn', type=str, default='ei', help='ProteusAI acquisition functions')
 
 
-def benchmark(dataset, fasta, model, embedding, name, sample_size):
+def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
+    iteration = 1
+
     # load data from csv or excel: x should be sequences, y should be labels, y_type class or num
     lib = pai.Library(user=USER, source=dataset, seqs_col='mutated_sequence', y_col='DMS_score', 
                       y_type='num', names_col='mutant')
@@ -41,9 +44,9 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
     out = protein.zs_prediction(model=ZS_MODEL, batch_size=BATCH_SIZE, device=DEVICE)
     zs_lib = pai.Library(user=USER, source=out)
 
-    # Simulate selection of top N ZS-predictions for the initial library
+    # Simulate selection of top N ZS-predictions for the initial librarys
     zs_prots = [prot for prot in zs_lib.proteins if prot.name in lib.names]
-    sorted_zs_prots = sorted(zs_prots, key=lambda prot: prot.y, reverse=True)
+    sorted_zs_prots = sorted(zs_prots, key=lambda prot: prot.y_pred, reverse=True)
     top_N_zs_names = [prot.name for prot in sorted_zs_prots[:sample_size]]
 
     # compute representations for this dataset
@@ -59,12 +62,15 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         n_test = 1
         n_train = n_train - n_test
 
-    m = pai.Model(model_type=model)
-    m.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
+    model = pai.Model(model_type=model)
+    model.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
+
+    # add to results df
+    results_df = add_to_data(data=results_df, proteins=zs_selected, iteration=iteration, dataset=name, model=model)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
-    ranked_search_space, _, _, _, _ = m.predict(search_space, acq_fn=ACQ_FN)
+    ranked_search_space, _, _, _, _ = model.predict(search_space, acq_fn=ACQ_FN)
 
     # Prepare the tracking of top N variants, 
     top_variants_counts = IMPROVEMENT
@@ -81,7 +87,6 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
 
     # add sequences to the new dataset, and continue the loop until the dataset is exhausted
     sampled_data = zs_selected
-    iteration = 1
 
     while len(ranked_search_space) >= sample_size:
         # Check if we have found all top variants, including the 1st zero-shot round
@@ -125,15 +130,18 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size):
         }
 
         # train model on new data
-        m.train(library=lib, x=REP, split=split, seed=SEED, model_type=MODEL)
+        model.train(library=lib, x=REP, split=split, seed=SEED, model_type=MODEL)
+
+        # add to results
+        results_df = add_to_data(data=results_df, proteins=sample, iteration=iteration, dataset=name, model=model)
 
         # re-score the new search space
-        ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = m.predict(ranked_search_space, acq_fn=ACQ_FN)
+        ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = model.predict(ranked_search_space, acq_fn=ACQ_FN)
     
     # save when the first datapoints for each dataset and category have been discvered
     first_discovered_data[name][sample_size] = first_discovered
 
-    return found_counts
+    return found_counts, results_df
 
 
 def plot_results(found_counts, name, iter, dest, sample_size):
@@ -153,6 +161,41 @@ def plot_results(found_counts, name, iter, dest, sample_size):
         plt.text(x_positions[i], count + 0.1, str(count), ha='center')
 
     plt.savefig(os.path.join(dest, f'top_variants_{iter}_iterations_{name}.png'))
+
+
+def add_to_data(data: pd.DataFrame, proteins, iteration, dataset, model):
+    """Add sampling results to dataframe"""
+    names = [prot.name for prot in proteins]
+    ys = [prot.y for prot in proteins]
+    y_preds = [prot.y_pred for prot in proteins]
+    y_sigmas = [prot.y_sigma for prot in proteins]
+    models = [MODEL] * len(names)
+    reps = [REP] * len(names)
+    acq_fns = [ACQ_FN] * len(names)
+    rounds = [iteration] * len(names)
+    datasets = [dataset] * len(names)
+    sample_sizes = [SAMPLE_SIZES] * len(names)
+    test_r2s = [model.test_r2] * len(names)
+    val_r2s = [model.val_r2] * len(names)
+
+    new_data = pd.DataFrame({
+        "name": names,
+        "y": ys,
+        "y_pred": y_preds,
+        "y_sigma": y_sigmas,
+        "test_r2":test_r2s,
+        "val_r2":val_r2s,
+        "model": models,
+        "rep": reps,
+        "acq_fn": acq_fns,
+        "round": rounds,
+        "sample_size":sample_sizes,
+        "dataset": datasets
+    })
+
+    # Append the new data to the existing DataFrame
+    updated_data = pd.concat([data, new_data], ignore_index=True)
+    return updated_data
 
 
 # Parse the arguments
@@ -178,6 +221,22 @@ fastas = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.fasta')]
 datasets.sort()
 fastas.sort()
 
+# save sampled data
+results_df = pd.DataFrame({
+            "name":[],
+            "y":[],
+            "y_pred":[],
+            "y_sigma":[],
+            "test_r2":[],
+            "val_r2":[],
+            "model":[],
+            "rep":[],
+            "acq_fn":[],
+            "round":[],
+            "sample_size":[],
+            "dataset":[]
+        })
+
 first_discovered_data = {}
 for i in range(len(datasets)):
     for N in SAMPLE_SIZES:
@@ -190,7 +249,9 @@ for i in range(len(datasets)):
         else:
             first_discovered_data[name][N] = []
             
-        found_counts = benchmark(d, f, model=MODEL, embedding=REP, name=name, sample_size=N)
+        found_counts, results_df = benchmark(d, f, model=MODEL, embedding=REP, name=name, sample_size=N, results_df=results_df)
         # save first discovered data
         with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{MODEL}_{REP}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
+        
+        results_df.to_csv(os.path.join('usrs/benchmark/', 'results_df.csv'), index=False)
