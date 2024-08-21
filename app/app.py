@@ -986,10 +986,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                         
                     except:
                         pass
-
+                
+                rep_computed = list(set(rep_computed))
                 for rep in IN_MEMORY:
                     if rep not in rep_computed:
-                        rep_computed.append(rep)
+                        rep_computed.append(REP_DICT[rep])
 
                 # set reactive variables
                 ui.update_select(
@@ -1320,9 +1321,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = REP_DICT[method]
 
             data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
-            
+
             lib = pai.Library(user=prot.user, source=data)
-            
+
             if method not in computed_zs:
                 computed_zs.append(method)
             
@@ -1344,7 +1345,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.zs_table)
     def zs_df(alt=None):
         prot = PROTEIN()
-        method = REP_DICT[input.COMP_ZS_SCORES()]
+        method = REP_DICT[input.computed_zs_scores()]
         path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
@@ -1374,21 +1375,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             assert section[1] > section[0]
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
-
-        prot = PROTEIN()
-        fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.COMP_ZS_SCORES()])
+        
+        fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.computed_zs_scores()])
         return fig
-
-
-    ### UPDATE ENTROPY PLOT ###
-    @reactive.Effect
-    @reactive.event(input.plot_entropy_section)
-    def _():
-        if input.plot_entropy_section():
-            ui.update_action_button(
-                "plot_entropy",
-                label="Update Entropy"
-            )
 
 
     ### UPDATE SCORES PLOT ###
@@ -1416,19 +1405,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.COMP_ZS_SCORES()])
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.computed_zs_scores()])
         return fig
-
-
-    ### PLOT SCORES ###
-    @reactive.Effect
-    @reactive.event(input.plot_scores_section)
-    def _():
-        if input.plot_scores_section():
-            ui.update_action_button(
-                "plot_scores",
-                label="Update Scores"
-            )
 
 
     ### STRUCTURE MODE ###
