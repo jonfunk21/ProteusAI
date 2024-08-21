@@ -66,6 +66,7 @@ class Library:
             names (list): names of sequences.
             reps (list): list of computed representations.
             proteins (list): list of protein objects.
+            pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
         """
         # Arguments
         self.user = os.path.join(USR_PATH, user)
@@ -89,6 +90,7 @@ class Library:
         self.strucs = None
         self.struc_path = None
         self.class_dict = None
+        self.pred_data = False
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -151,7 +153,6 @@ class Library:
         # Parsing parameters
         self.rep_path = data['rep_path']
         self.struc_path = data['struc_path']
-        self.y_col = data['y_col']
         self.seq_col = data['seqs_col']
         self.names_col = data['names_col']
         self.reps = data['reps']
@@ -159,22 +160,37 @@ class Library:
 
         # Parsing arguments
         df = data['df']
-        print(df)
         self.seqs = df[self.seq_col].to_list()
         self.names = df[self.names_col].to_list()
-        self.y = df[self.y_col].to_list()
         self.y_type = data['y_type']
         self.data = df
 
-        # if predicted values are there
+        # if true y values are there
+        if 'y_col' in data.keys():
+            self.y_col = data['y_col']
+            self.y = df[self.y_col].to_list()
+        else:
+            self.y = [None] * len(self.seqs)
+
+        # if predicted y values are there
         if 'y_pred_col' in data.keys():
             self.y_pred_col = data['y_pred_col']
             self.y_pred = df[self.y_pred_col].to_list()
         else:
-            self.y_pred = [None] * len(self.y)
+            self.y_pred = [None] * len(self.seqs)
+        
+        # if predicted y values are there
+        if 'y_sigma_col' in data.keys():
+            self.y_sigma_col = data['y_sigma_col']
+            self.y_sigma = df[self.y_sigma_col].to_list()
+        else:
+            self.y_sigma = [None] * len(self.y)
+
+        if 'pred_data' in data.keys():
+            self.pred_data = data['pred_data']
 
         # create proteins
-        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred) for name, seq, y, y_pred in zip(self.names, self.seqs, self.y, self.y_pred)]
+        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma) for name, seq, y, y_pred, y_sigma in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma)]
 
 
     def initialize_user(self):
