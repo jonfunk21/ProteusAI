@@ -34,7 +34,7 @@ class Protein:
     """
 
     def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], 
-    user: Union[str, None] = 'guest', y = None, y_pred = None,source: Union[str,None] = None, fname: Union[str,None] = None):
+    user: Union[str, None] = 'guest', y = None, y_pred = None, y_sigma = None, source: Union[str,None] = None, fname: Union[str,None] = None):
         """
         Initialize a new protein object.
 
@@ -61,8 +61,8 @@ class Protein:
         self.struc = struc
         self.source = source
         self.y = y
-        self.y_pred = None
-        self.y_sigma = None
+        self.y_pred = y_pred
+        self.y_sigma = y_sigma
         self.fname = fname
         self.user = os.path.join(USR_PATH, user)
 
@@ -91,7 +91,7 @@ class Protein:
     def __str__(self):
         if self.struc is not None:
             struc_loaded = "loaded"
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\nstruc:\t{self.pdb_file}\n"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\ny_pred:\t{self.y_pred}\ny_sig:\t{self.y_sigma}\nstruc:\t{self.pdb_file}\n"
     
     __repr__ = __str__
 
@@ -301,9 +301,12 @@ class Protein:
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
+            # no true y_values
+            ys = [None] * len(mmp)
+
         out = {
-            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 
-            'names_col':'mutant', 'reps':self.reps, 'class_dict':self.class_dict
+            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_pred_col':'mmp', 'seqs_col':'sequence', 
+            'names_col':'mutant', 'reps':self.reps, 'class_dict':self.class_dict, 'pred_data': True
         }
 
         return out
