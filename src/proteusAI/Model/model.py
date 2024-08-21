@@ -344,9 +344,15 @@ class Model:
         x_val = torch.stack(val).cpu().numpy()
 
         # TODO: For representations that are stored in memory the computation happens here:
-        y_train = [protein.y for protein in self.train_data]
-        self.y_test = [protein.y for protein in self.test_data]
-        self.y_val = [protein.y for protein in self.val_data]
+        if self.library.pred_data:
+            y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y_pred])  for protein in self.val_data]).view(-1).to(device=self.device)       
+        else:
+            y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+
         self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
@@ -502,6 +508,7 @@ class Model:
             rep_path (str): representation path
             pbar: Progress bar for shiny app.
         """
+        
         assert self._model is not None
 
         if pbar:
@@ -522,9 +529,15 @@ class Model:
         x_test = torch.stack(test).to(device=self.device)
         x_val = torch.stack(val).to(device=self.device)
 
-        y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
-        self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
-        y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+        if self.library.pred_data:
+            y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y_pred])  for protein in self.val_data]).view(-1).to(device=self.device)       
+        else:
+            y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+
         self.val_names = [protein.name for protein in self.val_data]
 
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
@@ -743,6 +756,10 @@ class Model:
         y_val_pred = all_y_pred[sorted_indices]
         y_val_sigma = all_sigma_pred[sorted_indices]
         sorted_acq_score = all_acq_scores[sorted_indices]
+        
+        for i, prot in enumerate(val_data):
+            prot.y_pred = y_val_pred[i]
+            prot.y_sigma = y_val_sigma[i]
 
         return val_data, y_val_pred, y_val_sigma, y_val, sorted_acq_score
     
