@@ -106,7 +106,7 @@ plt.tight_layout(pad=2.0)  # Adjusted padding
 g.fig.subplots_adjust(top=0.85, right=0.85, hspace=0.3, wspace=0.3)  # Adjusted spacing
 
 # Save the plot
-plt.savefig(f'usrs/benchmark/firs_discovered_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
+plt.savefig(f'usrs/benchmark/first_discovered_{MODEL}_{REP}_{ACQ_FN}.png', bbox_inches='tight', dpi=300)
 
 # Show the plot
 plt.show()
