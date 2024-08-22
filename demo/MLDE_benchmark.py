@@ -263,4 +263,4 @@ for i in range(len(datasets)):
         with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{MODEL}_{REP}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
         
-        results_df.to_csv(os.path.join('usrs/benchmark/', 'results_df_{MODEL}_{REP}_{ACQ_FN}.csv'), index=False)
+        results_df.to_csv(os.path.join('usrs/benchmark/', f'results_df_{MODEL}_{REP}_{ACQ_FN}.csv'), index=False)
