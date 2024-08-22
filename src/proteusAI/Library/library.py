@@ -190,7 +190,7 @@ class Library:
             self.pred_data = data['pred_data']
 
         # create proteins
-        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma) for name, seq, y, y_pred, y_sigma in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma)]
+        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma, user=self.user) for name, seq, y, y_pred, y_sigma in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma)]
 
 
     def initialize_user(self):
