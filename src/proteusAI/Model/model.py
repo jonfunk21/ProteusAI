@@ -282,7 +282,6 @@ class Model:
 
         if model_type in self._sklearn_models:
             model_params = kwargs.copy()
-            #model_params['seed'] = self.seed
 
             if self.y_type == 'class':
                 if model_type == 'rf':
@@ -293,7 +292,7 @@ class Model:
                     model = KNeighborsClassifier(**model_params)
             elif self.y_type == 'num':
                 if model_type == 'rf':
-                    model = RandomForestRegressor(random_state=self.seed, **model_params)
+                    model = RandomForestRegressor(**model_params)
                 elif model_type == 'svm':
                     model = SVR(**model_params)
                 elif model_type == 'knn':
@@ -345,13 +344,13 @@ class Model:
 
         # TODO: For representations that are stored in memory the computation happens here:
         if self.library.pred_data:
-            y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
-            self.y_test = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.test_data]).view(-1).to(device=self.device)
-            y_val = torch.stack([torch.Tensor([protein.y_pred])  for protein in self.val_data]).view(-1).to(device=self.device)       
+            self.y_train = [protein.y_pred for protein in self.train_data]
+            self.y_test = [protein.y_pred for protein in self.test_data]
+            self.y_val = [protein.y_pred for protein in self.val_data]
         else:
-            y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
-            self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
-            y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+            self.y_train = [protein.y for protein in self.train_data]
+            self.y_test = [protein.y for protein in self.test_data]
+            self.y_val = [protein.y for protein in self.val_data]
 
         self.val_names = [protein.name for protein in self.val_data]
 
@@ -360,7 +359,7 @@ class Model:
                 pbar.set(message=f"Training {self.model_type}", detail=f"...")
             
             # train model
-            self._model.fit(x_train, y_train)
+            self._model.fit(x_train, self.y_train)
 
             # prediction on test set
             self.test_r2 = self._model.score(x_test, self.y_test)
@@ -370,7 +369,7 @@ class Model:
             # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
-            self.y_train_sigma = [None]*len(self.y_val)
+            self.y_train_sigma = [None]*len(self.y_train)
             self.y_val_sigma = [None]*len(self.y_val)
             self.y_test_sigma = [None]*len(self.y_test)
 
@@ -387,11 +386,11 @@ class Model:
 
             # Add predictions to test proteins
             for i in range(len(test)):
-                self.test_data[i].y_pred = self.y_test_pred[i].item()
-                self.test_data[i].y_sigma = self.y_test_sigma[i].item()
+                self.test_data[i].y_pred = self.y_test_pred[i]
+                self.test_data[i].y_sigma = self.y_test_sigma[i]
 
             # Save dataframes
-            train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+            train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
             test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
             val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
             
@@ -411,6 +410,8 @@ class Model:
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
 
+            self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+
         # handle ensembles
         else:
             # combine train and test
@@ -418,7 +419,7 @@ class Model:
             x_train = np.concatenate([x_train, x_test])
 
             kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
-            y_train = y_train + self.y_test
+            self.y_train = self.y_train + self.y_test
             fold_results = []
             ensemble = []
 
@@ -429,7 +430,7 @@ class Model:
                     pbar.set(message=f"Training {self.model_type} {i+1}/{self.k_folds}", detail=f"...")
 
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
-                y_train_fold, y_test_fold = np.array(y_train)[train_index], np.array(y_train)[test_index]
+                y_train_fold, y_test_fold = np.array(self.y_train)[train_index], np.array(self.y_train)[test_index]
 
                 self._model.fit(x_train_fold, y_train_fold)
                 test_r2 = self._model.score(x_test_fold, y_test_fold)
@@ -462,7 +463,7 @@ class Model:
                 dump(model, model_save_path)
 
             # Save the sequences, y-values, and predicted y-values to CSV
-            train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma, f"{csv_dest}/train_data.csv")
+            train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma, f"{csv_dest}/train_data.csv")
             val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
 
             # Save results to a JSON file
@@ -481,21 +482,25 @@ class Model:
             # Concatenate the DataFrames
             self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
 
+            self.y_best = max((max(self.y_train), max(self.y_val)))
+
         # Add predictions to proteins 
         for i in range(len(train)):
-            self.train_data[i].y_pred = self.y_train_pred[i].item()
-            self.train_data[i].y_sigma = self.y_train_sigma[i].item()
+            self.train_data[i].y_pred = self.y_train_pred[i]
+            self.train_data[i].y_sigma = self.y_train_sigma[i]
 
         # Add predictions to test proteins
         for i in range(len(val)):
-            self.val_data[i].y_pred = self.y_val_pred[i].item()
-            self.val_data[i].y_sigma = self.y_val_sigma[i].item()
+            self.val_data[i].y_pred = self.y_val_pred[i]
+            self.val_data[i].y_sigma = self.y_val_sigma[i]
 
         out = {
             'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
             'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 
             'reps':self.library.reps, 'class_dict':self.library.class_dict
             }
+
+        print(f'Training completed:\nval_r2:\t{self.val_r2}')
 
         return out
 
@@ -530,18 +535,18 @@ class Model:
         x_val = torch.stack(val).to(device=self.device)
 
         if self.library.pred_data:
-            y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
             self.y_test = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.test_data]).view(-1).to(device=self.device)
             y_val = torch.stack([torch.Tensor([protein.y_pred])  for protein in self.val_data]).view(-1).to(device=self.device)       
         else:
-            y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
             self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
             y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
 
         self.val_names = [protein.name for protein in self.val_data]
 
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
-        self._model = GP(x_train, y_train, self.likelihood).to(device=self.device)
+        self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
         fix_mean = True
         
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
@@ -562,7 +567,7 @@ class Model:
         for _ in range(epochs):
             optimizer.zero_grad()
             output = self._model(x_train)
-            loss = -mll(output, y_train)
+            loss = -mll(output, self.y_train)
             loss.backward()
             optimizer.step()
             scheduler.step()
@@ -588,7 +593,7 @@ class Model:
         # prediction on validation set
         y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
         self.val_r2 = computeR2(y_val, y_val_pred)
-        self.y_train = y_train.cpu().numpy()
+        self.y_train = self.y_train.cpu().numpy()
         self.y_test_pred, self.y_test_sigma = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
         self.y_val_pred, self.y_val_sigma = y_val_pred.cpu().numpy(), y_val_sigma.cpu().numpy()
 
@@ -625,7 +630,7 @@ class Model:
         torch.save(self._model.state_dict(), model_save_path)
 
         # save dataframes
-        train_df = self.save_to_csv(self.train_data, y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+        train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
         test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
         val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
 
@@ -674,7 +679,7 @@ class Model:
         return df
     
 
-    def predict(self, proteins: list, rep_path=None, acq_fn='greedy', batch_size=1000):
+    def predict(self, proteins: list, rep_path=None, acq_fn='greedy', batch_size=10000):
         """
         Scores the R-squared value for a list of proteins.
 
