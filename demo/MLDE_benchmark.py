@@ -24,6 +24,7 @@ parser.add_argument('--device', type=str, default='cuda', help='Device to run th
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for processing.')
 parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50, 'improved'], help='List of improvements.')
 parser.add_argument('--acquisition_fn', type=str, default='ei', help='ProteusAI acquisition functions')
+parser.add_argument('--k_folds', type=int, default=5, help='K-fold cross validation for sk_learn models')
 
 
 def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
@@ -32,6 +33,9 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
     # load data from csv or excel: x should be sequences, y should be labels, y_type class or num
     lib = pai.Library(user=USER, source=dataset, seqs_col='mutated_sequence', y_col='DMS_score', 
                       y_type='num', names_col='mutant')
+    
+    # compute representations for this dataset
+    lib.compute(method=REP, batch_size=BATCH_SIZE, device=DEVICE)
 
     # plot destination
     plot_dest = os.path.join(lib.user, name, embedding, 'plots', str(sample_size))
@@ -47,26 +51,30 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
     # Simulate selection of top N ZS-predictions for the initial librarys
     zs_prots = [prot for prot in zs_lib.proteins if prot.name in lib.names]
     sorted_zs_prots = sorted(zs_prots, key=lambda prot: prot.y_pred, reverse=True)
-    top_N_zs_names = [prot.name for prot in sorted_zs_prots[:sample_size]]
 
-    # compute representations for this dataset
-    lib.compute(method=REP, batch_size=BATCH_SIZE, device=DEVICE)
 
+    
     # train on the ZS-selected initial library (assume that they have been assayed now) train with 80:10:10 split
-    zs_selected = [prot for prot in lib.proteins if prot.name in top_N_zs_names]
-    n_train = int(sample_size*0.8)
-    n_test = int(sample_size*0.1)
-
-    # handle the very low data results
-    if n_test == 0:
-        n_test = 1
-        n_train = n_train - n_test
-
+    # if the sample size is to small the initial batch has to be large enough to give meaningful statistics. Here 15
+    if sample_size <= 15:
+        top_N_zs_names = [prot.name for prot in sorted_zs_prots[:15]]
+        zs_selected = [prot for prot in lib.proteins if prot.name in top_N_zs_names]
+        n_train = 11
+        n_test = 2
+        _sample_size = 15
+    else:
+        top_N_zs_names = [prot.name for prot in sorted_zs_prots[:sample_size]]
+        zs_selected = [prot for prot in lib.proteins if prot.name in top_N_zs_names]
+        n_train = int(sample_size*0.8)
+        n_test = int(sample_size*0.1)
+        _sample_size = sample_size
+        
+    # train model
     model = pai.Model(model_type=model)
-    model.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:sample_size]}, seed=SEED, model_type=MODEL)
-
+    model.train(library=lib, x=REP, split={'train':zs_selected[:n_train], 'test':zs_selected[n_train:n_train+n_test], 'val':zs_selected[n_train+n_test:_sample_size]}, seed=SEED, model_type=MODEL, k_folds=K_FOLD)
+    
     # add to results df
-    results_df = add_to_data(data=results_df, proteins=zs_selected, iteration=iteration, dataset=name, model=model)
+    results_df = add_to_data(data=results_df, proteins=zs_selected, iteration=iteration, sample_size=_sample_size, dataset=name, model=model)
 
     # use the model to make predictions on the remaining search space
     search_space = [prot for prot in lib.proteins if prot.name not in top_N_zs_names]
@@ -130,10 +138,10 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
         }
 
         # train model on new data
-        model.train(library=lib, x=REP, split=split, seed=SEED, model_type=MODEL)
+        model.train(library=lib, x=REP, split=split, seed=SEED, model_type=MODEL, k_folds=K_FOLD)
 
         # add to results
-        results_df = add_to_data(data=results_df, proteins=sample, iteration=iteration, dataset=name, model=model)
+        results_df = add_to_data(data=results_df, proteins=sample, iteration=iteration, sample_size=sample_size, dataset=name, model=model)
 
         # re-score the new search space
         ranked_search_space, sorted_y_pred, sorted_sigma_pred, y_val, sorted_acq_score = model.predict(ranked_search_space, acq_fn=ACQ_FN)
@@ -163,7 +171,7 @@ def plot_results(found_counts, name, iter, dest, sample_size):
     plt.savefig(os.path.join(dest, f'top_variants_{iter}_iterations_{name}.png'))
 
 
-def add_to_data(data: pd.DataFrame, proteins, iteration, dataset, model):
+def add_to_data(data: pd.DataFrame, proteins, iteration, sample_size, dataset, model):
     """Add sampling results to dataframe"""
     names = [prot.name for prot in proteins]
     ys = [prot.y for prot in proteins]
@@ -174,7 +182,7 @@ def add_to_data(data: pd.DataFrame, proteins, iteration, dataset, model):
     acq_fns = [ACQ_FN] * len(names)
     rounds = [iteration] * len(names)
     datasets = [dataset] * len(names)
-    sample_sizes = [SAMPLE_SIZES] * len(names)
+    sample_sizes = [sample_size] * len(names)
     test_r2s = [model.test_r2] * len(names)
     val_r2s = [model.val_r2] * len(names)
 
@@ -214,6 +222,7 @@ DEVICE = args.device
 BATCH_SIZE = args.batch_size
 IMPROVEMENT = args.improvement
 ACQ_FN = args.acquisition_fn
+K_FOLD = args.k_folds
 
 # benchmark data
 datasets = [f for f in os.listdir(BENCHMARK_FOLDER) if f.endswith('.csv')]
@@ -254,4 +263,4 @@ for i in range(len(datasets)):
         with open(os.path.join('usrs/benchmark/', f'first_discovered_data_{MODEL}_{REP}_{ACQ_FN}.json'), 'w') as file:
             json.dump(first_discovered_data, file)   
         
-        results_df.to_csv(os.path.join('usrs/benchmark/', 'results_df.csv'), index=False)
+        results_df.to_csv(os.path.join('usrs/benchmark/', 'results_df_{MODEL}_{REP}_{ACQ_FN}.csv'), index=False)
