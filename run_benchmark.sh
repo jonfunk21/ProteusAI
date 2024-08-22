@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define the possible combinations of models and embeddings
-representations=("esm2" "ohe" "blosum62" "blosum50")
-models=("gp" "rf" "svm" "knn")
-acq_fns=("ei" "ucb" "greedy" "random")
+representations=("esm2" "ohe" "blosum62") # "blosum50"
+models=("gp" "rf") # "svm" "knn"
+acq_fns=("ei" "ucb" "greedy") # "random"
 
 for acq_fn in "${acq_fns[@]}"; do
   for model in "${models[@]}"; do
@@ -14,6 +14,3 @@ for acq_fn in "${acq_fns[@]}"; do
     done
   done
 done
-
-#python demo/MLDE_benchmark.py --model "gp" --rep "esm2" --acquisition_fn "ei"
-#python demo/plot_benchmark.py --rep "esm2" --max-sample 20 --model "gp" --acquisition-fn "ei"
