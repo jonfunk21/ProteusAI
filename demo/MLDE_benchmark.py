@@ -38,8 +38,8 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
     lib.compute(method=REP, batch_size=BATCH_SIZE, device=DEVICE)
 
     # plot destination
-    plot_dest = os.path.join(lib.user, name, embedding, 'plots', str(sample_size))
-    os.makedirs(plot_dest, exist_ok=True)
+    #plot_dest = os.path.join(lib.user, name, embedding, 'plots', str(sample_size))
+    #os.makedirs(plot_dest, exist_ok=True)
 
     # wt sequence
     protein = pai.Protein(user=USER, source=fasta)
@@ -105,7 +105,9 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
             if found > 0 and first_discovered[c] == None:
                 first_discovered[c] = iteration
         
-        # plot_results(found_counts, name, iteration, plot_dest, sample_size)
+        # Break the loop if all elements in first_discovered are not None
+        if all(value is not None for value in first_discovered):
+            break
 
         # Break if maximum number of iterations have been reached
         if iteration == MAX_ITER:
