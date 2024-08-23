@@ -1761,6 +1761,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             labels = input.sample_from()
             if labels == ():
                 labels = ['all']
+            if type(labels) == str:
+                labels = [labels]
+
             
             model = DISCOVERY_MODEL()
             out, search_results = model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
