@@ -26,8 +26,8 @@ VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
 IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
-MODEL_TYPES = ["KNN", "Gaussian Process", "Random Forrest", "SVM"]
-MODEL_DICT = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold"}
+MODEL_TYPES = ["KNN", "Gaussian Process", "Random Forrest", "Ridge","SVM"]
+MODEL_DICT = {"Random Forrest":"rf", "KNN":"knn", "SVM":"svm", "VAE":"vae", "ESM-2":"esm2", "ESM-1v":"esm1v", "Gaussian Process":"gp", "ESM-Fold":"esm_fold", "Ridge":"ridge"}
 REP_DICT = {"One-hot":"ohe", "BLOSUM50":"blosum50", "BLOSUM62":"blosum62", "ESM-2":"esm2", "ESM-1v":"esm1v", "VAE":"vae"}
 INVERTED_REPS = {v: k for k, v in REP_DICT.items()}
 DESIGN_MODELS = {"ESM-IF":"esm_if"}
@@ -197,7 +197,7 @@ app_ui = ui.page_fluid(
                 ui.navset_tab(
                     ui.nav_panel("Model Diagnostics",
                         ui.output_ui("pred_vs_true_ui"),
-                        ui.output_data_frame("model_table"),
+                        ui.output_data_frame("mlde_model_table"),
                     ),
                     ui.nav_panel("Search Results",
                         # empty
@@ -283,13 +283,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     DISCOVERY_MODEL = reactive.Value(None)
     VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
     DISCOVERY_VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
-    DATA_REVIEWED = reactive.value(None)
-    MODEL_LIB = reactive.Value(None)
     DISCOVERY_LIB = reactive.Value(None)
 
     # Discovery
-    DISCOVERY_TSNE_DF = reactive.Value(None)
-    DISCOVERY_LIBRARY_PLOT = reactive.Value(None)
     DISCOVERY_SEARCH = reactive.Value(None)
     DISCOVERY_DF = reactive.Value(None)
 
@@ -1567,16 +1563,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
 
 
-    ### REVIEWING DATA ###
-    @reactive.Effect
-    @reactive.event(input.review_data)
-    def _():
-        print("button pressed")
-        print(DATASET())
-        print(ZS_RESULTS())
-        DATA_REVIEWED.set('reviewed')
-
-
     ### TRAIN MODEL ###
     @reactive.Effect
     @reactive.event(input.train_button)
@@ -1638,6 +1624,16 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             p = None
         return p
+    
+
+    ### RENDER DISCOVERY TABLE ###
+    @output
+    @render.data_frame
+    def mlde_model_table(alt=None):
+        model = MODEL()
+        if model is not None:
+            table = VAL_DF()
+            return table
 
 
     ###############
