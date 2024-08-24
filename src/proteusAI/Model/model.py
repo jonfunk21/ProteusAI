@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.linear_model import Ridge, RidgeClassifier
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
@@ -55,7 +56,7 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
-    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn']
+    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn', 'ridge']
     _pt_models = ['gp']
     _in_memory_representations = ['ohe', 'blosum50', 'blosum62']
     
@@ -290,6 +291,8 @@ class Model:
                     model = SVC(**model_params)
                 elif model_type == 'knn':
                     model = KNeighborsClassifier(**model_params)
+                elif model_type == 'ridge':  # Added support for Ridge Classification
+                    model = RidgeClassifier(**model_params)
             elif self.y_type == 'num':
                 if model_type == 'rf':
                     model = RandomForestRegressor(**model_params)
@@ -297,6 +300,8 @@ class Model:
                     model = SVR(**model_params)
                 elif model_type == 'knn':
                     model = KNeighborsRegressor(**model_params)
+                elif model_type == 'ridge':  # Added support for Ridge Regression
+                    model = Ridge(**model_params)
                 
             return model
         
@@ -311,6 +316,7 @@ class Model:
             return model
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
+
 
     
 
