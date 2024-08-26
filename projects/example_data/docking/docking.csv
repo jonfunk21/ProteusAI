@@ -1,6 +1,0 @@
-,complex_name,protein_path,ligand_description,protein_sequence
-0,ASMT_SAM_melatonin_transition_state.sdf,../example_data/discovery/ASMT.pdb,../example_data/molecules/SAM_melatonin_transition_state.sdf,
-1,ASMT_SAH.sdf,../example_data/discovery/ASMT.pdb,../example_data/molecules/SAH.sdf,
-2,ASMT_SAM.sdf,../example_data/discovery/ASMT.pdb,../example_data/molecules/SAM.sdf,
-3,ASMT_N-acetylserotonin.sdf,../example_data/discovery/ASMT.pdb,../example_data/molecules/N-acetylserotonin.sdf,
-4,ASMT_melatonin.sdf,../example_data/discovery/ASMT.pdb,../example_data/molecules/melatonin.sdf,
