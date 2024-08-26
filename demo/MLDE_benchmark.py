@@ -19,7 +19,7 @@ parser.add_argument('--rep', type=str, default='esm2', help='Representation type
 parser.add_argument('--zs-model', type=str, default='esm1v', help='Zero-shot model name.')
 parser.add_argument('--benchmark-folder', type=str, default='demo/demo_data/DMS/', help='Path to the benchmark folder.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--max-iter', type=int, default=20, help='Maximum number of iterations (None for unlimited).')
+parser.add_argument('--max-iter', type=int, default=100, help='Maximum number of iterations (None for unlimited).')
 parser.add_argument('--device', type=str, default='cuda', help='Device to run the model on (e.g., cuda, cpu).')
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for processing.')
 parser.add_argument('--improvement', type=str, nargs='+', default=[5, 10, 20, 50, 'improved'], help='List of improvements.')
@@ -91,7 +91,8 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
 
     # count variants that are improved over wt, 1 standard deviation above wt
     y_std = np.std(lib.y, ddof=1)
-    actual_top_variants['improved'] = [prot.name for prot in lib.proteins if prot.y > 1*y_std]
+    y_mean = np.mean(lib.y)
+    actual_top_variants['improved'] = [prot.name for prot in lib.proteins if prot.y > y_mean + 1*y_std]
 
     # add sequences to the new dataset, and continue the loop until the dataset is exhausted
     sampled_data = zs_selected
@@ -251,6 +252,7 @@ results_df = pd.DataFrame({
 first_discovered_data = {}
 for i in range(len(datasets)):
     for N in SAMPLE_SIZES:
+        print(f"RUNNING model:{MODEL}, rep:{REP}, acq:{ACQ_FN}, sample_size:{N}", flush=True)
         d = os.path.join(BENCHMARK_FOLDER, datasets[i])
         f = os.path.join(BENCHMARK_FOLDER, fastas[i])
         name = datasets[i][:-4]
