@@ -3,7 +3,7 @@
 # Define the possible combinations of models and embeddings
 representations=("esm2" "blosum62" "ohe") # "blosum50"
 acq_fns=("ei" "greedy" "ucb") # "random"
-models=("ridge") # "gp" "rf" "ridge" "svm" "knn"
+models=($1) # "gp" "rf" "ridge" "svm" "knn"
 
 for acq_fn in "${acq_fns[@]}"; do
   for rep in "${representations[@]}"; do
