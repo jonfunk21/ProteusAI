@@ -35,7 +35,7 @@ import openmm # move this and pdb fixer to struc tools
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
-def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33):
+def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33, device=None):
     """
     Compute the of esm_tools models for a list of sequences.
 
@@ -45,6 +45,8 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
             If None sequences will be named seq1, seq2, ...
         model (str, torch.nn.Module): choose either esm2, esm1v or a pretrained model object.
         rep_layer (int): choose representation layer. Default 33.
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
 
     Returns: representations (list) of sequence representation, batch lens and batch labels
 
@@ -53,7 +55,11 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
         results, batch_lens, batch_labels = esm_compute(seqs)
     """
     # detect device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        device = torch.device(device)
+
     # on M1 if mps available
     #if device == torch.device(type='cpu'):
     #    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
@@ -146,7 +152,7 @@ def per_position_entropy(probability_distribution):
 
 
 
-def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33, pbar=None):
+def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33, pbar=None, device=None):
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
@@ -159,6 +165,8 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
         pbar: Progress bar for shiny app
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'.
 
     Returns: representations (list) of sequence representation.
 
@@ -178,7 +186,7 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
 
     counter = 0
     for i in range(0, len(seqs), batch_size):
-        results, batch_lens, _, _ = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
+        results, batch_lens, _, _ = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer, device=device)
         sequence_representations = get_seq_rep(results, batch_lens)
         if dest is not None:
             for j in range(len(sequence_representations)):
@@ -212,7 +220,7 @@ def mask_positions(sequence: str, mask_char: str='<mask>'):
     return masked_sequences
 
 
-def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33, pbar=None):
+def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33, pbar=None, device=None):
     """
     Exhaustively compute the logits for every position in a sequence using esm1v or esm2.
     Every position of a sequence will be masked and the logits for the masked position
@@ -226,6 +234,8 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
         pbar: ProteusAI progress bar.
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'.
 
     Returns:
         tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm_tools.data_tools.Alphabet
@@ -247,7 +257,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     for i in range(0, len(masked_seqs), batch_size):
         results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
                                                                   names[i:i + batch_size], model=model,
-                                                                  rep_layer=rep_layer)
+                                                                  rep_layer=rep_layer, device=device)
         logits = results["logits"]
 
         if pbar:

@@ -14,9 +14,11 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.linear_model import Ridge, RidgeClassifier
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
+import proteusAI.ml_tools.bo_tools as BO
 import random
 from typing import Union
 import json
@@ -25,6 +27,7 @@ import csv
 import torch
 import pandas as pd
 import gpytorch
+import numpy as np
 
 
 class Model:
@@ -53,7 +56,7 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
-    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn']
+    _sklearn_models = ['rf', 'knn', 'svm', 'ffnn', 'ridge']
     _pt_models = ['gp']
     _in_memory_representations = ['ohe', 'blosum50', 'blosum62']
     
@@ -87,6 +90,9 @@ class Model:
         self.val_r2 = []
         self.rep_path = None
         self.dest = None
+        self.y_best = None
+        self.out_df = None
+        self.search_df = None
 
         # check for device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -102,7 +108,7 @@ class Model:
             'model_type': 'rf',
             'x': 'ohe',
             'rep_path': None,
-            'split': 'random',
+            'split': (80,10,10),
             'k_folds': None,
             'grid_search': False,
             'custom_params': None,
@@ -110,7 +116,8 @@ class Model:
             'optim': 'adam',
             'lr': 10e-4,
             'seed': 42,
-            'dest' : None
+            'dest' : None,
+            'pbar' : None
         }
         
         # Update defaults with provided keyword arguments
@@ -119,13 +126,14 @@ class Model:
         for key, value in defaults.items():
             setattr(self, key, value)
 
+
     def _update_attributes(self, **kwargs):
         defaults = {
             'library': None,
             'model_type': 'rf',
             'x': 'ohe',
             'rep_path': None,
-            'split': 'random',
+            'split': (80,10,10),
             'k_folds': None,
             'grid_search': False,
             'custom_params': None,
@@ -133,7 +141,8 @@ class Model:
             'optim': 'adam',
             'lr': 10e-4,
             'seed': 42,
-            'dest' : None
+            'dest' : None,
+            'pbar' : None
         }
         
         # Update defaults with provided keyword arguments
@@ -141,6 +150,7 @@ class Model:
         
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def train(self, **kwargs):
         """
@@ -151,7 +161,9 @@ class Model:
             model_type (str): choose the model type ['rf', 'svm', 'knn', 'ffnn'],
             x (str): choose the representation type ['esm2', 'esm1v', 'ohe', 'blosum50', 'blosum62'].
             rep_path (str): Path to representations. Default None - will extract from library object.
-            split (str): Choose a method to split your data ['random'].
+            split (tuple or dict): Choose the split ratio of training, testing and validation data as a tuple. Default (80,10,10).
+                                   Alternatively, provide a dictionary of proteins, with the keys 'train', 'test', and 'val', with
+                                   list of proteins as values for custom data splitting. 
             k_folds (int): Number of folds for cross validation.
             grid_search: Enable grid search.
             custom_params: None. Not implemented yet.
@@ -159,6 +171,7 @@ class Model:
             optim (str): Choose optimizer for feed forward neural network. e.g. 'adam'.
             lr (float): Choose a learning rate for feed forward neural networks. e.g. 10e-4.
             seed (int): Choose a random seed. e.g. 42
+            pbar: Progress bar for shiny app.
         """
         # Update attributes if new values are provided
         self._update_attributes(**kwargs)
@@ -170,18 +183,20 @@ class Model:
         self._model = self.model()
 
         # train
+        out = None
         if self.model_type in self._sklearn_models:
-            self.train_sklearn(rep_path=self.rep_path)
+            out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
         elif self.model_type in self._pt_models:
-            self.train_gp(rep_path=self.rep_path)
+            out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
         else:
             raise ValueError(f"The training method for '{self.model_type}' models has not been implemented yet")
 
+        return out
   
     ### Helpers ###
     def split_data(self):
         """
-        Split data into train, test, and validation sets. Performs a 80:10:10 split.
+        Split data into train, test, and validation sets.
 
             1. 'random': Randomly splits data points
             2. 'site': Splits data by sites in the protein,
@@ -197,19 +212,28 @@ class Model:
 
         random.seed(self.seed)
 
-        train_size = int(0.80 * len(proteins))
-        test_size = int(0.10 * len(proteins))
-
         train_data, test_data, val_data = [], [], []
-        if self.split == 'random':
+
+        if type(self.split) == tuple:
+            train_ratio, test_ratio, val_ratio = tuple(value / sum(self.split) for value in self.split)
+            train_size = int(train_ratio * len(proteins))
+            test_size = int(test_ratio * len(proteins))
+
             random.shuffle(proteins)
+
             # Split the data
             train_data = proteins[:train_size]
             test_data = proteins[train_size:train_size + test_size]
             val_data = proteins[train_size + test_size:]
 
+        # custom datasplit
+        elif type(self.split) == dict:
+            train_data = self.split['train']
+            test_data = self.split['test']
+            val_data = self.split['val']
+            
         # TODO: implement other splitting methods
-        if self.split != 'random':
+        else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
         
         return train_data, test_data, val_data
@@ -230,15 +254,7 @@ class Model:
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
 
-        if rep_path is None:
-            if self.library.rep_path:
-                rep_path = os.path.join(self.library.rep_path, f"{self.x}")
-            else:
-                rep_path = os.path.join(self.library.user, f"rep/{self.x}")
-
-        file_names = [protein.name + ".pt" for protein in proteins]
-
-        _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+        reps = self.library.load_representations(rep=self.x, proteins=proteins)
 
         return reps
 
@@ -267,7 +283,6 @@ class Model:
 
         if model_type in self._sklearn_models:
             model_params = kwargs.copy()
-            #model_params['seed'] = self.seed
 
             if self.y_type == 'class':
                 if model_type == 'rf':
@@ -276,13 +291,17 @@ class Model:
                     model = SVC(**model_params)
                 elif model_type == 'knn':
                     model = KNeighborsClassifier(**model_params)
+                elif model_type == 'ridge':  # Added support for Ridge Classification
+                    model = RidgeClassifier(**model_params)
             elif self.y_type == 'num':
                 if model_type == 'rf':
-                    model = RandomForestRegressor(random_state=self.seed, **model_params)
+                    model = RandomForestRegressor(**model_params)
                 elif model_type == 'svm':
                     model = SVR(**model_params)
                 elif model_type == 'knn':
                     model = KNeighborsRegressor(**model_params)
+                elif model_type == 'ridge':  # Added support for Ridge Regression
+                    model = Ridge(**model_params)
                 
             return model
         
@@ -295,20 +314,24 @@ class Model:
                     model = 'GP_MODEL'
 
             return model
-        
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
 
+
     
 
-    def train_sklearn(self, rep_path):
+    def train_sklearn(self, rep_path, pbar=None):
         """
         Train sklearn models and save the model.
 
         Args:
             rep_path (str): representation path
+            pbar: Progress bar for shiny app.
         """
         assert self._model is not None
+
+        if pbar:
+            pbar.set(message="Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -326,23 +349,35 @@ class Model:
         x_val = torch.stack(val).cpu().numpy()
 
         # TODO: For representations that are stored in memory the computation happens here:
+        if self.library.pred_data:
+            self.y_train = [protein.y_pred for protein in self.train_data]
+            self.y_test = [protein.y_pred for protein in self.test_data]
+            self.y_val = [protein.y_pred for protein in self.val_data]
+        else:
+            self.y_train = [protein.y for protein in self.train_data]
+            self.y_test = [protein.y for protein in self.test_data]
+            self.y_val = [protein.y for protein in self.val_data]
 
-        y_train = [protein.y for protein in self.train_data]
-        self.y_test = [protein.y for protein in self.test_data]
-        self.y_val = [protein.y for protein in self.val_data]
         self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
+            if pbar:
+                pbar.set(message=f"Training {self.model_type}", detail=f"...")
+            
             # train model
-            self._model.fit(x_train, y_train)
+            self._model.fit(x_train, self.y_train)
 
             # prediction on test set
             self.test_r2 = self._model.score(x_test, self.y_test)
             self.y_test_pred = self._model.predict(x_test)
+            self.y_train_pred = self._model.predict(x_train)
 
             # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
+            self.y_train_sigma = [None]*len(self.y_train)
+            self.y_val_sigma = [None]*len(self.y_val)
+            self.y_test_sigma = [None]*len(self.y_test)
 
             # Save the model
             if self.dest != None:
@@ -355,18 +390,16 @@ class Model:
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
             dump(self._model, model_save_path)
 
-            # Save the sequences, y-values, and predicted y-values to CSV
-            def save_to_csv(proteins, y_values, y_pred_values, filename):
-                with open(filename, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(['sequence', 'y-value', 'y-predicted'])  # CSV header
-                    for protein, y, y_pred in zip(proteins, y_values, y_pred_values):
-                        writer.writerow([protein.seq, y, y_pred])
+            # Add predictions to test proteins
+            for i in range(len(test)):
+                self.test_data[i].y_pred = self.y_test_pred[i]
+                self.test_data[i].y_sigma = self.y_test_sigma[i]
 
-            save_to_csv(self.train_data, y_train, [None]*len(y_train), f"{csv_dest}/train_data.csv")
-            save_to_csv(self.test_data, self.y_test, self.y_test_pred, f"{csv_dest}/test_data.csv")
-            save_to_csv(self.val_data, self.y_val, self.y_val_pred, f"{csv_dest}/val_data.csv")
-
+            # Save dataframes
+            train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+            test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma,f"{csv_dest}/test_data.csv")
+            val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
+            
             # Save results to a JSON file
             results = {
                 'test_r2': self.test_r2,
@@ -374,21 +407,123 @@ class Model:
             }
             with open(f"{csv_dest}/results.json", 'w') as f:
                 json.dump(results, f)
+            
+            # add split information to df
+            train_df['split'] = 'train'
+            test_df['split'] = 'test'
+            val_df['split'] = 'val'
 
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
+
+            self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+
+        # handle ensembles
         else:
-            #kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
-            #for train_index, test_index in kf.split(X):
-            raise ValueError(f"K-fold cross validation has not been implemented yet")
-    
-    
-    def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1):
+            # combine train and test
+            self.train_data = self.train_data + self.test_data
+            x_train = np.concatenate([x_train, x_test])
+
+            kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            self.y_train = self.y_train + self.y_test
+            fold_results = []
+            ensemble = []
+
+            for i, data in enumerate(kf.split(x_train)):
+                train_index, test_index = data
+
+                if pbar:
+                    pbar.set(message=f"Training {self.model_type} {i+1}/{self.k_folds}", detail=f"...")
+
+                x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
+                y_train_fold, y_test_fold = np.array(self.y_train)[train_index], np.array(self.y_train)[test_index]
+
+                self._model.fit(x_train_fold, y_train_fold)
+                test_r2 = self._model.score(x_test_fold, y_test_fold)
+                fold_results.append(test_r2)
+                ensemble.append(self._model)
+
+            avg_test_r2 = np.mean(fold_results)
+
+            # Store model ensemble as model
+            self._model = ensemble
+
+            # Prediction on validation set
+            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = self.predict(self.val_data)
+            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = self.predict(self.train_data)
+            self.val_r2 = self.score(self.val_data)
+
+            # Save the model
+            if self.dest is not None:
+                csv_dest = f"{self.dest}"
+            else:
+                csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
+
+            for i, model in enumerate(ensemble):
+                if self.dest is not None:
+                    model_save_path = f"{self.dest}/model_{i}.joblib"
+                else:
+                    model_save_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/model_{i}.joblib")
+
+                os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+                dump(model, model_save_path)
+
+            # Save the sequences, y-values, and predicted y-values to CSV
+            train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma, f"{csv_dest}/train_data.csv")
+            val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred, self.y_val_sigma,f"{csv_dest}/val_data.csv")
+
+            # Save results to a JSON file
+            results = {
+                'k_fold_test_r2': fold_results,
+                'avg_test_r2': avg_test_r2,
+                'val_r2': self.val_r2
+            }
+            with open(f"{csv_dest}/results.json", 'w') as f:
+                json.dump(results, f)
+
+            # add split information to df
+            train_df['split'] = 'train'
+            val_df['split'] = 'val'
+
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
+
+            self.y_best = max((max(self.y_train), max(self.y_val)))
+
+        # Add predictions to proteins 
+        for i in range(len(train)):
+            self.train_data[i].y_pred = self.y_train_pred[i]
+            self.train_data[i].y_sigma = self.y_train_sigma[i]
+
+        # Add predictions to test proteins
+        for i in range(len(val)):
+            self.val_data[i].y_pred = self.y_val_pred[i]
+            self.val_data[i].y_sigma = self.y_val_sigma[i]
+
+        out = {
+            'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 
+            'reps':self.library.reps, 'class_dict':self.library.class_dict
+            }
+
+        print(f'Training completed:\nval_r2:\t{self.val_r2}')
+
+        return out
+
+
+    def train_gp(self, rep_path, epochs=150, initial_lr=0.1, final_lr=1e-6, decay_rate=0.1, pbar=None):
         """
         Train a Gaussian Process model and save the model.
 
         Args:
             rep_path (str): representation path
+            pbar: Progress bar for shiny app.
         """
+        
         assert self._model is not None
+
+        if pbar:
+            pbar.set(message=f"Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -405,57 +540,88 @@ class Model:
         x_test = torch.stack(test).to(device=self.device)
         x_val = torch.stack(val).to(device=self.device)
 
-        y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
-        self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
-        y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+        if self.library.pred_data:
+            self.y_train = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y_pred]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y_pred])  for protein in self.val_data]).view(-1).to(device=self.device)       
+        else:
+            self.y_train = torch.stack([torch.Tensor([protein.y]) for protein in self.train_data]).view(-1).to(device=self.device)
+            self.y_test = torch.stack([torch.Tensor([protein.y]) for protein in self.test_data]).view(-1).to(device=self.device)
+            y_val = torch.stack([torch.Tensor([protein.y])  for protein in self.val_data]).view(-1).to(device=self.device)
+
         self.val_names = [protein.name for protein in self.val_data]
 
-        likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
-        self._model = GP(x_train, y_train, likelihood).to(device=self.device)
+        self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
+        self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
         fix_mean = True
         
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
-        mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, self._model)
+        mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
 
-        for param in self._model.named_parameters(): 
-            print(param)
+        #for param in self._model.named_parameters(): 
+        #    print(param)
 
         # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
         self._model.train()
-        likelihood.train()
+        self.likelihood.train()
         prev_loss = float('inf')
-        #TODO: abstract this away
+        
+        if pbar:
+            pbar.set(message=f"Training {self.model_type}", detail=f"...")
+        
         for _ in range(epochs):
             optimizer.zero_grad()
             output = self._model(x_train)
-            loss = -mll(output, y_train)
+            loss = -mll(output, self.y_train)
             loss.backward()
             optimizer.step()
             scheduler.step()
 
             # Check for convergence
             if abs(prev_loss - loss.item()) < 0.0001:
-                print(f'Convergence reached. Stopping training...')
+            #    print(f'Convergence reached. Stopping training...')
                 break
             
             prev_loss = loss.item()
 
         print(f'Training completed. Final loss: {loss.item()}')   
         
+        # prediction on train set
+        y_train_pred, y_train_sigma = predict_gp(self._model, self.likelihood, x_train)
+        self.y_train_pred, self.y_train_sigma  = y_train_pred.cpu().numpy(), y_train_sigma.cpu().numpy()
+        
         # prediction on test set
-        y_test_pred, y_test_sigma = predict_gp(self._model, likelihood, x_test)
+        y_test_pred, y_test_sigma = predict_gp(self._model, self.likelihood, x_test)
         self.test_r2 = computeR2(self.y_test, y_test_pred)
         self.y_test_pred, self.y_test_sigma  = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
 
         # prediction on validation set
-        y_val_pred, y_val_sigma = predict_gp(self._model, likelihood, x_val)
+        y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
         self.val_r2 = computeR2(y_val, y_val_pred)
-        self.y_train = y_train.cpu().numpy()
+        self.y_train = self.y_train.cpu().numpy()
         self.y_test_pred, self.y_test_sigma = y_test_pred.cpu().numpy(), y_test_sigma.cpu().numpy()
         self.y_val_pred, self.y_val_sigma = y_val_pred.cpu().numpy(), y_val_sigma.cpu().numpy()
 
         self.y_val = y_val.cpu().numpy()
+        self.y_test = self.y_test.cpu().numpy()
+
+        self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+
+        # Add predictions to proteins 
+        for i in range(len(train)):
+            self.train_data[i].y_pred = self.y_train_pred[i].item()
+            self.train_data[i].y_sigma = self.y_train_sigma[i].item()
+        
+        # Add predictions to test proteins
+        for i in range(len(test)):
+            self.test_data[i].y_pred = self.y_test_pred[i].item()
+            self.test_data[i].y_sigma = self.y_test_sigma[i].item()
+
+        # Add predictions to test proteins
+        for i in range(len(val)):
+            self.val_data[i].y_pred = self.y_val_pred[i].item()
+            self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # Save the model
         if self.dest != None:
@@ -469,17 +635,10 @@ class Model:
         os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
         torch.save(self._model.state_dict(), model_save_path)
 
-        # Save the sequences, y-values, and predicted y-values to CSV
-        def save_to_csv(proteins, y_values, y_pred_values, y_pred_sigma, filename):
-            with open(filename, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(['sequence', 'y-value', 'y-predicted', 'sigma'])  # CSV header
-                for protein, y, y_pred, y_sig in zip(proteins, y_values, y_pred_values, y_pred_sigma):
-                    writer.writerow([protein.seq, y, y_pred, y_sig])
-
-        save_to_csv(self.train_data, y_train, [None]*len(y_train), [None]*len(y_train),f"{csv_dest}/train_data.csv")
-        save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
-        save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
+        # save dataframes
+        train_df = self.save_to_csv(self.train_data, self.y_train, self.y_train_pred, self.y_train_sigma,f"{csv_dest}/train_data.csv")
+        test_df = self.save_to_csv(self.test_data, self.y_test, self.y_test_pred, self.y_test_sigma, f"{csv_dest}/test_data.csv")
+        val_df = self.save_to_csv(self.val_data, self.y_val, self.y_val_pred,  self.y_val_sigma, f"{csv_dest}/val_data.csv")
 
         # Save results to a JSON file
         results = {
@@ -489,9 +648,44 @@ class Model:
 
         with open(f"{csv_dest}/results.json", 'w') as f:
             json.dump(results, f)
+        
+        # add split information to df
+        train_df['split'] = 'train'
+        test_df['split'] = 'test'
+        val_df['split'] = 'val'
+
+        # Concatenate the DataFrames
+        self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(drop=True)
+
+        out = {
+            'df':self.out_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
+            }
+
+        return out
+
+
+    # Save the sequences, y-values, and predicted y-values to CSV
+    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values, filename):
+        # Prepare data for CSV and DataFrame
+        data = []
+        names = [prot.name for prot in proteins]
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['name', 'sequence', 'y_value', 'y_predicted', 'y_sigma'])  # CSV header
+            for name, protein, y, y_pred, y_sigma in zip(names, proteins, y_values, y_pred_values, y_sigma_values):
+                row = [name, protein.seq, y, y_pred, y_sigma]
+                writer.writerow(row)
+                data.append(row)
+        
+        # Create a DataFrame from the collected data
+        df = pd.DataFrame(data, columns=['name', 'sequence', 'y_true', 'y_predicted', 'y_sigma'])
+        
+        return df
     
 
-    def predict(self, proteins: list, rep_path = None):
+    def predict(self, proteins: list, rep_path=None, acq_fn='greedy', batch_size=10000):
         """
         Scores the R-squared value for a list of proteins.
 
@@ -505,14 +699,80 @@ class Model:
             list: Predictions generated by the model.
         """
         if self._model is None:
-            raise ValueError(f"Model is 'None'")
+            raise ValueError("Model is 'None'")
 
-        reps = self.load_representations(proteins, rep_path)
-        x = torch.stack(reps).cpu().numpy()
+        if acq_fn == 'ei':
+            acq = BO.EI
+        elif acq_fn == 'greedy':
+            acq = BO.greedy
+        elif acq_fn == 'ucb':
+            acq = BO.UCB
+        elif acq_fn == 'random':
+            acq = BO.random_acquisition
 
-        predictions = self._model.predict(x)
+        all_y_pred = []
+        all_sigma_pred = []
+        all_acq_scores = []
 
-        return predictions
+        for i in range(0, len(proteins), batch_size):
+            batch_proteins = proteins[i:i + batch_size]
+            batch_reps = self.load_representations(batch_proteins, rep_path)
+
+            if len(batch_reps[0].shape) == 2:
+                batch_reps = [x.view(-1) for x in batch_reps]
+
+            # GP
+            if self.model_type == 'gp':
+                self.likelihood.eval()
+                x = torch.stack(batch_reps).to(device=self.device)
+                y_pred, sigma_pred = predict_gp(self._model, self.likelihood, x)
+                y_pred = y_pred.cpu().numpy()
+                sigma_pred = sigma_pred.cpu().numpy()
+                acq_score = acq(y_pred, sigma_pred, self.y_best)
+
+            # Handle ensembles
+            elif isinstance(self._model, list):
+                ys = []
+                for model in self._model:
+                    x = torch.stack(batch_reps).cpu().numpy()
+                    y_pred = model.predict(x)
+                    ys.append(y_pred)
+        
+                y_stack = np.stack(ys)
+                y_pred = np.mean(y_stack, axis=0)
+                sigma_pred = np.std(y_stack, axis=0)
+                acq_score = acq(y_pred, sigma_pred, self.y_best)
+            
+            # Handle single model
+            else:
+                x = torch.stack(batch_reps).cpu().numpy()
+                y_pred = self._model.predict(x)
+                sigma_pred = np.zeros_like(y_pred)
+                acq_score = acq(y_pred, sigma_pred, self.y_best)
+
+            all_y_pred.extend(y_pred)
+            all_sigma_pred.extend(sigma_pred)
+            all_acq_scores.extend(acq_score)
+
+        all_y_pred = np.array(all_y_pred)
+        all_sigma_pred = np.array(all_sigma_pred)
+        all_acq_scores = np.array(all_acq_scores)
+
+        # Sort acquisition scores and get sorted indices
+        sorted_indices = np.argsort(all_acq_scores)[::-1]
+
+        # Sort all lists/arrays by the sorted indices
+        val_data = [proteins[i] for i in sorted_indices]
+        y_val = [prot.y for prot in val_data]
+        y_val_pred = all_y_pred[sorted_indices]
+        y_val_sigma = all_sigma_pred[sorted_indices]
+        sorted_acq_score = all_acq_scores[sorted_indices]
+        
+        for i, prot in enumerate(val_data):
+            prot.y_pred = y_val_pred[i]
+            prot.y_sigma = y_val_sigma[i]
+
+        return val_data, y_val_pred, y_val_sigma, y_val, sorted_acq_score
     
 
     def score(self, proteins: list, rep_path = None):
@@ -533,10 +793,24 @@ class Model:
             raise ValueError(f"Model is 'None'")
         
         reps = self.load_representations(proteins, rep_path)
+
+        if len(reps[0].shape) == 2:
+            reps = [x.view(-1) for x in reps]
+
         x = torch.stack(reps).cpu().numpy()
         y = [protein.y for protein in proteins]
 
-        scores = self._model.score(x, y)
+        # ensemble
+        ensemble_scores = []
+        if type(self._model) == list:
+            for model in self._model:
+                score = model.score(x,y)
+                ensemble_scores.append(score)
+            ensemble_scores = np.stack(ensemble_scores)
+            scores = np.mean(ensemble_scores, axis=0)
+        else:
+            scores = self._model.score(x, y)
+        
 
         return scores
     
@@ -569,7 +843,58 @@ class Model:
                                             y_label, plot_grid, file, show_plot)
         
         return fig, ax
+
+
+    def search(self, N=10, labels=['all'], method='ga', pbar=None):
+        """
+        Sample diverse sequences and return a mask with 1 for selected indices and 0 for non-selected.
+        """
+
+        class_dict = self.library.class_dict
+
+        if 'all' in labels or len(labels) < 1:
+            labels = list(class_dict.keys())
+            proteins = self.library.proteins
+        else:
+            proteins = [prot for prot in self.library.proteins if class_dict[prot.y] in labels]
+
+        labels_name = "_".join([class_dict[i] for i in labels])
+
+        vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
+
+        pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
+        
+        selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
+        
+        # Create a mask with the same length as the number of proteins
+        mask = np.zeros(len(proteins), dtype=int)
+        
+        # Set the selected indices to 1
+        mask[selected_indices] = 1
+
+        # Select the proteins based on the mask
+        selected_proteins = [proteins[i] for i in selected_indices]
+        ys = [prot.y for prot in selected_proteins]
+        y_pred = [prot.y_pred for prot in selected_proteins]
+        y_sigma = [prot.y_sigma for prot in selected_proteins]
+
+        # Save the search_results
+        if self.dest != None:
+            csv_dest = self.dest
+        else:
+            csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
     
+        self.search_df = self.save_to_csv(selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results_{labels_name}.csv")
+
+        out = {
+            'df':self.search_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
+            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
+            }
+
+        return out, mask
+
+
     ### Getters and Setters ###
     # Getter and Setter for library
     @property

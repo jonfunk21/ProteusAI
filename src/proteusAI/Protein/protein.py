@@ -34,7 +34,7 @@ class Protein:
     """
 
     def __init__(self, name: Union[str, None] = None, seq: Union[str, None] = None, struc: Union[str, struc.AtomArray, None] = None, reps: Union[list, tuple] = [], 
-    user: Union[str, None] = 'guest', y = None, source: Union[str,None] = None, fname: Union[str,None] = None):
+    user: Union[str, None] = 'guest', y = None, y_pred = None, y_sigma = None, source: Union[str,None] = None, fname: Union[str,None] = None):
         """
         Initialize a new protein object.
 
@@ -45,8 +45,13 @@ class Protein:
             reps (list): List of available representations.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             y (float, int, str): Label for the protein.
+            y_pred (float, int, str): Predicted y_value.
+            y_sigma (float, int, str): Predicted y_value.
             source (str, or data): Source of data, either a file or a data package created from a diversification step.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
+        
+        Parameters:
+            
         """
 
         # Arguments
@@ -56,6 +61,8 @@ class Protein:
         self.struc = struc
         self.source = source
         self.y = y
+        self.y_pred = y_pred
+        self.y_sigma = y_sigma
         self.fname = fname
         self.user = os.path.join(USR_PATH, user)
 
@@ -69,6 +76,7 @@ class Protein:
         self.design = None
         self.chains = []
         self.zs_path = None
+        self.class_dict = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -83,7 +91,7 @@ class Protein:
     def __str__(self):
         if self.struc is not None:
             struc_loaded = "loaded"
-        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\nstruc:\t{self.pdb_file}\n"
+        return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\ny_pred:\t{self.y_pred}\ny_sig:\t{self.y_sigma}\nstruc:\t{self.pdb_file}\n"
     
     __repr__ = __str__
 
@@ -241,7 +249,7 @@ class Protein:
         return view
     
     ### Zero-shot prediction ###
-    def zs_prediction(self, model='esm2', batch_size=100, pbar=None):
+    def zs_prediction(self, model='esm2', batch_size=100, pbar=None, device=None):
         """
         Compute zero-shot scores
 
@@ -249,6 +257,8 @@ class Protein:
             model (str): Model used to compute ZS scores
             batch_size (int): Batch size used to compute ZS-Scores
             pbar: App progress bar
+            device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
         """
         seq = self.seq
        
@@ -266,7 +276,7 @@ class Protein:
         else:
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model, pbar=pbar)
+            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model, pbar=pbar, device=device)
 
             # Calculations
             p = get_probability_distribution(logits)
@@ -291,10 +301,17 @@ class Protein:
 
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
-        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+            # no true y_values
+            ys = [None] * len(mmp)
+
+        out = {
+            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_pred_col':'mmp', 'seqs_col':'sequence', 
+            'names_col':'mutant', 'reps':self.reps, 'class_dict':self.class_dict, 'pred_data': True
+        }
 
         return out
-    
+
+
     def zs_library(self, model="esm2"):
         """
         Generate zero-shot library.
@@ -320,7 +337,10 @@ class Protein:
 
             df = pd.DataFrame({"mutant":mutants, "sequence":sequences ,"p":ys, "mmp":ys, "entropy":ys})
         
-        out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps}
+        out = {
+            'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 
+            'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps, 'class_dict':self.library.class_dict
+        }
 
         return out
 
@@ -435,7 +455,10 @@ class Protein:
         rep_path = os.path.join(dest, "rep")
         struc_path = os.path.join(dest, "struc")
 
-        out = {'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 'seqs_col':'sequence', 'names_col':'names', 'reps':[]}
+        out = {
+            'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 
+            'seqs_col':'sequence', 'names_col':'names', 'reps':[], 'class_dict':self.class_dict
+        }
 
         return out
     

@@ -40,6 +40,7 @@ class Library:
 
     representation_types = ['esm1v', 'esm2', 'ohe', 'blosum62', 'blosum50', 'vae']
     _allowed_y_types = ['class', 'num']
+    in_memory = ['ohe', 'blosum62', 'blosum50']
 
     def __init__(self, user: str = 'guest', source: Union[str,dict,None] = None, seqs_col: Union[str,None] = None, names_col: Union[str,None] = None,
                  y_col: Union[str,None] = None, y_type: Union[str,None] = None, sheet: Union[str,None] = None, fname: Union[str, None] = None):
@@ -60,10 +61,12 @@ class Library:
             data (df): dataframe of uploaded data (raw data).
             seqs (list): list of sequence.
             y (list): list of y values.
+            y_pred (list): list of predicted y values.
             y_type (str): Type of y values ('class' or 'num').
             names (list): names of sequences.
             reps (list): list of computed representations.
             proteins (list): list of protein objects.
+            pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
         """
         # Arguments
         self.user = os.path.join(USR_PATH, user)
@@ -79,12 +82,15 @@ class Library:
         self.data = None
         self.seqs = None
         self.y = None
+        self.y_pred = None
         self.names = None
-        self.reps = []
+        self.reps = self.in_memory.copy()
         self.source_path = None
         self.rep_path = None
         self.strucs = None
         self.struc_path = None
+        self.class_dict = None
+        self.pred_data = False
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -140,27 +146,52 @@ class Library:
             data (dict): Contains parent path and path to data file.
         """
 
+        # For the future adapt this so it can handle multi-factor optimization
         # extract data from parent file
         data = self.source
 
         # Parsing parameters
         self.rep_path = data['rep_path']
         self.struc_path = data['struc_path']
-        self.y_col = data['y_col']
         self.seq_col = data['seqs_col']
         self.names_col = data['names_col']
         self.reps = data['reps']
+        self.class_dict = data['class_dict']
 
         # Parsing arguments
         df = data['df']
-        self.seqs = df[self.seq_col]
-        self.names = df[self.names_col]
-        self.y = df[self.y_col]
+        self.seqs = df[self.seq_col].to_list()
+        self.names = df[self.names_col].to_list()
         self.y_type = data['y_type']
         self.data = df
 
+        # if true y values are there
+        if 'y_col' in data.keys():
+            self.y_col = data['y_col']
+            self.y = df[self.y_col].to_list()
+        else:
+            self.y = [None] * len(self.seqs)
+
+        # if predicted y values are there
+        if 'y_pred_col' in data.keys():
+            self.y_pred_col = data['y_pred_col']
+            self.y_pred = df[self.y_pred_col].to_list()
+        else:
+            self.y_pred = [None] * len(self.seqs)
+        
+        # if predicted y values are there
+        if 'y_sigma_col' in data.keys():
+            self.y_sigma_col = data['y_sigma_col']
+            self.y_sigma = df[self.y_sigma_col].to_list()
+        else:
+            self.y_sigma = [None] * len(self.y)
+
+        if 'pred_data' in data.keys():
+            self.pred_data = data['pred_data']
+
         # create proteins
-        self.proteins = [Protein(name, seq, y=y) for name, seq, y in zip(self.names, self.seqs, self.y)]
+        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma, user=self.user) for name, seq, y, y_pred, y_sigma in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma)]
+
 
     def initialize_user(self):
         """
@@ -178,7 +209,6 @@ class Library:
                 os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
                 os.makedirs(os.path.join(self.user, f'{fname}/design'))
             print(f"User created at {self.user}")
-        
 
         # check if sequence have been provided
         if len(self.seqs) > 0:
@@ -266,6 +296,7 @@ class Library:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
+
     def _read_tabular_data(self, in_file: str, seqs: str, y: Union[str, None], y_type: Union[str, None], 
                            names: Union[str, None], sheet: Optional[str], file_ext: Union[str, None] = None,
                            check_rep: bool = True, check_strucs: bool = True):
@@ -309,6 +340,7 @@ class Library:
         # Handle y values
         if y is not None:
             self.y = df[y].tolist()
+
             if y_type == 'class':
                 self.y, self.class_dict = self._encode_categorical_labels(self.y)
 
@@ -340,7 +372,7 @@ class Library:
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
         self.y = [None] * len(self.proteins)
-        df = pd.DataFrame({"names":names, "sequence":seqs, "y":y})
+        df = pd.DataFrame({"names":names, "sequence":self.seqs, "y":self.y})
         self.data = df
 
         if check_rep:
@@ -355,11 +387,13 @@ class Library:
         if len(reps) > 0:
             for rep in reps:
                 rep_names = [f for f in os.listdir(os.path.join(self.rep_path, rep)) if f.endswith('.pt')]
-                if len(rep_names) == len(set(self.names)):
-                    self.reps.append(rep)
+                if len(rep_names) >= len(set(self.names)):
+                    self.reps.insert(0, rep)  # Insert representation at the front
                     for protein in self.proteins:
                         f_name = protein.name + '.pt'
-                        protein._reps.append(rep) 
+                        if os.path.exists(os.path.join(self.rep_path, rep, f_name)):
+                            protein._reps.insert(0, rep)
+
 
     def _check_strucs(self):
         """
@@ -375,6 +409,7 @@ class Library:
                         f_name = protein.name + '.pdb'
                         protein._strucss.append(strucs) 
 
+
     def _encode_categorical_labels(self, ys):
         """
         Encode categorical labels into numerical format.
@@ -383,6 +418,7 @@ class Library:
         encoded_labels = label_encoder.fit_transform(ys).tolist()
         class_mapping = {index: label for index, label in enumerate(label_encoder.classes_)}
         return encoded_labels, class_mapping
+
 
     ### Utility ###
     def rename_proteins(self, new_names: Union[list, tuple]):
@@ -422,7 +458,7 @@ class Library:
 
     
     ### Representation builders ###
-    def compute(self, method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None):
+    def compute(self, method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None, device=None, proteins=None):
         """
         Compute representations for proteins.
 
@@ -431,6 +467,9 @@ class Library:
             batch_size (int, optional): Batch size for representation computation.
             dest (str): destination of representations
             pbar: Progress bar for shiny app.
+            device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
+            proteins (list): list of specific proteins. Optional
         """
         simple_rep_types = ['ohe', 'blosum62', 'blosum50']
         supported_methods = self.representation_types + simple_rep_types
@@ -439,14 +478,16 @@ class Library:
         assert isinstance(batch_size, (int, type(None)))
 
         if method in ["esm2", "esm1v"]:
-            self.esm_builder(model=method, batch_size=batch_size, dest=dest, pbar=pbar)
+            self.esm_builder(model=method, batch_size=batch_size, dest=dest, pbar=pbar, device=device)
         elif method == 'ohe':
-            self.ohe_builder(dest=dest, pbar=pbar)
+            reps = self.ohe_builder(dest=dest, pbar=pbar, proteins=proteins)
+            return reps
         elif method in ['blosum62', 'blosum50']:
-            self.blosum_builder(matrix_type=method.upper(), dest=dest, pbar=pbar)
+            reps = self.blosum_builder(matrix_type=method.upper(), dest=dest, pbar=pbar, proteins=proteins)
+            return reps
 
     
-    def esm_builder(self, model: str="esm2", batch_size: int=10, dest: Union[str, None] = None, pbar=None):
+    def esm_builder(self, model: str="esm2", batch_size: int=10, dest: Union[str, None] = None, pbar=None, device=None):
         """
         Computes esm representations.
 
@@ -454,6 +495,9 @@ class Library:
             model (str): Supports esm2 and esm1v.
             batch_size (int): Batch size for computation.
             dest (str): destination of representations
+            pbar: Progress bar for shiny app.
+            device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
         """
         
         dest = os.path.join(self.rep_path, model)
@@ -474,7 +518,7 @@ class Library:
         seqs = [protein.seq for protein in proteins_to_compute]
         
         # compute representations
-        esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size, pbar=pbar)
+        esm_tools.batch_compute(seqs, names, dest=dest, model=model, batch_size=batch_size, pbar=pbar, device=device)
         
         for protein in proteins_to_compute:
             if model not in protein.reps:
@@ -484,7 +528,7 @@ class Library:
             self.reps.append(model)
 
 
-    def ohe_builder(self, dest: Union[str, None] = None, pbar=None):
+    def ohe_builder(self, dest: Union[str, None] = None, pbar=None, proteins=None):
         """
         Computes one-hot encoding representations for proteins using one_hot_encoder method.
         Assumes all data fits in memory.
@@ -492,37 +536,21 @@ class Library:
         Args:
             dest (str): destination of representations
         """
-
-        dest = os.path.join(self.rep_path, "ohe")
-
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-
-        proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+        if proteins:
+            seqs = [prot.seq for prot in proteins]
+        else:
+            seqs = self.seqs
         
-        print(f"Computing {len(proteins_to_compute)} representations")
-
-        if pbar:
-            pbar.set(message=f"Initializing computation", detail=f"{len(proteins_to_compute)}/{len(self.proteins)} to compute")
-
-        sequences = [protein.seq for protein in proteins_to_compute]
-        if len(proteins_to_compute) > 0:
-            ohe_representations = torch_tools.one_hot_encoder(sequences, pbar=pbar)
-
-            for i, protein in enumerate(proteins_to_compute):
-
-                if pbar:
-                    pbar.set(i, message="Saving", detail=f"{i}/{len(proteins_to_compute)} computed...")
-
-                torch.save(ohe_representations[i], os.path.join(dest, protein.name + '.pt'))
-                if 'ohe' not in protein.reps:
-                    protein.reps.append('ohe')
+        # Determine the maximum sequence length for padding
+        max_sequence_length = max(len(seq) for seq in self.seqs)
         
-        if 'ohe' not in self.reps:
-            self.reps.append('ohe')
+        # Compute the one-hot encoding with the calculated padding
+        ohe_representations = torch_tools.one_hot_encoder(seqs, pbar=pbar, padding=max_sequence_length)
+        
+        return ohe_representations
 
 
-    def blosum_builder(self, matrix_type="BLOSUM62", dest: Union[str, None] = None, pbar=None):
+    def blosum_builder(self, matrix_type="BLOSUM62", dest: Union[str, None] = None, pbar=None, proteins=None):
         """
         Computes BLOSUM representations for proteins using blosum_encoding method.
         Assumes all data fits in memory.
@@ -531,35 +559,18 @@ class Library:
             matrix_type (str): Type of BLOSUM matrix to use.
             dest (str): destination
         """
-
-        dest = os.path.join(self.rep_path, matrix_type.lower())
+        if proteins:
+            seqs = [prot.seq for prot in proteins]
+        else:
+            seqs = self.seqs
         
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-
-        proteins_to_compute = [protein for protein in self.proteins if not os.path.exists(os.path.join(dest, protein.name + '.pt'))]
+        # Determine the maximum sequence length for padding
+        max_sequence_length = max(len(seq) for seq in self.seqs)
         
-        print(f"Computing {len(proteins_to_compute)} proteins")
-
-        if pbar:
-            pbar.set(message=f"Initializing computation", detail=f"{len(proteins_to_compute)}/{len(self.proteins)} to compute")
-
-        sequences = [protein.seq for protein in proteins_to_compute]
-
-        if len(proteins_to_compute) > 0:
-            blosum_representations = torch_tools.blosum_encoding(sequences, matrix=matrix_type, pbar=pbar)
-
-            for i, protein in enumerate(proteins_to_compute):
-                
-                if pbar:
-                    pbar.set(i, message="Saving", detail=f"{i}/{len(proteins_to_compute)} computed...")
-
-                torch.save(blosum_representations[i], os.path.join(dest, protein.name + '.pt'))
-                if matrix_type.lower() not in protein.reps:
-                    protein.reps.append(matrix_type.lower())
-
-        if matrix_type.lower() not in self.reps:
-            self.reps.append(matrix_type.lower())
+        # Compute the BLOSUM encoding with the calculated padding
+        blosum_representations = torch_tools.blosum_encoding(seqs, matrix=matrix_type, pbar=pbar, padding=max_sequence_length)
+        
+        return blosum_representations
 
 
     def load_representations(self, rep: Union[str, None], proteins: Union[list, None] = None):
@@ -584,8 +595,10 @@ class Library:
         else:
             file_names = [protein.name + ".pt" for protein in proteins]
 
-        _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
-
+        if rep in self.in_memory:
+            reps = self.compute(method=rep, proteins=proteins)
+        else:
+            _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
         return reps
     
     ### Folding ###
@@ -622,7 +635,10 @@ class Library:
                     self.relax_struc(name)
         
             df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
-            out = {'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps}
+            out = {
+                'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 
+                'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps, 'class_dict':self.library.class_dict
+            }
             
         return out
 
@@ -687,7 +703,7 @@ class Library:
         return df
 
 
-    def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None):
+    def plot_tsne(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
         """
         Plot representations with optional thresholds and point names.
 
@@ -696,17 +712,23 @@ class Library:
             y_upper (float, optional): Upper threshold for special coloring.
             y_lower (float, optional): Lower threshold for special coloring.
             names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
         """
 
         x = self.load_representations(rep)
         y = self.y
-        
 
-        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
+
+        fig, ax, df = vis.plot_tsne(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42,
+                                    highlight_mask=highlight_mask, highlight_label=highlight_label)
 
         return fig, ax, df
 
-    def plot_umap(self, rep: str, y_upper=None, y_lower=None, names=None):
+
+    def plot_umap(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
         """
         Plot representations with optional thresholds and point names.
 
@@ -715,17 +737,23 @@ class Library:
             y_upper (float, optional): Upper threshold for special coloring.
             y_lower (float, optional): Lower threshold for special coloring.
             names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
         """
 
         x = self.load_representations(rep)
         y = self.y
-        
 
-        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
+
+        fig, ax, df = vis.plot_umap(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42, 
+                                    highlight_mask=highlight_mask, highlight_label=highlight_label)
 
         return fig, ax, df
 
-    def plot_pca(self, rep: str, y_upper=None, y_lower=None, names=None):
+
+    def plot_pca(self, rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None):
         """
         Plot representations with optional thresholds and point names.
 
@@ -734,13 +762,18 @@ class Library:
             y_upper (float, optional): Upper threshold for special coloring.
             y_lower (float, optional): Lower threshold for special coloring.
             names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
         """
 
         x = self.load_representations(rep)
         y = self.y
         
+        if self.y_type == 'class':
+            y = [self.class_dict[i] for i in y]
 
-        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, random_state=42)
+        fig, ax, df = vis.plot_pca(x, y, y_upper=y_upper, y_lower=y_lower, names=names, rep_type=rep, y_type=self.y_type, random_state=42,
+                                   highlight_mask=highlight_mask, highlight_label=highlight_label)
 
         return fig, ax, df
     
