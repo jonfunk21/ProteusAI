@@ -25,7 +25,7 @@ ACQ_FN = args.acquisition_fn
 
 # Dictionaries for pretty names
 rep_dict = {"ohe":"One-hot", "blosum50":"BLOSUM50", "blosum62":"BLOSUM62", "esm2":"ESM-2", "esm1v":"ESM-1v", "vae":"VAE"}
-model_dict = {"rf":"Random Forest", "knn":"KNN", "svm":"SVM", "esm2":"ESM-2", "esm1v":"ESM-1v", "gp":"Gaussian Process"}
+model_dict = {"rf":"Random Forest", "knn":"KNN", "svm":"SVM", "esm2":"ESM-2", "esm1v":"ESM-1v", "gp":"Gaussian Process", "ridge":"Ridge Regression"}
 acq_dict = {"ei":"Expected Improvement", "ucb":"Upper Confidence Bound", "greedy":"Greedy", "random":"Random"}
 
 # Load data from JSON file
