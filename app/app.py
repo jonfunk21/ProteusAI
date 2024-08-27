@@ -655,7 +655,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
 
                     ui.column(6,
-                        ui.input_action_button("search", "Search"),
+                        ui.input_action_button("mlde_search", "Search"),
                     )
                 )
             )
@@ -1634,6 +1634,21 @@ def server(input: Inputs, output: Outputs, session: Session):
         if model is not None:
             table = VAL_DF()
             return table
+    
+
+    #################
+    ## MLDE SEARCH ##
+    #################
+    @reactive.Effect
+    @reactive.event(input.mlde_search)
+    def _():
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Searching for new mutants", detail="Preparing genetic algorithm...")
+
+            model = MODEL()
+            wt_value = input.wt_val()
+            optim_problem = input.optim_problem()
+
 
 
     ###############
