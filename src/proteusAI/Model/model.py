@@ -115,7 +115,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 42,
+            #'seed': 42,
             'dest' : None,
             'pbar' : None
         }
