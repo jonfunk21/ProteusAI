@@ -438,6 +438,7 @@ class Model:
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
                 y_train_fold, y_test_fold = np.array(self.y_train)[train_index], np.array(self.y_train)[test_index]
 
+                self._model = self.model()
                 self._model.fit(x_train_fold, y_train_fold)
                 test_r2 = self._model.score(x_test_fold, y_test_fold)
                 fold_results.append(test_r2)
