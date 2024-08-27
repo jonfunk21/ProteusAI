@@ -40,6 +40,8 @@ FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 USR_PATH = os.path.join(app_path, '../usrs')
 SEARCH_HEURISTICS = ['Diversity']
+OPTIM_DICT = {"Maximize Y-values":"max", "Minimize Y-values":"min"}
+MAX_EVAL_DICT = {"ohe":10000, "blosum62":10000, "blosum50":10000, "esm2":20, "esm1v":20}
 
 
 app_ui = ui.page_fluid(
@@ -200,7 +202,7 @@ app_ui = ui.page_fluid(
                         ui.output_data_frame("mlde_model_table"),
                     ),
                     ui.nav_panel("Search Results",
-                        # empty
+                        ui.output_ui("mlde_download_ui")
                     ),
                 ),
             ),    
@@ -284,6 +286,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
     DISCOVERY_VAL_DF = reactive.Value(pd.DataFrame({'names':[], 'y_true':[], 'y_pred':[], 'y_sigma':[]}))
     DISCOVERY_LIB = reactive.Value(None)
+    MLDE_SEARCH_DF = reactive.Value(None)
 
     # Discovery
     DISCOVERY_SEARCH = reactive.Value(None)
@@ -1593,7 +1596,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=MODEL_DICT[input.model_type()], k_folds=k_folds)
             
             val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
-            print(val_df)
 
             # set reactive variables
             MODEL.set(m)
@@ -1647,7 +1649,42 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             model = MODEL()
             wt_value = input.wt_val()
-            optim_problem = input.optim_problem()
+            optim_problem = OPTIM_DICT[input.optim_problem()]
+            max_eval = MAX_EVAL_DICT[model.x]
+
+            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, pbar=p)
+
+            MLDE_SEARCH_DF.set(out)
+
+    
+    ### RENDER MLDE TABLE ###
+    @output
+    @render.data_frame
+    def mlde_search_table(alt=None):
+        table = MLDE_SEARCH_DF()
+        model = MODEL()
+        table = table.drop('sequence', axis=1)
+        return table
+
+
+    ### DOWNLOAD MLDE RESULTS ###
+    @output
+    @render.ui
+    def mlde_download_ui():
+        out = MLDE_SEARCH_DF()
+        if out is not None:
+            return ui.TagList(
+                ui.output_data_frame("mlde_search_table"),
+                ui.download_button("download_mlde_search", "Download discovery results"),
+            )
+
+
+    ### DOWNLOAD LOGIC FOR MLDE RESULTS ###
+    @render.download(
+        filename=lambda: f"{MODEL().model_type}_{MODEL().x}_predictions.csv"
+    )
+    def download_mlde_search():
+        yield MLDE_SEARCH_DF().to_csv(index=False)
 
 
 

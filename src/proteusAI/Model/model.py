@@ -19,6 +19,7 @@ import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
 import proteusAI.ml_tools.bo_tools as BO
+from proteusAI.Library import Library
 import random
 from typing import Union
 import json
@@ -662,7 +663,7 @@ class Model:
             'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
             'class_dict':self.library.class_dict
             }
-
+        
         return out
 
 
@@ -845,9 +846,29 @@ class Model:
         return fig, ax
 
 
-    def search(self, N=10, labels=['all'], method='ga', pbar=None):
+    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, pbar=None):
+        """Search for new mutants or select variants from a set of sequences"""
+
+        if self.y_type == 'class':
+            out, mask = self._class_search(N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar)
+            return out, mask
+        elif self.y_type == 'num':
+            out = self._num_search(N=N, method=method, optim_problem=optim_problem, max_eval=max_eval, pbar=pbar)
+            return out
+
+        
+
+    def _class_search(self, N=10, optim_problem='max', labels=['all'], method='ga', max_eval=10000, pbar=None):
         """
         Sample diverse sequences and return a mask with 1 for selected indices and 0 for non-selected.
+
+        Args:
+            N (int): Number of sequences to be returned.
+            optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
+            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
+            max_eval (int): Maximum number of evaluations. Default 1000.
+            pbar: Progress bar for ProteusAI app.
         """
 
         class_dict = self.library.class_dict
@@ -862,7 +883,8 @@ class Model:
 
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
-        pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
+        if pbar:
+            pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
         
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
         
@@ -891,9 +913,118 @@ class Model:
             'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
             'class_dict':self.library.class_dict
             }
+    
 
-        return out, mask
+    def _num_search(self, N=10, optim_problem='max', method='ga', max_eval=10000, pbar=None):
+        """
+        Search for improved mutants.
 
+        Args:
+            N (int): Number of sequences to be returned.
+            optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
+            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
+            pbar: Progress bar for ProteusAI app.
+        """
+        if pbar:
+            pbar.set(message=f"Evaluation {max_eval} sequences", detail=f"...")
+
+        # Sort proteins based on the optimization problem
+        if optim_problem == 'max':
+            proteins = sorted(self.library.proteins, key=lambda prot: prot.y_pred, reverse=True)
+        elif optim_problem == 'min':
+            proteins = sorted(self.library.proteins, key=lambda prot: prot.y_pred, reverse=False)
+        else:
+            raise ValueError(f"'{optim_problem}' is an invalid optimization problem")
+        
+        # Get the top N proteins
+        top_proteins = proteins[:N]
+
+        # Extract y values and compute the mean
+        ys = [prot.y for prot in proteins]
+        mean_y = np.mean(ys)
+
+        # Get the sequences of the top N proteins that have y > mean_y or y < mean_y based on the optimization problem
+        if optim_problem == 'max':
+            improved_seqs = [prot.seq for prot in top_proteins if prot.y > mean_y]
+        elif optim_problem == 'min':
+            improved_seqs = [prot.seq for prot in top_proteins if prot.y < mean_y]
+
+        # Introduce random mutations from the mutations dictionary
+        mutations = BO.find_mutations(improved_seqs)
+
+        # Save destination for search_results
+        if self.dest != None:
+            csv_dest = self.dest
+        else:
+            csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/predictions")
+            os.makedirs(csv_dest, exist_ok=True)
+
+        # results file name
+        fname = f"{csv_dest}/{self.model_type}_{self.x}.csv"
+        
+        if os.path.exists(os.path.join(csv_dest, fname)):
+            self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
+        
+        mutant_df = self._mutate(proteins, mutations, max_eval)
+
+        out = {
+            'df':mutant_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type,
+            'seqs_col':'sequence', 'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'names_col':'name', 'reps':self.library.reps, 
+            'class_dict':self.library.class_dict
+            }
+        
+        library = Library(user=self.library.user, source=out)
+
+        library.compute(method=self.x, batch_size=1, pbar=pbar)
+
+        val_data, y_pred, y_sigma, y_val, sorted_acq_score = self.predict(library.proteins)
+        
+        self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, f"{csv_dest}/{self.model_type}_{self.x}_predictions.csv")
+        
+        return self.search_df
+
+
+    def _mutate(self, proteins, mutations, max_eval=100):
+        """
+        Propose new mutations
+        """
+
+        if self.search_df:
+            mutated_seqs = self.search_df.sequence.to_list()
+            mutated_names = self.search_df.name.to_list()
+            y_trues = self.search_df.y_true.to_list()
+            y_preds = self.search_df.y_predicted.to_list()
+            y_sigmas = self.search_df.y_sigma.to_list()
+
+        else:
+            mutated_seqs = []
+            mutated_names = []
+            y_trues = []
+            y_preds = []
+            y_sigmas = []
+
+        for _ in range(max_eval):
+            prot = random.choice(proteins)
+            name = prot.name
+            seq_list = list(prot.seq) 
+            pos, mut_list = random.choice(list(mutations.items()))
+            if pos < len(seq_list): 
+                mut = random.choice(mut_list)  
+                mutated_name = name + f"+{seq_list[pos+1]}{pos}{mut}" # list is indexed at 0 but mutation descriptions at 1
+                if seq_list[pos+1] != mut and mutated_name not in mutated_names: # exclude mutations to the same residue
+                    seq_list[pos+1] = mut
+                    mutated_seq = ''.join(seq_list) 
+                    mutated_seqs.append(mutated_seq)
+                    mutated_names.append(mutated_name)
+                    y_trues.append(None)
+                    y_preds.append(None)
+                    y_sigmas.append(None)
+
+        out_df = pd.DataFrame({"name":mutated_names,"sequence":mutated_seqs, "y_true":y_trues, "y_predicted":y_preds, "y_sigma":y_sigmas})
+
+        return out_df
+    
 
     ### Getters and Setters ###
     # Getter and Setter for library
