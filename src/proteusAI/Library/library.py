@@ -186,11 +186,18 @@ class Library:
         else:
             self.y_sigma = [None] * len(self.y)
 
+        # if predicted y values are there
+        if 'acq_col' in data.keys():
+            self.acq_col = data['acq_col']
+            self.acq_score = df[self.acq_col].to_list()
+        else:
+            self.acq_score = [None] * len(self.y)
+
         if 'pred_data' in data.keys():
             self.pred_data = data['pred_data']
 
         # create proteins
-        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma, user=self.user) for name, seq, y, y_pred, y_sigma in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma)]
+        self.proteins = [Protein(name, seq, y=y, y_pred=y_pred, y_sigma=y_sigma, acq_score=acq_score, user=self.user) for name, seq, y, y_pred, y_sigma, acq_score in zip(self.names, self.seqs, self.y, self.y_pred, self.y_sigma, self.acq_score)]
 
 
     def initialize_user(self):

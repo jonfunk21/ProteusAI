@@ -669,20 +669,33 @@ class Model:
 
 
     # Save the sequences, y-values, and predicted y-values to CSV
-    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values, filename):
+    def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values, filename, acq_scores=None):
         # Prepare data for CSV and DataFrame
         data = []
         names = [prot.name for prot in proteins]
+        
+        # Determine if acquisition scores are provided
+        if acq_scores is not None:
+            header = ['name', 'sequence', 'y_value', 'y_predicted', 'y_sigma', 'acq_score']  # CSV header with acq_scores
+        else:
+            header = ['name', 'sequence', 'y_value', 'y_predicted', 'y_sigma']  # CSV header without acq_scores
+
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['name', 'sequence', 'y_value', 'y_predicted', 'y_sigma'])  # CSV header
-            for name, protein, y, y_pred, y_sigma in zip(names, proteins, y_values, y_pred_values, y_sigma_values):
-                row = [name, protein.seq, y, y_pred, y_sigma]
+            writer.writerow(header)
+            for i, (name, protein, y, y_pred, y_sigma) in enumerate(zip(names, proteins, y_values, y_pred_values, y_sigma_values)):
+                if acq_scores is not None:
+                    row = [name, protein.seq, y, y_pred, y_sigma, acq_scores[i]]
+                else:
+                    row = [name, protein.seq, y, y_pred, y_sigma]
                 writer.writerow(row)
                 data.append(row)
         
         # Create a DataFrame from the collected data
-        df = pd.DataFrame(data, columns=['name', 'sequence', 'y_true', 'y_predicted', 'y_sigma'])
+        if acq_scores is not None:
+            df = pd.DataFrame(data, columns=['name', 'sequence', 'y_true', 'y_predicted', 'y_sigma', 'acq_score'])
+        else:
+            df = pd.DataFrame(data, columns=['name', 'sequence', 'y_true', 'y_predicted', 'y_sigma'])
         
         return df
     
@@ -847,14 +860,14 @@ class Model:
         return fig, ax
 
 
-    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, pbar=None):
+    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, pbar=None):
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == 'class':
             out, mask = self._class_search(N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar)
             return out, mask
         elif self.y_type == 'num':
-            out = self._num_search(N=N, method=method, optim_problem=optim_problem, max_eval=max_eval, pbar=pbar)
+            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, pbar=pbar)
             return out
 
         
@@ -916,7 +929,7 @@ class Model:
             }
     
 
-    def _num_search(self, N=10, optim_problem='max', method='ga', max_eval=10000, pbar=None):
+    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, pbar=None):
         """
         Search for improved mutants.
 
@@ -938,8 +951,6 @@ class Model:
         else:
             raise ValueError(f"'{optim_problem}' is an invalid optimization problem")
         
-        # Get the top N proteins
-        top_proteins = proteins[:N]
 
         # Extract y values and compute the mean
         ys = [prot.y for prot in proteins]
@@ -947,9 +958,9 @@ class Model:
 
         # Get the sequences of the top N proteins that have y > mean_y or y < mean_y based on the optimization problem
         if optim_problem == 'max':
-            improved_seqs = [prot.seq for prot in top_proteins if prot.y > mean_y]
+            improved_seqs = [prot.seq for prot in proteins if prot.y > mean_y]
         elif optim_problem == 'min':
-            improved_seqs = [prot.seq for prot in top_proteins if prot.y < mean_y]
+            improved_seqs = [prot.seq for prot in proteins if prot.y < mean_y]
 
         # Introduce random mutations from the mutations dictionary
         mutations = BO.find_mutations(improved_seqs)
@@ -967,28 +978,39 @@ class Model:
         if os.path.exists(os.path.join(csv_dest, fname)):
             self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
         
-        mutant_df = self._mutate(proteins, mutations, max_eval)
+        mutant_df = self._mutate(proteins, mutations, explore=explore, max_eval=max_eval)
 
         out = {
             'df':mutant_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type,
-            'seqs_col':'sequence', 'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'names_col':'name', 'reps':self.library.reps, 
-            'class_dict':self.library.class_dict
+            'seqs_col':'sequence', 'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'acq_col':'acq_score',
+            'names_col':'name', 'reps':self.library.reps, 'class_dict':self.library.class_dict
             }
         
         library = Library(user=self.library.user, source=out)
 
         library.compute(method=self.x, batch_size=1, pbar=pbar)
 
-        val_data, y_pred, y_sigma, y_val, sorted_acq_score = self.predict(library.proteins)
+        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins)
         
-        self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, f"{csv_dest}/{self.model_type}_{self.x}_predictions.csv")
+        self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, f"{csv_dest}/{self.model_type}_{self.x}_predictions.csv", acq_scores=acq_score)
         
         return self.search_df
 
 
-    def _mutate(self, proteins, mutations, max_eval=100):
+    def _mutate(self, proteins, mutations, explore=0.1, max_eval=100):
         """
         Propose new mutations
+
+        Args:
+            proteins (list): list of proteins
+            mutations (dict): dictionary of positions and mutations. Index start at 1
+                example: {15:['A', 'L', 'I']}
+            exploration (float): Exploration ratio, float between 0 and 1 to control
+                the exploratory tendency of the sampling algorithm.
+            max_eval (int): maximum number of evaluations before termination.
+
+        Returns:
+            pandas dataframe
         """
 
         if self.search_df:
@@ -1004,25 +1026,37 @@ class Model:
             y_trues = []
             y_preds = []
             y_sigmas = []
+            acq_scores = []
 
         for _ in range(max_eval):
             prot = random.choice(proteins)
             name = prot.name
             seq_list = list(prot.seq) 
-            pos, mut_list = random.choice(list(mutations.items()))
-            if pos < len(seq_list): 
-                mut = random.choice(mut_list)  
-                mutated_name = name + f"+{seq_list[pos+1]}{pos}{mut}" # list is indexed at 0 but mutation descriptions at 1
-                if seq_list[pos+1] != mut and mutated_name not in mutated_names: # exclude mutations to the same residue
-                    seq_list[pos+1] = mut
-                    mutated_seq = ''.join(seq_list) 
-                    mutated_seqs.append(mutated_seq)
-                    mutated_names.append(mutated_name)
-                    y_trues.append(None)
-                    y_preds.append(None)
-                    y_sigmas.append(None)
+            
+            if random.random() < explore:
+                # Explore: random position and random mutation
+                pos = random.randint(0, len(seq_list) - 1)
+                mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
+            else:
+                # Exploit: use known mutation from the provided mutations dictionary
+                pos, mut_list = random.choice(list(mutations.items()))
+                pos = pos - 1
+                if pos < len(seq_list):
+                    mut = random.choice(mut_list)
 
-        out_df = pd.DataFrame({"name":mutated_names,"sequence":mutated_seqs, "y_true":y_trues, "y_predicted":y_preds, "y_sigma":y_sigmas})
+            mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
+            
+            if seq_list[pos] != mut and mutated_name not in mutated_names:  # Exclude mutations to the same residue
+                seq_list[pos] = mut
+                mutated_seq = ''.join(seq_list) 
+                mutated_seqs.append(mutated_seq)
+                mutated_names.append(mutated_name)
+                y_trues.append(None)
+                y_preds.append(None)
+                y_sigmas.append(None)
+                acq_scores.append(None)
+
+        out_df = pd.DataFrame({"name": mutated_names, "sequence": mutated_seqs, "y_true": y_trues, "y_predicted": y_preds, "y_sigma": y_sigmas, "acq_score":acq_scores})
 
         return out_df
     

@@ -652,15 +652,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.column(6,
                         ui.input_select("optim_problem", "Optimization problem", ['Maximize Y-values', 'Minimize Y-values']),
                     ),
+                ),
+                
+                ui.column(8,
+                    ui.input_slider("mlde_explore", "Exploration vs. Exploitation", value=0.1, min=0, max=1),
+                ),
 
-                    ui.column(6,
-                        ui.input_numeric("wt_val", "Baseline Y-value", 0),
-                    ),
-
-                    ui.column(6,
-                        ui.input_action_button("mlde_search", "Search"),
-                    )
-                )
+                ui.column(6,
+                    ui.input_action_button("mlde_search", "Search"),
+                ),
             )
 
 
@@ -1648,11 +1648,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             p.set(message="Searching for new mutants", detail="Preparing genetic algorithm...")
 
             model = MODEL()
-            wt_value = input.wt_val()
+            mlde_explore = input.mlde_explore()
+            print(mlde_explore)
             optim_problem = OPTIM_DICT[input.optim_problem()]
             max_eval = MAX_EVAL_DICT[model.x]
 
-            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, pbar=p)
+            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, pbar=p)
 
             MLDE_SEARCH_DF.set(out)
 
@@ -1663,7 +1664,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def mlde_search_table(alt=None):
         table = MLDE_SEARCH_DF()
         model = MODEL()
-        table = table.drop('sequence', axis=1)
+        table = table.drop(['sequence', 'y_true'], axis=1)
         return table
 
 
