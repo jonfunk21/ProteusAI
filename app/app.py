@@ -153,9 +153,10 @@ app_ui = ui.page_fluid(
                 ),
 
                 ui.panel_conditional("typeof output.protein_fasta === 'string'",
-                    ui.output_plot("entropy_plot"),
-                    ui.output_plot("scores_plot"),
-                    ui.output_data_frame("zs_df")
+                    #ui.output_plot("entropy_plot"),
+                    #ui.output_plot("scores_plot"),
+                    #ui.output_data_frame("zs_df"),
+                    ui.output_ui("zs_download_ui"),
                 ),
             ),
         ),
@@ -1349,6 +1350,28 @@ def server(input: Inputs, output: Outputs, session: Session):
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
         return df
+
+
+    ### DOWNLOAD ZS RESULTS ###
+    @output
+    @render.ui
+    def zs_download_ui():
+        out = ZS_SCORES()
+        if out is not None:
+            return ui.TagList(
+                ui.output_plot("entropy_plot"),
+                ui.output_plot("scores_plot"),
+                ui.output_data_frame("zs_df"),
+                ui.download_button("download_zs_df", "Download discovery results"),
+            )
+
+
+    ### DOWNLOAD LOGIC FOR ZS RESULTS ###
+    @render.download(
+        filename=lambda: f"{PROTEIN().name}_{input.zs_model()}_zs_predictions.csv"
+    )
+    def download_zs_df():
+        yield ZS_SCORES().to_csv(index=False)
 
 
     ### OUTPUT PROTEIN MODE ###
