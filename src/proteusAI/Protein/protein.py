@@ -213,7 +213,7 @@ class Protein:
             
         self.seq = seq
 
-    def load_structure(self, prot_f, name = None, filter_solvent = True):
+    def load_structure(self, prot_f, name = None, filter_solvent=True):
         """
         Load a structure from a pdb or cif file or an AtomArray.
 
@@ -235,7 +235,7 @@ class Protein:
         chains = chain_parser(prot_f)
 
         self.pdb_file = prot_f
-        self.seq = seqs[chains[0]]
+        self.seq = seqs
         self.name = name
         self.struc = prot
         self.chains = chains
@@ -250,8 +250,9 @@ class Protein:
         view = show_pdb(self.pdb_file, color=color, highlight=highlight, sticks=sticks)
         return view
     
+    
     ### Zero-shot prediction ###
-    def zs_prediction(self, model='esm2', batch_size=100, pbar=None, device=None):
+    def zs_prediction(self, model='esm2', batch_size=100, pbar=None, device=None, chain=None):
         """
         Compute zero-shot scores
 
@@ -260,12 +261,20 @@ class Protein:
             batch_size (int): Batch size used to compute ZS-Scores
             pbar: App progress bar
             device (str): Choose hardware for computation. Default 'None' for autoselection
-                          other options are 'cpu' and 'cuda'. 
+                        other options are 'cpu' and 'cuda'. 
         """
-        seq = self.seq
-       
-        dest = os.path.join(self.zs_path, "results", model)
+
+        # Set a default chain if none is provided and there are chains available
+        if chain is None and len(self.chains) >= 1:
+            chain = self.chains[0]
         
+        # Now ensure chain has a value before proceeding
+        if chain is not None and len(self.chains) >= 1:
+            seq = self.seq[chain]
+            dest = os.path.join(self.zs_path, "results", chain, model)
+        else:
+            seq = self.seq
+            dest = os.path.join(self.zs_path, "results", model)
 
         # Check if results already exist
         if os.path.exists(dest):
@@ -314,12 +323,21 @@ class Protein:
         return out
 
 
-    def zs_library(self, model="esm2"):
+    def zs_library(self, model="esm2", chain=None):
         """
         Generate zero-shot library.
         """
 
-        zs_results_path = os.path.join(self.zs_path, "results", model, "zs_scores.csv")
+        if chain == None and len(self.chains) >= 1:
+            chain = self.chains[0]
+            wt_seq = self.seq[chain]
+            zs_results_path = os.path.join(self.zs_path, "results", chain, model, "zs_scores.csv")
+        elif len(self.chains) >= 1:
+            wt_seq = self.seq[chain]
+            zs_results_path = os.path.join(self.zs_path, "results", chain, model, "zs_scores.csv")
+        else:
+            wt_seq = self.seq
+            zs_results_path = os.path.join(self.zs_path, "results", model, "zs_scores.csv")
 
         # load already computed zs scores
         if os.path.exists(zs_results_path):
@@ -327,7 +345,7 @@ class Protein:
 
         # generate df with blank y-values
         else:
-            wt_seq = self.seq
+            #wt_seq = self.seq
             canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
             mutants, sequences = [], []
             for pos in range(len(wt_seq)):
@@ -341,51 +359,14 @@ class Protein:
         
         out = {
             'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'mmp', 
-            'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps, 'class_dict':self.library.class_dict
+            'seqs_col':'sequence', 'names_col':'mutant', 'reps':self.reps, 'class_dict':self.class_dict
         }
 
         return out
-
-    # Plot zero-shot entropy
-    def plot_entropy(self, model='esm2', title=None, section=None):
-        seq = self.seq
-        name = self.name
-
-        if self.name:
-            dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
-        else:
-            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
-
-        # Load required data
-        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
-        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
-        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
-        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
-
-        # Section handling
-        seq_len = len(seq)
-        if section is None:
-            section = (0, seq_len)
-        elif isinstance(section, tuple):
-            if len(section) != 2 or any(type(i) != int for i in section):
-                raise ValueError("Section must be a tuple of two integers.")
-            if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
-                raise ValueError("Section indices are out of sequence range.")
-            if section[1] < section[0]:
-                raise ValueError("Section start index must be less than end index.")
-        else:
-            raise TypeError("Section must be a tuple or None.")
-
-        # Set title
-        if title is None:
-            title = f"{model_dict[model]} per-position entropy"
-
-        # Plot entropy
-        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
-        return fig
     
+
     ### Structure prediction ###
-    def esm_fold(self, batch_size=100, dest=None, pbar=None): # If structure prediction will become available for libraries, set dest in library, create a protein dir under the file name
+    def esm_fold(self, batch_size=100, chain=None, dest=None, pbar=None): # If structure prediction will become available for libraries, set dest in library, create a protein dir under the file name
         """
         Compute zero-shot scores
 
@@ -395,7 +376,10 @@ class Protein:
             pbar: App progress bar
             
         """
-        seq = self.seq
+        if chain == None:
+            chain = self.chains[0]
+
+        seq = self.seq[chain]
 
         # check scores for this protein and model have already been computed
         name = self.name
@@ -428,6 +412,7 @@ class Protein:
     
         return self.struc
     
+
     ### Inverse Folding ###
     def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2):
         """
@@ -465,7 +450,58 @@ class Protein:
         return out
     
     # Plot 
-    def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None, highlight_positions=None):
+    # Plot zero-shot entropy
+    def plot_entropy(self, model='esm2', title=None, section=None, chain=None):
+        if chain == None and len(self.chains) >= 1:
+            chain = self.chains[0]
+            seq = self.seq[chain]
+        elif len(self.chains) >= 1:
+            seq = self.seq[chain]
+        else:
+            seq = self.seq
+            chain == None
+
+        name = self.name
+
+        if self.name:
+            dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
+            if chain:
+                dest = os.path.join(self.user, f"{self.name}/zero_shot/results/{chain}", model)
+        else:
+            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
+            if chain:
+                dest = os.path.join(self.user, f"protein/zero_shot/results/{chain}", model)
+
+        # Load required data
+        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
+        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
+        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
+        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+
+        # Section handling
+        seq_len = len(seq)
+        if section is None:
+            section = (0, seq_len)
+        elif isinstance(section, tuple):
+            if len(section) != 2 or any(type(i) != int for i in section):
+                raise ValueError("Section must be a tuple of two integers.")
+            if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
+                raise ValueError("Section indices are out of sequence range.")
+            if section[1] < section[0]:
+                raise ValueError("Section start index must be less than end index.")
+        else:
+            raise TypeError("Section must be a tuple or None.")
+
+        # Set title
+        if title is None:
+            title = f"{model_dict[model]} per-position entropy"
+
+        # Plot entropy
+        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
+        return fig
+
+
+    def plot_scores(self, model='esm2', section=None, color_scheme=None, title=None, highlight_positions=None, chain=None):
         """
         Plot the zero-shot prediction scores for a given model and sequence.
 
@@ -480,13 +516,25 @@ class Protein:
             fig (matplotlib.figure.Figure): The created matplotlib figure.
         """
         
-        seq = self.seq
+        if chain == None and len(self.chains) >= 1:
+            chain = self.chains[0]
+            seq = self.seq[chain]
+        elif len(self.chains) >= 1:
+            seq = self.seq[chain]
+        else:
+            seq = self.seq
+            chain == None
+
         name = self.name
 
         if self.name:
             dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
+            if chain:
+                dest = os.path.join(self.user, f"{self.name}/zero_shot/results/{chain}", model)
         else:
             dest = os.path.join(self.user, f"protein/zero_shot/results", model)
+            if chain:
+                dest = os.path.join(self.user, f"protein/zero_shot/results/{chain}", model)
 
         # Load required data
         self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
@@ -532,7 +580,6 @@ class Protein:
         return get_contacts(self.struc, chain, target, dist)
 
 
-
     ### getters and setters ###
     @property
     def name(self):
@@ -551,7 +598,7 @@ class Protein:
 
     @seq.setter
     def seq(self, value):
-        if not isinstance(value, str) and value is not None:
+        if not isinstance(value, (str, dict)) and value is not None:
             raise TypeError(f"Expected 'seq' to be of type 'str', but got '{type(value).__name__}'")
         self._seq = value
 

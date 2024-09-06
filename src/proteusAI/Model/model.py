@@ -275,6 +275,7 @@ class Model:
             params_path = f"{self.dest}/params.json"
         else:
             params_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/params.json")
+            # Save destination for search_results
 
         # Check if params.json exists
         if not os.path.exists(params_path):
@@ -318,8 +319,6 @@ class Model:
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
 
-
-    
 
     def train_sklearn(self, rep_path, pbar=None):
         """
@@ -860,14 +859,14 @@ class Model:
         return fig, ax
 
 
-    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, pbar=None):
+    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None):
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == 'class':
             out, mask = self._class_search(N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar)
             return out, mask
         elif self.y_type == 'num':
-            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, pbar=pbar)
+            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, batch_size=batch_size, pbar=pbar)
             return out
 
         
@@ -929,7 +928,7 @@ class Model:
             }
     
 
-    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, pbar=None):
+    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None):
         """
         Search for improved mutants.
 
@@ -972,6 +971,10 @@ class Model:
             csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/predictions")
             os.makedirs(csv_dest, exist_ok=True)
 
+        csv_file = os.path.join(csv_dest, f"{self.model_type}_{self.x}_predictions.csv")
+        if os.path.exists(csv_file):
+            self.search_df = pd.read_csv(csv_file)
+
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.x}.csv"
         
@@ -988,11 +991,11 @@ class Model:
         
         library = Library(user=self.library.user, source=out)
 
-        library.compute(method=self.x, batch_size=1, pbar=pbar)
+        library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
 
         val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins)
         
-        self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, f"{csv_dest}/{self.model_type}_{self.x}_predictions.csv", acq_scores=acq_score)
+        self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score)
         
         return self.search_df
 
@@ -1013,12 +1016,13 @@ class Model:
             pandas dataframe
         """
 
-        if self.search_df:
+        if self.search_df is not None and not self.search_df.empty:
             mutated_seqs = self.search_df.sequence.to_list()
             mutated_names = self.search_df.name.to_list()
-            y_trues = self.search_df.y_true.to_list()
+            y_trues = [None] * len(mutated_seqs)
             y_preds = self.search_df.y_predicted.to_list()
             y_sigmas = self.search_df.y_sigma.to_list()
+            acq_scores = self.search_df.acq_score.to_list()
 
         else:
             mutated_seqs = []

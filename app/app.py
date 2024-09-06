@@ -34,14 +34,14 @@ DESIGN_MODELS = {"ESM-IF":"esm_if"}
 REP_VISUAL = ["UMAP","t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 1
+BATCH_SIZE = 100
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 USR_PATH = os.path.join(app_path, '../usrs')
 SEARCH_HEURISTICS = ['Diversity']
 OPTIM_DICT = {"Maximize Y-values":"max", "Minimize Y-values":"min"}
-MAX_EVAL_DICT = {"ohe":10000, "blosum62":10000, "blosum50":10000, "esm2":20, "esm1v":20}
+MAX_EVAL_DICT = {"ohe":10000, "blosum62":10000, "blosum50":10000, "esm2":200, "esm1v":200}
 
 
 app_ui = ui.page_fluid(
@@ -350,9 +350,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),                
                 ),
 
-                ui.output_ui(
-                        "folding",
-                    ),
+                # DISABLED FOLDING
+                #ui.output_ui(
+                #        "folding",
+                #    ),
             )
 
         else:
@@ -360,39 +361,39 @@ def server(input: Inputs, output: Outputs, session: Session):
 
 
     ### DYNAMIC DESIGN OUTPUT ###
-    @output
-    @render.ui
-    def folding():
-        out = DESIGN_OUTPUT()
-        if type(out) != str:
-            return ui.TagList(  
-                ui.h5("Fold designed sequences"),
-                ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
-                ui.row(
-                    ui.column(6,
-                        ui.input_select("folding_model", "Select folding model", FOLDING_MODELS),  
-                    ),
-                    ui.column(6,
-                        ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8),
-                    ),
-                
-                ),
-                ui.row(
-                    ui.column(6,
-                        ui.input_action_button("folding_button", "Fold")
-                    ),
-                    ui.column(6,
-                        ui.input_checkbox("energy_minimization", "Energy minimization"),
-                        style='padding:10px;',
-                    ),  
-                ),
+    #@output
+    #@render.ui
+    #def folding():
+    #    out = DESIGN_OUTPUT()
+    #    if type(out) != str:
+    #        return ui.TagList(  
+    #            ui.h5("Fold designed sequences"),
+    #            ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
+    #            ui.row(
+    #                ui.column(6,
+    #                    ui.input_select("folding_model", "Select folding model", FOLDING_MODELS),  
+    #                ),
+    #                ui.column(6,
+    #                    ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8),
+    #                ),
+    #            
+    #            ),
+    #            ui.row(
+    #                ui.column(6,
+    #                    ui.input_action_button("folding_button", "Fold")
+    #                ),
+    #                ui.column(6,
+    #                    ui.input_checkbox("energy_minimization", "Energy minimization"),
+    #                    style='padding:10px;',
+    #                ),  
+    #            ),
 
-                ui.h5("Analyze protein structures"),
-                ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=FIXED_RES(), multiple=True),
-                ui.column(6,
-                    ui.input_action_button("analyze_designs", "Analyze Strucures"),
-                ),
-            )
+    #            ui.h5("Analyze protein structures"),
+    #            ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=FIXED_RES(), multiple=True),
+    #            ui.column(6,
+    #                ui.input_action_button("analyze_designs", "Analyze Strucures"),
+    #            ),
+    #        )
 
 
     ###########################
@@ -414,6 +415,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
 
+                    ui.column(6,
+                        ui.output_ui('rep_chain_ui'),
+                    ),
+
                     ui.h4("Visualization"),
 
                     ui.panel_conditional("input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
@@ -427,45 +432,45 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
                     ui.input_select("vis_method","Visualization Method", REP_VISUAL),
                     
-                    ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
+                    #ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
                     
                     # Conditional panel for Site
-                    ui.panel_conditional("input.color_by === 'Site'",
-                            ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)"),
-                        ),
+                    #ui.panel_conditional("input.color_by === 'Site'",
+                    #        ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)"),
+                    #    ),
                     
                     # Conditional panel for Y-value with numeric data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
-                            ui.row(
-                                ui.column(6,
-                                        ui.input_numeric("y_upper", "Choose an upper limit for y", value=None),
-                                    ),
-                                ui.column(6,
-                                        ui.input_numeric("y_lower", "Choose an lower limit for y", value=None),
-                                    ),
-                            ),
-                        ),
+                    #ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
+                    #        ui.row(
+                    #            ui.column(6,
+                    #                    ui.input_numeric("y_upper", "Choose an upper limit for y", value=None),
+                    #                ),
+                    #            ui.column(6,
+                    #                    ui.input_numeric("y_lower", "Choose an lower limit for y", value=None),
+                    #                ),
+                    #        ),
+                    #    ),
 
                     # Conditional panel fo Y-value with categorical data
-                    ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
-                            ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)"),
-                        ),
+                    #ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
+                    #        ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)"),
+                    #    ),
                     
-                    ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
+                    #ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
 
-                    ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
+                    #ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
 
-                    ui.panel_conditional("input.hide_by_y === true",
-                        ui.row(
-                        # change these to be the min and max values observed in the library
-                        ui.column(6,
-                                    ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100),
-                            ),
-                        ui.column(6,
-                                    ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0),
-                            ),
-                        ),
-                    ),
+                    #ui.panel_conditional("input.hide_by_y === true",
+                    #    ui.row(
+                    #    # change these to be the min and max values observed in the library
+                    #    ui.column(6,
+                    #                ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100),
+                    #        ),
+                    #    ui.column(6,
+                    #                ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0),
+                    #        ),
+                    #    ),
+                    #),
 
                     ui.row(
                         ui.column(12, "Visualize representations"),
@@ -504,6 +509,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                         style='padding:25px;',
                     ),
 
+                    ui.column(6,
+                        ui.output_ui('zs_chain_ui'),
+                    ),
+
                     ui.h4("Visualize"),
 
                     ui.row(
@@ -511,7 +520,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_select("computed_zs_scores", "Computed Zero-shot scores", COMP_ZS_SCORES()),
                         ),
                     ),
-                    
+
                     ui.row(
                         ui.column(6,
                             ui.input_action_button("plot_entropy", "Plot Entropy"),
@@ -588,8 +597,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
 
                         ui.column(6,
-                            ui.input_select("model_rep_type", "Representaion type", REPS_AVAIL()),
+                            ui.input_select("model_rep_type", "Representation type", REPS_AVAIL()),
                         ),
+
+                        ui.column(6,
+                            ui.output_ui('mlde_chain_ui'),
+                        ),
+
                         ui.column(6,
                             ui.output_ui("mlde_dynamic_ui"),
                         ),
@@ -1030,6 +1044,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     def protein_fasta():
         if PROTEIN() == None:
             seq = None
+        elif type(PROTEIN().seq) == dict:
+            seq = 'Protein name: ' + PROTEIN().name + ' \n'.join([" chain " + chain + ':\n' + PROTEIN().seq[chain] for chain in PROTEIN().chains])
         else:
             seq = 'Protein name: ' + PROTEIN().name + '\n' + PROTEIN().seq
         return seq
@@ -1069,11 +1085,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
                 # load zs_scores
                 for model in ZS_MODELS:
-                    df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{REP_DICT[model]}/zs_scores.csv")
-                    if os.path.exists(df_path):
-                        df = pd.read_csv(df_path)
-                        p.set(message="Loading data...", detail="This may take a while...")
-                        computed_zs.append(model)
+                    for chain in prot.chains:
+                        df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{chain}/{REP_DICT[model]}/zs_scores.csv")
+                        if os.path.exists(df_path):
+                            df = pd.read_csv(df_path)
+                            p.set(message="Loading data...", detail="This may take a while...")
+                            computed_zs.append(model)
 
                 # set reactive variables
                 PROTEIN.set(prot)
@@ -1094,6 +1111,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "model_type",
                     choices = [x for x in MODEL_TYPES if x != "KNN"]
                 )
+
                 for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
@@ -1130,13 +1148,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def struc3D_design():
         out = DESIGN_OUTPUT()
-        if type(out) == str  or input.design_sidechains() == None:
-            sidechains = [] 
-        else:
-            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+        #if type(out) == str  or input.design_sidechains() == None:
+        #    sidechains = [] 
+        #else:
+        #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
             
 
-        highlights = list(set(input.design_res().strip().split(',') + sidechains))
+        highlights = list(set(input.design_res().strip().split(',')))# + sidechains))
 
         if PROT_INTERFACE():
             highlights = highlights + PROT_INTERFACE()
@@ -1148,7 +1166,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         highlights_dict = {input.mutlichain_chain():highlights}
 
-        view = PROTEIN().view_struc(color="white", highlight=highlights_dict, sticks=sidechains)
+        view = PROTEIN().view_struc(color="white", highlight=highlights_dict) #, sticks=sidechains)
         return ui.TagList(
             ui.HTML(view.write_html())
         )
@@ -1185,13 +1203,15 @@ def server(input: Inputs, output: Outputs, session: Session):
         n_designs = int(input.n_designs())
         with ui.Progress(min=1, max=n_designs) as p:
             prot = PROTEIN()
-            seq = prot.seq
+            seq = prot.seq[input.mutlichain_chain()]
             p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
             out = DESIGN_OUTPUT()
-            if type(out) == str or input.design_sidechains() == None:
-                sidechains = []
-            else:
-                sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+            
+            sidechains = []
+            #if type(out) == str or input.design_sidechains() == None:
+            #    sidechains = []
+            #else:
+            #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
 
             residues_str = list(set(input.design_res().strip().split(',') + sidechains))
             fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
@@ -1266,40 +1286,40 @@ def server(input: Inputs, output: Outputs, session: Session):
 
 
     ### FOLDING BUTTON ###
-    @reactive.Effect
-    @reactive.event(input.folding_button)
-    def _():
-        """
-        Fold selected proteins
-        """
-        lib = DESIGN_LIB()
-        out = DESIGN_OUTPUT()
-        prot = PROTEIN()
-        selection = input.fold_these()
-        with ui.Progress(min=1, max=len(selection)) as p:
-            p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
-            model = MODEL_DICT[input.folding_model()]
-            num_recycles = input.num_recycles()
-            to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
-            out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
-            fold_lib = pai.Library(user=prot.user, source=out)
-            FOLD_LIB.set(fold_lib)
+    #@reactive.Effect
+    #@reactive.event(input.folding_button)
+    #def _():
+    #    """
+    #    Fold selected proteins
+    #    """
+    #    lib = DESIGN_LIB()
+    #    out = DESIGN_OUTPUT()
+    #    prot = PROTEIN()
+    #    selection = input.fold_these()
+    #    with ui.Progress(min=1, max=len(selection)) as p:
+    #        p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
+    #        model = MODEL_DICT[input.folding_model()]
+    #        num_recycles = input.num_recycles()
+    #        to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
+    #        out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
+    #        fold_lib = pai.Library(user=prot.user, source=out)
+    #        FOLD_LIB.set(fold_lib)
 
 
     ### ANALYZE DESIGNS ###
-    @reactive.Effect
-    @reactive.event(input.analyze_designs)
-    def _():
-        if input.design_sidechains() == None:
-            sidechains = [] 
-        else:
-            sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-        
-        lib = FOLD_LIB()
-        prot = PROTEIN()
-
-        sidechains_dict = {input.mutlichain_chain():sidechains}
-        lib.struc_geom(ref=prot, residues=sidechains_dict)
+    #@reactive.Effect
+    #@reactive.event(input.analyze_designs)
+    #def _():
+    #    if input.design_sidechains() == None:
+    #        sidechains = [] 
+    #    else:
+    #        sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+    #    
+    #    lib = FOLD_LIB()
+    #    prot = PROTEIN()
+    #
+    #    sidechains_dict = {input.mutlichain_chain():sidechains}
+    #    lib.struc_geom(ref=prot, residues=sidechains_dict)
 
 
     ###############
@@ -1313,14 +1333,21 @@ def server(input: Inputs, output: Outputs, session: Session):
         method = input.zs_model()
         prot = PROTEIN()
 
-        with ui.Progress(min=1, max=len(prot.seq)) as p:
+        if type(prot.seq) == dict:
+            seq = prot.seq[input.zs_chain()]
+            chain = input.zs_chain()
+        else:
+            seq = prot.seq
+            chain = None
+
+        with ui.Progress(min=1, max=len(seq)) as p:
             p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             
             computed_zs = COMP_ZS_SCORES()
 
             model = REP_DICT[method]
 
-            data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p)
+            data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p, chain=chain)
 
             lib = pai.Library(user=prot.user, source=data)
 
@@ -1338,6 +1365,38 @@ def server(input: Inputs, output: Outputs, session: Session):
             ZS_SCORES.set(data['df'])
             COMP_ZS_SCORES.set(computed_zs)
 
+    
+    ### ZERO-SHOT CHAIN UI ###
+    @output
+    @render.ui
+    def zs_chain_ui(alt=None):
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.input_select('zs_chain', 'Select Protein Chain', choices=CHAINS()),
+            )
+
+
+    @reactive.Effect
+    @reactive.event(input.zs_chain)
+    def _():
+        method = input.zs_model()
+        chain = input.zs_chain()
+        
+        prot = PROTEIN()
+        name = prot.name
+
+        df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{chain}/{REP_DICT[method]}/zs_scores.csv")
+        if os.path.exists(df_path):
+            COMP_ZS_SCORES.set([method])
+        else:
+            COMP_ZS_SCORES.set([])
+
+        # dumb but necessary
+        ui.update_select(
+            'zs_chain',
+            selected=chain
+        )
+
 
     ### RENDER ZS-DATAFRAME ###
     @output
@@ -1346,7 +1405,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zs_df(alt=None):
         prot = PROTEIN()
         method = REP_DICT[input.computed_zs_scores()]
-        path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
+        if prot.chains != None and len(prot.chains) >= 1:
+            path = os.path.join(prot.zs_path, "results", input.zs_chain(), method, "zs_scores.csv")
+        else:
+            path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop('sequence', axis=1)
         return df
@@ -1383,7 +1445,12 @@ def server(input: Inputs, output: Outputs, session: Session):
         Create the per position entropy plot
         """
         prot = PROTEIN()
-        seq = prot.seq
+        if type(prot.seq) == dict:
+            chain = input.zs_chain()
+            seq = prot.seq[chain]
+        else:
+            seq = prot.seq
+            chain = None
 
         if input.plot_entropy_section():
             start = input.entropy_slider()
@@ -1398,7 +1465,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.computed_zs_scores()])
+        fig = prot.plot_entropy(section=section, model=MODEL_DICT[input.computed_zs_scores()], chain=chain)
         return fig
 
 
@@ -1411,7 +1478,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         Create the per position entropy plot
         """
         prot = PROTEIN()
-        seq = prot.seq
+
+        if type(prot.seq) == dict:
+            chain = input.zs_chain()
+            seq = prot.seq[chain]
+        else:
+            seq = prot.seq
+            chain = None
 
         if input.plot_scores_section():
             start = input.scores_slider()
@@ -1427,7 +1500,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             width = section[1] - section[0]
             section = (len(seq) - width, len(seq))
         
-        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.computed_zs_scores()])
+        fig = prot.plot_scores(section=section, color_scheme = "rwb", model=MODEL_DICT[input.computed_zs_scores()], chain=chain)
         return fig
 
 
@@ -1444,6 +1517,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     ## REPRESENTATIONS ##
     #####################
 
+    ### ZERO-SHOT CHAIN UI ###
+    @output
+    @render.ui
+    def rep_chain_ui(alt=None):
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.input_select('rep_chain', 'Select Protein Chain', choices=CHAINS()),
+            )
+
     ### COMPUTE REPRESENTATIONS ###
     @reactive.Effect
     @reactive.event(input.dat_compute_reps)
@@ -1453,12 +1535,17 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         method = input.dat_rep_type()
 
+        if mode == 'structure':
+            chain = input.rep_chain()
+        else:
+            chain = None
+
         # if no library was loaded one has to be created
         if mode in ['zero-shot', 'structure']:
-            data = prot.zs_library(model=MODEL_DICT[method])
+            data = prot.zs_library(model=MODEL_DICT[method], chain=chain)
             lib = pai.Library(user=prot.user, source=data)
             dest = os.path.join(prot.rep_path, MODEL_DICT[method])
-            pbar_max = len(data["df"]) - len(os.listdir(dest))
+            pbar_max = len(lib)
         else:
             pbar_max = len(lib)
         
@@ -1509,17 +1596,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                     lib = pai.Library(user=prot.user, source=data)
 
                 names = lib.names
-                y_upper = input.y_upper()
-                y_lower = input.y_lower()
+                #y_upper = input.y_upper()
+                #y_lower = input.y_lower()
                 rep = REP_DICT[input.plot_rep_type()]
                 
                 # Update to pass the new parameters
                 if input.vis_method() == 't-SNE':
-                    fig, ax, df = lib.plot_tsne(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                    fig, ax, df = lib.plot_tsne(rep=rep, names=names)
                 elif input.vis_method() == 'UMAP':
-                    fig, ax, df = lib.plot_umap(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                    fig, ax, df = lib.plot_umap(rep=rep, names=names)
                 elif input.vis_method() == 'PCA':
-                    fig, ax, df = lib.plot_pca(rep=rep, y_upper=y_upper, y_lower=y_lower, names=names)
+                    fig, ax, df = lib.plot_pca(rep=rep, names=names)
 
                 TSNE_DF.set(df)
                 LIBRARY_PLOT.set((fig, ax))
@@ -1539,14 +1626,37 @@ def server(input: Inputs, output: Outputs, session: Session):
     ## MLDE ##
     ##########
 
+    ### ZERO-SHOT CHAIN UI ###
+    @output
+    @render.ui
+    def mlde_chain_ui(alt=None):
+        if MODE() == 'structure':
+            return ui.TagList(
+                ui.input_select('mlde_chain', 'Select Protein Chain', choices=CHAINS()),
+            )
+
     ### MLDE TAB OUTPUT CONTROL ###
     @output
     @render.ui
     def mlde_dynamic_ui():        
         if MODE() in ["zero-shot", "structure"]:
+
+            prot = PROTEIN()
+            name = prot.name
+            chain = input.mlde_chain()
+
+            computed_zs = []
+            for model in ZS_MODELS:
+                df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{chain}/{REP_DICT[model]}/zs_scores.csv")
+                if os.path.exists(df_path):
+                    computed_zs.append(model)
+
+            COMP_ZS_SCORES.set(computed_zs)
+            
             return ui.TagList(
-                ui.input_select("computed_zs_scores", "Choose zero-shot scores", COMP_ZS_SCORES())
+                ui.input_select("mlde_computed_zs_scores", "Choose zero-shot scores", COMP_ZS_SCORES())
             )
+
         if MODE() == "dataset":
             return None
         
@@ -1606,8 +1716,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             lib = LIBRARY()
 
+            if MODE() == 'structure':
+                chain = input.mlde_chain()
+            else:
+                chain = None
+
             if MODE() in ['zero-shot', 'structure']:
-                data = prot.zs_library(model=MODEL_DICT[input.COMP_ZS_SCORES()])
+                data = prot.zs_library(model=MODEL_DICT[input.mlde_computed_zs_scores()], chain=chain)
                 lib = pai.Library(user=prot.user, source=data)
 
             split = (input.n_train(), input.n_test(), input.n_val())
@@ -1619,6 +1734,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=MODEL_DICT[input.model_type()], k_folds=k_folds)
             
             val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
+
+            search_dest = os.path.join(f"{m.library.rep_path}", f"../models/{m.model_type}/{m.x}/predictions")
+            search_file = os.path.join(search_dest, f"{m.model_type}_{m.x}_predictions.csv")
+
+            if os.path.exists(search_file):
+                MLDE_SEARCH_DF.set(pd.read_csv(search_file))
 
             # set reactive variables
             MODEL.set(m)
@@ -1672,11 +1793,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             model = MODEL()
             mlde_explore = input.mlde_explore()
-            print(mlde_explore)
             optim_problem = OPTIM_DICT[input.optim_problem()]
             max_eval = MAX_EVAL_DICT[model.x]
 
-            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, pbar=p)
+            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, batch_size=BATCH_SIZE, pbar=p)
 
             MLDE_SEARCH_DF.set(out)
 
@@ -1687,7 +1807,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def mlde_search_table(alt=None):
         table = MLDE_SEARCH_DF()
         model = MODEL()
-        table = table.drop(['sequence', 'y_true'], axis=1)
+
+        table = table.drop(['sequence'], axis=1)
+        if 'y_true' in table.columns:
+            table = table.drop(['y_true'], axis=1)
+            
         return table
 
 
