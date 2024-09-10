@@ -1,7 +1,7 @@
 uvicorn
 asgiref
 starlette
-pdbfixer
+# pdbfixer
 shiny
 pandas
 numpy
