@@ -3,7 +3,6 @@ from setuptools import setup, find_packages
 setup(
     author="Jonathan Funk",
     author_email="funk.jonathan21@gmail.com",
-    description="ProteusAI is a python package designed for AI driven protein engineering.",
     url="https://github.com/jonfunk21/ProteusAI",
     packages=find_packages("src"),
     package_dir={"": "src"},
