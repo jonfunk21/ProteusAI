@@ -18,6 +18,12 @@ and [ESM](https://github.com/facebookresearch/esm) protein language models.
 ----
 The commands used below are tested on Ubuntu 20.04. Some tweaks can be needed for another OS.
 
+### Install using pip locally
+
+```
+pip install . -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
+```
+
 ### Setting python environment
 To get started yo need to create a conda environment suitable for running the app. You can do this by using the .yml file provided using the following commands:
 

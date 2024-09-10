@@ -10,7 +10,7 @@ requires-python = ">= 3.8"
 dependencies = [
   "torch",
   "torch_geometric",
-  # "torch_scatter", # figure out how to install
+  "torch_scatter",
   "uvicorn",
   "asgiref",
   "starlette",
