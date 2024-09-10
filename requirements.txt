@@ -1,7 +1,10 @@
+torch
+torch_geometric
+# torch_scatter # figure out how to install
 uvicorn
 asgiref
 starlette
-pdbfixer
+# pdbfixer
 shiny
 pandas
 numpy
@@ -17,3 +20,5 @@ seaborn
 openpyxl
 py3Dmol
 gpytorch
+openmm
+umap-learn

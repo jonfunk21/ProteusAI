@@ -16,7 +16,6 @@ from string import ascii_uppercase, ascii_lowercase
 import openmm as mm
 from openmm import app
 from openmm.unit import *
-from pdbfixer import PDBFixer
 from openmm.app import PDBFile
 import tempfile
 import os
@@ -95,8 +94,6 @@ def align(prot1, prot2):
     # We do not want the cropped structures
     prot2_superimposed = struc.superimpose_apply(prot2, transformation)
 
-    
-
     # Write PDBx files as input for PyMOL
     cif_file = pdbx.PDBxFile()
     pdbx.set_structure(cif_file, prot1, data_block="prot1")
@@ -107,6 +104,7 @@ def align(prot1, prot2):
     cif_file.write("test2.cif")
 
     return prot1, prot2_superimposed
+
 
 def compute_rmsd(prot1, prot2):
     """
@@ -129,6 +127,7 @@ def compute_rmsd(prot1, prot2):
     print("{:.3f}".format(rmsd))
     return rmsd
 
+
 def chain_parser(pdb_file):
     """
     Parse chains from pdb file.
@@ -141,6 +140,7 @@ def chain_parser(pdb_file):
     
     chains = list(set(prot.chain_id)) # type: ignore
     return chains
+
 
 def get_sequences(prot_f):
     """
@@ -410,6 +410,11 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     Note:
         This function uses the Amber14 force field and assumes a pH of 7.0 for protonation states.
     """
+
+    try:
+        from pdbfixer import PDBFixer
+    except:
+        raise ValueError('Relaxation of protein structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer')
     
     name = file.split('/')[-1].split('.')[0]
 
