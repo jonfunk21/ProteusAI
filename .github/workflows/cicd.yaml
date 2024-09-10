@@ -1,0 +1,129 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+
+on:
+  push:
+  pull_request:
+    branches: [ "main", "shiny_server"]
+  schedule:
+    - cron: '0 2 * * 3'
+
+permissions:
+  contents: read
+
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable 
+  lint:
+    name: Lint with ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: | 
+          pip install ruff
+      - name: Lint with ruff  
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          ruff check .
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip' # caching pip dependencies
+          # cache-dependency-path: '**/pyproject.toml'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -e .
+      - name: Run tests
+        run: python -m pytest tests
+  
+  build_source_dist:
+    name: Build source distribution
+    if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v4
+
+        - uses: actions/setup-python@v5
+          with:
+            python-version: "3.10"
+
+        - name: Install build
+          run: python -m pip install build
+
+        - name: Run build
+          run: python -m build --sdist
+
+        - uses: actions/upload-artifact@v4
+          with:
+            path: ./dist/*.tar.gz
+  # Needed in case of building packages with external binaries (e.g. Cython, RUst-extensions, etc.)
+  # build_wheels:
+  #   name: Build wheels on ${{ matrix.os }}
+  #   if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/tags')
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #       matrix:
+  #         os: [ubuntu-20.04, windows-2019, macOS-10.15]
+
+  #   steps:
+  #       - uses: actions/checkout@v4
+
+  #       - uses: actions/setup-python@v5
+  #         with:
+  #           python-version: "3.10"
+
+  #       - name: Install cibuildwheel
+  #         run: python -m pip install cibuildwheel==2.3.1
+
+  #       - name: Build wheels
+  #         run: python -m cibuildwheel --output-dir wheels
+
+  #       - uses: actions/upload-artifact@v4
+  #         with:
+  #           path: ./wheels/*.whl
+
+  publish:
+      name: Publish package
+      if: startsWith(github.ref, 'refs/tags')
+      needs:
+          - format
+          - lint
+          - test
+          - build_source_dist
+          # - build_wheels
+      runs-on: ubuntu-latest
+
+      steps:
+          - uses: actions/download-artifact@v4
+            with:
+              name: artifact
+              path: ./dist
+
+          - uses: pypa/gh-action-pypi-publish@release/v1
+            with:
+              # remove repository key to set the default to pypi (not test.pypi.org) 
+              repository-url: https://test.pypi.org/legacy/
+              user: __token__
+              password: ${{ secrets.PYPI_API_TOKEN }}

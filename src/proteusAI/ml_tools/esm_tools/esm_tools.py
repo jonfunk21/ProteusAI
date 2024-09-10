@@ -26,10 +26,15 @@ import math
 import numpy as np
 import matplotlib.patches as patches
 from typing import Union
+import shutil
+import esm.inverse_folding
+import esm.inverse_folding.util
+from esm.inverse_folding.util import CoordBatchConverter, load_coords, score_sequence
+import openmm # move this and pdb fixer to struc tools
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
-def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33):
+def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]="esm1v", rep_layer: int=33, device=None):
     """
     Compute the of esm_tools models for a list of sequences.
 
@@ -39,6 +44,8 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
             If None sequences will be named seq1, seq2, ...
         model (str, torch.nn.Module): choose either esm2, esm1v or a pretrained model object.
         rep_layer (int): choose representation layer. Default 33.
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'. 
 
     Returns: representations (list) of sequence representation, batch lens and batch labels
 
@@ -47,7 +54,11 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
         results, batch_lens, batch_labels = esm_compute(seqs)
     """
     # detect device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        device = torch.device(device)
+
     # on M1 if mps available
     #if device == torch.device(type='cpu'):
     #    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
@@ -140,7 +151,7 @@ def per_position_entropy(probability_distribution):
 
 
 
-def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33):
+def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest: str=None, model: str="esm2", batch_size: int=10, rep_layer: int=33, pbar=None, device=None):
     """
     Computes and saves sequence representations in batches using esm2 or esm1v.
 
@@ -152,6 +163,9 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
+        pbar: Progress bar for shiny app
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'.
 
     Returns: representations (list) of sequence representation.
 
@@ -169,14 +183,17 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
     if fasta_path == None and seqs == None:
         raise "Either fasta_path or seqs must not be None"
 
+    counter = 0
     for i in range(0, len(seqs), batch_size):
-        results, batch_lens, _, _ = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer)
+        results, batch_lens, _, _ = esm_compute(seqs[i:i + batch_size], names[i:i + batch_size], model=model, rep_layer=rep_layer, device=device)
         sequence_representations = get_seq_rep(results, batch_lens)
         if dest is not None:
             for j in range(len(sequence_representations)):
                 _dest = os.path.join(dest, names[i:i + batch_size][j])
                 torch.save(sequence_representations[j], _dest + '.pt')
-
+        if pbar:
+            counter += len(seqs[i:i + batch_size])
+            pbar.set(counter, message="Computing", detail=f"{counter}/{len(seqs)} computed...")
 
 def mask_positions(sequence: str, mask_char: str='<mask>'):
     """
@@ -202,7 +219,7 @@ def mask_positions(sequence: str, mask_char: str='<mask>'):
     return masked_sequences
 
 
-def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33):
+def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_layer: int=33, alphabet_size: int=33, pbar=None, device=None):
     """
     Exhaustively compute the logits for every position in a sequence using esm1v or esm2.
     Every position of a sequence will be masked and the logits for the masked position
@@ -215,6 +232,9 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         model (str): choose either esm2 or esm1v
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
+        pbar: ProteusAI progress bar.
+        device (str): Choose hardware for computation. Default 'None' for autoselection
+                          other options are 'cpu' and 'cuda'.
 
     Returns:
         tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm_tools.data_tools.Alphabet
@@ -232,11 +252,16 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
     # Initialize an empty tensor of the desired shape
     logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
 
+    counter = 0
     for i in range(0, len(masked_seqs), batch_size):
         results, batch_lens, batch_labels, alphabet = esm_compute(masked_seqs[i:i + batch_size],
                                                                   names[i:i + batch_size], model=model,
-                                                                  rep_layer=rep_layer)
+                                                                  rep_layer=rep_layer, device=device)
         logits = results["logits"]
+
+        if pbar:
+            counter += len(masked_seqs[i:i + batch_size])
+            pbar.set(counter, message="Computing", detail=f"{counter}/{len(masked_seqs)} positions computed...")
 
         # Extract the logits corresponding to the masked position for each sequence in the batch
         for j, masked_seq_name in enumerate(names[i:i + batch_size]):
@@ -350,6 +375,44 @@ def find_mutations(native_seq, predicted_seq):
     return mutations
 
 
+def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: torch.Tensor, entropy: torch.Tensor, dest: str):
+    """
+    Save the results as a CSV file.
+
+    Args:
+        wt_seq (str): Wildtype sequence.
+        alphabet (esm.data.Alphabet): Alphabet used for the model.
+        p (torch.Tensor): Probability distribution tensor.
+        mmp (torch.Tensor): Masked marginal probability tensor.
+        entropy (torch.Tensor): Per-position entropy tensor.
+        dest (str): Destination path for the CSV file.
+    """
+    # Convert alphabet to list for indexing
+    alphabet_list = list(alphabet.to_dict().keys())
+    alphabet = alphabet.to_dict()
+    canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+    
+    mutants, sequences, p_values, mmp_values, entropy_values = [], [], [], [], []
+    for pos in range(len(wt_seq)):
+        for aa in canonical_aas:
+            if wt_seq[pos] != aa:
+                mutants.append(wt_seq[pos] + str(pos+1) + aa)
+                sequences.append(wt_seq[:pos] + aa + wt_seq[pos+1:])
+                p_values.append(p[0, pos, alphabet[aa]].item())
+                mmp_values.append(mmp[0, pos, alphabet[aa]].item())
+                entropy_values.append(entropy[0, pos].item())
+
+    df = pd.DataFrame({
+        'mutant': mutants,
+        'sequence': sequences,
+        'p': p_values,
+        'mmp': mmp_values,
+        'entropy': entropy_values
+    })
+    df.to_csv(dest, index=False)
+    return df
+
+
 ### Protein structure
 def string_to_tempfile(data):
     """
@@ -363,6 +426,158 @@ def string_to_tempfile(data):
         temp_file.flush()
         # return the file object
         return temp_file
+
+def save_tempfile(temp_file, target_file_path):
+    """
+    Copies the contents of a temporary file to a permanent file location.
+    
+    Args:
+        temp_file_path (str): The file path of the temporary file.
+        target_file_path (str): The file path where the contents should be permanently saved.
+    
+    Returns:
+        bool: True if the file was copied successfully, False if an error occurred.
+    """
+    if type(temp_file) == tempfile._TemporaryFileWrapper:
+        temp_file_path = temp_file.file.name
+    elif type(temp_file) == str:
+        temp_file_path = temp_file
+    else:
+        raise ValueError('tempfile has an unexpected format')
+    try:
+        # Copy the content of the temporary file to the target file
+        shutil.copy(temp_file_path, target_file_path)
+        print(f"File has been successfully saved to {target_file_path}.")
+        return True
+    except Exception as e:
+        print(f"Failed to save the file: {e}")
+        return False
+
+def tempfile_to_string(temp_file):
+    """
+    Take a temporary file object and return its content as a string
+    """
+    with open(temp_file.name, 'r', encoding='utf-8') as file:
+        data = file.read()
+    return data
+
+def clean_pdb_with_pdbfixer(pdbfile):
+    try:
+        from pdbfixer import PDBFixer
+    except:
+        raise ValueError('Cleaning PDB structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer')
+    
+    fixer = PDBFixer(filename=pdbfile)
+    fixer.findMissingResidues()
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
+    fixer.removeHeterogens(keepWater=True)
+    fixer.addMissingHydrogens()
+
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.pdb') as temp_file:
+        openmm.app.PDBFile.writeFile(fixer.topology, fixer.positions, temp_file)
+        return temp_file.name
+
+
+def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, noise=0.2, pbar=None):
+    """
+    Perform structure-based protein design using ESM-IF.
+
+    Args:
+        pdbfile (str): path to pdb file.
+        chain (str): chain to be designed.
+        fixed (list): list of residues that should be remained fixed.
+        temperature (float): sampling temperature. Higher temperatures lead to more stochasticity
+        num_samples (int): Number of samples
+        model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
+        alphabet (esm.data.Alphabet): If None alphabet will be loaded
+        noise (float): add gaussian noise to coordinates. Default 0.2 angstroms.
+        pbar: Progress bar for shiny app
+
+    Return:
+        DataFrame with columns: seqid, recovery, log_likelihood, sequence
+    """
+
+    if model is None or alphabet is None:
+        model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
+
+    # Clean the PDB file
+    cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
+
+    coords, native_seq = load_coords(cleaned_pdbfile, chain)
+    if noise != None:
+        coord_noise = np.random.normal(0, noise, coords.shape).astype(coords.dtype)
+        coords = coords + coord_noise
+
+    print('Native sequence loaded from structure file:')
+    print(native_seq)
+
+    L = len(coords)
+    batch_converter = CoordBatchConverter(model.decoder.dictionary)
+    batch_coords, confidence, _, _, padding_mask = (
+        batch_converter([(coords, None, None)], device='cpu')
+    )
+
+    # Start with prepend token
+    mask_idx = model.decoder.dictionary.get_idx('<mask>')
+    sampled_tokens = torch.full((1, 1+L), mask_idx, dtype=int)
+    sampled_tokens[0, 0] = model.decoder.dictionary.get_idx('<cath>')
+
+    # Unmask fixed residues
+    if fixed:
+        for i in fixed:
+            res = native_seq[i-1]
+            sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
+
+    # Save incremental states for faster sampling
+    incremental_state = dict()
+
+    # Run encoder only once
+    encoder_out = model.encoder(batch_coords, padding_mask, confidence)
+
+    # Decode tokens
+    all_seqs = []
+    sampled_tokens_tensor = sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
+    for i in range(1, L+1):
+        logits, _ = model.decoder(
+            sampled_tokens[:, :i],
+            encoder_out,
+            incremental_state=incremental_state,
+        )
+        logits = logits[0].transpose(0, 1)
+        logits /= temperature
+        probs = F.softmax(logits, dim=-1)
+        if sampled_tokens[0, i] == mask_idx:
+            sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
+            sampled_tokens_tensor[:, i, :] = torch.multinomial(probs, num_samples, replacement=True).squeeze(-1)
+
+    sampled_tokens_tensor = sampled_tokens_tensor[0, 1:, :]
+
+     # Create a list to store the results as dictionaries
+    results = []
+
+    for i in range(num_samples):
+        sampled_seq_i = sampled_tokens_tensor[:, i]
+        s = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
+        all_seqs.append(s)
+        recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
+
+        ll, _ = score_sequence(model, alphabet, coords, s)
+        
+        if pbar:
+            pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
+
+        print(f'>seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
+        print(s, '\n')
+        
+        # Append the results to the list
+        results.append({'names': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': s})
+
+    # Convert the list of dictionaries to a DataFrame
+    df = pd.DataFrame(results)
+    
+    return df
+
 
 
 def create_batched_sequence_datasest(
@@ -385,20 +600,24 @@ def create_batched_sequence_datasest(
 
 def structure_prediction(
         seqs: list, names: list=None, chunk_size: int = 124,
-        max_tokens_per_batch: int = 1024, num_recycles: int = None):
+        max_tokens_per_batch: int = 1024, num_recycles: int = None, pbar = None):
     """
-    Predict the structure of proteins.
-
+    Predict the structure of proteins. The pdb files are returned as 'biotite.structure.io.pdb.PDBFile' objects.
+    They can be written to file with pdb.write(os.path.join(dest, "prot.pdb")).
+    
     Args:
         sequences (list): all sequences for structure prediction
         names (list): names of the sequences
         chunck_size (int): Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). Recommended values: 128, 64, 32.
         max_tokens_per_batch (int): Maximum number of tokens per gpu forward-pass. This will group shorter sequences together.
         num_recycles (int): Number of recycles to run. Defaults to number used in training 4.
+        pbar: progress bar for app
 
     Returns:
         all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs
     """
+    if pbar:
+        pbar.set(message="Loading model weights")
     model = esm.pretrained.esmfold_v1()
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
@@ -413,7 +632,11 @@ def structure_prediction(
     all_pdbs = []
     pTMs = []
     mean_pLDDTs = []
-    for headers, sequences in batched_sequences:
+    if pbar:
+        pbar.set(1, message="Computing", detail=f"1/{len(names)} remaining...")
+    for i, (headers, sequences) in enumerate(batched_sequences):
+        if pbar:
+            pbar.set(i+1, message="Computing", detail=f"{i+1}/{len(names)} remaining...")
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
@@ -494,13 +717,15 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
         include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
         dest (str): Optional path to save the plot as an image file (default: None)
-        title (str): title of plot
-        remove_tokens (bool): Remove start of sequence and end of sequence tokens
+        title (str): Title of the plot (default: None)
+        remove_tokens (bool): Remove start of sequence and end of sequence tokens (default: False)
         show (bool): Display plot if True (default: True)
-        section (tuple): section which should be shown in the plot - low and high end of sequence to be displayed. show entire sequence if None
+        color_sheme (str): Color scheme for the heatmap ('rwb' for red-white-blue, 'r' for reds, 'b' for blues) (default: 'b')
+        highlight_positions (dict): Dictionary specifying positions to highlight with the format {position: residue} (default: None)
+        section (tuple): Section which should be shown in the plot - low and high end of sequence to be displayed. Show entire sequence if None (default: None)
 
     Returns:
-        None
+        fig (matplotlib.figure.Figure): The created matplotlib figure.
     """
 
     if type(alphabet) == dict:
@@ -521,8 +746,6 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     # make sure section is in range of sequence
     if section != None:
         seq_len = probability_distribution_np.shape[0]
-        print(seq_len)
-        assert section[0] < seq_len & section[1] < seq_len
         assert section[0] < section[1]
         
         probability_distribution_np = probability_distribution_np[section[0]:section[1],:]
@@ -542,25 +765,31 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     
     # adjust keys and values
     min_val = min(filtered_alphabet.values())
-    #filtered_alphabet = {char: i-min_val for char, i in filtered_alphabet.items()}
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(probability_distribution_np[:, list(filtered_alphabet.values())],
                       columns=[i for i in filtered_alphabet.keys()])
 
+    # Calculate the symmetric vmin and vmax around zero
+    abs_max = max(abs(df.min().min()), abs(df.max().max()))
+
     # colors
     if color_sheme == 'rwb':
         colors = ["red", "white", "blue"]
         cmap = LinearSegmentedColormap.from_list("red_white_blue", colors)
+        vmin, vmax = -abs_max, abs_max  # Symmetric range around zero
     elif color_sheme == 'r':
         cmap = "Reds"
+        vmin, vmax = None, None  # No centering for single color schemes
     else:
         cmap = "Blues"
+        vmin, vmax = None, None  # No centering for single color schemes
 
     # Create a heatmap using seaborn
-    plt.figure(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
+
     ax = plt.gca()
-    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax)
+    sns.heatmap(df.T, cmap=cmap, linewidths=0.5, annot=False, cbar=True, ax=ax, vmin=vmin, vmax=vmax)
     
     # Adjust x-axis ticks and labels if 'section' is specified
     if section is not None:
@@ -589,7 +818,12 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     if show:
         plt.show()
 
-def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, show: bool = False, dest: str = None, title: str=None):
+    return fig
+
+
+def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str, highlight_positions: list = None, 
+                              show: bool = False, dest: str = None, title: str = None, section: tuple = None, 
+                              use_normal_ticks: bool = True):
     """
     Plot the per position entropy for a given sequence.
 
@@ -599,10 +833,12 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         highlight_positions (list): List of positions to highlight in red (0-indexed) (default: None).
         show (bool): Display the plot if True (default: False).
         dest (str): Optional path to save the plot as an image file (default: None).
-        title (str): title of plot
+        title (str): Title of plot.
+        section (tuple): Section of the sequence to plot (default: None). If None, the entire sequence is plotted.
+        use_normal_ticks (bool): If True, use normal numerical ticks for x-axis (default: False).
 
     Returns:
-        None
+        matplotlib.figure.Figure: The matplotlib figure object for the plot.
     """
 
     # Convert the tensor to a numpy array
@@ -612,11 +848,21 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     if per_position_entropy_np.shape[1] != len(sequence):
         raise ValueError("The length of per_position_entropy and sequence must be the same.")
 
+    # If a section is specified, adjust the per_position_entropy and sequence accordingly
+    if section is not None:
+        if section[0] < 0 or section[1] > len(sequence):
+            raise ValueError("Section indices are out of range.")
+        per_position_entropy_np = per_position_entropy_np[:, section[0]:section[1]]
+        sequence = sequence[section[0]:section[1]]
+
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
 
+    # Dynamic tick interval
+    tick_interval = 1 if len(sequence) <= 30 else int(len(sequence) / 20)
+
     # Create a bar plot of per position entropy
-    plt.figure(figsize=(20, 6))
+    fig = plt.figure(figsize=(20, 6))
 
     if highlight_positions is None:
         plt.bar(positions, per_position_entropy_np.squeeze())
@@ -624,11 +870,14 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
         colors = ["red" if pos in highlight_positions else "blue" for pos in positions]
         plt.bar(positions, per_position_entropy_np.squeeze(), color=colors)
 
-    # Set the x-axis labels to the sequence
-    plt.xticks(positions, sequence)
+    # Set the x-axis labels
+    if use_normal_ticks:
+        plt.xticks(positions[::tick_interval])
+    else:
+        plt.xticks(positions[::tick_interval], [sequence[i] for i in positions[::tick_interval]])
 
     # Set the labels and title
-    plt.xlabel("Sequence")
+    plt.xlabel("Sequence Position")
     plt.ylabel("Per Position Entropy")
     if title is None:
         plt.title("Per Position Entropy of Sequence")
@@ -641,3 +890,5 @@ def plot_per_position_entropy(per_position_entropy: torch.Tensor, sequence: str,
     # Show the plot
     if show:
         plt.show()
+
+    return fig
