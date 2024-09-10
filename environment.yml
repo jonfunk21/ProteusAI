@@ -1,15 +1,16 @@
 name: proteusAI
 channels:
-  - anaconda
   - pyg
   - pytorch
   - nvidia
   - conda-forge
+  - anaconda
 dependencies:
   - python=3.8
-  - cpuonly
-  - pytorch
-  - pytorch-scatter
+  # - pytorch-scatter
+  # - pytorch
+  # - pyg
+  # - cpuonly
   - pip
   - pip:
-    - -e .[docs] -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
+    - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
