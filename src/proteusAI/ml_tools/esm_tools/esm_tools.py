@@ -30,7 +30,6 @@ import shutil
 import esm.inverse_folding
 import esm.inverse_folding.util
 from esm.inverse_folding.util import CoordBatchConverter, load_coords, score_sequence
-from pdbfixer import PDBFixer
 import openmm # move this and pdb fixer to struc tools
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
@@ -463,6 +462,11 @@ def tempfile_to_string(temp_file):
     return data
 
 def clean_pdb_with_pdbfixer(pdbfile):
+    try:
+        from pdbfixer import PDBFixer
+    except:
+        raise ValueError('Cleaning PDB structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer')
+    
     fixer = PDBFixer(filename=pdbfile)
     fixer.findMissingResidues()
     fixer.findMissingAtoms()
