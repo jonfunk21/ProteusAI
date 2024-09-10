@@ -16,10 +16,10 @@ from importlib import metadata
 
 # -- Project information -----------------------------------------------------
 
-project = "mockup"
+project = "proteusAI"
 copyright = "2024, Jakob Nybo Nissen, Henry Webel"
 author = "Jakob Nybo Nissen, Henry Webel"
-PACKAGE_VERSION = metadata.version("rasmussenlab-mockup")
+PACKAGE_VERSION = metadata.version("proteusAI")
 version = PACKAGE_VERSION
 release = PACKAGE_VERSION
 
@@ -93,8 +93,8 @@ html_theme = "sphinx_book_theme"
 # html_logo = "_static/logo-wide.svg"
 # html_favicon = "_static/logo-square.svg"
 html_theme_options = {
-    "github_url": "https://github.com/RasmussenLab/python_package",
-    "repository_url": "https://github.com/RasmussenLab/python_package",
+    "github_url": "https://github.com/jonfunk21/proteusAI",
+    "repository_url": "https://github.com/jonfunk21/proteusAI",
     "repository_branch": "main",
     "home_page_in_toc": True,
     "path_to_docs": "docs",
@@ -126,7 +126,7 @@ if os.environ.get("READTHEDOCS") == "True":
     from pathlib import Path
 
     PROJECT_ROOT = Path(__file__).parent.parent
-    PACKAGE_ROOT = PROJECT_ROOT / "src" / "mockup"
+    PACKAGE_ROOT = PROJECT_ROOT / "src" / "proteusAI"
 
     def run_apidoc(_):
         from sphinx.ext import apidoc

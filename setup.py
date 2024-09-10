@@ -5,8 +5,6 @@ with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name="ProteusAI",
-    version="0.1.0",
     author="Jonathan Funk",
     author_email="funk.jonathan21@gmail.com",
     description="ProteusAI is a python package designed for AI driven protein engineering.",
