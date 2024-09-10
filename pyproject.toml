@@ -7,6 +7,33 @@ name = "proteusAI"
 version = "0.0.1"
 requires-python = ">= 3.8"
 
+dependencies = [
+  "torch",
+  "torch_geometric",
+  # "torch_scatter", # figure out how to install
+  "uvicorn",
+  "asgiref",
+  "starlette",
+  #"pdbfixer",
+  "shiny",
+  "pandas",
+  "numpy",
+  "requests",
+  "scipy",
+  "fair-esm",
+  "matplotlib",
+  "biopython",
+  "biotite",
+  "scikit-learn",
+  "optuna",
+  "seaborn",
+  "openpyxl",
+  "py3Dmol",
+  "gpytorch",
+  "openmm",
+  "umap-learn",
+]
+
 [project.optional-dependencies]
 docs = [
   "sphinx",

@@ -1,9 +1,5 @@
 from setuptools import setup, find_packages
 
-# Read the content of requirements.txt
-with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
-
 setup(
     author="Jonathan Funk",
     author_email="funk.jonathan21@gmail.com",
@@ -11,7 +7,6 @@ setup(
     url="https://github.com/jonfunk21/ProteusAI",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
