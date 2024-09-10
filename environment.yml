@@ -12,4 +12,4 @@ dependencies:
   - torch-scatter
   - pip
   - pip:
-    - -e . -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
+    - -e .[docs] -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
