@@ -9,7 +9,7 @@ dependencies:
   - python=3.8
   - cpuonly
   - pytorch
-  - torch-scatter
+  - pytorch-scatter
   - pip
   - pip:
     - -e .[docs] -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
