@@ -22,7 +22,7 @@ The commands used below are tested on Ubuntu 20.04. Some tweaks can be needed fo
 
 ```
 # python 3.8
-pip install . -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
+pip install . --find-links https://data.pyg.org/whl/torch-2.4.0+cpu.html
 ```
 
 ### Setting python environment
