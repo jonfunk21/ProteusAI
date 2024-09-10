@@ -17,8 +17,8 @@ from importlib import metadata
 # -- Project information -----------------------------------------------------
 
 project = "proteusAI"
-copyright = "2024, Jakob Nybo Nissen, Henry Webel"
-author = "Jakob Nybo Nissen, Henry Webel"
+copyright = "2024, Jonathan Funk"
+author = "Jonathan Funk"
 PACKAGE_VERSION = metadata.version("proteusAI")
 version = PACKAGE_VERSION
 release = PACKAGE_VERSION

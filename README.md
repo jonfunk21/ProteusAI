@@ -21,7 +21,8 @@ The commands used below are tested on Ubuntu 20.04. Some tweaks can be needed fo
 ### Install using pip locally
 
 ```
-pip install . -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
+# python 3.8
+pip install . -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
 ```
 
 ### Setting python environment
