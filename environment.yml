@@ -7,6 +7,9 @@ channels:
   - conda-forge
 dependencies:
   - python=3.8
+  - cpuonly
+  - pytorch
+  - torch-scatter
   - pip
   - pip:
     - -e . -f https://data.pyg.org/whl/torch-2.3.0+cpu.html
