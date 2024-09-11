@@ -885,47 +885,57 @@ class Model:
         """
 
         class_dict = self.library.class_dict
+        full_proteins = self.library.proteins  # Full list of proteins
 
         if 'all' in labels or len(labels) < 1:
             labels = list(class_dict.keys())
-            proteins = self.library.proteins
+            proteins = full_proteins
+            labels_name = "_".join([class_dict[i] for i in labels])
+            full_indices = list(range(len(full_proteins)))  # Indices for all proteins
         else:
-            proteins = [prot for prot in self.library.proteins if class_dict[prot.y] in labels]
-
-        labels_name = "_".join([class_dict[i] for i in labels])
+            # Filter proteins by label and keep track of their original indices
+            proteins, full_indices = zip(*[(prot, idx) for idx, prot in enumerate(full_proteins) if class_dict[prot.y] in labels])
+            proteins = list(proteins)
+            full_indices = list(full_indices)
+            labels_name = "_".join([i for i in labels])
 
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         if pbar:
             pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
-        
+
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
         
-        # Create a mask with the same length as the number of proteins
-        mask = np.zeros(len(proteins), dtype=int)
-        
-        # Set the selected indices to 1
-        mask[selected_indices] = 1
+        # Map selected_indices back to full_protein list using full_indices
+        full_selected_indices = [full_indices[i] for i in selected_indices]
 
-        # Select the proteins based on the mask
-        selected_proteins = [proteins[i] for i in selected_indices]
+        # Create a mask for the full protein list
+        mask = np.zeros(len(full_proteins), dtype=int)
+        
+        # Set the selected indices in the full list to 1
+        mask[full_selected_indices] = 1
+
+        # Select the proteins based on the full_selected_indices
+        selected_proteins = [full_proteins[i] for i in full_selected_indices]
         ys = [prot.y for prot in selected_proteins]
         y_pred = [prot.y_pred for prot in selected_proteins]
         y_sigma = [prot.y_sigma for prot in selected_proteins]
 
-        # Save the search_results
+        # Save the search results
         if self.dest != None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
-    
+        
         self.search_df = self.save_to_csv(selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results_{labels_name}.csv")
 
         out = {
-            'df':self.search_df, 'rep_path':self.library.rep_path, 'struc_path':self.library.struc_path, 'y_type':self.library.y_type, 
-            'y_col':'y_true', 'y_pred_col':'y_predicted', 'y_sigma_col':'y_sigma', 'seqs_col':'sequence', 'names_col':'name', 'reps':self.library.reps, 
-            'class_dict':self.library.class_dict
-            }
+            'df': self.search_df, 'rep_path': self.library.rep_path, 'struc_path': self.library.struc_path, 'y_type': self.library.y_type, 
+            'y_col': 'y_true', 'y_pred_col': 'y_predicted', 'y_sigma_col': 'y_sigma', 'seqs_col': 'sequence', 'names_col': 'name', 'reps': self.library.reps, 
+            'class_dict': self.library.class_dict
+        }
+
+        return out, mask
     
 
     def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None):
