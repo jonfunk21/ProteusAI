@@ -116,7 +116,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            #'seed': 42,
+            'seed': None,
             'dest' : None,
             'pbar' : None
         }
@@ -141,7 +141,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 42,
+            'seed': None,
             'dest' : None,
             'pbar' : None
         }
@@ -211,7 +211,8 @@ class Model:
 
         proteins = self.library.proteins
 
-        random.seed(self.seed)
+        if self.seed:
+            random.seed(self.seed)
 
         train_data, test_data, val_data = [], [], []
 
@@ -252,8 +253,9 @@ class Model:
         Returns:
             list: List of representations.
         """
-        torch.manual_seed(self.seed)
-        torch.cuda.manual_seed_all(self.seed)
+        if self.seed:
+            torch.manual_seed(self.seed)
+            torch.cuda.manual_seed_all(self.seed)
 
         reps = self.library.load_representations(rep=self.x, proteins=proteins)
 
@@ -859,14 +861,14 @@ class Model:
         return fig, ax
 
 
-    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None):
+    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'):
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == 'class':
             out, mask = self._class_search(N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar)
             return out, mask
         elif self.y_type == 'num':
-            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, batch_size=batch_size, pbar=pbar)
+            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, batch_size=batch_size, pbar=pbar, acq_fn=acq_fn)
             return out
 
         
@@ -938,7 +940,7 @@ class Model:
         return out, mask
     
 
-    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None):
+    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'):
         """
         Search for improved mutants.
 
@@ -1001,9 +1003,10 @@ class Model:
         
         library = Library(user=self.library.user, source=out)
 
-        library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
+        if self.x not in self._in_memory_representations:
+            library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
 
-        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins)
+        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins, acq_fn=acq_fn)
         
         self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score)
         
