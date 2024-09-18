@@ -13,5 +13,6 @@ dependencies:
   # - cpuonly
   - pip
   - sphinx
+  - pdbfixer
   - pip:
     - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
