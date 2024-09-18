@@ -34,7 +34,7 @@ DESIGN_MODELS = {"ESM-IF":"esm_if"}
 REP_VISUAL = ["UMAP","t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60 # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 100
+BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
@@ -1795,8 +1795,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             mlde_explore = input.mlde_explore()
             optim_problem = OPTIM_DICT[input.optim_problem()]
             max_eval = MAX_EVAL_DICT[model.x]
+            acq_fn = input.acquisition_fn()
 
-            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, batch_size=BATCH_SIZE, pbar=p)
+            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, batch_size=BATCH_SIZE, pbar=p, acq_fn=acq_fn)
 
             MLDE_SEARCH_DF.set(out)
 
