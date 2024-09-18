@@ -3,27 +3,43 @@
 
 # %% 
 import proteusAI as pai
-proteusAI.__version__
+pai.__version__
 
-# load data from csv or excel: x should be sequences, y should be labels, y_type class or num
+# # MLDE Tutorial
+# %% [markdown]
+# ## Loading data from csv or excel
+# The data must contain the mutant sequences and y_values for the MLDE workflow. It is recommended to have useful sequence names for later interpretability, and to define the data type.
+
+# %% 
 library = pai.Library(source='demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv', seqs_col='Sequence', y_col='Data', 
                     y_type='num', names_col='Description')
 
 
-# compute and save ESM-2 representations at example_lib/representations/esm2
-library.compute(method='esm2', batch_size=10)
+# %% [markdown]
+# ## Compute representations (skipped here to save time)
+# The available representations are ('esm2', 'esm1v', 'blosum62', 'blosum50', and 'ohe')
+
+# %% 
+# library.compute(method='esm2', batch_size=10) # uncomment this line to compute esm2 representations
 
 
-# define a model
-model = pai.Model(library=library, k_folds=5, model_type='rf', x='blosum62')
+# %% [markdown]
+# ## Define a model, using fast to compute BLOSUM62 representations (good for demo purposes and surprisingly competetive with esm2 representations).
+
+# %% 
+model = pai.Model(library=library)
+
+# %% [markdown]
+# ## Training the model
+
+# %% 
+_ = model.train(k_folds=5, model_type='rf', x='blosum62')
 
 
-# train model
-_ = model.train()
+# %% [markdown]
+# ## Search for new mutants
+# Searching new mutants will produce an output dataframe containing the new predictions. Here we are using the expected improvement ('ei') acquisition function.
 
-# search for new mutants
-out = model.search()
-
-
-# print predictions
-print(out['df'])
+# %% 
+out = model.search(acq_fn='ei')
+out
