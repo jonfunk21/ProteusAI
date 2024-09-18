@@ -209,8 +209,8 @@ class Library:
         # create user library if user does not exist
         if not os.path.exists(self.user):
             os.makedirs(self.user)
-            if self.file and not os.path.exists(os.path.join(self.user, self.file.split('.')[0])):
-                fname = self.file.split('.')[0]
+            if self.fname and not os.path.exists(os.path.join(self.user, self.fname.split('.')[0])):
+                fname = self.fname.split('.')[0]
                 os.makedirs(os.path.join(self.user, f'{fname}'))
                 os.makedirs(os.path.join(self.user, f'{fname}/library'))
                 os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
