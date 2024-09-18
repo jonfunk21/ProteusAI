@@ -16,17 +16,25 @@ and [ESM](https://github.com/facebookresearch/esm) protein language models.
 ## Getting started
 
 ----
-The commands used below are tested on Ubuntu 20.04. Some tweaks can be needed for another OS.
+The commands used below are tested on Ubuntu 20.04 and IOS. Some tweaks may be needed for other OS.
+We recommend using conda environments to install ProteusAI.
+
+```
+conda create -n proteusAI python=3.8
+conda activate proteusAI
+```
 
 ### Install using pip locally
 
+Clone the repository and cd to ProteusAI.
+
 ```
-# python 3.8
+cd ProteusAI
 pip install . --find-links https://data.pyg.org/whl/torch-2.4.0+cpu.html
 ```
 
 ### Setting python environment
-To get started yo need to create a conda environment suitable for running the app. You can do this by using the .yml file provided using the following commands:
+Alternatively you can install the environment by using the .yml file provided using the following commands:
 
 ```
 cd proteusAI
@@ -133,21 +141,4 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 Optionally, you can work in Jupyter notebooks if you prefer. To visualize protein structures in Jupyter notebooks, run the following command:
 ```
 jupyter nbextension enable --py widgetsnbextension
-```
-
-## External application (MUSCLE for MSA)
-
-----
-
-To run MSA workflows, you need to install the muscle app and download the latest version here: https://github.com/rcedgar/muscle/releases
-if you are on a Mac then move the muscle app to the binary folder, and give it the needed permission:
-
-### On Mac
-```
-mv /path_to_muscle/muscle<version> /usr/local/bin/muscle
-chmod -x /usr/local/bin/muscle
-```
-and Clustalw for DNA MSAs
-```
-brew install clustal-w
 ```
