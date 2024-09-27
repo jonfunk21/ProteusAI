@@ -20,7 +20,12 @@ import proteusAI as pai
 import os
 import time
 from pathlib import Path
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import datetime
 
+is_zs_running = False
+executor = ThreadPoolExecutor()
 
 VERSION = "version " + "0.1"
 REP_TYPES = ["ESM-2", "ESM-1v", "One-hot", "BLOSUM50", "BLOSUM62"] # Add VAE and MSA-Transformer later
@@ -38,6 +43,7 @@ BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
+ACQ_DICT = {"Expected Improvement":'ei', "Upper Confidence Bound":'ucb', "Greedy":'greedy'}
 USR_PATH = os.path.join(app_path, '../usrs')
 SEARCH_HEURISTICS = ['Diversity']
 OPTIM_DICT = {"Maximize Y-values":"max", "Minimize Y-values":"min"}
@@ -497,7 +503,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zero_shot_ui():
         if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
-                ui.h4("Representation Learning"),
+                ui.h4("Zero-Shot Inference"),
+                ui.p("The time is ", ui.output_text("current_time", inline=True)),
                 ui.row(
                     ui.h5("Compute a zero-shot Library"),
                     ui.column(7,
@@ -505,7 +512,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
 
                     ui.column(5,
-                        ui.input_action_button("compute_zs", "Compute"),
+                        ui.input_task_button("compute_zs", "Compute"),
                         style='padding:25px;',
                     ),
 
@@ -790,6 +797,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### BACKEND ###
     ###############
 
+    ### TO TEST ASYNCHRONOUS PROCESSES
+    @render.text
+    def current_time():
+        reactive.invalidate_later(1)
+        return datetime.datetime.now().strftime("%H:%M:%S %p")
+
     ### APP LOGO ###
     @output
     @render.image
@@ -1014,7 +1027,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 COMP_ZS_SCORES.set(zs_computed)
 
-                REPS_AVAIL.set(rep_computed)
+                REPS_AVAIL.set([INVERTED_REPS[i] for i in rep_computed])
 
                 ZS_RESULTS.set(zs_computed)
 
@@ -1115,7 +1128,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 for rep in IN_MEMORY:
                     if rep not in reps:
                         reps.append(rep)
-                REPS_AVAIL.set(reps)
+
+                REPS_AVAIL.set([INVERTED_REPS[i] for i in reps])
 
                 COMP_ZS_SCORES.set(computed_zs)
 
@@ -1327,43 +1341,130 @@ def server(input: Inputs, output: Outputs, session: Session):
     ###############
 
     ### COMPUTE ZS-SCORES ###
-    @reactive.Effect
-    @reactive.event(input.compute_zs)
-    def _():
-        method = input.zs_model()
-        prot = PROTEIN()
+    #@reactive.Effect
+    #@reactive.event(input.compute_zs)
+    #@ui.bind_task_button(button_id="compute_zs")
+    #@reactive.extended_task
+    #async def compute_zs_scores(method, prot, zs_chain, computed_zs, REP_DICT):
+        #method = input.zs_model()
+        #prot = PROTEIN()
 
-        if type(prot.seq) == dict:
-            seq = prot.seq[input.zs_chain()]
-            chain = input.zs_chain()
-        else:
-            seq = prot.seq
-            chain = None
+        #if type(prot.seq) == dict:
+        #    seq = prot.seq[zs_chain]
+        #    chain = zs_chain
+        #else:
+        #    seq = prot.seq
+        #    chain = None
 
-        with ui.Progress(min=1, max=len(seq)) as p:
-            p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
+        #with ui.Progress(min=1, max=len(seq)) as p:
+            #p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
             
-            computed_zs = COMP_ZS_SCORES()
+            #computed_zs = COMP_ZS_SCORES()
 
+            #model = REP_DICT[method]
+
+            #data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, chain=chain) # pbar=p
+
+            #lib = pai.Library(user=prot.user, source=data)
+
+            #if method not in computed_zs:
+            #    computed_zs.append(method)
+            
+            # set reactive values
+            #ui.update_select(
+            #    "computed_zs_scores",
+            #    choices=computed_zs
+            #)
+
+            #LIBRARY.set(lib)
+            #DATASET.set(data['df'])
+            #ZS_SCORES.set(data['df'])
+            #COMP_ZS_SCORES.set(computed_zs)
+    
+    # Define session-specific variables
+    IS_ZS_RUNNING = reactive.Value(False)
+
+    ### COMPUTE ZS-SCORES ###
+    async def compute_zs_scores(method, prot, zs_chain, computed_zs):
+
+        if IS_ZS_RUNNING():
+            print("ZS score computation is already running, skipping this invocation.")
+            return
+        
+        # Set task running state to True for this session
+        IS_ZS_RUNNING.set(True)
+
+        try:
+            # Handle the protein sequence
+            if type(prot.seq) == dict:
+                seq = prot.seq[zs_chain]
+                chain = zs_chain
+            else:
+                seq = prot.seq
+                chain = None
+
+            # Get the model from REP_DICT
             model = REP_DICT[method]
 
-            data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, pbar=p, chain=chain)
-
+            # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
+            loop = asyncio.get_running_loop()
+            data = await loop.run_in_executor(
+                executor,  # Pass the thread pool executor
+                prot.zs_prediction,  # The CPU-bound function to run
+                model,  # Arguments for the blocking function
+                BATCH_SIZE,
+                chain
+            )
+            await asyncio.sleep(5)
+            
+            # Create a library based on the prediction data
             lib = pai.Library(user=prot.user, source=data)
 
             if method not in computed_zs:
                 computed_zs.append(method)
-            
-            # set reactive values
+
             ui.update_select(
                 "computed_zs_scores",
                 choices=computed_zs
             )
 
+            # Handle the computed ZS scores (update UI elements, reactive values, etc.)
+            ui.update_select("computed_zs_scores", choices=computed_zs)
             LIBRARY.set(lib)
             DATASET.set(data['df'])
             ZS_SCORES.set(data['df'])
-            COMP_ZS_SCORES.set(computed_zs)
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        
+        finally:
+            # Reset the task running state in the session
+            IS_ZS_RUNNING.set(False)
+
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.compute_zs)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_ZS_RUNNING():
+            print("ZS score computation is already in progress for this session.")
+            return
+
+        prot = PROTEIN()
+        if type(prot.seq) == dict:
+            chain = input.zs_chain()
+        else:
+            chain = None
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            compute_zs_scores(
+                method=input.zs_model(), 
+                prot=prot, 
+                zs_chain=chain,
+                computed_zs=COMP_ZS_SCORES(),
+            )
+        )
 
     
     ### ZERO-SHOT CHAIN UI ###
@@ -1795,7 +1896,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             mlde_explore = input.mlde_explore()
             optim_problem = OPTIM_DICT[input.optim_problem()]
             max_eval = MAX_EVAL_DICT[model.x]
-            acq_fn = input.acquisition_fn()
+            acq_fn = ACQ_DICT[input.acquisition_fn()]
 
             out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, batch_size=BATCH_SIZE, pbar=p, acq_fn=acq_fn)
 
