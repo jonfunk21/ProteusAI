@@ -23,6 +23,7 @@ from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
+from functools import partial
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
@@ -298,7 +299,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Discovery
     DISCOVERY_SEARCH = reactive.Value(None)
     DISCOVERY_DF = reactive.Value(None)
-
+    DISCOVERY_MODEL_PLOT = reactive.Value(None)
+    DISCOVERY_SEARCH_PLOT = reactive.Value(None)
 
     ##############
     ## FRONTEND ##
@@ -352,7 +354,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     
                     ui.column(4,
-                        ui.input_action_button("desgin_button", "Design"),  
+                        ui.input_task_button("desgin_button", "Design"),  
                     ),                
                 ),
 
@@ -416,7 +418,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.input_select("dat_rep_type", "Compute representations", REP_TYPES),
                     ),
                     ui.column(5,
-                        ui.input_action_button("dat_compute_reps", "Compute"),
+                        ui.input_task_button("dat_compute_reps", "Compute"),
                             style='padding:25px;',
                         ),
                     ),
@@ -484,7 +486,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_select("plot_rep_type", "", REPS_AVAIL()),
                         ),
                             ui.column(5,
-                            ui.input_action_button("update_plot", "Update plot"),
+                            ui.input_task_button("update_plot", "Update plot"),
                         ),
                     ),
             )
@@ -504,7 +506,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
                 ui.h4("Zero-Shot Inference"),
-                ui.p("The time is ", ui.output_text("current_time", inline=True)),
                 ui.row(
                     ui.h5("Compute a zero-shot Library"),
                     ui.column(7,
@@ -597,7 +598,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         elif MODE() != 'start':
             return ui.TagList(
                     ui.row(
-                        ui.h5("Machine Learning Guided Directed Evolution"),
+                        ui.h5("Machine Learning Guided Directed Evolution (MLDE)"),
 
                         ui.column(6,
                             ui.input_select("model_type", "Surrogate model", _MODEL_TYPES())
@@ -643,7 +644,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                         
                         ui.column(4,
-                            ui.input_action_button("train_button", "Train"),
+                            ui.input_task_button("mlde_train_button", "Train"),
                         ),
                     ),
                 
@@ -681,7 +682,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ),
 
                 ui.column(6,
-                    ui.input_action_button("mlde_search", "Search"),
+                    ui.input_task_button("mlde_search_btn", "Search"),
                 ),
             )
 
@@ -709,11 +710,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.column(6,
                             ui.input_select("discovery_model_rep_type", "Representaion type", REPS_AVAIL()),
                         ),
+
                         ui.panel_conditional("input.discovery_model_type !== 'Gaussian Process'",
                             ui.column(6,
                                 ui.input_numeric("discovery_k_folds", "K-Fold cross validation", value=5, min=1, max=10),
                             ),
                         ),
+                        
                         ui.column(6,
                             ui.output_ui("discovery_dynamic_ui"),
                         ),
@@ -745,7 +748,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                         
                         ui.column(4,
-                            ui.input_action_button("discovery_train_button", "Train"),
+                            ui.input_task_button("discovery_train_button", "Train"),
                         ),
                     ),
                 
@@ -786,7 +789,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
 
                     ui.column(6,
-                        ui.input_action_button("discovery_search", "Search"),
+                        ui.input_task_button("discovery_search", "Search"),
                         style='padding:25px;'
                     )
                 )
@@ -1129,7 +1132,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     if rep not in reps:
                         reps.append(rep)
 
-                REPS_AVAIL.set([INVERTED_REPS[i] for i in reps])
+                REPS_AVAIL.set(reps)
 
                 COMP_ZS_SCORES.set(computed_zs)
 
@@ -1211,47 +1214,83 @@ def server(input: Inputs, output: Outputs, session: Session):
         
 
     ### DESIGN BUTTON LOGIC ###
-    @reactive.Effect
+    IS_DESIGN_RUNNING = reactive.Value(False)
+    async def compute_design():
+        # Prevent multiple invocations of the task within the same session
+        if IS_DESIGN_RUNNING():
+            print("Design computation is already in progress for this session.")
+            return
+        
+        # Set task running state to True for this session
+        IS_DESIGN_RUNNING.set(True)
+
+        try:
+            n_designs = int(input.n_designs())
+            with ui.Progress(min=1, max=n_designs) as p:
+                prot = PROTEIN()
+                seq = prot.seq[input.mutlichain_chain()]
+                p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
+                out = DESIGN_OUTPUT()
+                
+                sidechains = []
+                #if type(out) == str or input.design_sidechains() == None:
+                #    sidechains = []
+                #else:
+                #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
+
+                residues_str = list(set(input.design_res().strip().split(',') + sidechains))
+                fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
+
+                if PROT_INTERFACE():
+                    fixed_ids = fixed_ids + PROT_INTERFACE()
+
+                if LIG_INTERFACE():
+                    fixed_ids = fixed_ids + LIG_INTERFACE()
+
+                fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
+
+                fixed_ids.sort()
+
+                fixed = []
+                if len(fixed_ids) > 0:
+                    fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
+                
+                # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
+                loop = asyncio.get_running_loop()
+                #fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2
+                
+                data = await loop.run_in_executor(
+                    executor,  
+                    prot.esm_if,  
+                    fixed_ids, 
+                    input.mutlichain_chain(),
+                    float(input.sampling_temp()),
+                    n_designs,
+                )
+
+                lib = pai.Library(user=prot.user, source=out)
+
+                # set reactive values
+                FIXED_RES.set(fixed)
+                DESIGN_OUTPUT.set(out['df'])
+                DESIGN_LIB.set(lib)
+
+        except Exception as e:
+            print(f"An error occurred in Design: {e}")
+        
+        finally:
+            # Reset the task running state in the session
+            IS_DESIGN_RUNNING.set(False)
+        
+    # Button click event
+    @reactive.effect
     @reactive.event(input.desgin_button)
-    def _():
-        n_designs = int(input.n_designs())
-        with ui.Progress(min=1, max=n_designs) as p:
-            prot = PROTEIN()
-            seq = prot.seq[input.mutlichain_chain()]
-            p.set(message="Initiating structure based design", detail=f"Computing {n_designs} samples...")
-            out = DESIGN_OUTPUT()
-            
-            sidechains = []
-            #if type(out) == str or input.design_sidechains() == None:
-            #    sidechains = []
-            #else:
-            #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-
-            residues_str = list(set(input.design_res().strip().split(',') + sidechains))
-            fixed_ids = [int(r) for r in residues_str if r.strip() and (r.strip().isdigit() or (r.strip()[1:].isdigit() if r.strip()[0] == '-' else False))]
-
-            if PROT_INTERFACE():
-                fixed_ids = fixed_ids + PROT_INTERFACE()
-
-            if LIG_INTERFACE():
-                fixed_ids = fixed_ids + LIG_INTERFACE()
-
-            fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
-
-            fixed_ids.sort()
-
-            fixed = []
-            if len(fixed_ids) > 0:
-                fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
-            
-            out = prot.esm_if(fixed=fixed_ids, num_samples=n_designs, temperature=float(input.sampling_temp()), pbar=p, chain=input.mutlichain_chain())
-            lib = pai.Library(user=prot.user, source=out)
-
-            # set reactive values
-            FIXED_RES.set(fixed)
-            DESIGN_OUTPUT.set(out['df'])
-            DESIGN_LIB.set(lib)
-
+    async def btn_click():
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            compute_design()
+        )
+        
 
     ### RENDER DESIGN DATAFRAME ###
     @output
@@ -1340,51 +1379,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     ## ZERO-SHOT ##
     ###############
 
+
     ### COMPUTE ZS-SCORES ###
-    #@reactive.Effect
-    #@reactive.event(input.compute_zs)
-    #@ui.bind_task_button(button_id="compute_zs")
-    #@reactive.extended_task
-    #async def compute_zs_scores(method, prot, zs_chain, computed_zs, REP_DICT):
-        #method = input.zs_model()
-        #prot = PROTEIN()
-
-        #if type(prot.seq) == dict:
-        #    seq = prot.seq[zs_chain]
-        #    chain = zs_chain
-        #else:
-        #    seq = prot.seq
-        #    chain = None
-
-        #with ui.Progress(min=1, max=len(seq)) as p:
-            #p.set(message=f"Computation {method} zero-shot scores", detail="Initializing...")
-            
-            #computed_zs = COMP_ZS_SCORES()
-
-            #model = REP_DICT[method]
-
-            #data = prot.zs_prediction(model=model, batch_size=BATCH_SIZE, chain=chain) # pbar=p
-
-            #lib = pai.Library(user=prot.user, source=data)
-
-            #if method not in computed_zs:
-            #    computed_zs.append(method)
-            
-            # set reactive values
-            #ui.update_select(
-            #    "computed_zs_scores",
-            #    choices=computed_zs
-            #)
-
-            #LIBRARY.set(lib)
-            #DATASET.set(data['df'])
-            #ZS_SCORES.set(data['df'])
-            #COMP_ZS_SCORES.set(computed_zs)
-    
-    # Define session-specific variables
     IS_ZS_RUNNING = reactive.Value(False)
-
-    ### COMPUTE ZS-SCORES ###
     async def compute_zs_scores(method, prot, zs_chain, computed_zs):
 
         if IS_ZS_RUNNING():
@@ -1409,13 +1406,14 @@ def server(input: Inputs, output: Outputs, session: Session):
             # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
             loop = asyncio.get_running_loop()
             data = await loop.run_in_executor(
-                executor,  # Pass the thread pool executor
-                prot.zs_prediction,  # The CPU-bound function to run
-                model,  # Arguments for the blocking function
+                executor,
+                prot.zs_prediction,
+                model,
                 BATCH_SIZE,
+                None,
+                None, # device
                 chain
             )
-            await asyncio.sleep(5)
             
             # Create a library based on the prediction data
             lib = pai.Library(user=prot.user, source=data)
@@ -1435,7 +1433,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             ZS_SCORES.set(data['df'])
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred in ZS prediction: {e}")
         
         finally:
             # Reset the task running state in the session
@@ -1628,13 +1626,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
     ### COMPUTE REPRESENTATIONS ###
-    @reactive.Effect
-    @reactive.event(input.dat_compute_reps)
-    async def _():
+    IS_REP_COMP_RUNNING = reactive.Value(False)
+    async def compute_reps():
+
+        if IS_REP_COMP_RUNNING():
+            print("Representation computation is already running, skipping this invocation.")
+            return
+        
+        # Set task running state to True for this session
+        IS_REP_COMP_RUNNING.set(True)
+
         mode = MODE()
         lib = LIBRARY()
         prot = PROTEIN()
-        method = input.dat_rep_type()
+        method = MODEL_DICT[input.dat_rep_type()]
 
         if mode == 'structure':
             chain = input.rep_chain()
@@ -1643,9 +1648,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         # if no library was loaded one has to be created
         if mode in ['zero-shot', 'structure']:
-            data = prot.zs_library(model=MODEL_DICT[method], chain=chain)
+            data = prot.zs_library(model=method, chain=chain)
             lib = pai.Library(user=prot.user, source=data)
-            dest = os.path.join(prot.rep_path, MODEL_DICT[method])
+            dest = os.path.join(prot.rep_path, method)
             pbar_max = len(lib)
         else:
             pbar_max = len(lib)
@@ -1656,32 +1661,62 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
             
-            lib.compute(method=REP_DICT[input.dat_rep_type()], batch_size=BATCH_SIZE, pbar=p)
+            try:
+                #method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None, device=None, proteins=None
+                loop = asyncio.get_running_loop()
+                data = await loop.run_in_executor(
+                    executor, 
+                    lib.compute,
+                    method,
+                    BATCH_SIZE,
+                )
 
-            LIBRARY.set(lib)
-            print("Done!")
+                LIBRARY.set(lib)
+                print("Done!")
 
-            # update representation selection
-            ui.update_select(
-                "model_rep_type",
-                choices=[INVERTED_REPS[i] for i in lib.reps]
-            )
+                # update representation selection
+                ui.update_select(
+                    "model_rep_type",
+                    choices=[INVERTED_REPS[i] for i in lib.reps]
+                )
 
-            reps = [INVERTED_REPS[i] for i in lib.reps]
-            for rep in IN_MEMORY:
-                    if rep not in reps:
-                        reps.append(rep)
-            REPS_AVAIL.set(reps)
+                reps = [INVERTED_REPS[i] for i in lib.reps]
+                for rep in IN_MEMORY:
+                        if rep not in reps:
+                            reps.append(rep)
+                REPS_AVAIL.set(reps)
+
+            except Exception as e:
+                print(f"An error occurred when computing reps: {e}")
+            
+            finally:
+                # Reset the task running state in the session
+                IS_REP_COMP_RUNNING.set(False)
+    
+    
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.dat_compute_reps)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_REP_COMP_RUNNING():
+            print("Representations computation is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            compute_reps()
+        )
 
 
     ### UPDATE REPRESENTATIONS PLOT ###
-    @reactive.Effect
-    @reactive.event(input.update_plot)
-    def _():
+    IS_REP_PLOT_RUNNING = reactive.Value(False)
+    async def plot_reps():
         """
         Render plot once button is pressed.
         """
         if input.plot_rep_type():
+            IS_REP_PLOT_RUNNING.set(True)
             with ui.Progress(min=1, max=15) as p:
                 
                 #if MODE() == "dataset":
@@ -1702,17 +1737,54 @@ def server(input: Inputs, output: Outputs, session: Session):
                 rep = REP_DICT[input.plot_rep_type()]
                 
                 # Update to pass the new parameters
-                if input.vis_method() == 't-SNE':
-                    fig, ax, df = lib.plot_tsne(rep=rep, names=names)
-                elif input.vis_method() == 'UMAP':
-                    fig, ax, df = lib.plot_umap(rep=rep, names=names)
-                elif input.vis_method() == 'PCA':
-                    fig, ax, df = lib.plot_pca(rep=rep, names=names)
+                try:
+                    loop = asyncio.get_running_loop()
+                    if input.vis_method() == 't-SNE':
+                        # rep: str, y_upper=None, y_lower=None, names=None, highlight_mask=None, highlight_label=None
+                        fig, ax, df = await loop.run_in_executor(
+                            executor,
+                            lib.plot_tsne,  
+                            rep, None, None, names
+                        )
+                    elif input.vis_method() == 'UMAP':
+                        fig, ax, df = await loop.run_in_executor(
+                            executor,
+                            lib.plot_umap,  
+                            rep, None, None, names
+                        )
+                    elif input.vis_method() == 'PCA':
+                        fig, ax, df = await loop.run_in_executor(
+                            executor,
+                            lib.plot_pca,  
+                            rep, None, None, names
+                        )
 
-                TSNE_DF.set(df)
-                LIBRARY_PLOT.set((fig, ax))
+                    TSNE_DF.set(df)
+                    LIBRARY_PLOT.set((fig, ax))
+
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                
+                finally:
+                    # Reset the task running state in the session
+                    IS_REP_PLOT_RUNNING.set(False)
         else:
             pass
+
+    
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.update_plot)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_REP_PLOT_RUNNING():
+            print("Representations computation is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            plot_reps()
+        )
 
 
     ### RENDER REPRESENTATIONS PLOT ###
@@ -1722,6 +1794,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if LIBRARY_PLOT():
             fig, ax = LIBRARY_PLOT()
             return fig, ax
+
 
     ##########
     ## MLDE ##
@@ -1801,9 +1874,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
 
     ### TRAIN MODEL ###
-    @reactive.Effect
-    @reactive.event(input.train_button)
-    async def _():
+    IS_MLDE_TRAINING_RUNNING = reactive.Value(False)
+    async def train_mlde_model():
+
+        IS_MLDE_TRAINING_RUNNING.set(True)
+
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Training model", detail="This may take a while...")
 
@@ -1831,20 +1906,46 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(model_type=MODEL_DICT[input.model_type()])
-            m.train(library=lib, x=rep_type, split=split, seed=input.random_seed(), model_type=MODEL_DICT[input.model_type()], k_folds=k_folds)
-            
-            val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
+            m = pai.Model(model_type=MODEL_DICT[input.model_type()], library=lib, x=rep_type, split=split, seed=input.random_seed(), k_folds=k_folds)
 
-            search_dest = os.path.join(f"{m.library.rep_path}", f"../models/{m.model_type}/{m.x}/predictions")
-            search_file = os.path.join(search_dest, f"{m.model_type}_{m.x}_predictions.csv")
+            try:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    executor,
+                    m.train
+                )
 
-            if os.path.exists(search_file):
-                MLDE_SEARCH_DF.set(pd.read_csv(search_file))
+                val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
 
-            # set reactive variables
-            MODEL.set(m)
-            VAL_DF.set(val_df)
+                search_dest = os.path.join(f"{m.library.rep_path}", f"../models/{m.model_type}/{m.x}/predictions")
+                search_file = os.path.join(search_dest, f"{m.model_type}_{m.x}_predictions.csv")
+
+                if os.path.exists(search_file):
+                    MLDE_SEARCH_DF.set(pd.read_csv(search_file))
+
+                # set reactive variables
+                MODEL.set(m)
+                VAL_DF.set(val_df)
+
+            except Exception as e:
+                print(f"An error occurred in training MLDE model: {e}")
+
+            finally:
+                # Reset the task running state in the session
+                IS_MLDE_TRAINING_RUNNING.set(False)
+
+    @reactive.effect
+    @reactive.event(input.mlde_train_button)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_MLDE_TRAINING_RUNNING():
+            print("MLDE model training is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            train_mlde_model()
+        )
 
 
     ### PREPARE PREDICTED VERSUS TRUE PLOT ###
@@ -1886,9 +1987,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     #################
     ## MLDE SEARCH ##
     #################
-    @reactive.Effect
-    @reactive.event(input.mlde_search)
-    def _():
+    IS_MLDE_SEARCH_RUNNING = reactive.Value(False)
+    async def mlde_search():
+        IS_MLDE_SEARCH_RUNNING.set(True)
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Searching for new mutants", detail="Preparing genetic algorithm...")
 
@@ -1898,10 +1999,45 @@ def server(input: Inputs, output: Outputs, session: Session):
             max_eval = MAX_EVAL_DICT[model.x]
             acq_fn = ACQ_DICT[input.acquisition_fn()]
 
-            out = model.search(optim_problem=optim_problem, method='ga', max_eval=max_eval, explore=mlde_explore, batch_size=BATCH_SIZE, pbar=p, acq_fn=acq_fn)
+            try:
+                loop = asyncio.get_running_loop()
+                #  N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'
+                out = await loop.run_in_executor(
+                    executor,
+                    model.search,
+                    10, # top N proteins
+                    ['all'],
+                    optim_problem,
+                    'ga',
+                    max_eval,
+                    mlde_explore,
+                    BATCH_SIZE,
+                    None,
+                    acq_fn
+                )
 
-            MLDE_SEARCH_DF.set(out)
+                MLDE_SEARCH_DF.set(out)
 
+            except Exception as e:
+                print(f"An error occurred: {e}")
+            
+            finally:
+                # Reset the task running state in the session
+                IS_MLDE_SEARCH_RUNNING.set(False)
+
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.mlde_search_btn)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_MLDE_SEARCH_RUNNING():
+            print("MDLE search is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            mlde_search()
+        )
     
     ### RENDER MLDE TABLE ###
     @output
@@ -1987,9 +2123,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     ################
 
     ### TRAIN DISCOVERY MODEL ###
-    @reactive.Effect
-    @reactive.event(input.discovery_train_button)
-    async def _():
+    IS_DISCOVERY_TRAIN_RUNNING = reactive.Value(False)
+    async def discovery_train():
+        IS_DISCOVERY_TRAIN_RUNNING.set(True)
+
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Training model", detail="This may take a while...")
             
@@ -2001,15 +2138,67 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(model_type=MODEL_DICT[input.discovery_model_type()])
-            out = m.train(library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), model_type=MODEL_DICT[input.discovery_model_type()], k_folds=k_folds, pbar=p)
-            model_lib = pai.Library(user=lib.user, source=out)
-            val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
+            m = pai.Model(model_type=MODEL_DICT[input.discovery_model_type()],library=lib, x=rep_type, split=split, seed=input.discovery_random_seed(), k_folds=k_folds)
+            try:
+                loop = asyncio.get_running_loop()
+                out = await loop.run_in_executor(
+                    executor, 
+                    m.train,  
+                )
+                model_lib = pai.Library(user=lib.user, source=out)
+                val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
 
-            # set reactive variables
-            DISCOVERY_LIB.set(model_lib)
-            DISCOVERY_MODEL.set(m)
-            DISCOVERY_VAL_DF.set(val_df)
+                # Visualize results
+                vis_method = input.discovery_vis_method()
+                p.set(message="Visualizing results", detail="This may take a while...")
+
+                # Update to pass the new parameters
+                if vis_method == 't-SNE':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model_lib.plot_tsne,
+                        m.x, None, None, model_lib.names
+                    )
+                elif vis_method == 'UMAP':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model_lib.plot_tsne,
+                        m.x, None, None, model_lib.names
+                    )
+                elif vis_method == 'PCA':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model_lib.plot_tsne,
+                        m.x, None, None, model_lib.names
+                    )
+
+                # set reactive variables
+                DISCOVERY_LIB.set(model_lib)
+                DISCOVERY_MODEL.set(m)
+                DISCOVERY_VAL_DF.set(val_df)
+                DISCOVERY_MODEL_PLOT.set((fig, ax))
+
+            except Exception as e:
+                print(f"An error occurred in training the Discovery model: {e}")
+            
+            finally:
+                # Reset the task running state in the session
+                IS_DISCOVERY_TRAIN_RUNNING.set(False)
+
+
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.discovery_train_button)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_DISCOVERY_TRAIN_RUNNING():
+            print("Discovery train is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            discovery_train()
+        )
 
 
     ### RENDER DISCOVERY PLOT ###
@@ -2017,21 +2206,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def discovery_plot(alt=None):
         if DISCOVERY_LIB():
-            lib = DISCOVERY_LIB()
-            model = DISCOVERY_MODEL()
-            vis_method = input.discovery_vis_method()
-            with ui.Progress(min=1, max=15) as p:
-                p.set(message="Visualizing results", detail="This may take a while...")
-                names = lib.names
-                
-                # Update to pass the new parameters
-                if vis_method == 't-SNE':
-                    fig, ax, df = lib.plot_tsne(rep=model.x, names=names)
-                elif vis_method == 'UMAP':
-                    fig, ax, df = lib.plot_umap(rep=model.x, names=names)
-                elif vis_method == 'PCA':
-                    fig, ax, df = lib.plot_pca(rep=model.x, names=names)
-                return fig, ax
+            fig, ax = DISCOVERY_MODEL_PLOT()
+            return fig, ax
 
 
     ### RENDER PREDICTED VERSUS TURE DATAFRAME ###
@@ -2045,14 +2221,14 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = DISCOVERY_MODEL()
             class_dict = model.library.class_dict
             df['y_true'] = [class_dict[i] for i in df['y_true']]
-            df['y_pred'] = [class_dict[i] for i in df['y_pred']]
+            df['y_pred'] = [class_dict[int(i)] for i in df['y_pred']]
             return df
 
 
-    ### DISCOVERY SEARCH ###    
-    @reactive.Effect
-    @reactive.event(input.discovery_search)
-    def _():
+    ### DISCOVERY SEARCH ###  
+    IS_DISCOVERY_SEARCH_RUNNING = reactive.Value(False)  
+    async def discovery_search():
+        IS_DISCOVERY_SEARCH_RUNNING.set(True)
         with ui.Progress(min=1, max=10000) as p:
             p.set(message="Sampling diverse sequences", detail=f"...")
             
@@ -2064,11 +2240,71 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             
             model = DISCOVERY_MODEL()
-            out, search_results = model.search(N=input.n_samples(), labels=labels, method='ga', pbar=p)
+            try:
+                loop = asyncio.get_running_loop()
+                out, search_results = await loop.run_in_executor(
+                    executor,  
+                    model.search, 
+                    input.n_samples(),
+                    labels,
+                    None,
+                    'ga',
+                    None,
+                    None,
+                    BATCH_SIZE,
+                    None,
+                    None
+                )
 
-            DISCOVERY_DF.set(out['df'])
+                # Visualize results
+                vis_method = input.discovery_vis_method()
+                p.set(message="Visualizing results", detail="This may take a while...")
 
-            DISCOVERY_SEARCH.set(search_results)
+                # Update to pass the new parameters
+                if vis_method == 't-SNE':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model.library.plot_tsne,
+                        model.x, None, None, model.library.names
+                    )
+                elif vis_method == 'UMAP':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model.library.plot_tsne,
+                        model.x, None, None, model.library.names
+                    )
+                elif vis_method == 'PCA':
+                    fig, ax, df = await loop.run_in_executor(
+                        executor,
+                        model.library.plot_tsne,
+                        model.x, None, None, model.library.names
+                    )
+
+                DISCOVERY_SEARCH_PLOT.set((fig, ax))
+
+                DISCOVERY_DF.set(out['df'])
+
+                DISCOVERY_SEARCH.set(search_results)
+            except Exception as e:
+                print(f"An error occurred in discovery search: {e}")
+            
+            finally:
+                # Reset the task running state in the session
+                IS_DISCOVERY_SEARCH_RUNNING.set(False)
+    
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.discovery_search)
+    async def btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_DISCOVERY_SEARCH_RUNNING():
+            print("Discovery search is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(
+            discovery_search()
+        )
 
 
     ### RENDER SEARCH PLOT ###
@@ -2077,32 +2313,22 @@ def server(input: Inputs, output: Outputs, session: Session):
     def discovery_search_plot(alt=None):
         highlight_mask = DISCOVERY_SEARCH()
         if highlight_mask is not None:
-            with ui.Progress() as p:
-                p.set(message="Visualizing search results", detail="...")
-                model = DISCOVERY_MODEL()
-                lib = DISCOVERY_LIB()
-                vis_method = input.discovery_vis_method()
-                names = lib.names
-                
-                # Update to pass the new parameters
-                if vis_method == 't-SNE':
-                    fig, ax, df = lib.plot_tsne(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
-                elif vis_method == 'UMAP':
-                    fig, ax, df = lib.plot_umap(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
-                elif vis_method == 'PCA':
-                    fig, ax, df = lib.plot_pca(rep=model.x, names=names, highlight_mask=highlight_mask, highlight_label="Sampled")
-                return fig, ax
+            fig, ax = DISCOVERY_SEARCH_PLOT()
+            return fig, ax
 
 
     ### RENDER DISCOVERY TABLE ###
     @output
     @render.data_frame
     def discovery_search_table(alt=None):
-        table = DISCOVERY_DF()
+        df = DISCOVERY_DF()
         model = DISCOVERY_MODEL()
         seq_col = model.library.seq_col
-        table = table.drop(seq_col, axis=1)
-        return table
+        df = df.drop(seq_col, axis=1)
+        class_dict = model.library.class_dict
+        df['y_true'] = [class_dict[i] for i in df['y_true']]
+        df['y_pred'] = [class_dict[int(i)] for i in df['y_pred']]
+        return df
 
 
     ### DOWNLOAD DISCOVERY RESULTS ###
