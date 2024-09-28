@@ -153,7 +153,7 @@ class Model:
             setattr(self, key, value)
 
 
-    def train(self, **kwargs):
+    def train(self):
         """
         Train the model.
 
@@ -175,7 +175,7 @@ class Model:
             pbar: Progress bar for shiny app.
         """
         # Update attributes if new values are provided
-        self._update_attributes(**kwargs)
+        #self._update_attributes(**kwargs)
 
         # split data
         self.train_data, self.test_data, self.val_data = self.split_data()

@@ -245,6 +245,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         logits = get_mutant_logits(seq=seq)
     """
     assert type(seq) == str
+
     masked_seqs = mask_positions(seq) # list of sequences where every position has been masked once
     names = [f'seq{i}' for i in range(len(masked_seqs))]
     sequence_length = len(seq)
@@ -259,9 +260,12 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
                                                                   rep_layer=rep_layer, device=device)
         logits = results["logits"]
 
+        counter += len(masked_seqs[i:i + batch_size])
+
         if pbar:
-            counter += len(masked_seqs[i:i + batch_size])
             pbar.set(counter, message="Computing", detail=f"{counter}/{len(masked_seqs)} positions computed...")
+        else:
+            print(f"{counter}/{len(masked_seqs)} positions computed...")
 
         # Extract the logits corresponding to the masked position for each sequence in the batch
         for j, masked_seq_name in enumerate(names[i:i + batch_size]):
