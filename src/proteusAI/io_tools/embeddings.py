@@ -25,7 +25,7 @@ def load_embeddings(path: str, names: Union[list, None] = None, map_location: st
     """
 
     tensors = []
-    if names == None:
+    if names is None:
         files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.pt')]
         names = [f[:-3] for f in os.listdir(path) if f.endswith('.pt')]
         for f in files:

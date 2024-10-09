@@ -227,7 +227,7 @@ class ZeroShot:
         png_out = os.path.join(outdir, 'pngs')
         data_out = os.path.join(outdir, 'data_tools')
 
-        if outdir != None:
+        if outdir is not None:
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
             if not os.path.exists(pdb_out):

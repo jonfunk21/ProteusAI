@@ -273,7 +273,7 @@ class Model:
         model = None
 
         # Define the path for the params.json and model
-        if self.dest != None:
+        if self.dest is not None:
             params_path = f"{self.dest}/params.json"
         else:
             params_path = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/params.json")
@@ -382,7 +382,7 @@ class Model:
             self.y_test_sigma = [None]*len(self.y_test)
 
             # Save the model
-            if self.dest != None:
+            if self.dest is not None:
                 model_save_path = f"{self.dest}/model.joblib"
                 csv_dest = f"{self.dest}"
             else:
@@ -627,7 +627,7 @@ class Model:
             self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # Save the model
-        if self.dest != None:
+        if self.dest is not None:
             model_save_path = f"{self.dest}/model.pt"
             csv_dest = self.dest
         else:
@@ -924,7 +924,7 @@ class Model:
         y_sigma = [prot.y_sigma for prot in selected_proteins]
 
         # Save the search results
-        if self.dest != None:
+        if self.dest is not None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
@@ -977,7 +977,7 @@ class Model:
         mutations = BO.find_mutations(improved_seqs)
 
         # Save destination for search_results
-        if self.dest != None:
+        if self.dest is not None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}/predictions")

@@ -103,7 +103,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
         for c, count in enumerate(found_counts):
             found = len([prot.name for prot in sampled_data if prot.name in actual_top_variants[count]])
             found_counts[count] = found
-            if found > 0 and first_discovered[c] == None:
+            if found > 0 and first_discovered[c] is None:
                 first_discovered[c] = iteration
         
         # Break the loop if all elements in first_discovered are not None

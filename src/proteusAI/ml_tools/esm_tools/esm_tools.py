@@ -54,7 +54,7 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
         results, batch_lens, batch_labels = esm_compute(seqs)
     """
     # detect device
-    if device == None:
+    if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     else:
         device = torch.device(device)
@@ -81,7 +81,7 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
     model.eval()
     model.to(device)
 
-    if names == None:
+    if names is None:
         names = names = [f'seq{i}' for i in range(len(seqs))]
 
     data = list(zip(names, seqs))
@@ -177,10 +177,10 @@ def batch_compute(seqs: list=None, names: list=None, fasta_path: str=None, dest:
         2.
         batch_compute(fasta_path='file.fasta', dest='path')
     """
-    if dest == None:
+    if dest is None:
         raise "No save destination provided."
 
-    if fasta_path == None and seqs == None:
+    if fasta_path is None and seqs is None:
         raise "Either fasta_path or seqs must not be None"
 
     counter = 0
@@ -509,7 +509,7 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
     cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
 
     coords, native_seq = load_coords(cleaned_pdbfile, chain)
-    if noise != None:
+    if noise is not None:
         coord_noise = np.random.normal(0, noise, coords.shape).astype(coords.dtype)
         coords = coords + coord_noise
 
@@ -626,7 +626,7 @@ def structure_prediction(
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
 
-    if names == None:
+    if names is None:
         names = [f'seq{i}' for i in range(len(seqs))]
 
     all_sequences = list(zip(names, seqs))
@@ -748,7 +748,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         probability_distribution_np = probability_distribution_np[1:-1, :]
         
     # make sure section is in range of sequence
-    if section != None:
+    if section is not None:
         seq_len = probability_distribution_np.shape[0]
         assert section[0] < section[1]
         
@@ -809,7 +809,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
 
     plt.xlabel("Sequence Position")
     plt.ylabel("Residue")
-    if title == None:
+    if title is None:
         plt.title("Per-Position Probability Distribution Heatmap")
     else:
         plt.title(title)

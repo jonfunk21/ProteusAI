@@ -66,7 +66,7 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
     )
     fig.tight_layout()
 
-    if save_fig != None:
+    if save_fig is not None:
         plt.savefig(save_fig)
 
     if plot_results:
@@ -74,7 +74,7 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
     else:
         plt.close()
 
-    if save_fasta != None:
+    if save_fasta is not None:
         with open(save_fasta, 'w') as f:
             for i, key in enumerate(MSA_results.keys()):
                 s = MSA_results[key]

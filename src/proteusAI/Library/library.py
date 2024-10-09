@@ -247,7 +247,7 @@ class Library:
         print(f"Loading library '{self.user}'...")
 
         # Check for representations
-        if self.rep_path == None:
+        if self.rep_path is None:
             if self.file:
                 fname = self.file.split('.')[0]
                 rep_path = os.path.join(self.user, f'{fname}/library/rep')
@@ -592,12 +592,12 @@ class Library:
             list: List of representations.
         """
 
-        if self.rep_path == None:
+        if self.rep_path is None:
             rep_path = os.path.join(self.user, f"rep/{rep}")
         else:
             rep_path = os.path.join(self.rep_path, rep)
 
-        if proteins == None:
+        if proteins is None:
             file_names = [protein.name + ".pt" for protein in self.proteins]
         else:
             file_names = [protein.name + ".pt" for protein in proteins]

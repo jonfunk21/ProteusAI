@@ -142,7 +142,7 @@ class Protein:
             fname = self.source.split('/')[-1]
 
         # Check for representations
-        if self.rep_path == None:
+        if self.rep_path is None:
             fname = fname.split('.')[0]
             zs_path = os.path.join(self.user, f'{fname}/zero_shot')
             rep_path = os.path.join(zs_path, 'rep')
@@ -328,7 +328,7 @@ class Protein:
         Generate zero-shot library.
         """
 
-        if chain == None and len(self.chains) >= 1:
+        if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             wt_seq = self.seq[chain]
             zs_results_path = os.path.join(self.zs_path, "results", chain, model, "zs_scores.csv")
@@ -376,7 +376,7 @@ class Protein:
             pbar: App progress bar
             
         """
-        if chain == None:
+        if chain is None:
             chain = self.chains[0]
 
         seq = self.seq[chain]
@@ -429,7 +429,7 @@ class Protein:
         os.makedirs(dest, exist_ok=True)
 
         # define chain
-        if chain == None:
+        if chain is None:
             chain = self.chains[0]
 
         # return dataframe of results
@@ -452,14 +452,14 @@ class Protein:
     # Plot 
     # Plot zero-shot entropy
     def plot_entropy(self, model='esm2', title=None, section=None, chain=None):
-        if chain == None and len(self.chains) >= 1:
+        if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
         elif len(self.chains) >= 1:
             seq = self.seq[chain]
         else:
             seq = self.seq
-            chain == None
+            chain = None
 
         name = self.name
 
@@ -516,14 +516,14 @@ class Protein:
             fig (matplotlib.figure.Figure): The created matplotlib figure.
         """
         
-        if chain == None and len(self.chains) >= 1:
+        if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
         elif len(self.chains) >= 1:
             seq = self.seq[chain]
         else:
             seq = self.seq
-            chain == None
+            chain = None
 
         name = self.name
 
