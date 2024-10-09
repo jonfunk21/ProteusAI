@@ -657,7 +657,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def mlde_search_ui(alt=None):
-        if MODEL() != None:
+        if MODEL() is not None:
             inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
             model_type = inv_model_dict[MODEL().model_type]
             return ui.TagList(
@@ -762,7 +762,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def discovery_search_ui(alt=None):
         model = DISCOVERY_MODEL()
-        if model != None:
+        if model is not None:
             clusters = list(model.library.class_dict.values())
             sample_from = clusters
             inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
@@ -859,7 +859,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         ui.update_select(
             "y_col",
-            label=f"Y-values",
+            label="Y-values",
             choices=cols,
             selected=cols[-1],
         )
@@ -870,7 +870,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.confirm_dataset)
     async def _():
         df = DATASET()
-        if input.dataset_file() == None:
+        if input.dataset_file() is None:
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
                 time.sleep(2.5)                
@@ -1055,7 +1055,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.text
     def protein_fasta():
-        if PROTEIN() == None:
+        if PROTEIN() is None:
             seq = None
         elif type(PROTEIN().seq) == dict:
             seq = 'Protein name: ' + PROTEIN().name + ' \n'.join([" chain " + chain + ':\n' + PROTEIN().seq[chain] for chain in PROTEIN().chains])
@@ -1068,7 +1068,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_structure)
     async def _():
-        if input.structure_file() == None:
+        if input.structure_file() is None:
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
                 time.sleep(2.5)
@@ -1144,9 +1144,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.text
     def protein_struc():
-        if PROTEIN() == None:
+        if PROTEIN() is None:
             struc = None
-        elif PROTEIN().struc != None:
+        elif PROTEIN().struc is not None:
             struc = 'Structure loaded'
         else:
             struc = None
@@ -1501,7 +1501,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zs_df(alt=None):
         prot = PROTEIN()
         method = REP_DICT[input.computed_zs_scores()]
-        if prot.chains != None and len(prot.chains) >= 1:
+        if prot.chains is not None and len(prot.chains) >= 1:
             path = os.path.join(prot.zs_path, "results", input.zs_chain(), method, "zs_scores.csv")
         else:
             path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
@@ -1724,7 +1724,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 prot = PROTEIN()
 
                 # if no library was loaded one has to be created
-                if mode in ['zero-shot', 'structure'] and lib == None:
+                if mode in ['zero-shot', 'structure'] and lib is None:
                     data = prot.zs_library(model = REP_DICT[input.plot_rep_type()])
                     lib = pai.Library(user=prot.user, source=data)
 
@@ -1964,7 +1964,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def pred_vs_true(alt=None):
         df = VAL_DF()
-        if MODEL() != None:
+        if MODEL() is not None:
             p = MODEL().true_vs_predicted(y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list())
         else:
             p = None
@@ -2212,7 +2212,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.data_frame
     def discovery_table(alt=None):
         df = DISCOVERY_VAL_DF()
-        if DISCOVERY_MODEL() == None:
+        if DISCOVERY_MODEL() is None:
             return None
         else:
             model = DISCOVERY_MODEL()
