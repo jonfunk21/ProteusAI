@@ -18,9 +18,9 @@ from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
+import proteusAI as pai
 app_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(app_path, '../src/')) # for server '/home/jonfunk/ProteusAI/src/'
-import proteusAI as pai
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
