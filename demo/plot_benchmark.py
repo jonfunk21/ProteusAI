@@ -2,7 +2,6 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-import numpy as np
 import argparse
 
 # Initialize the argparse parser

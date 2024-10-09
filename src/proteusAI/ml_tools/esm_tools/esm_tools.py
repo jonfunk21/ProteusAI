@@ -14,7 +14,6 @@ import torch
 import torch.nn.functional as F
 import esm
 import os
-from proteusAI.io_tools import fasta
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt

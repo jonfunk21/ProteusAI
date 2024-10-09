@@ -7,7 +7,6 @@ __author__ = "Jonathan Funk"
 import os
 import sys
 import torch
-import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 import proteusAI.ml_tools.bo_tools as BO
 import random
