@@ -8,22 +8,19 @@ ProteusAI Shiny App.
 __name__ = "ProteusAI"
 __author__ = "Jonathan Funk"
 
-import shiny
 from shiny import App, ui, render, Inputs, Outputs, Session, reactive
 from shiny.types import FileInfo, ImgData
 import pandas as pd
 import sys
-import os
-app_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(app_path, '../src/')) # for server '/home/jonfunk/ProteusAI/src/'
-import proteusAI as pai
 import os
 import time
 from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
-from functools import partial
+app_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(app_path, '../src/')) # for server '/home/jonfunk/ProteusAI/src/'
+import proteusAI as pai
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
