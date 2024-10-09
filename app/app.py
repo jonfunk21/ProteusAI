@@ -1057,7 +1057,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def protein_fasta():
         if PROTEIN() is None:
             seq = None
-        elif type(PROTEIN().seq) == dict:
+        elif isinstance(PROTEIN().seq, dict):
             seq = 'Protein name: ' + PROTEIN().name + ' \n'.join([" chain " + chain + ':\n' + PROTEIN().seq[chain] for chain in PROTEIN().chains])
         else:
             seq = 'Protein name: ' + PROTEIN().name + '\n' + PROTEIN().seq
@@ -1176,7 +1176,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if LIG_INTERFACE():
             highlights = highlights + LIG_INTERFACE()
 
-        highlights = [i for i in set(highlights) if type(i) != str]
+        highlights = [i for i in set(highlights) if not isinstance(i, str)]
 
         highlights_dict = {input.mutlichain_chain():highlights}
 
@@ -1244,7 +1244,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 if LIG_INTERFACE():
                     fixed_ids = fixed_ids + LIG_INTERFACE()
 
-                fixed_ids = [i for i in set(fixed_ids) if type(i) != str]
+                fixed_ids = [i for i in set(fixed_ids) if not isinstance(i, str)]
 
                 fixed_ids.sort()
 
@@ -1294,7 +1294,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.data_frame
     def design_out():
         out = DESIGN_OUTPUT()
-        if type(out) == str:
+        if isinstance(out, str):
             return None
         else:
             return render.DataTable(out, summary=True) 
@@ -1313,7 +1313,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def design_download_ui():
         out = DESIGN_OUTPUT()
-        if type(out) != str:
+        if not isinstance(out, str):
             return ui.download_button("download_designs", "Download design results")
 
 
@@ -1330,7 +1330,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.text
     def fixed_res_text(alt=None):
         out = DESIGN_OUTPUT()
-        if type(out) != str:
+        if not isinstance(out, str):
             msg = "Residues that were fixed during design: \n"+ ", ".join(FIXED_RES())
             return msg     
 
@@ -1390,7 +1390,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         try:
             # Handle the protein sequence
-            if type(prot.seq) == dict:
+            if isinstance(prot.seq, dict):
                 seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
@@ -1446,7 +1446,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         prot = PROTEIN()
-        if type(prot.seq) == dict:
+        if isinstance(prot.seq, dict):
             chain = input.zs_chain()
         else:
             chain = None
@@ -1541,7 +1541,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         Create the per position entropy plot
         """
         prot = PROTEIN()
-        if type(prot.seq) == dict:
+        if isinstance(prot.seq, dict):
             chain = input.zs_chain()
             seq = prot.seq[chain]
         else:
@@ -1575,7 +1575,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         prot = PROTEIN()
 
-        if type(prot.seq) == dict:
+        if isinstance(prot.seq, dict):
             chain = input.zs_chain()
             seq = prot.seq[chain]
         else:
@@ -2232,7 +2232,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             labels = input.sample_from()
             if labels == ():
                 labels = ['all']
-            if type(labels) == str:
+            if isinstance(labels, str):
                 labels = [labels]
 
             
