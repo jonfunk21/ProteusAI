@@ -1,9 +1,8 @@
 import os
-print(os.getcwd())
-
 import sys
-sys.path.append('src/')
 import proteusAI as pai
+print(os.getcwd())
+sys.path.append('src/')
 
 # will initiate storage space - else in memory
 #library = pai.Library(user='guest') 

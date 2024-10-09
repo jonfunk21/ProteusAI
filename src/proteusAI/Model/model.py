@@ -6,29 +6,30 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
-current_path = os.path.dirname(os.path.abspath(__file__))
-root_path = os.path.join(current_path, '..')
-sys.path.append(root_path)
 import torch
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.linear_model import Ridge, RidgeClassifier
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
-from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
 import proteusAI.ml_tools.bo_tools as BO
-from proteusAI.Library import Library
 import random
-from typing import Union
 import json
-from joblib import dump
 import csv
 import torch
 import pandas as pd
 import gpytorch
 import numpy as np
+from joblib import dump
+from typing import Union
+from proteusAI.Library import Library
+from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
+from sklearn.linear_model import Ridge, RidgeClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.svm import SVC, SVR
+from sklearn.model_selection import KFold
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+
+current_path = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.join(current_path, '..')
+sys.path.append(root_path)
 
 
 class Model:

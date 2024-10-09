@@ -6,19 +6,18 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
-current_path = os.path.dirname(os.path.abspath(__file__))
-root_path = os.path.join(current_path, '..')
-sys.path.append(root_path)
-from proteusAI.Protein.protein import Protein
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.io_tools as io_tools
 import proteusAI.visual_tools as vis
 import proteusAI.struc as pai_struc
 import pandas as pd
+from proteusAI.Protein.protein import Protein
 from typing import Union, Optional
-import torch
 from sklearn.preprocessing import LabelEncoder
+current_path = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.join(current_path, '..')
+sys.path.append(root_path)
 folder_path = os.path.dirname(os.path.realpath(__file__))
 USR_PATH = os.path.join(folder_path, '../../../usrs')
 

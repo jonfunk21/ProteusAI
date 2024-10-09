@@ -4,17 +4,15 @@
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from typing import Union
-import inspect
 import os
 import warnings
 import sys
+from typing import Union
+from proteusAI.ml_tools.esm_tools import *
+from proteusAI.struc import *
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
-from proteusAI.ml_tools.esm_tools import *
-from proteusAI.struc import *
-import hashlib
 folder_path = os.path.dirname(os.path.realpath(__file__))
 USR_PATH = os.path.join(folder_path, '../../../usrs')
 
