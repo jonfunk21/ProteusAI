@@ -958,7 +958,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     async def _():
-        if input.protein_file() == None:
+        if input.protein_file() is None:
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
                 time.sleep(2.5)
