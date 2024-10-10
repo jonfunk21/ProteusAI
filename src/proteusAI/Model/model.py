@@ -892,14 +892,12 @@ class Model:
         if 'all' in labels or len(labels) < 1:
             labels = list(class_dict.keys())
             proteins = full_proteins
-            labels_name = "_".join([class_dict[i] for i in labels])
             full_indices = list(range(len(full_proteins)))  # Indices for all proteins
         else:
             # Filter proteins by label and keep track of their original indices
             proteins, full_indices = zip(*[(prot, idx) for idx, prot in enumerate(full_proteins) if class_dict[prot.y] in labels])
             proteins = list(proteins)
             full_indices = list(full_indices)
-            labels_name = "_".join([i for i in labels])
 
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
@@ -929,7 +927,7 @@ class Model:
         else:
             csv_dest = os.path.join(f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}")
         
-        self.search_df = self.save_to_csv(selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results_{labels_name}.csv")
+        self.search_df = self.save_to_csv(selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results.csv")
 
         out = {
             'df': self.search_df, 'rep_path': self.library.rep_path, 'struc_path': self.library.struc_path, 'y_type': self.library.y_type, 
@@ -974,7 +972,13 @@ class Model:
             improved_seqs = [prot.seq for prot in proteins if prot.y < mean_y]
 
         # Introduce random mutations from the mutations dictionary
-        mutations = BO.find_mutations(improved_seqs)
+        seq_lens = set([len(seq) for seq in improved_seqs])
+        if len(seq_lens) > 1:
+            # allow all amin acids for each position
+            aa_list = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+            mutations = {i: aa_list for i in range(1,max(seq_lens))}
+        else:
+            mutations = BO.find_mutations(improved_seqs)
 
         # Save destination for search_results
         if self.dest != None:
@@ -1056,12 +1060,16 @@ class Model:
                 mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
             else:
                 # Exploit: use known mutation from the provided mutations dictionary
-                pos, mut_list = random.choice(list(mutations.items()))
-                pos = pos - 1
-                if pos < len(seq_list):
-                    mut = random.choice(mut_list)
-
-            mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
+                try:
+                    pos, mut_list = random.choice(list(mutations.items()))
+                    pos = pos - 1
+                    if pos < len(seq_list):
+                        mut = random.choice(mut_list)
+                    mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
+                except:
+                    pos = random.randint(0, len(seq_list) -1)
+                    mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
+                    mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"
             
             if seq_list[pos] != mut and mutated_name not in mutated_names:  # Exclude mutations to the same residue
                 seq_list[pos] = mut
