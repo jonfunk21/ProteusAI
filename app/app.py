@@ -145,6 +145,7 @@ app_ui = ui.page_fluid(
                     ui.output_data_frame("design_out"),
                     ui.output_ui("design_download_ui"),
                 ),
+                
             ),
         ),
 
@@ -1257,8 +1258,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
                 loop = asyncio.get_running_loop()
-                #fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2
-                prot.esm_if(fixed_ids, input.mutlichain_chain(),float(input.sampling_temp()),  n_designs)
+
                 out = await loop.run_in_executor(
                     executor,  
                     prot.esm_if,  
