@@ -1287,7 +1287,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.desgin_button)
     async def btn_click():
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             compute_design()
         )
         
@@ -1455,7 +1455,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             chain = None
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             compute_zs_scores(
                 method=input.zs_model(), 
                 prot=prot, 
@@ -1704,7 +1704,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             compute_reps()
         )
 
@@ -1782,7 +1782,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             plot_reps()
         )
 
@@ -1914,7 +1914,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     executor,
                     m.train
                 )
-
+                print('done')
                 val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
 
                 search_dest = os.path.join(f"{m.library.rep_path}", f"../models/{m.model_type}/{m.x}/predictions")
@@ -1934,18 +1934,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # Reset the task running state in the session
                 IS_MLDE_TRAINING_RUNNING.set(False)
 
+
     @reactive.effect
     @reactive.event(input.mlde_train_button)
     async def btn_click():
-        # Prevent multiple invocations of the task within the same session
         if IS_MLDE_TRAINING_RUNNING():
             print("MLDE model training is already in progress for this session.")
-            return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
-            train_mlde_model()
-        )
+        return await asyncio.create_task(train_mlde_model())
 
 
     ### PREPARE PREDICTED VERSUS TRUE PLOT ###
@@ -2035,7 +2032,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             mlde_search()
         )
     
@@ -2196,7 +2193,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             discovery_train()
         )
 
@@ -2303,7 +2300,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
+        return await asyncio.create_task(
             discovery_search()
         )
 
