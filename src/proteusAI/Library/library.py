@@ -96,7 +96,7 @@ class Library:
             self.initialize_user()
 
         # Initialize library from file or from inheritance
-        if type(self.source) == str:
+        if isinstance(self.source, str):
             self.init_from_file()
         else:
             self.init_from_inheritance()

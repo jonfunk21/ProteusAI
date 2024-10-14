@@ -100,7 +100,7 @@ def write_fasta(names: list, sequences: list, dest: str = None):
     Example:
         write_fasta(names, sequences, './out.fasta')
     """
-    assert type(names) == list and type(sequences) == list, 'names and sequences must be type list'
+    assert isinstance(names, list) and isinstance(sequences, list), 'names and sequences must be type list'
     assert len(names) == len(sequences), 'names and sequences must have the same length'
 
     with open(dest, 'w') as f:

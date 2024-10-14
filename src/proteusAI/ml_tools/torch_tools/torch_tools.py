@@ -168,7 +168,7 @@ def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]
         seq (str): Input sequence as a list of tokens
     """
 
-    if seq == type(str):
+    if isinstance(seq, str):
         seq = [char for char in seq]
 
     # Get the attention weights for the specified layer and head

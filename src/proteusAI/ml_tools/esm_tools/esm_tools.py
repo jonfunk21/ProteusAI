@@ -243,7 +243,7 @@ def get_mutant_logits(seq: str, model: str="esm1v", batch_size: int=10, rep_laye
         seq = "AGHRFLIKLKI"
         logits = get_mutant_logits(seq=seq)
     """
-    assert type(seq) == str
+    assert isinstance(seq, str)
 
     masked_seqs = mask_positions(seq) # list of sequences where every position has been masked once
     names = [f'seq{i}' for i in range(len(masked_seqs))]
@@ -292,7 +292,7 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         mmp = masked_marginal_probability(p, logits, alphabet)
     """
 
-    assert type(wt_seq) == str
+    assert isinstance(wt_seq, str)
 
     if p.shape[1] == len(wt_seq):
         assert p.shape[1] == len(wt_seq)
@@ -300,7 +300,7 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
         p = p[:, 1:-1]
         assert p.shape[1] == len(wt_seq)
 
-    if type(alphabet) == dict:
+    if isinstance(alphabet, dict):
         pass
     else:
         try:
@@ -332,7 +332,7 @@ def most_likely_sequence(log_prob_tensor, alphabet):
     Returns:
         str: Most likely amino acid sequence
     """
-    if type(alphabet) == dict:
+    if isinstance(alphabet, dict):
         pass
     else:
         try:
@@ -441,9 +441,9 @@ def save_tempfile(temp_file, target_file_path):
     Returns:
         bool: True if the file was copied successfully, False if an error occurred.
     """
-    if type(temp_file) == tempfile._TemporaryFileWrapper:
+    if isinstance(temp_file, tempfile._TemporaryFileWrapper):
         temp_file_path = temp_file.file.name
-    elif type(temp_file) == str:
+    elif isinstance(temp_file, str):
         temp_file_path = temp_file
     else:
         raise ValueError('tempfile has an unexpected format')
@@ -682,7 +682,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     Returns:
         list: List of scaled b-factors
     """
-    if type(pdb) != str:
+    if not isinstance(pdb, str):
         try:
             pdb = str(pdb)
         except:
@@ -731,7 +731,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         fig (matplotlib.figure.Figure): The created matplotlib figure.
     """
 
-    if type(alphabet) == dict:
+    if isinstance(alphabet, dict):
         pass
     else:
         try:
@@ -758,7 +758,7 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         include = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     elif include == "all":
         include = alphabet.keys()
-    elif type(alphabet) == list:
+    elif isinstance(alphabet, list):
         include = include
     else:
         raise "include must either be 'canonical' 'all' or a list of valid elements"

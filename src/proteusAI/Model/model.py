@@ -216,7 +216,7 @@ class Model:
 
         train_data, test_data, val_data = [], [], []
 
-        if type(self.split) == tuple:
+        if isinstance(self.split, tuple):
             train_ratio, test_ratio, val_ratio = tuple(value / sum(self.split) for value in self.split)
             train_size = int(train_ratio * len(proteins))
             test_size = int(test_ratio * len(proteins))
@@ -229,7 +229,7 @@ class Model:
             val_data = proteins[train_size + test_size:]
 
         # custom datasplit
-        elif type(self.split) == dict:
+        elif isinstance(self.split, dict):
             train_data = self.split['train']
             test_data = self.split['test']
             val_data = self.split['val']
@@ -818,7 +818,7 @@ class Model:
 
         # ensemble
         ensemble_scores = []
-        if type(self._model) == list:
+        if isinstance(self._model, list):
             for model in self._model:
                 score = model.score(x,y)
                 ensemble_scores.append(score)

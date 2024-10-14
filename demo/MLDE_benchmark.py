@@ -87,7 +87,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
 
     # Identify the top variants by score
     actual_top_variants = sorted(lib.proteins, key=lambda prot: prot.y, reverse=True)
-    actual_top_variants = {count: [prot.name for prot in actual_top_variants[:count]] for count in top_variants_counts if type(count) == int}
+    actual_top_variants = {count: [prot.name for prot in actual_top_variants[:count]] for count in top_variants_counts if isinstance(count, int)}
 
     # count variants that are improved over wt, 1 standard deviation above wt
     y_std = np.std(lib.y, ddof=1)

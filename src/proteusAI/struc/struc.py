@@ -50,10 +50,10 @@ def load_struc(prot):
     Returns:
         biotite.structure.AtomArray
     """
-    if type(prot) == struc.AtomArray:
+    if isinstance(prot, struc.AtomArray):
         prot = prot
 
-    elif type(prot) == str:
+    elif isinstance(prot, str):
         try:
             prot = strucio.load_structure(prot)
         except:

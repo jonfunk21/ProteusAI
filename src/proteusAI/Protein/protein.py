@@ -83,7 +83,7 @@ class Protein:
             self.initialize_user()
 
         # Initialize library from file or from inheritance
-        if type(self.source) == str:
+        if isinstance(self.source, str):
             self.init_from_file()
         elif self.source is not None:
             self.init_from_inheritance()
@@ -220,7 +220,7 @@ class Protein:
             name: provide protein name, else name of the file is assumed.
             filter_solvent (bool): True
         """
-        if name is None and type(prot_f) == str:
+        if name is None and isinstance(prot_f, str):
             name = prot_f.split('/')[-1].split('.')[0]
 
         prot = load_struc(prot_f)
@@ -481,7 +481,7 @@ class Protein:
         if section is None:
             section = (0, seq_len)
         elif isinstance(section, tuple):
-            if len(section) != 2 or any(type(i) != int for i in section):
+            if len(section) != 2 or any(not isinstance(i, int) for i in section):
                 raise ValueError("Section must be a tuple of two integers.")
             if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
                 raise ValueError("Section indices are out of sequence range.")
@@ -545,7 +545,7 @@ class Protein:
         if section is None:
             section = (0, seq_len)
         elif isinstance(section, tuple):
-            if len(section) != 2 or any(type(i) != int for i in section):
+            if len(section) != 2 or any(not isinstance(i, int) for i in section):
                 raise ValueError("Section must be a tuple of two integers.")
             if section[0] < 0 or section[0] >= seq_len or section[1] > seq_len:
                 raise ValueError("Section indices are out of sequence range.")

@@ -249,7 +249,7 @@ class ZeroShot:
 
         # make energies to list
         for key in energy_log.keys():
-            if type(energy_log[key]) != list:
+            if not isinstance(energy_log[key], list):
                 energy_log[key] = energy_log[key].tolist()
 
         self.ref_pdbs = pdbs.copy()
