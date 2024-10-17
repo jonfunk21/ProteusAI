@@ -273,9 +273,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     PROT_INTERFACE = reactive.Value(None)
     LIG_INTERFACE = reactive.Value(None)
     DESIGN_OUTPUT = reactive.Value('start')
-    FOLD_LIB = reactive.Value(None)
     FIXED_RES = reactive.Value(None)
     DESIGN_LIB = reactive.Value(None)
+    #FOLD_LIB = reactive.Value(None)
 
     # ZER0-SHOT
     ZS_SCORES = reactive.Value(pd.DataFrame())
@@ -1002,17 +1002,22 @@ def server(input: Inputs, output: Outputs, session: Session):
                         rep_path = os.path.join(prot.user, f"{prot.name}/zero_shot/rep/{REP_DICT[model]}")
                         df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{REP_DICT[model]}/zs_scores.csv")
                         
-                        df = pd.read_csv(df_path)
-                        p.set(message="Loading data...", detail="This may take a while...")
-                        lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+                        if os.path.exists(df_path):
+                            df = pd.read_csv(df_path)
+                            p.set(message="Loading data...", detail="This may take a while...")
 
-                        # set reactive variables
-                        LIBRARY.set(lib)
-                        DATASET.set(df)
-                        ZS_SCORES.set(df)
+                            if not df.empty:
+                                lib = pai.Library(user=usr_path, seqs=df.sequence, ys=df.mmp, y_type="num", names=df.mutant.to_list(), proteins=[], rep_path=rep_path)
+
+                            # set reactive variables
+                            LIBRARY.set(lib)
+                            DATASET.set(df)
+                            ZS_SCORES.set(df)
+                        else:
+                            print("Warning: DataFrame is empty, skipping...")
                         
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"Error processing model {model}: {e}")
                 
                 rep_computed = list(set(rep_computed))
                 for rep in IN_MEMORY:
