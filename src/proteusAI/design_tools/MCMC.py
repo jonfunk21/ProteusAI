@@ -123,8 +123,8 @@ class ProteinDesign:
              f'mut_p: \t\t|{self.mut_p}\n',
              f'T: \t\t|{self.T}\n',
              f'M: \t\t|{self.M}\n\n',
-             f'The energy function is a linear combination of the following constraints:\n\n',
-             f'constraint\t|value\t|weight\n',
+             'The energy function is a linear combination of the following constraints:\n\n',
+             'constraint\t|value\t|weight\n',
              '----------------+-------+------------\n',
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
              f'identity\t|\t|{self.w_identity}\n',
@@ -389,7 +389,7 @@ class ProteinDesign:
         # write energy_log in data_out
         if outdir is not None:
             df = pd.DataFrame(energy_log)
-            df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+            df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
 
         for i in range(steps):
             mut_seqs, _constraints, mutations = mutate(seqs, mut_p, constraints)
@@ -441,6 +441,6 @@ class ProteinDesign:
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
-                    df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+                    df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
 
         return (seqs)

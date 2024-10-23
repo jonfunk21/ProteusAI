@@ -153,14 +153,14 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
     if show_sidechains:
         BB = ['C', 'O', 'N']
         view.addStyle({'and': [{'resn': ["GLY", "PRO"], 'invert': True}, {'atom': BB, 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'stick': {'colorscheme': "WhiteCarbon", 'radius': 0.3}})
         view.addStyle({'and': [{'resn': "GLY"}, {'atom': 'CA'}]},
-                      {'sphere': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'sphere': {'colorscheme': "WhiteCarbon", 'radius': 0.3}})
         view.addStyle({'and': [{'resn': "PRO"}, {'atom': ['C', 'O'], 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+                      {'stick': {'colorscheme': "WhiteCarbon", 'radius': 0.3}})
     if show_mainchains:
         BB = ['C', 'O', 'N', 'CA']
-        view.addStyle({'atom': BB}, {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+        view.addStyle({'atom': BB}, {'stick': {'colorscheme': "WhiteCarbon", 'radius': 0.3}})
         view.zoomTo()
 
     view.zoomTo()

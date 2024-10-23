@@ -382,7 +382,7 @@ class Protein:
         user_path = self.user
 
         if self.name and not dest:
-            dest = os.path.join(user_path, f"protein/")
+            dest = os.path.join(user_path, "protein/")
             pdb_file = os.path.join(dest, {self.name})
         elif dest:
             pdb_file = os.path.join(dest, f"{self.name}.pdb")
@@ -462,7 +462,7 @@ class Protein:
             if chain:
                 dest = os.path.join(self.user, f"{self.name}/zero_shot/results/{chain}", model)
         else:
-            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
+            dest = os.path.join(self.user, "protein/zero_shot/results", model)
             if chain:
                 dest = os.path.join(self.user, f"protein/zero_shot/results/{chain}", model)
 
@@ -525,7 +525,7 @@ class Protein:
             if chain:
                 dest = os.path.join(self.user, f"{self.name}/zero_shot/results/{chain}", model)
         else:
-            dest = os.path.join(self.user, f"protein/zero_shot/results", model)
+            dest = os.path.join(self.user, "protein/zero_shot/results", model)
             if chain:
                 dest = os.path.join(self.user, f"protein/zero_shot/results/{chain}", model)
 

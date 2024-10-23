@@ -97,7 +97,7 @@ subtitle = f'Representation: {rep}, Model: {model}, Acquisition Function: {acq_f
 g.add_legend(title="Dataset", bbox_to_anchor=(0.87, 0.47), loc='center left', borderaxespad=0)
 
 # Set the main title and subtitle
-g.fig.suptitle(f'Rounds to Discover Top N Variants Across Different Sample Sizes', y=0.94, x=0.44)
+g.fig.suptitle('Rounds to Discover Top N Variants Across Different Sample Sizes', y=0.94, x=0.44)
 plt.text(0.44, 0.9, subtitle, ha='center', va='center', fontsize=10, transform=g.fig.transFigure)
 
 # Adjust the layout to optimize spacing

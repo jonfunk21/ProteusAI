@@ -49,7 +49,7 @@ def simulated_annealing(vectors, N, initial_temperature=1000.0, cooling_rate=0.0
     """
 
     if pbar:
-        pbar.set(message="Computing distance matrix", detail=f"...")
+        pbar.set(message="Computing distance matrix", detail="...")
 
     # Precompute all pairwise distances
     distance_matrix = precompute_distances(vectors)
@@ -65,7 +65,7 @@ def simulated_annealing(vectors, N, initial_temperature=1000.0, cooling_rate=0.0
     for iteration in range(max_iterations):
 
         if pbar:
-            pbar.set(iteration, message="Minimizing energy", detail=f"...")
+            pbar.set(iteration, message="Minimizing energy", detail="...")
 
         # Randomly select a vector to swap
         idx_out = random.choice(selected_indices)

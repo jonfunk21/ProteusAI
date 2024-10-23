@@ -333,7 +333,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message="Loading representations", detail=f"...")
+            pbar.set(message="Loading representations", detail="...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -364,7 +364,7 @@ class Model:
 
         if self.k_folds is None:
             if pbar:
-                pbar.set(message=f"Training {self.model_type}", detail=f"...")
+                pbar.set(message=f"Training {self.model_type}", detail="...")
             
             # train model
             self._model.fit(x_train, self.y_train)
@@ -435,7 +435,7 @@ class Model:
                 train_index, test_index = data
 
                 if pbar:
-                    pbar.set(message=f"Training {self.model_type} {i+1}/{self.k_folds}", detail=f"...")
+                    pbar.set(message=f"Training {self.model_type} {i+1}/{self.k_folds}", detail="...")
 
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
                 y_train_fold, y_test_fold = np.array(self.y_train)[train_index], np.array(self.y_train)[test_index]
@@ -526,7 +526,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message=f"Loading representations", detail=f"...")
+            pbar.set(message=f"Loading representations", detail="...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -571,7 +571,7 @@ class Model:
         prev_loss = float('inf')
         
         if pbar:
-            pbar.set(message=f"Training {self.model_type}", detail=f"...")
+            pbar.set(message=f"Training {self.model_type}", detail="...")
         
         for _ in range(epochs):
             optimizer.zero_grad()
@@ -806,7 +806,7 @@ class Model:
         """
 
         if self._model is None:
-            raise ValueError(f"Model is 'None'")
+            raise ValueError("Model is 'None'")
         
         reps = self.load_representations(proteins, rep_path)
 
@@ -849,7 +849,7 @@ class Model:
         """
         
         if self.dest:
-            dest = os.path.join(self.dest, f"plots")
+            dest = os.path.join(self.dest, "plots")
         else:
             dest = os.path.join(self.library.rep_path, f'../models/{self.model_type}/{self.x}/plots')
         if not os.path.exists(dest):
@@ -904,7 +904,7 @@ class Model:
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         if pbar:
-            pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
+            pbar.set(message=f"Searching {N} diverse sequences", detail="...")
 
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
         
@@ -952,7 +952,7 @@ class Model:
             pbar: Progress bar for ProteusAI app.
         """
         if pbar:
-            pbar.set(message=f"Evaluation {max_eval} sequences", detail=f"...")
+            pbar.set(message=f"Evaluation {max_eval} sequences", detail="...")
 
         # Sort proteins based on the optimization problem
         if optim_problem == 'max':

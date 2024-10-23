@@ -2232,7 +2232,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     async def discovery_search():
         IS_DISCOVERY_SEARCH_RUNNING.set(True)
         with ui.Progress(min=1, max=10000) as p:
-            p.set(message="Sampling diverse sequences", detail=f"...")
+            p.set(message="Sampling diverse sequences", detail=f"...") # noqa: F541
             
             labels = input.sample_from()
             if labels == ():

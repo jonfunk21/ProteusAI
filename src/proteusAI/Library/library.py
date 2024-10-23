@@ -517,7 +517,7 @@ class Library:
         print(f"computing {len(proteins_to_compute)} proteins")
         
         if pbar:
-            pbar.set(message=f"Computing {len(proteins_to_compute)} representations", detail=f"...")
+            pbar.set(message=f"Computing {len(proteins_to_compute)} representations", detail="...")
 
         # get names for and sequences for computation
         names = [protein.name for protein in proteins_to_compute]

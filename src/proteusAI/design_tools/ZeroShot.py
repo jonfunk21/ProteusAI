@@ -102,8 +102,8 @@ class ZeroShot:
              'variable\t|value\n',
              '----------------+-------------------\n',
              f'batch_size: \t|{self.batch_size}\n',
-             f'The energy function is a linear combination of the following constraints:\n\n',
-             f'constraint\t|value\t|weight\n',
+             'The energy function is a linear combination of the following constraints:\n\n',
+             'constraint\t|value\t|weight\n',
              '----------------+-------+------------\n',
              ]
         s = ''.join(l)
@@ -261,7 +261,7 @@ class ZeroShot:
         # write energy_log in data_out
         if outdir is not None:
             df = pd.DataFrame(energy_log)
-            df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+            df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
 
         for pos in range(len(seq)):
             seqs, names = mutate(seq, pos)
@@ -295,5 +295,5 @@ class ZeroShot:
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
-                    df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+                    df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
 
