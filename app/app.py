@@ -1106,7 +1106,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     for chain in prot.chains:
                         df_path = os.path.join(prot.user, f"{name}/zero_shot/results/{chain}/{REP_DICT[model]}/zs_scores.csv")
                         if os.path.exists(df_path):
-                            df = pd.read_csv(df_path)
+                            df = pd.read_csv(df_path) # noqa: F841
                             p.set(message="Loading data...", detail="This may take a while...")
                             computed_zs.append(model)
 
@@ -1258,7 +1258,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
                 
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
-                loop = asyncio.get_running_loop()
+                # loop = asyncio.get_running_loop()
                 #fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2
                 
                 # data = await loop.run_in_executor(
@@ -1652,7 +1652,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if mode in ['zero-shot', 'structure']:
             data = prot.zs_library(model=method, chain=chain)
             lib = pai.Library(user=prot.user, source=data)
-            dest = os.path.join(prot.rep_path, method)
+            #dest = os.path.join(prot.rep_path, method)
             pbar_max = len(lib)
         else:
             pbar_max = len(lib)
@@ -1888,9 +1888,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             prot = PROTEIN()
 
             if MODE() == 'structure':
-                f: list[FileInfo] = input.structure_file()
+                f: list[FileInfo] = input.structure_file() # noqa: F841
             else:
-                f: list[FileInfo] = input.dataset_file()
+                f: list[FileInfo] = input.dataset_file() # noqa: F841
 
             lib = LIBRARY()
 
@@ -2046,7 +2046,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.data_frame
     def mlde_search_table(alt=None):
         table = MLDE_SEARCH_DF()
-        model = MODEL()
+        model = MODEL() # noqa: F841
 
         table = table.drop(['sequence'], axis=1)
         if 'y_true' in table.columns:
