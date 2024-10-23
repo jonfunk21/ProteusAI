@@ -1003,7 +1003,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         df_path = os.path.join(prot.user, f"{prot.name}/zero_shot/{REP_DICT[model]}/zs_scores.csv")
                         
                         if os.path.exists(df_path):
-                            df = pd.read_csv(df_path)
+                            df = pd.read_csv(df_path) # noqa: F841
                             p.set(message="Loading data...", detail="This may take a while...")
 
                             if not df.empty:
@@ -1166,7 +1166,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### DESIGN TAB OUTPUT CONTROL ###
     @render.ui
     def struc3D_design():
-        out = DESIGN_OUTPUT()
+        out = DESIGN_OUTPUT() # noqa: F841
         #if type(out) == str  or input.design_sidechains() == None:
         #    sidechains = [] 
         #else:
@@ -1261,14 +1261,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 loop = asyncio.get_running_loop()
                 #fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2
                 
-                data = await loop.run_in_executor(
-                    executor,  
-                    prot.esm_if,  
-                    fixed_ids, 
-                    input.mutlichain_chain(),
-                    float(input.sampling_temp()),
-                    n_designs,
-                )
+                # data = await loop.run_in_executor(
+                #     executor,  
+                #     prot.esm_if,  
+                #     fixed_ids, 
+                #     input.mutlichain_chain(),
+                #     float(input.sampling_temp()),
+                #     n_designs,
+                # ) 
 
                 lib = pai.Library(user=prot.user, source=out)
 
@@ -1287,7 +1287,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.desgin_button)
-    async def btn_click():
+    async def design_btn_click():
         # Launch the expensive computation asynchronously
         asyncio.create_task(
             compute_design()
@@ -1308,9 +1308,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### CHAIN SELECTION MENU ###
     @output
     @render.ui
-    def design_chains():
-        num_chains = len(CHAINS())
-        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
+    # def design_chains():
+    #     num_chains = len(CHAINS())
+    #     return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
 
 
     ### DOWNLOAD DESIGN RESULTS
@@ -1396,10 +1396,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         try:
             # Handle the protein sequence
             if isinstance(prot.seq, dict):
-                seq = prot.seq[zs_chain]
+                #seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
-                seq = prot.seq
+                #seq = prot.seq
                 chain = None
 
             # Get the model from REP_DICT
@@ -1444,7 +1444,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.compute_zs)
-    async def btn_click():
+    async def compute_zs_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_ZS_RUNNING():
             print("ZS score computation is already in progress for this session.")
@@ -1699,7 +1699,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.dat_compute_reps)
-    async def btn_click():
+    async def compute_reps_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_REP_COMP_RUNNING():
             print("Representations computation is already in progress for this session.")
@@ -1777,7 +1777,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.update_plot)
-    async def btn_click():
+    async def plot_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_REP_PLOT_RUNNING():
             print("Representations computation is already in progress for this session.")
@@ -1938,7 +1938,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.effect
     @reactive.event(input.mlde_train_button)
-    async def btn_click():
+    async def mlde_train_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_MLDE_TRAINING_RUNNING():
             print("MLDE model training is already in progress for this session.")
@@ -2030,7 +2030,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.mlde_search_btn)
-    async def btn_click():
+    async def mlde_search_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_MLDE_SEARCH_RUNNING():
             print("MDLE search is already in progress for this session.")
@@ -2191,7 +2191,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.discovery_train_button)
-    async def btn_click():
+    async def discovery_train_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_DISCOVERY_TRAIN_RUNNING():
             print("Discovery train is already in progress for this session.")
@@ -2297,7 +2297,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     # Button click event
     @reactive.effect
     @reactive.event(input.discovery_search)
-    async def btn_click():
+    async def discovery_search_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_DISCOVERY_SEARCH_RUNNING():
             print("Discovery search is already in progress for this session.")
