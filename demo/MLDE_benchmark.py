@@ -99,7 +99,7 @@ def benchmark(dataset, fasta, model, embedding, name, sample_size, results_df):
 
     while len(ranked_search_space) >= sample_size:
         # Check if we have found all top variants, including the 1st zero-shot round
-        sampled_names = [prot.name for prot in sampled_data]
+        sampled_names = [prot.name for prot in sampled_data] # noqa: F841
         for c, count in enumerate(found_counts):
             found = len([prot.name for prot in sampled_data if prot.name in actual_top_variants[count]])
             found_counts[count] = found

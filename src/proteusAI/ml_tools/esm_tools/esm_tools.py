@@ -391,7 +391,7 @@ def zs_to_csv(wt_seq: str, alphabet: esm.data.Alphabet, p: torch.Tensor, mmp: to
         dest (str): Destination path for the CSV file.
     """
     # Convert alphabet to list for indexing
-    alphabet_list = list(alphabet.to_dict().keys())
+    alphabet_list = list(alphabet.to_dict().keys()) # noqa: F841
     alphabet = alphabet.to_dict()
     canonical_aas = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
     
@@ -748,7 +748,6 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
         
     # make sure section is in range of sequence
     if section is not None:
-        seq_len = probability_distribution_np.shape[0]
         assert section[0] < section[1]
         
         probability_distribution_np = probability_distribution_np[section[0]:section[1],:]

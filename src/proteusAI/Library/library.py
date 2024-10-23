@@ -412,7 +412,7 @@ class Library:
                 if len(struc_names) == len(set(self.names)):
                     self.strucs.append(struc)
                     for protein in self.proteins:
-                        f_name = protein.name + '.pdb'
+                        f_name = protein.name + '.pdb' # noqa: F841
                         protein._strucss.append(strucs) 
 
 

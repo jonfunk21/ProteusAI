@@ -65,7 +65,7 @@ g = sns.FacetGrid(df, col="Sample Size", col_wrap=2, height=5.5, aspect=1.8, sha
 # Function to create box plot and strip plot
 def plot_box_and_strip(data, x, y, **kwargs):
     ax = plt.gca()
-    boxplot = sns.boxplot(data=data, x=x, y=y, color='lightgray', width=0.5, ax=ax)
+    boxplot = sns.boxplot(data=data, x=x, y=y, color='lightgray', width=0.5, ax=ax) # noqa: F841
     sns.stripplot(data=data, x=x, y=y, **kwargs)
     
     # Add median values as text

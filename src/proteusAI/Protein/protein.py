@@ -90,7 +90,7 @@ class Protein:
 
     def __str__(self):
         if self.struc is not None:
-            struc_loaded = "loaded"
+            struc_loaded = "loaded" # noqa: F841
         return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\ny_pred:\t{self.y_pred}\ny_sig:\t{self.y_sigma}\nstruc:\t{self.pdb_file}\n"
     
     __repr__ = __str__
@@ -104,11 +104,11 @@ class Protein:
         # handle app case
         if self.fname:
             fname = self.fname.split('.')[0]
-            file_extension = self.fname.split('.')[-1]
+            file_extension = self.fname.split('.')[-1] # noqa: F841
         else:
             f = self.source.split('/')[-1]
             fname = f.split('.')[0]
-            file_extension = f.split('.')[-1]
+            file_extension = f.split('.')[-1] # noqa: F841
 
         # set paths
         self.source_path = os.path.join(USR_PATH, self.user, fname)
@@ -311,7 +311,7 @@ class Protein:
             df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
             # no true y_values
-            ys = [None] * len(mmp)
+            ys = [None] * len(mmp) # noqa: F841
 
         out = {
             'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_pred_col':'mmp', 'seqs_col':'sequence', 
@@ -377,10 +377,7 @@ class Protein:
         if chain is None:
             chain = self.chains[0]
 
-        seq = self.seq[chain]
-
         # check scores for this protein and model have already been computed
-        name = self.name
 
         user_path = self.user
 
@@ -459,7 +456,6 @@ class Protein:
             seq = self.seq
             chain = None
 
-        name = self.name
 
         if self.name:
             dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
@@ -523,7 +519,6 @@ class Protein:
             seq = self.seq
             chain = None
 
-        name = self.name
 
         if self.name:
             dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)

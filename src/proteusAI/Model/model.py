@@ -556,7 +556,7 @@ class Model:
 
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device=self.device)
         self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
-        fix_mean = True
+        #fix_mean = True
         
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)

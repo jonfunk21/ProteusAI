@@ -70,5 +70,5 @@ results_df = pd.DataFrame(data)
 results_df.to_csv('demo/demo_data/DMS/SCFV_HUMAN_Adams_2016_affinity.csv', index=False)
 
 with open("demo/demo_data/DMS/SCFV_HUMAN_Adams_2016_affinity.fasta", "w") as f:
-    f.write(f'>SCFV_HUMAN_Adams_2016_affinity\n')
+    f.write('>SCFV_HUMAN_Adams_2016_affinity\n')
     f.write(f'{wt_seq}')
