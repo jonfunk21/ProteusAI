@@ -8,4 +8,4 @@ A subpackage is concerned with the Library object of ProteusAI.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .library import *
+from .library import Library
