@@ -6,7 +6,6 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
-import torch
 import proteusAI.visual_tools as vis
 import proteusAI.ml_tools.bo_tools as BO
 import random
@@ -364,7 +363,7 @@ class Model:
 
         if self.k_folds is None:
             if pbar:
-                pbar.set(message=f"Training {self.model_type}", detail="...")
+                pbar.set(message="Training {self.model_type}", detail="...")
             
             # train model
             self._model.fit(x_train, self.y_train)
@@ -526,7 +525,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message=f"Loading representations", detail="...")
+            pbar.set(message="Loading representations", detail="...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
