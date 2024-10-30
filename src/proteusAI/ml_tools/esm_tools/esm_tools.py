@@ -584,7 +584,7 @@ def esm_design(pdbfile, target_chain, chains, fixed=[], temperature=1.0, num_sam
             pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
 
         # Append to results
-        results.append({'seqid': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': sampled_seq})
+        results.append({'names': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': sampled_seq})
 
     # Convert results to a DataFrame
     df = pd.DataFrame(results)
