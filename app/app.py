@@ -1288,7 +1288,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.desgin_button)
     async def btn_click():
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             compute_design()
         )
         
@@ -1456,7 +1456,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             chain = None
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             compute_zs_scores(
                 method=input.zs_model(), 
                 prot=prot, 
@@ -1673,7 +1673,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
 
                 LIBRARY.set(lib)
-                print("Done!")
 
                 # update representation selection
                 ui.update_select(
@@ -1705,7 +1704,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             compute_reps()
         )
 
@@ -1783,7 +1782,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             plot_reps()
         )
 
@@ -1943,7 +1942,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             print("MLDE model training is already in progress for this session.")
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(train_mlde_model())
+        asyncio.create_task(train_mlde_model())
 
 
     ### PREPARE PREDICTED VERSUS TRUE PLOT ###
@@ -2033,7 +2032,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             mlde_search()
         )
     
@@ -2194,7 +2193,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             discovery_train()
         )
 
@@ -2301,7 +2300,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return
 
         # Launch the expensive computation asynchronously
-        return await asyncio.create_task(
+        asyncio.create_task(
             discovery_search()
         )
 
