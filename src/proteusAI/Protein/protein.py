@@ -414,9 +414,20 @@ class Protein:
     
 
     ### Inverse Folding ###
-    def esm_if(self, fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2):
+    def esm_if(self, fixed=[], target_chain=None, chains=None, temperature=1.0, num_samples=100, model=None, pbar=None, dest=None, noise=0.2):
         """
-        Perform inverse folding using ESM-IF
+        Perform inverse folding using ESM-IF for multi-chain structures.
+
+        Args:
+            fixed (list): List of fixed residues (numbers starting from 1).
+            target_chain (str): string that should be designed.
+            chains (list): chains that should be loaded from the complex.
+            temperatrue (float): sampling temperature used.
+            num_samples (int): number of samples generated.
+            model (str): Type of model used.
+            pbar: Progress bar used by shiny app.
+            dest (str): Custom save destination.
+            noise (float): Noise added to backbone structure.
         """
         user_path = self.user
 
@@ -425,15 +436,19 @@ class Protein:
         else:
             dest = os.path.join(user_path, f"{self.name}/design/")
             csv_path = os.path.join(dest, f"{self.name}.csv")
-            
+
         os.makedirs(dest, exist_ok=True)
 
-        # define chain
-        if chain == None:
-            chain = self.chains[0]
+        # define chains
+        if chains is None:
+            chains = self.chains
+        
+        if target_chain is None:
+            target_chain = chains[0]
+            assert target_chain in chains, "Target chain must be in chains."
 
         # return dataframe of results
-        df = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
+        df = esm_design(self.pdb_file, target_chain, chains, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
 
         df.to_csv(csv_path)
 
@@ -443,11 +458,12 @@ class Protein:
         struc_path = os.path.join(dest, "struc")
 
         out = {
-            'df':df, 'rep_path':rep_path, 'struc_path':struc_path, 'y_type':'num', 'y_col':'log_likelihood', 
-            'seqs_col':'sequence', 'names_col':'names', 'reps':[], 'class_dict':self.class_dict
+            'df': df, 'rep_path': rep_path, 'struc_path': struc_path, 'y_type': 'num', 'y_col': 'log_likelihood', 
+            'seqs_col': 'sequence', 'names_col': 'names', 'reps': [], 'class_dict': self.class_dict
         }
 
         return out
+
     
     # Plot 
     # Plot zero-shot entropy

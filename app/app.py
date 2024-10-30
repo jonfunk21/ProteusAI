@@ -1264,6 +1264,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     prot.esm_if,  
                     fixed_ids, 
                     input.mutlichain_chain(),
+                    None,
                     float(input.sampling_temp()),
                     n_designs,
                 )
