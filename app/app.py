@@ -1393,45 +1393,47 @@ def server(input: Inputs, output: Outputs, session: Session):
         IS_ZS_RUNNING.set(True)
 
         try:
-            # Handle the protein sequence
             if type(prot.seq) == dict:
                 seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
                 seq = prot.seq
                 chain = None
+                
+            with ui.Progress(min=1, max=len(seq)) as p:                
+                p.set(message="Initiating structure based design", detail=f"Computing {len(seq)} positions...")
 
-            # Get the model from REP_DICT
-            model = REP_DICT[method]
+                # Get the model from REP_DICT
+                model = REP_DICT[method]
 
-            # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
-            loop = asyncio.get_running_loop()
-            data = await loop.run_in_executor(
-                executor,
-                prot.zs_prediction,
-                model,
-                BATCH_SIZE,
-                None,
-                None, # device
-                chain
-            )
-            
-            # Create a library based on the prediction data
-            lib = pai.Library(user=prot.user, source=data)
+                # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
+                loop = asyncio.get_running_loop()
+                data = await loop.run_in_executor(
+                    executor,
+                    prot.zs_prediction,
+                    model,
+                    BATCH_SIZE,
+                    None,
+                    None, # device
+                    chain
+                )
+                
+                # Create a library based on the prediction data
+                lib = pai.Library(user=prot.user, source=data)
 
-            if method not in computed_zs:
-                computed_zs.append(method)
+                if method not in computed_zs:
+                    computed_zs.append(method)
 
-            ui.update_select(
-                "computed_zs_scores",
-                choices=computed_zs
-            )
+                ui.update_select(
+                    "computed_zs_scores",
+                    choices=computed_zs
+                )
 
-            # Handle the computed ZS scores (update UI elements, reactive values, etc.)
-            ui.update_select("computed_zs_scores", choices=computed_zs)
-            LIBRARY.set(lib)
-            DATASET.set(data['df'])
-            ZS_SCORES.set(data['df'])
+                # Handle the computed ZS scores (update UI elements, reactive values, etc.)
+                ui.update_select("computed_zs_scores", choices=computed_zs)
+                LIBRARY.set(lib)
+                DATASET.set(data['df'])
+                ZS_SCORES.set(data['df'])
 
         except Exception as e:
             print(f"An error occurred in ZS prediction: {e}")
