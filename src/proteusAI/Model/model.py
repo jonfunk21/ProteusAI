@@ -1058,6 +1058,7 @@ class Model:
                 # Explore: random position and random mutation
                 pos = random.randint(0, len(seq_list) - 1)
                 mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
+                mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"
             else:
                 # Exploit: use known mutation from the provided mutations dictionary
                 try:
