@@ -14,6 +14,8 @@ import biotite.structure as struc
 from biotite.structure import sasa
 import tempfile
 
+from proteusAI.data_tools import pdb #TODO: double check with Johny!
+
 #_____Sequence Constraints_____
 def length_constraint(seqs: list, max_len: int = 200):
     """
