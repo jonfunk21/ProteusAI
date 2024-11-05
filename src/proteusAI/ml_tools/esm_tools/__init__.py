@@ -8,4 +8,4 @@ A subpackage for protein language activity_prediction
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .esm_tools import *
+import proteusAI.ml_tools.esm_tools as esm_tools
