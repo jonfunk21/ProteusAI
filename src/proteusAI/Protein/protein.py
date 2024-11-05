@@ -5,11 +5,13 @@ __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
 import os
-import warnings
 import sys
+import warnings
 from typing import Union
-from proteusAI.ml_tools.esm_tools import *
-from proteusAI.struc import *
+
+import proteusAI.ml_tools.esm_tools as esm_tools
+import proteusAI.struc as struc
+
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, '..')
 sys.path.append(root_path)
@@ -428,7 +430,7 @@ class Protein:
             chain = self.chains[0]
 
         # return dataframe of results
-        df = esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
+        df = esm_tools.esm_design(self.pdb_file, chain, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
 
         df.to_csv(csv_path)
 
