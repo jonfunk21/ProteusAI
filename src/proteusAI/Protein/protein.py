@@ -9,6 +9,10 @@ import sys
 import warnings
 from typing import Union
 
+import pandas as pd
+import torch
+import biotite.structure.io as strucio
+
 import proteusAI.ml_tools.esm_tools as esm_tools
 import proteusAI.struc as struc
 
@@ -225,14 +229,14 @@ class Protein:
         if name is None and isinstance(prot_f, str):
             name = prot_f.split('/')[-1].split('.')[0]
 
-        prot = load_struc(prot_f)
+        prot = struc.load_struc(prot_f)
 
         if filter_solvent:
             non_solvent_mask = ~struc.filter_solvent(prot)
             prot = prot[non_solvent_mask]
 
-        seqs = get_sequences(prot_f)
-        chains = chain_parser(prot_f)
+        seqs = struc.get_sequences(prot_f)
+        chains = struc.chain_parser(prot_f)
 
         self.pdb_file = prot_f
         self.seq = seqs
@@ -247,7 +251,7 @@ class Protein:
         Args:
             color (str): Choose different coloration options
         """
-        view = show_pdb(self.pdb_file, color=color, highlight=highlight, sticks=sticks)
+        view = struc.show_pdb(self.pdb_file, color=color, highlight=highlight, sticks=sticks)
         return view
     
     
@@ -287,12 +291,12 @@ class Protein:
         else:
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = get_mutant_logits(seq, batch_size=batch_size, model=model, pbar=pbar, device=device)
+            logits, alphabet = esm_tools.get_mutant_logits(seq, batch_size=batch_size, model=model, pbar=pbar, device=device)
 
             # Calculations
-            p = get_probability_distribution(logits)
-            mmp = masked_marginal_probability(p, seq, alphabet)
-            entropy = per_position_entropy(p)
+            p = esm_tools.get_probability_distribution(logits)
+            mmp = esm_tools.masked_marginal_probability(p, seq, alphabet)
+            entropy = esm_tools.per_position_entropy(p)
 
             # Create directory if it doesn't exist
             if not os.path.exists(dest):
@@ -310,7 +314,7 @@ class Protein:
             self.entropy = entropy
             self.logits = logits
 
-            df = zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
+            df = esm_tools.zs_to_csv(seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv"))
 
             # no true y_values
             ys = [None] * len(mmp) # noqa: F841
@@ -393,11 +397,11 @@ class Protein:
         if os.path.exists(pdb_file):
             self.pdb_file = pdb_file
             self.struc = strucio.load_structure(pdb_file)
-            self.chains = chain_parser(self.struc)
+            self.chains = struc.chain_parser(self.struc)
             # get ptsm and plddts from loaded files
         else:
             os.makedirs(dest, exist_ok=True)
-            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = structure_prediction(seqs = [self.seq], names=[self.name])
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(seqs = [self.seq], names=[self.name])
             pdb = all_pdbs[0]
             pdb.write(pdb_file)
 
@@ -405,7 +409,7 @@ class Protein:
             self.struc = all_pdbs[0]
             self.pTMs = pTMs[0]
             self.pLDDT = mean_pLDDTs[0]
-            self.chains = chain_parser(self.struc)
+            self.chains = struc.chain_parser(self.struc)
     
         return self.struc
     
@@ -493,7 +497,7 @@ class Protein:
             title = f"{model_dict[model]} per-position entropy"
 
         # Plot entropy
-        fig = plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
+        fig = esm_tools.plot_per_position_entropy(per_position_entropy=self.entropy, sequence=seq, highlight_positions=None, dest=None, title=title, section=section)
         return fig
 
 
@@ -560,7 +564,7 @@ class Protein:
             title = f"{model_dict[model]} Zero-shot prediction scores"
 
         # Plot heatmap
-        fig = plot_heatmap(p=self.mmp, alphabet=alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section, highlight_positions=highlight_positions)
+        fig = esm_tools.plot_heatmap(p=self.mmp, alphabet=esm_tools.alphabet, dest=None, title=title, show=False, remove_tokens=True, color_sheme=color_scheme, section=section, highlight_positions=highlight_positions)
         return fig
 
     # structure utils
@@ -572,7 +576,7 @@ class Protein:
             chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
             target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
         """
-        return get_contacts(self.struc, chain, target, dist)
+        return struc.get_contacts(self.struc, chain, target, dist)
 
 
     ### getters and setters ###
