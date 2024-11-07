@@ -13,6 +13,7 @@ import biotite.structure as struc
 import biotite.structure.io.pdbx as pdbx
 import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
+from openmm import unit
 import openmm as mm
 from openmm import app
 from openmm.unit import * # noqa: F403
@@ -186,15 +187,15 @@ def get_contacts(structure, chain=None, target='protein', dist=7.):
 
     if target == 'protein':
         # Select atoms from all other chains, excluding heteroatoms if needed
-        target_atoms = structure[(structure.chain_id != chain) & (structure.hetero == False)]
+        target_atoms = structure[(structure.chain_id != chain) & (~structure.hetero)]
     elif target == 'ligand':
         # Assuming ligands are identified as heteroatoms
-        target_atoms = structure[structure.hetero == True]
+        target_atoms = structure[structure.hetero]
     else:
         raise ValueError("Invalid target specified. Use 'protein' or 'ligand'.")
 
     # Select the atoms in the target chain, excluding heteroatoms if needed
-    chain_atoms = structure[(structure.chain_id == chain) & (structure.hetero == False)]
+    chain_atoms = structure[(structure.chain_id == chain) & (~structure.hetero)]
 
     # Initialize cell list with target atoms
     cell_list = struc.CellList(target_atoms, cell_size=dist)
@@ -439,7 +440,7 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds)
 
     # Create an integrator
-    integrator = mm.LangevinIntegrator(300*kelvin, 1.0/picoseconds, 2.0*femtoseconds)
+    integrator = mm.LangevinIntegrator(300*unit.kelvin, 1.0/unit.picoseconds, 2.0*unit.femtoseconds)
 
     # Try to use CUDA, otherwise fallback to CPU
     try:
