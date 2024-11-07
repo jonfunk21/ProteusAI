@@ -8,5 +8,5 @@ A subpackage for data_tools engineering, visualization and analysis.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import proteusAI.data_tools.pdb as pdb
-import proteusAI.data_tools.MSA as MSA
+from proteusAI.data_tools.pdb import * # noqa: F403
+from proteusAI.data_tools.MSA import * # noqa: F403

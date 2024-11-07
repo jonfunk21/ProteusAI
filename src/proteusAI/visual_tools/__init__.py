@@ -8,4 +8,4 @@ A subpackage for sklearn_tools activity_prediction.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import proteusAI.visual_tools.plots as plots #TODO: is this ok?
+from proteusAI.visual_tools.plots import # noqa: F403

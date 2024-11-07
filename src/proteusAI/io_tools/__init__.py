@@ -8,5 +8,5 @@ A subpackage for mining_tools.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import proteusAI.io_tools.embeddings as embeddings
-import proteusAI.io_tools.fasta as fasta
+from proteusAI.io_tools.embeddings import * # noqa: F403
+from proteusAI.io_tools.fasta import * # noqa: F403

@@ -8,6 +8,6 @@ A subpackage for mining_tools.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import proteusAI.mining_tools.alphafoldDB as alphafoldDB
-import proteusAI.mining_tools.blast as blast
-import proteusAI.mining_tools.uniprot as uniprot
+from proteusAI.mining_tools.alphafoldDB import * # noqa: F403
+from proteusAI.mining_tools.blast import * # noqa: F403
+from proteusAI.mining_tools.uniprot import * # noqa: F403
