@@ -56,8 +56,8 @@ def load_struc(prot):
     elif isinstance(prot, str):
         try:
             prot = strucio.load_structure(prot)
-        except:
-            raise ValueError("prot 1 has an unexpected format")
+        except Exception as e:
+            raise ValueError(f'prot 1 has an unexpected format. Error {e}')
     
     else:
         raise ValueError("pdb file has an unexpected format")
@@ -413,8 +413,8 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
 
     try:
         from pdbfixer import PDBFixer
-    except:
-        raise ValueError('Relaxation of protein structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer')
+    except Exception as e:
+        raise ValueError(f'Relaxation of protein structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer. Error {e}')
     
     name = file.split('/')[-1].split('.')[0]
 
@@ -445,10 +445,11 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     try:
         platform = mm.Platform.getPlatformByName('CUDA')
         properties = {'CudaPrecision': 'mixed'}
-    except:
+    except Exception:
         # Fallback to CPU if CUDA is not available
         platform = mm.Platform.getPlatformByName('CPU')
         properties = {}  # CPU does not need special properties
+
 
     # Create a simulation context
     simulation = app.Simulation(pdb.topology, system, integrator, platform, properties)

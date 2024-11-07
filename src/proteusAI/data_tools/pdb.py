@@ -39,8 +39,8 @@ def get_atom_array(file_path):
         try:
             atom_mol = MOLFile.read(file_path)
             atom_array = atom_mol.get_structure()
-        except:
-            raise f'file: {file_path} invalid file format'
+        except Exception as e:
+            raise ValueError(f'File: {file_path} has an invalid format. Error: {e}')
 
     return atom_array
 

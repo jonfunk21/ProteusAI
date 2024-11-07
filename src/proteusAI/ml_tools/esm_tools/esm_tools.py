@@ -305,8 +305,9 @@ def masked_marginal_probability(p: torch.Tensor, wt_seq: str, alphabet: esm.data
     else:
         try:
             alphabet = alphabet.to_dict()
-        except:
-            raise "alphabet has an unexpected format"
+        except Exception as e:
+            raise ValueError(f'alphabet has an unexpected format. Error {e}')
+        
 
     # Create tensors for the wildtype sequence and canonical amino acid probabilities
     wt_tensor = torch.zeros(1, len(wt_seq), len(alphabet))
@@ -337,8 +338,8 @@ def most_likely_sequence(log_prob_tensor, alphabet):
     else:
         try:
             alphabet = alphabet.to_dict()
-        except:
-            raise "alphabet has an unexpected format"
+        except Exception as e:
+            raise ValueError(f'alphabet has an unexpected format. Error {e}')
 
     # Find the indices of the maximum log probabilities along the alphabet dimension
     max_indices = torch.argmax(log_prob_tensor, dim=-1).squeeze()
@@ -467,8 +468,8 @@ def tempfile_to_string(temp_file):
 def clean_pdb_with_pdbfixer(pdbfile):
     try:
         from pdbfixer import PDBFixer
-    except:
-        raise ValueError('Cleaning PDB structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer')
+    except Exception as e:
+        raise ValueError(f'Cleaning PDB structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer. Error {e}')
     
     fixer = PDBFixer(filename=pdbfile)
     fixer.findMissingResidues()
@@ -685,8 +686,8 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     if not isinstance(pdb, str):
         try:
             pdb = str(pdb)
-        except:
-            raise "invalid input type for pdb"
+        except Exception as e:
+            raise ValueError(f'invalid input type for pdb. Error {e}')
 
     # Remove the start and end of sequence tokens, if requested
     if trim:
@@ -736,8 +737,8 @@ def plot_heatmap(p, alphabet, include="canonical", dest=None, title: str=None, r
     else:
         try:
             alphabet = alphabet.to_dict()
-        except:
-            raise "alphabet has an unexpected format"
+        except Exception as e:
+            raise ValueError(f'alphabet has an unexpected format. Error {e}')
 
     # Convert the probability distribution tensor to a numpy array
     probability_distribution_np = p.cpu().numpy().squeeze()
