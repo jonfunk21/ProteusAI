@@ -8,4 +8,4 @@ A subpackage for sklearn_tools activity_prediction.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import proteusAI.ml_tools.sklearn_tools.grid_search as grid_search
+from proteusAI.ml_tools.sklearn_tools.grid_search import * # noqa: F403

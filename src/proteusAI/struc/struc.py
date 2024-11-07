@@ -15,7 +15,7 @@ import py3Dmol
 from string import ascii_uppercase, ascii_lowercase
 import openmm as mm
 from openmm import app
-from openmm.unit import *
+from openmm.unit import * # noqa: F403
 from openmm.app import PDBFile
 import tempfile
 import os
