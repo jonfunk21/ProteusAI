@@ -94,7 +94,7 @@ class ZeroShot:
 
 
     def __str__(self):
-        l = ['ProteusAI.MCMC.ZeroShot class: \n',
+        lines = ['ProteusAI.MCMC.ZeroShot class: \n',
              '---------------------------------------\n',
              'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
              f'{self.seq}\n',
@@ -106,8 +106,8 @@ class ZeroShot:
              'constraint\t|value\t|weight\n',
              '----------------+-------+------------\n',
              ]
-        s = ''.join(l)
-        l = [
+        s = ''.join(lines)
+        lines = [
             s,
             f'pTM\t\t|\t|{self.w_ptm}\n',
             f'pLDDT\t\t|\t|{self.w_plddt}\n',
@@ -115,7 +115,7 @@ class ZeroShot:
             f'all_atm\t\t|\t|{self.w_all_atm}\n',
             f'sasa\t\t|\t|{self.w_sasa}\n',
         ]
-        s = ''.join(l)
+        s = ''.join(lines)
         return s
 
     ### SAMPLERS

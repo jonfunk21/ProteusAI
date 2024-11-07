@@ -110,7 +110,7 @@ class ProteinDesign:
 
 
     def __str__(self):
-        l = ['ProteusAI.MCMC.Design class: \n',
+        lines: list[str] = ['ProteusAI.MCMC.Design class: \n',
              '---------------------------------------\n',
              'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
              f'{self.native_seq}\n',
@@ -129,9 +129,9 @@ class ProteinDesign:
              f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
              f'identity\t|\t|{self.w_identity}\n',
              ]
-        s = ''.join(l)
+        s = ''.join(lines)
         if self.pred_struc:
-            l = [
+            lines = [
                 s,
                 f'pTM\t\t|\t|{self.w_ptm}\n',
                 f'pLDDT\t\t|\t|{self.w_plddt}\n',
@@ -139,7 +139,7 @@ class ProteinDesign:
                 f'all_atm\t\t|\t|{self.w_all_atm}\n',
                 f'sasa\t\t|\t|{self.w_sasa}\n',
             ]
-            s = ''.join(l)
+            s = ''.join(lines)
         return s
 
     ### SAMPLERS
@@ -202,9 +202,9 @@ class ProteinDesign:
                 mutations.append(f'ins:{pos}{insertion}')
 
             elif mut_type == 'deletion' and len(seq) > 1:
-                l = list(seq)
-                del l[pos]
-                mut_seq = ''.join(l)
+                lines = list(seq)
+                del lines[pos]
+                mut_seq = ''.join(lines)
                 # shift constraints after deletion
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
