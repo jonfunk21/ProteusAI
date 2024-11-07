@@ -30,9 +30,9 @@ def length_constraint(seqs: list, max_len: int = 200):
     """
     energies = np.zeros(len(seqs))
 
-    for i, seq in enumerate(seqs):
-        if len(seq) > max_len:
-            energies[i] = float(len(seq) - max_len)
+    for i, sequence in enumerate(seqs):
+        if len(sequence) > max_len:
+            energies[i] = float(len(sequence) - max_len)
         else:
             energies[i] = 0.
 
@@ -87,13 +87,13 @@ def create_batched_sequence_datasest(
     Taken from https://github.com/facebookresearch/esm/blob/main/scripts/esmfold_inference.py
     """
     batch_headers, batch_sequences, num_tokens = [], [], 0
-    for header, seq in sequences:
-        if (len(seq) + num_tokens > max_tokens_per_batch) and num_tokens > 0:
+    for header, sequence in sequences:
+        if (len(sequence) + num_tokens > max_tokens_per_batch) and num_tokens > 0:
             yield batch_headers, batch_sequences
             batch_headers, batch_sequences, num_tokens = [], [], 0
         batch_headers.append(header)
-        batch_sequences.append(seq)
-        num_tokens += len(seq)
+        batch_sequences.append(sequence)
+        num_tokens += len(sequence)
 
     yield batch_headers, batch_sequences
 
@@ -128,11 +128,11 @@ def structure_prediction(
         output = model.infer(sequences, num_recycles=num_recycles)
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
-        for header, seq, pdb_string, mean_plddt, ptm in zip(
+        for header, sequence, pdb_string, mean_plddt, ptm in zip(
                 headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
         ):
             all_headers.append(header)
-            all_sequences.append(seq)
+            all_sequences.append(sequence)
             all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name)) # biotite pdb file name
             mean_pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
@@ -152,8 +152,8 @@ def globularity(pdbs):
     """
     variances = np.zeros(len(pdbs))
 
-    for i, pdb in enumerate(pdbs):
-        variance = pdb.get_coord().var()
+    for i, pdb_list in enumerate(pdbs):
+        variance = pdb_list.get_coord().var()
         variances[i] = variance.item()
 
     return variances
@@ -169,8 +169,8 @@ def surface_exposed_hydrophobics(pdbs):
         np.array: average sasa values for each structure
     """
     avrg_sasa_values = np.zeros(len(pdbs))
-    for i, pdb in enumerate(pdbs):
-        struc = pdb.get_structure()
+    for i, pdb_list in enumerate(pdbs):
+        struc = pdb_list.get_structure()
         sasa_val = sasa(struc[0], probe_radius=1.4, atom_filter=None, ignore_ions=True,
                                       point_number=1000, point_distr='Fibonacci', vdw_radii='ProtOr')
         sasa_mean = sasa_val.mean()
