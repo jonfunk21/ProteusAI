@@ -1396,7 +1396,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         try:
             if isinstance(prot.seq, dict):
-                #seq = prot.seq[zs_chain]
+                seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
                 #seq = prot.seq
