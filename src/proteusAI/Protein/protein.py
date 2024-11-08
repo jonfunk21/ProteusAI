@@ -449,7 +449,7 @@ class Protein:
             assert target_chain in chains, "Target chain must be in chains."
 
         # return dataframe of results
-        df = esm_tools.esm_design(self.pdb_file, target_chain, chains, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=alphabet, noise=noise, pbar=pbar)
+        df = esm_tools.esm_design(self.pdb_file, target_chain, chains, fixed=fixed, temperature=temperature, num_samples=num_samples, model=model, alphabet=esm_tools.alphabet, noise=noise, pbar=pbar)
 
         df.to_csv(csv_path)
 
