@@ -1066,7 +1066,7 @@ class Model:
                     if pos < len(seq_list):
                         mut = random.choice(mut_list)
                     mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
-                except:
+                except Exception:
                     pos = random.randint(0, len(seq_list) -1)
                     mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
                     mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"
