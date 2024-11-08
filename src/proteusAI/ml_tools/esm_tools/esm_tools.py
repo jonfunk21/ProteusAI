@@ -28,7 +28,8 @@ from typing import Union
 import shutil
 import esm.inverse_folding
 import esm.inverse_folding.util
-from esm.inverse_folding.util import CoordBatchConverter, load_coords, score_sequence
+from esm.inverse_folding.util import CoordBatchConverter
+from esm.inverse_folding.multichain_util import load_complex_coords, _concatenate_coords, score_sequence_in_complex
 import openmm # move this and pdb fixer to struc tools
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
@@ -482,67 +483,76 @@ def clean_pdb_with_pdbfixer(pdbfile):
         openmm.app.PDBFile.writeFile(fixer.topology, fixer.positions, temp_file)
         return temp_file.name
 
-
-def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, noise=0.2, pbar=None):
+def esm_design(pdbfile, target_chain, chains, fixed=[], temperature=1.0, num_samples=100, model=None, alphabet=None, noise=0.2, pbar=None): # TODO: change chains to target chain id
     """
-    Perform structure-based protein design using ESM-IF.
+    Perform structure-based protein design for a specific chain within a protein complex using ESM-IF.
 
     Args:
-        pdbfile (str): path to pdb file.
-        chain (str): chain to be designed.
-        fixed (list): list of residues that should be remained fixed.
-        temperature (float): sampling temperature. Higher temperatures lead to more stochasticity
-        num_samples (int): Number of samples
-        model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None model will be loaded
-        alphabet (esm.data.Alphabet): If None alphabet will be loaded
-        noise (float): add gaussian noise to coordinates. Default 0.2 angstroms.
-        pbar: Progress bar for shiny app
+        pdbfile (str): Path to pdb file.
+        target_chain (str): The chain to be designed.
+        chains (str): All chains to be considered.
+        fixed (list): List of residue indices in the target chain that should remain fixed.
+        temperature (float): Sampling temperature. Higher temperatures lead to more stochasticity.
+        num_samples (int): Number of samples.
+        model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None, model will be loaded.
+        alphabet (esm.data.Alphabet): If None, alphabet will be loaded.
+        noise (float): Add Gaussian noise to coordinates. Default is 0.2 angstroms.
+        pbar: Progress bar for shiny app.
 
-    Return:
+    Returns:
         DataFrame with columns: seqid, recovery, log_likelihood, sequence
     """
 
+    # Load model and alphabet if not provided
     if model is None or alphabet is None:
         model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
 
-    # Clean the PDB file
+    # Clean the PDB file and load coordinates for all chains in the complex
     cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
+    coords_dict, seqs_dict = load_complex_coords(cleaned_pdbfile, chains)
 
-    coords, native_seq = load_coords(cleaned_pdbfile, chain)
+    # Add noise to the coordinates if specified
     if noise is not None:
-        coord_noise = np.random.normal(0, noise, coords.shape).astype(coords.dtype)
-        coords = coords + coord_noise
+        for chain_id in coords_dict:
+            coord_noise = np.random.normal(0, noise, coords_dict[chain_id].shape).astype(coords_dict[chain_id].dtype)
+            coords_dict[chain_id] += coord_noise
 
-    print('Native sequence loaded from structure file:')
-    print(native_seq)
+    # Extract sequence of the target chain
+    target_chain_seq = seqs_dict[target_chain]
+    print(f"Native sequence for chain {chains} loaded from structure file:\n{target_chain_seq}")
 
-    L = len(coords)
+    # Concatenate coordinates with padding
+    all_coords = _concatenate_coords(coords_dict, target_chain)
+    L = all_coords.shape[0]  # Total length after concatenation
+    target_chain_length = len(coords_dict[target_chain])
+
+    # Batch converter for converting to model inputs
     batch_converter = CoordBatchConverter(model.decoder.dictionary)
     batch_coords, confidence, _, _, padding_mask = (
-        batch_converter([(coords, None, None)], device='cpu')
+        batch_converter([(all_coords, None, None)], device='cpu')
     )
 
-    # Start with prepend token
+    # Initialize token array with mask tokens for sampling
     mask_idx = model.decoder.dictionary.get_idx('<mask>')
-    sampled_tokens = torch.full((1, 1+L), mask_idx, dtype=int)
+    sampled_tokens = torch.full((1, 1 + L), mask_idx, dtype=int)
     sampled_tokens[0, 0] = model.decoder.dictionary.get_idx('<cath>')
 
-    # Unmask fixed residues
+    # Unmask fixed residues in the target chain
     if fixed:
         for i in fixed:
-            res = native_seq[i-1]
+            res = target_chain_seq[i - 1]  # Adjust to target chain sequence
             sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
 
-    # Save incremental states for faster sampling
+    # Encoder run (only once) for efficiency
     incremental_state = dict()
-
-    # Run encoder only once
     encoder_out = model.encoder(batch_coords, padding_mask, confidence)
 
-    # Decode tokens
+    # Initialize storage for sampled sequences
     all_seqs = []
     sampled_tokens_tensor = sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
-    for i in range(1, L+1):
+
+    # Autoregressive decoding loop for each position of the target chain
+    for i in range(1, target_chain_length + 1):
         logits, _ = model.decoder(
             sampled_tokens[:, :i],
             encoder_out,
@@ -555,35 +565,35 @@ def esm_design(pdbfile, chain, fixed=[], temperature=1.0, num_samples=100, model
             sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
             sampled_tokens_tensor[:, i, :] = torch.multinomial(probs, num_samples, replacement=True).squeeze(-1)
 
-    sampled_tokens_tensor = sampled_tokens_tensor[0, 1:, :]
+    # Remove the prepend token and trim to target chain
+    sampled_tokens_tensor = sampled_tokens_tensor[0, 1: target_chain_length + 1, :] # TODO: Ensure the correct tokens are being extracted
 
-     # Create a list to store the results as dictionaries
+    # Collect results
     results = []
-
     for i in range(num_samples):
-        sampled_seq_i = sampled_tokens_tensor[:, i]
-        s = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
-        all_seqs.append(s)
-        recovery = np.mean([(a == b) for a, b in zip(native_seq, s)])
-
-        ll, _ = score_sequence(model, alphabet, coords, s)
+        sampled_seq_i = sampled_tokens_tensor[:, i] # TODO: Check if those are the correct tokens for the chain
+        sampled_seq = ''.join([model.decoder.dictionary.get_tok(a) for a in sampled_seq_i])
+        all_seqs.append(sampled_seq)
         
+        # Calculate recovery and log-likelihood for each sampled sequence
+        recovery = np.mean([(a == b) for a, b in zip(target_chain_seq, sampled_seq)])
+        ll, _ = score_sequence_in_complex(model, alphabet, coords_dict, target_chain, sampled_seq) # TODO: Check if scoring is correct
+
+        # Update progress bar if available
         if pbar:
             pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
 
-        print(f'>seq_{i+1} recovery: {recovery} log_likelihood: {ll:.2f}')
-        print(s, '\n')
-        
-        # Append the results to the list
-        results.append({'names': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': s})
+        # Append to results
+        results.append({'names': f'sampled_seq_{i+1}', 'recovery': recovery, 'log_likelihood': ll, 'sequence': sampled_seq})
 
-    # Convert the list of dictionaries to a DataFrame
+    # Convert results to a DataFrame
     df = pd.DataFrame(results)
-    
     return df
 
-
-
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 def create_batched_sequence_datasest(
     sequences: T.List[T.Tuple[str, str]], max_tokens_per_batch: int = 1024
 ) -> T.Generator[T.Tuple[T.List[str], T.List[str]], None, None]:

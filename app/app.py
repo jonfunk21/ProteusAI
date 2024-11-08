@@ -142,6 +142,7 @@ app_ui = ui.page_fluid(
                     ui.output_data_frame("design_out"),
                     ui.output_ui("design_download_ui"),
                 ),
+                
             ),
         ),
 
@@ -1258,17 +1259,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                     fixed = [seq[i-1] + str(i) for i in fixed_ids if i < len(seq)]
                 
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
-                # loop = asyncio.get_running_loop()
-                #fixed=[], chain=None, temperature=1.0, num_samples=100, model=None, alphabet=None, pbar=None, dest=None, noise=0.2
-                
-                # data = await loop.run_in_executor(
-                #     executor,  
-                #     prot.esm_if,  
-                #     fixed_ids, 
-                #     input.mutlichain_chain(),
-                #     float(input.sampling_temp()),
-                #     n_designs,
-                # ) 
+                loop = asyncio.get_running_loop()
+
+                out = await loop.run_in_executor(
+                    executor,  
+                    prot.esm_if,  
+                    fixed_ids, 
+                    input.mutlichain_chain(),
+                    None,
+                    float(input.sampling_temp()),
+                    n_designs,
+                )
 
                 lib = pai.Library(user=prot.user, source=out)
 
@@ -1394,45 +1395,47 @@ def server(input: Inputs, output: Outputs, session: Session):
         IS_ZS_RUNNING.set(True)
 
         try:
-            # Handle the protein sequence
             if isinstance(prot.seq, dict):
                 #seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
                 #seq = prot.seq
                 chain = None
+                
+            with ui.Progress(min=1, max=len(seq)) as p:                
+                p.set(message="Initiating structure based design", detail=f"Computing {len(seq)} positions...")
 
-            # Get the model from REP_DICT
-            model = REP_DICT[method]
+                # Get the model from REP_DICT
+                model = REP_DICT[method]
 
-            # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
-            loop = asyncio.get_running_loop()
-            data = await loop.run_in_executor(
-                executor,
-                prot.zs_prediction,
-                model,
-                BATCH_SIZE,
-                None,
-                None, # device
-                chain
-            )
-            
-            # Create a library based on the prediction data
-            lib = pai.Library(user=prot.user, source=data)
+                # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
+                loop = asyncio.get_running_loop()
+                data = await loop.run_in_executor(
+                    executor,
+                    prot.zs_prediction,
+                    model,
+                    BATCH_SIZE,
+                    None,
+                    None, # device
+                    chain
+                )
+                
+                # Create a library based on the prediction data
+                lib = pai.Library(user=prot.user, source=data)
 
-            if method not in computed_zs:
-                computed_zs.append(method)
+                if method not in computed_zs:
+                    computed_zs.append(method)
 
-            ui.update_select(
-                "computed_zs_scores",
-                choices=computed_zs
-            )
+                ui.update_select(
+                    "computed_zs_scores",
+                    choices=computed_zs
+                )
 
-            # Handle the computed ZS scores (update UI elements, reactive values, etc.)
-            ui.update_select("computed_zs_scores", choices=computed_zs)
-            LIBRARY.set(lib)
-            DATASET.set(data['df'])
-            ZS_SCORES.set(data['df'])
+                # Handle the computed ZS scores (update UI elements, reactive values, etc.)
+                ui.update_select("computed_zs_scores", choices=computed_zs)
+                LIBRARY.set(lib)
+                DATASET.set(data['df'])
+                ZS_SCORES.set(data['df'])
 
         except Exception as e:
             print(f"An error occurred in ZS prediction: {e}")
@@ -1674,7 +1677,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
 
                 LIBRARY.set(lib)
-                print("Done!")
 
                 # update representation selection
                 ui.update_select(
@@ -1916,7 +1918,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     executor,
                     m.train
                 )
-
+                print('done')
                 val_df = pd.DataFrame({'names':m.val_names, 'y_true':m.y_val, 'y_pred':m.y_val_pred, 'y_sigma':m.y_val_sigma})
 
                 search_dest = os.path.join(f"{m.library.rep_path}", f"../models/{m.model_type}/{m.x}/predictions")
@@ -1936,18 +1938,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # Reset the task running state in the session
                 IS_MLDE_TRAINING_RUNNING.set(False)
 
+
     @reactive.effect
     @reactive.event(input.mlde_train_button)
     async def mlde_train_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_MLDE_TRAINING_RUNNING():
             print("MLDE model training is already in progress for this session.")
-            return
 
         # Launch the expensive computation asynchronously
-        asyncio.create_task(
-            train_mlde_model()
-        )
+        asyncio.create_task(train_mlde_model())
 
 
     ### PREPARE PREDICTED VERSUS TRUE PLOT ###
@@ -2287,6 +2287,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 DISCOVERY_DF.set(out['df'])
 
                 DISCOVERY_SEARCH.set(search_results)
+
             except Exception as e:
                 print(f"An error occurred in discovery search: {e}")
             
