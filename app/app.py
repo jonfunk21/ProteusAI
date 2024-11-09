@@ -50,7 +50,6 @@ MAX_EVAL_DICT = {"ohe":10000, "blosum62":10000, "blosum50":10000, "esm2":200, "e
 
 app_ui = ui.page_fluid(
 
-    #ui.panel_title("ProteusAI"),
     ui.output_image("image", inline=True),
     VERSION,
     
@@ -1309,9 +1308,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### CHAIN SELECTION MENU ###
     @output
     @render.ui
-    # def design_chains():
-    #     num_chains = len(CHAINS())
-    #     return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
+    def design_chains():
+        num_chains = len(CHAINS())
+        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
 
 
     ### DOWNLOAD DESIGN RESULTS
@@ -1399,7 +1398,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 seq = prot.seq[zs_chain]
                 chain = zs_chain
             else:
-                #seq = prot.seq
+                seq = prot.seq
                 chain = None
                 
             with ui.Progress(min=1, max=len(seq)) as p:                
