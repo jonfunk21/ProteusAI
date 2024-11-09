@@ -409,7 +409,7 @@ class Library:
         strucs = [r for r in os.listdir(self.struc_path) if not r.startswith('.')]
         if len(strucs) > 0:
             for struc in strucs:
-                struc_names = [f for f in os.listdir(os.path.join(self.struc_path, struc)) if f.endswith('.pt')]
+                struc_names = [f for f in os.path.join(self.struc_path, struc) if f.endswith('.pdb')]
                 if len(struc_names) == len(set(self.names)):
                     self.strucs.append(struc)
                     for protein in self.proteins:
@@ -644,7 +644,7 @@ class Library:
             df = pd.DataFrame({"name":all_headers, "sequence":all_sequences, "pLDDT":mean_pLDDTs, "pTM":pTMs})
             out = {
                 'df':df, 'rep_path':self.rep_path, 'struc_path':self.struc_path, 'y_type':'num', 'y_col':'pLDDT', 
-                'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps, 'class_dict':self.library.class_dict
+                'seqs_col':'sequence', 'names_col':'name', 'reps':self.reps, 'class_dict':self.class_dict
             }
             
         return out
