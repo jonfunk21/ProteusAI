@@ -81,8 +81,9 @@ def esm_compute(seqs: list, names: list=None, model: Union[str, torch.nn.Module]
     model.eval()
     model.to(device)
 
-    if names is None:
-        names = names = [f'seq{i}' for i in range(len(seqs))]
+
+    if names == None:
+        names = [f'seq{i}' for i in range(len(seqs))]
 
     data = list(zip(names, seqs))
 
