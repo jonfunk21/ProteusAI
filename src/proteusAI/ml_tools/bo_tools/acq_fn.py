@@ -7,6 +7,7 @@ __author__ = "Jonathan Funk and Laura Sofia Machado"
 import numpy as np
 from scipy.stats import norm
 
+
 def greedy(mean, std=None, current_best=None, xi=None):
     """
     Greedy acquisition function.
@@ -42,15 +43,15 @@ def EI(mean, std, current_best, xi=0.1):
         std (np.array): This is the standard deviation function from the GP over the considered set of points.
         current_best (float): This is the current maximum of the unknown function: mu^+.
         xi (float): Small value added to avoid corner cases.
-    
+
     Returns:
         np.array: The value of this acquisition function for all the points.
     """
-    
+
     Z = (mean - current_best - xi) / (std + 1e-9)
     EI = (mean - current_best - xi) * norm.cdf(Z) + std * norm.pdf(Z)
     EI[std == 0] = 0
-    
+
     return EI
 
 
@@ -63,7 +64,7 @@ def UCB(mean, std, current_best=None, kappa=1.5):
         std (np.array): This is the standard deviation function from the GP over the considered set of points.
         current_best (float, optional): This is the current maximum of the unknown function: mu^+. Default is None.
         kappa (float): Exploration-exploitation trade-off parameter. The higher the value, the more exploration. Default is 0.
-    
+
     Returns:
         np.array: The value of this acquisition function for all the points.
     """
@@ -84,6 +85,6 @@ def random_acquisition(mean, std=None, current_best=None, xi=None):
         np.array: Random acquisition values for all points in the unobserved set.
     """
     n_unobserved = len(mean)
-    np.random.seed(None) 
-    random_acq_values = np.random.random(n_unobserved)  
+    np.random.seed(None)
+    random_acq_values = np.random.random(n_unobserved)
     return random_acq_values

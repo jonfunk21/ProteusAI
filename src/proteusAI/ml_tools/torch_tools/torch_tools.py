@@ -6,6 +6,7 @@ import seaborn as sns
 from typing import Union
 import gpytorch
 
+
 def one_hot_encoder(sequences, alphabet=None, canonical=True, pbar=None, padding=None):
     """
     Encodes sequences provided an alphabet.
@@ -14,7 +15,7 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True, pbar=None, padding
         sequences (list or str): list of amino acid sequences or a single sequence.
         alphabet (list or None): list of characters in the alphabet or None to load from file.
         canonical (bool): only use canonical amino acids.
-        padding (int or None): the length to which all sequences should be padded. 
+        padding (int or None): the length to which all sequences should be padded.
                                If None, no padding beyond the length of the longest sequence.
 
     Returns:
@@ -57,12 +58,16 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True, pbar=None, padding
     # Fill the tensor
     for i, sequence in enumerate(sequences):
         if pbar:
-            pbar.set(i, message="Computing", detail=f"{i}/{len(sequences)} remaining...")
+            pbar.set(
+                i, message="Computing", detail=f"{i}/{len(sequences)} remaining..."
+            )
         for j, character in enumerate(sequence):
             if j >= padded_length:
                 break  # Stop if the sequence length exceeds the padded length
             # Get the index of the character in the alphabet
-            char_index = alphabet_dict.get(character, -1)  # Return -1 if character is not in the alphabet
+            char_index = alphabet_dict.get(
+                character, -1
+            )  # Return -1 if character is not in the alphabet
             if char_index != -1:
                 # Set the corresponding element of the tensor to 1
                 tensor[i, j, char_index] = 1.0
@@ -74,8 +79,10 @@ def one_hot_encoder(sequences, alphabet=None, canonical=True, pbar=None, padding
     return tensor
 
 
-def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, padding=None):
-    '''
+def blosum_encoding(
+    sequences, matrix="BLOSUM62", canonical=True, pbar=None, padding=None
+):
+    """
     Returns BLOSUM encoding for amino acid sequences. Unknown amino acids will be
     encoded with 0.5 in the entire row.
 
@@ -91,7 +98,7 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, pad
     Returns:
     --------
         torch.Tensor: BLOSUM encoded sequence.
-    '''
+    """
 
     # Check if sequences is a string
     if isinstance(sequences, str):
@@ -108,16 +115,26 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, pad
     alphabet = np.loadtxt(alphabet_file, dtype=str)
 
     # Define BLOSUM matrices
-    _blosum50 = np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM50"), dtype=float).reshape((24, -1)).T
-    _blosum62 = np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM62"), dtype=float).reshape((24, -1)).T
+    _blosum50 = (
+        np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM50"), dtype=float)
+        .reshape((24, -1))
+        .T
+    )
+    _blosum62 = (
+        np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM62"), dtype=float)
+        .reshape((24, -1))
+        .T
+    )
 
     # Choose BLOSUM matrix
-    if matrix == 'BLOSUM50':
+    if matrix == "BLOSUM50":
         matrix = _blosum50
-    elif matrix == 'BLOSUM62':
+    elif matrix == "BLOSUM62":
         matrix = _blosum62
     else:
-        raise ValueError("Invalid BLOSUM matrix choice. Choose 'BLOSUM50' or 'BLOSUM62'.")
+        raise ValueError(
+            "Invalid BLOSUM matrix choice. Choose 'BLOSUM50' or 'BLOSUM62'."
+        )
 
     # Create the BLOSUM encoding dictionary
     blosum_matrix = {}
@@ -132,7 +149,7 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, pad
     padded_length = padding if padding is not None else max_sequence_length
 
     n_sequences = len(sequences)
-    alphabet_size = len(blosum_matrix['A'])
+    alphabet_size = len(blosum_matrix["A"])
 
     # Create an empty tensor of the right size, with padding length
     tensor = torch.zeros((n_sequences, padded_length, alphabet_size))
@@ -140,7 +157,9 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, pad
     # Convert each amino acid in sequence to BLOSUM encoding
     for i, sequence in enumerate(sequences):
         if pbar:
-            pbar.set(i, message="Computing", detail=f"{i}/{len(sequences)} remaining...")
+            pbar.set(
+                i, message="Computing", detail=f"{i}/{len(sequences)} remaining..."
+            )
         for j, aa in enumerate(sequence):
             if j >= padded_length:
                 break  # Stop if the sequence length exceeds the padded length
@@ -160,7 +179,7 @@ def blosum_encoding(sequences, matrix='BLOSUM62', canonical=True, pbar=None, pad
 def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]):
     """
     Plot the attention weights for a specific layer and head.
-    
+
     Args:
         attention (list): List of attention weights from the model
         layer (int): Index of the layer to visualize
@@ -179,25 +198,30 @@ def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]
     sns.heatmap(attn_weights, xticklabels=seq, yticklabels=seq, cmap="viridis")
 
     # Set plot title and labels
-    plt.title(f'Attention weights - Layer {layer + 1}, Head {head + 1}')
-    plt.xlabel('Input tokens')
-    plt.ylabel('Output tokens')
+    plt.title(f"Attention weights - Layer {layer + 1}, Head {head + 1}")
+    plt.xlabel("Input tokens")
+    plt.ylabel("Output tokens")
 
     # Show the plot
     plt.show()
 
+
 class GP(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, fix_mean=False): #special method: instantiate object
+    def __init__(
+        self, train_x, train_y, likelihood, fix_mean=False
+    ):  # special method: instantiate object
         super(GP, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.ConstantMean() #attribute
+        self.mean_module = gpytorch.means.ConstantMean()  # attribute
         self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
         self.mean_module.constant.data.fill_(1)  # Set the mean value to 1
         if fix_mean:
             self.mean_module.constant.requires_grad_(False)
+
     def forward(self, x):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
 
 def predict_gp(model, likelihood, X):
     model.eval()
@@ -207,9 +231,10 @@ def predict_gp(model, likelihood, X):
         predictions = likelihood(model(X))
         y_pred = predictions.mean
         y_std = predictions.stddev
-        #lower, upper = predictions.confidence_region()
+        # lower, upper = predictions.confidence_region()
 
     return y_pred, y_std
+
 
 def computeR2(y_true, y_pred):
     """
@@ -222,17 +247,17 @@ def computeR2(y_true, y_pred):
     # Ensure the tensors are 1-dimensional
     if y_true.dim() != 1 or y_pred.dim() != 1:
         raise ValueError("Both y_true and y_pred must be 1-dimensional tensors")
-    
+
     # Compute the mean of true values
     y_mean = torch.mean(y_true)
-    
+
     # Compute the total sum of squares (SS_tot)
     ss_tot = torch.sum((y_true - y_mean) ** 2)
-    
+
     # Compute the residual sum of squares (SS_res)
     ss_res = torch.sum((y_true - y_pred) ** 2)
-    
+
     # Compute the R² value
     r2 = 1 - (ss_res / ss_tot)
-    
+
     return r2.item()  # Convert tensor to float

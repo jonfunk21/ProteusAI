@@ -9,6 +9,7 @@ import requests
 from io import StringIO
 from hashlib import md5
 
+
 def get_protein_sequence(uniprot_id: str) -> str:
     """
     This function takes a UniProt ID as input and returns the corresponding sequence record.
@@ -26,10 +27,10 @@ def get_protein_sequence(uniprot_id: str) -> str:
     base_url = "http://www.uniprot.org/uniprot/"
     current_url = base_url + uniprot_id + ".fasta"
     response = requests.post(current_url)
-    c_data = ''.join(response.text)
+    c_data = "".join(response.text)
 
     seq = StringIO(c_data)
-    p_seq = list(SeqIO.parse(seq, 'fasta'))
+    p_seq = list(SeqIO.parse(seq, "fasta"))
     return p_seq
 
 

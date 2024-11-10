@@ -8,4 +8,4 @@ A subpackage for pytorch tools.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from proteusAI.ml_tools.torch_tools.torch_tools import * # noqa: F403
+from proteusAI.ml_tools.torch_tools.torch_tools import *  # noqa: F403

@@ -13,7 +13,14 @@ from sklearn.svm import SVR
 import numpy
 
 
-def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
+def knnr_grid_search(
+    Xs_train: numpy.ndarray,
+    Xs_test: numpy.ndarray,
+    ys_train: list,
+    ys_test: list,
+    param_grid: dict = None,
+    verbose: int = 1,
+):
     """
     Performs a KNN regressor grid search using 5 fold cross validation.
 
@@ -34,21 +41,21 @@ def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: 
 
     if param_grid is None:
         param_grid = {
-            'n_neighbors': [3, 5, 7],
-            'weights': ['uniform', 'distance'],
-            'algorithm': ['ball_tree', 'kd_tree', 'brute'],
-            'leaf_size': [10, 15, 20],
-            'p': [1, 2, 3]
+            "n_neighbors": [3, 5, 7],
+            "weights": ["uniform", "distance"],
+            "algorithm": ["ball_tree", "kd_tree", "brute"],
+            "leaf_size": [10, 15, 20],
+            "p": [1, 2, 3],
         }
     # Create a GridSearchCV object and fit the model
     # grid_search = GridSearchCV(estimator=knnr, param_grid=param_grid, cv=5, n_jobs=-1, verbose=1)
     grid_search = GridSearchCV(
         estimator=knnr,
         param_grid=param_grid,
-        scoring='r2',
+        scoring="r2",
         cv=5,
         verbose=verbose,
-        n_jobs=-1  # use all available cores
+        n_jobs=-1,  # use all available cores
     )
 
     grid_search.fit(Xs_train, ys_train)
@@ -64,10 +71,23 @@ def knnr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: 
         print("Correlation coefficient: {:.2f}".format(corr_coef))
         print("p-value: {:.4f}".format(p_value))
 
-    return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_)
+    return (
+        grid_search.best_estimator_,
+        test_r2,
+        corr_coef,
+        p_value,
+        pd.DataFrame.from_dict(grid_search.cv_results_),
+    )
 
 
-def rfr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
+def rfr_grid_search(
+    Xs_train: numpy.ndarray,
+    Xs_test: numpy.ndarray,
+    ys_train: list,
+    ys_test: list,
+    param_grid: dict = None,
+    verbose: int = 1,
+):
     """
     Performs a Random Forrest regressor grid search using 5 fold cross validation.
 
@@ -88,22 +108,22 @@ def rfr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
 
     if param_grid is None:
         param_grid = {
-            'n_estimators': [20, 50, 100, 200],
-            'criterion': ['squared_error', 'absolute_error'],
-            'max_features': ['sqrt', 'log2'],
-            'max_depth': [5, 10, 15],
-            'min_samples_split': [2, 5, 10],
-            'min_samples_leaf': [1, 4],
+            "n_estimators": [20, 50, 100, 200],
+            "criterion": ["squared_error", "absolute_error"],
+            "max_features": ["sqrt", "log2"],
+            "max_depth": [5, 10, 15],
+            "min_samples_split": [2, 5, 10],
+            "min_samples_leaf": [1, 4],
         }
 
     # Create a GridSearchCV object and fit the model
     grid_search = GridSearchCV(
         estimator=rfr,
         param_grid=param_grid,
-        scoring='r2',
+        scoring="r2",
         cv=5,
         verbose=verbose,
-        n_jobs=-1  # use all available cores
+        n_jobs=-1,  # use all available cores
     )
     grid_search.fit(Xs_train, ys_train)
 
@@ -120,10 +140,23 @@ def rfr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
         print("Correlation coefficient: {:.2f}".format(corr_coef))
         print("p-value: {:.4f}".format(p_value))
 
-    return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_)
+    return (
+        grid_search.best_estimator_,
+        test_r2,
+        corr_coef,
+        p_value,
+        pd.DataFrame.from_dict(grid_search.cv_results_),
+    )
 
 
-def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: list, ys_test: list, param_grid: dict=None, verbose: int=1):
+def svr_grid_search(
+    Xs_train: numpy.ndarray,
+    Xs_test: numpy.ndarray,
+    ys_train: list,
+    ys_test: list,
+    param_grid: dict = None,
+    verbose: int = 1,
+):
     """
     Performs a Support Vector regressor grid search using 5 fold cross validation.
 
@@ -144,20 +177,20 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
 
     if param_grid is None:
         param_grid = {
-            'C': [0.1, 1, 2, 5, 10, 100, 200, 400],
-            'gamma': ['scale'],
-            'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-            'degree': [3],
+            "C": [0.1, 1, 2, 5, 10, 100, 200, 400],
+            "gamma": ["scale"],
+            "kernel": ["linear", "poly", "rbf", "sigmoid"],
+            "degree": [3],
         }
 
     # Create a GridSearchCV object and fit the model
     grid_search = GridSearchCV(
         estimator=svr,
         param_grid=param_grid,
-        scoring='r2',
+        scoring="r2",
         cv=5,
         verbose=verbose,
-        n_jobs=-1  # use all available cores
+        n_jobs=-1,  # use all available cores
     )
     grid_search.fit(Xs_train, ys_train)
 
@@ -174,4 +207,11 @@ def svr_grid_search(Xs_train: numpy.ndarray, Xs_test: numpy.ndarray, ys_train: l
         print("Correlation coefficient: {:.2f}".format(corr_coef))
         print("p-value: {:.4f}".format(p_value))
 
-    return grid_search.best_estimator_, test_r2, corr_coef, p_value, pd.DataFrame.from_dict(grid_search.cv_results_), grid_search.best_params_
+    return (
+        grid_search.best_estimator_,
+        test_r2,
+        corr_coef,
+        p_value,
+        pd.DataFrame.from_dict(grid_search.cv_results_),
+        grid_search.best_params_,
+    )

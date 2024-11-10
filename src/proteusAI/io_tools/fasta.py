@@ -8,7 +8,10 @@ import os
 from biotite.sequence import ProteinSequence
 import numpy as np
 
-def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False) -> dict:
+
+def load_all_fastas(
+    path: str, file_type: str = ".fasta", biotite: bool = False
+) -> dict:
     """
     Loads all fasta files from a directory, returns the names/ids and sequences as lists.
 
@@ -30,7 +33,7 @@ def load_all_fastas(path: str, file_type: str = '.fasta', biotite: bool = False)
     for i, file in enumerate(files):
         names = []
         sequences = []
-        with open(file, 'r') as f:
+        with open(file, "r") as f:
             current_sequence = ""
             for line in f:
                 line = line.strip()
@@ -67,7 +70,7 @@ def load_fasta(file: str, biotite: bool = False) -> tuple:
 
     names = []
     sequences = []
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         current_sequence = ""
         for line in f:
             line = line.strip()
@@ -100,20 +103,22 @@ def write_fasta(names: list, sequences: list, dest: str = None):
     Example:
         write_fasta(names, sequences, './out.fasta')
     """
-    assert isinstance(names, list) and isinstance(sequences, list), 'names and sequences must be type list'
-    assert len(names) == len(sequences), 'names and sequences must have the same length'
+    assert isinstance(names, list) and isinstance(
+        sequences, list
+    ), "names and sequences must be type list"
+    assert len(names) == len(sequences), "names and sequences must have the same length"
 
-    with open(dest, 'w') as f:
+    with open(dest, "w") as f:
         for i in range(len(names)):
-            f.writelines('>' + names[i] + '\n')
+            f.writelines(">" + names[i] + "\n")
             if i == len(names) - 1:
                 f.writelines(sequences[i])
             else:
-                f.writelines(sequences[i] + '\n')
+                f.writelines(sequences[i] + "\n")
 
 
 def one_hot_encoding(sequence: str):
-    '''
+    """
     Returns one hot encoding for amino acid sequence. Unknown amino acids will be
     encoded with 0.5 at in entire row.
 
@@ -124,9 +129,9 @@ def one_hot_encoding(sequence: str):
     Returns:
     --------
         numpy.ndarray: One hot encoded sequence
-    '''
+    """
     # Define amino acid alphabets and create dictionary
-    amino_acids = 'ACDEFGHIKLMNPQRSTVWY'
+    amino_acids = "ACDEFGHIKLMNPQRSTVWY"
     aa_dict = {aa: i for i, aa in enumerate(amino_acids)}
 
     # Initialize empty numpy array for one-hot encoding
@@ -143,8 +148,8 @@ def one_hot_encoding(sequence: str):
     return seq_one_hot
 
 
-def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
-    '''
+def blosum_encoding(sequence, matrix="BLOSUM62", canonical=True):
+    """
     Returns BLOSUM encoding for amino acid sequence. Unknown amino acids will be
     encoded with 0.5 at in entire row.
 
@@ -157,7 +162,7 @@ def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
     Returns:
     --------
         numpy.ndarray: BLOSUM encoded sequence
-    '''
+    """
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -167,16 +172,26 @@ def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
     alphabet = np.loadtxt(alphabet_file, dtype=str)
 
     # Define BLOSUM matrices
-    _blosum50 = np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM50"), dtype=float).reshape((24, -1)).T
-    _blosum62 = np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM62"), dtype=float).reshape((24, -1)).T
+    _blosum50 = (
+        np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM50"), dtype=float)
+        .reshape((24, -1))
+        .T
+    )
+    _blosum62 = (
+        np.loadtxt(os.path.join(script_dir, "matrices/BLOSUM62"), dtype=float)
+        .reshape((24, -1))
+        .T
+    )
 
     # Choose BLOSUM matrix
-    if matrix == 'BLOSUM50':
+    if matrix == "BLOSUM50":
         matrix = _blosum50
-    elif matrix == 'BLOSUM62':
+    elif matrix == "BLOSUM62":
         matrix = _blosum62
     else:
-        raise ValueError("Invalid BLOSUM matrix choice. Choose 'BLOSUM50' or 'BLOSUM62'.")
+        raise ValueError(
+            "Invalid BLOSUM matrix choice. Choose 'BLOSUM50' or 'BLOSUM62'."
+        )
 
     blosum_matrix = {}
     for i, letter_1 in enumerate(alphabet):
@@ -184,10 +199,10 @@ def blosum_encoding(sequence, matrix='BLOSUM62', canonical=True):
             blosum_matrix[letter_1] = matrix[i][:20]
         else:
             blosum_matrix[letter_1] = matrix[i]
-    
+
     # create empty encoding vector
-    encoding = np.zeros((len(sequence), len(blosum_matrix['A'])))
-    
+    encoding = np.zeros((len(sequence), len(blosum_matrix["A"])))
+
     # Convert each amino acid in sequence to BLOSUM encoding
     for i, aa in enumerate(sequence):
         if aa in alphabet:

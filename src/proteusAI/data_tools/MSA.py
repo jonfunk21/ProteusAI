@@ -16,8 +16,16 @@ from collections import Counter
 from biotite.sequence import ProteinSequence
 
 
-def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_range: tuple = (0, 200), muscle_version: str = '5',
-        save_fig: str = None, save_fasta:str = None, figsize: tuple = (10.0, 8.0)):
+def align_proteins(
+    names: list,
+    seqs: list,
+    plot_results: bool = False,
+    plt_range: tuple = (0, 200),
+    muscle_version: str = "5",
+    save_fig: str = None,
+    save_fasta: str = None,
+    figsize: tuple = (10.0, 8.0),
+):
     """
     performs multiple sequence alignement given a list of blast names and the corresponding sequences.
 
@@ -38,12 +46,12 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
     # Convert sequences to ProteinSequence objects if they are strings
     seqs = [ProteinSequence(seq) if isinstance(seq, str) else seq for seq in seqs]
 
-    if muscle_version == '5':
+    if muscle_version == "5":
         app = muscle.Muscle5App(seqs)
-    elif muscle_version == '3':
+    elif muscle_version == "3":
         app = muscle.MuscleApp(seqs)
     else:
-        raise ValueError('Muscle version must be either 3 or 5')
+        raise ValueError("Muscle version must be either 3 or 5")
 
     app.start()
     app.join()
@@ -61,8 +69,11 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
     ax = fig.add_subplot(111)
     order = app.get_alignment_order()
     graphics.plot_alignment_type_based(
-        ax, alignment[plt_range[0]:plt_range[1], order.tolist()], labels=[names[i] for i in order],
-        show_numbers=True, color_scheme="clustalx"
+        ax,
+        alignment[plt_range[0] : plt_range[1], order.tolist()],
+        labels=[names[i] for i in order],
+        show_numbers=True,
+        color_scheme="clustalx",
     )
     fig.tight_layout()
 
@@ -75,15 +86,15 @@ def align_proteins(names: list, seqs: list, plot_results: bool = False, plt_rang
         plt.close()
 
     if save_fasta is not None:
-        with open(save_fasta, 'w') as f:
+        with open(save_fasta, "w") as f:
             for i, key in enumerate(MSA_results.keys()):
                 s = MSA_results[key]
                 if i < len(MSA_results) - 1:
-                    f.writelines(f'>{key}\n')
-                    f.writelines(f'{s}\n')
+                    f.writelines(f">{key}\n")
+                    f.writelines(f"{s}\n")
                 else:
-                    f.writelines(f'>{key}\n')
-                    f.writelines(f'{s}')
+                    f.writelines(f">{key}\n")
+                    f.writelines(f"{s}")
 
     return MSA_results
 
@@ -99,15 +110,16 @@ def MSA_results_to_fasta(MSA_results: dict, fname: str):
     Returns:
         None
     """
-    with open(fname, 'w') as f:
+    with open(fname, "w") as f:
         for i, key in enumerate(MSA_results.keys()):
             s = MSA_results[key]
             if i < len(MSA_results) - 1:
-                f.writelines(f'>{key}\n')
-                f.writelines(f'{s}\n')
+                f.writelines(f">{key}\n")
+                f.writelines(f"{s}\n")
             else:
-                f.writelines(f'>{key}\n')
-                f.writelines(f'{s}')
+                f.writelines(f">{key}\n")
+                f.writelines(f"{s}")
+
 
 def align_dna(dna_sequences: list, verbose: bool = False):
     """
@@ -122,7 +134,9 @@ def align_dna(dna_sequences: list, verbose: bool = False):
         list: MSA list of sequences
     """
     # Create SeqRecord objects for each DNA sequence
-    seq_records = [SeqRecord(Seq(seq), id=f"seq{i + 1}") for i, seq in enumerate(dna_sequences)]
+    seq_records = [
+        SeqRecord(Seq(seq), id=f"seq{i + 1}") for i, seq in enumerate(dna_sequences)
+    ]
 
     # Write the DNA sequences to a temporary file in FASTA format
     temp_input_file = "temp_input.fasta"
@@ -131,15 +145,17 @@ def align_dna(dna_sequences: list, verbose: bool = False):
 
     # Run ClustalW to perform the multiple sequence alignment
     temp_output_file = "temp_output.aln"
-    clustalw_cline = ClustalwCommandline("clustalw2", infile=temp_input_file, outfile=temp_output_file)
+    clustalw_cline = ClustalwCommandline(
+        "clustalw2", infile=temp_input_file, outfile=temp_output_file
+    )
     stdout, stderr = clustalw_cline()
 
     if verbose:
-        print('std out:')
-        print('-------')
+        print("std out:")
+        print("-------")
         print(stdout)
-        print('std error:')
-        print('----------')
+        print("std error:")
+        print("----------")
         print(stderr)
 
     # Read in the aligned sequences from the output file

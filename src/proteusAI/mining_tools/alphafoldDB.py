@@ -7,6 +7,7 @@ __author__ = "Jonathan Funk"
 import requests
 import os
 
+
 def get_AF2_pdb(protein_id: str, out_path: str) -> bool:
     """
     This function takes in a UniProt ID and an output path and downloads the corresponding AlphaFold model
@@ -25,7 +26,7 @@ def get_AF2_pdb(protein_id: str, out_path: str) -> bool:
     r = requests.get(requestURL)
 
     if r.status_code == 200:
-        with open(out_path, 'wb') as f:
+        with open(out_path, "wb") as f:
             f.write(r.content)
             return True
     else:

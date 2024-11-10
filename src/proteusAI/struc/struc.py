@@ -16,7 +16,7 @@ from string import ascii_uppercase, ascii_lowercase
 from openmm import unit
 import openmm as mm
 from openmm import app
-from openmm.unit import * # noqa: F403
+from openmm.unit import *  # noqa: F403
 from openmm.app import PDBFile
 import tempfile
 import os
@@ -24,22 +24,76 @@ import numpy as np
 
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
-pymol_color_list = ["#33ff33", "#00ffff", "#ff33cc", "#ffff00", "#ff9999", "#e5e5e5", "#7f7fff", "#ff7f00",
-                    "#7fff7f", "#199999", "#ff007f", "#ffdd5e", "#8c3f99", "#b2b2b2", "#007fff", "#c4b200",
-                    "#8cb266", "#00bfbf", "#b27f7f", "#fcd1a5", "#ff7f7f", "#ffbfdd", "#7fffff", "#ffff7f",
-                    "#00ff7f", "#337fcc", "#d8337f", "#bfff3f", "#ff7fff", "#d8d8ff", "#3fffbf", "#b78c4c",
-                    "#339933", "#66b2b2", "#ba8c84", "#84bf00", "#b24c66", "#7f7f7f", "#3f3fa5", "#a5512b"]
+pymol_color_list = [
+    "#33ff33",
+    "#00ffff",
+    "#ff33cc",
+    "#ffff00",
+    "#ff9999",
+    "#e5e5e5",
+    "#7f7fff",
+    "#ff7f00",
+    "#7fff7f",
+    "#199999",
+    "#ff007f",
+    "#ffdd5e",
+    "#8c3f99",
+    "#b2b2b2",
+    "#007fff",
+    "#c4b200",
+    "#8cb266",
+    "#00bfbf",
+    "#b27f7f",
+    "#fcd1a5",
+    "#ff7f7f",
+    "#ffbfdd",
+    "#7fffff",
+    "#ffff7f",
+    "#00ff7f",
+    "#337fcc",
+    "#d8337f",
+    "#bfff3f",
+    "#ff7fff",
+    "#d8d8ff",
+    "#3fffbf",
+    "#b78c4c",
+    "#339933",
+    "#66b2b2",
+    "#ba8c84",
+    "#84bf00",
+    "#b24c66",
+    "#7f7f7f",
+    "#3f3fa5",
+    "#a5512b",
+]
 
 amino_acid_mapping = {
-    'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
-    'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
-    'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P',
-    'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
+    "ALA": "A",
+    "ARG": "R",
+    "ASN": "N",
+    "ASP": "D",
+    "CYS": "C",
+    "GLN": "Q",
+    "GLU": "E",
+    "GLY": "G",
+    "HIS": "H",
+    "ILE": "I",
+    "LEU": "L",
+    "LYS": "K",
+    "MET": "M",
+    "PHE": "F",
+    "PRO": "P",
+    "SER": "S",
+    "THR": "T",
+    "TRP": "W",
+    "TYR": "Y",
+    "VAL": "V",
     # Adding a generic mapping for unknowns
-    'UNK': 'X',  # Unknown
-    'SEC': 'U',  # Selenocysteine, sometimes considered the 21st amino acid
+    "UNK": "X",  # Unknown
+    "SEC": "U",  # Selenocysteine, sometimes considered the 21st amino acid
     # Additional mappings as needed
 }
+
 
 def load_struc(prot):
     """
@@ -58,8 +112,8 @@ def load_struc(prot):
         try:
             prot = strucio.load_structure(prot)
         except Exception as e:
-            raise ValueError(f'prot 1 has an unexpected format. Error {e}')
-    
+            raise ValueError(f"prot 1 has an unexpected format. Error {e}")
+
     else:
         raise ValueError("pdb file has an unexpected format")
 
@@ -138,8 +192,8 @@ def chain_parser(pdb_file):
     """
 
     prot = load_struc(pdb_file)
-    
-    chains = list(set(prot.chain_id)) # type: ignore
+
+    chains = list(set(prot.chain_id))  # type: ignore
     return chains
 
 
@@ -160,17 +214,20 @@ def get_sequences(prot_f):
 
     sequences = {}
     for chain in chains:
-        res_ids = list(set(prot[prot.chain_id==chain].res_id))
-        residues = [amino_acid_mapping.get(prot[prot.res_id==r].res_name[0], 'X') for r in res_ids]
-        sequences[chain] = ''.join(residues)
+        res_ids = list(set(prot[prot.chain_id == chain].res_id))
+        residues = [
+            amino_acid_mapping.get(prot[prot.res_id == r].res_name[0], "X")
+            for r in res_ids
+        ]
+        sequences[chain] = "".join(residues)
 
     return sequences
 
 
-def get_contacts(structure, chain=None, target='protein', dist=7.):
+def get_contacts(structure, chain=None, target="protein", dist=7.0):
     """
     Get contacts within a protein structure or between a protein and ligands, based on the specified chain.
-    
+
     Args:
         structure (biotite.structure.AtomArray): The complete protein structure.
         chain (str, optional): Specific chain for which to compute the contacts.
@@ -178,17 +235,17 @@ def get_contacts(structure, chain=None, target='protein', dist=7.):
         target (str): Specify 'protein' for protein-protein contacts or 'ligand'
             for protein-ligand contacts. Default is 'protein'.
         dist (float): Specified distance threshold in Angstroms. Default is 7.
-            
+
     Returns:
         list: Unique residue IDs in contact from the specified chain.
     """
     if chain is None:
         chain = structure.chain_id[0]  # Default to the first chain if none specified
 
-    if target == 'protein':
+    if target == "protein":
         # Select atoms from all other chains, excluding heteroatoms if needed
         target_atoms = structure[(structure.chain_id != chain) & (~structure.hetero)]
-    elif target == 'ligand':
+    elif target == "ligand":
         # Assuming ligands are identified as heteroatoms
         target_atoms = structure[structure.hetero]
     else:
@@ -217,43 +274,65 @@ def compute_chi_angles(protein, res_ids):
 
     Args:
         protein: biotite.structure.AtomArray or path to pdb (str).
-        res_ids (dict): Dictionary where keys are chain identifiers and values are lists of residue IDs 
+        res_ids (dict): Dictionary where keys are chain identifiers and values are lists of residue IDs
                         to compute chi angles for in each chain.
-        chi_atom_names (dict): Dictionary where keys are residue names and values are lists of lists of 
+        chi_atom_names (dict): Dictionary where keys are residue names and values are lists of lists of
                                atom names involved in each chi angle.
 
     Returns:
-        A dictionary where keys are tuples of (chain identifier, residue name, residue ID) and values 
+        A dictionary where keys are tuples of (chain identifier, residue name, residue ID) and values
         are lists of chi angles.
     """
 
     # Dictionary containing atom names involved in chi angle calculations for each amino acid
     chi_atom_names = {
-        'ALA': [],  # Alanine has no chi angles
-        'ARG': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'NE'], ['CG', 'CD', 'NE', 'CZ']],
-        'ASN': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'OD1']],
-        'ASP': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'OD1']],
-        'CYS': [['N', 'CA', 'CB', 'SG']],
-        'GLN': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'OE1']],
-        'GLU': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'OE1']],
-        'GLY': [],  # Glycine has no chi angles
-        'HIS': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'ND1']],
-        'ILE': [['N', 'CA', 'CB', 'CG1'], ['CA', 'CB', 'CG1', 'CD1']],
-        'LEU': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
-        'LYS': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD'], ['CB', 'CG', 'CD', 'CE'], ['CG', 'CD', 'CE', 'NZ']],
-        'MET': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'SD'], ['CB', 'CG', 'SD', 'CE']],
-        'PHE': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
-        'PRO': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD']],
-        'SER': [['N', 'CA', 'CB', 'OG']],
-        'THR': [['N', 'CA', 'CB', 'OG1']],
-        'TRP': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
-        'TYR': [['N', 'CA', 'CB', 'CG'], ['CA', 'CB', 'CG', 'CD1']],
-        'VAL': [['N', 'CA', 'CB', 'CG1']],
+        "ALA": [],  # Alanine has no chi angles
+        "ARG": [
+            ["N", "CA", "CB", "CG"],
+            ["CA", "CB", "CG", "CD"],
+            ["CB", "CG", "CD", "NE"],
+            ["CG", "CD", "NE", "CZ"],
+        ],
+        "ASN": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "OD1"]],
+        "ASP": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "OD1"]],
+        "CYS": [["N", "CA", "CB", "SG"]],
+        "GLN": [
+            ["N", "CA", "CB", "CG"],
+            ["CA", "CB", "CG", "CD"],
+            ["CB", "CG", "CD", "OE1"],
+        ],
+        "GLU": [
+            ["N", "CA", "CB", "CG"],
+            ["CA", "CB", "CG", "CD"],
+            ["CB", "CG", "CD", "OE1"],
+        ],
+        "GLY": [],  # Glycine has no chi angles
+        "HIS": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "ND1"]],
+        "ILE": [["N", "CA", "CB", "CG1"], ["CA", "CB", "CG1", "CD1"]],
+        "LEU": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "CD1"]],
+        "LYS": [
+            ["N", "CA", "CB", "CG"],
+            ["CA", "CB", "CG", "CD"],
+            ["CB", "CG", "CD", "CE"],
+            ["CG", "CD", "CE", "NZ"],
+        ],
+        "MET": [
+            ["N", "CA", "CB", "CG"],
+            ["CA", "CB", "CG", "SD"],
+            ["CB", "CG", "SD", "CE"],
+        ],
+        "PHE": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "CD1"]],
+        "PRO": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "CD"]],
+        "SER": [["N", "CA", "CB", "OG"]],
+        "THR": [["N", "CA", "CB", "OG1"]],
+        "TRP": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "CD1"]],
+        "TYR": [["N", "CA", "CB", "CG"], ["CA", "CB", "CG", "CD1"]],
+        "VAL": [["N", "CA", "CB", "CG1"]],
     }
 
     if isinstance(protein, str):
         protein = load_struc(protein)  # Assuming load_struc loads a structure
-    
+
     chi_angles = {}
     for chain, residues in res_ids.items():
         for res_id in residues:
@@ -266,7 +345,10 @@ def compute_chi_angles(protein, res_ids):
                 chi_list = []
                 for atom_names in chi_atom_names[res_name]:
                     if all(atom in res_protein.atom_name for atom in atom_names):
-                        atoms = [res_protein[res_protein.atom_name == atom][0] for atom in atom_names]
+                        atoms = [
+                            res_protein[res_protein.atom_name == atom][0]
+                            for atom in atom_names
+                        ]
                         chi = struc.dihedral(*atoms)
                         chi_list.append(chi)
                 if chi_list:
@@ -280,9 +362,9 @@ def delta_chi(chi_angles_1, chi_angles_2):
     Compute the delta between two sets of chi angles.
 
     Args:
-        chi_angles_1 (dict): Dictionary with keys as (residue name, residue ID) 
+        chi_angles_1 (dict): Dictionary with keys as (residue name, residue ID)
                              and values as lists of chi angles from the first structure.
-        chi_angles_2 (dict): Dictionary with keys as (residue name, residue ID) 
+        chi_angles_2 (dict): Dictionary with keys as (residue name, residue ID)
                              and values as lists of chi angles from the second structure.
 
     Returns:
@@ -302,13 +384,23 @@ def delta_chi(chi_angles_1, chi_angles_2):
                 raise ValueError(f"Mismatch in number of chi angles for residue {key}.")
         else:
             raise ValueError(f"Residue {key} not found in both structures.")
-    
+
     return total_difference
 
 
-
-def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=None, size=(800, 480),
-             show_sidechains=False, show_mainchains=False, highlight=None, sticks=None):
+def show_pdb(
+    pdb_path,
+    color="confidence",
+    vmin=50,
+    vmax=90,
+    chains=None,
+    Ls=None,
+    size=(800, 480),
+    show_sidechains=False,
+    show_mainchains=False,
+    highlight=None,
+    sticks=None,
+):
     """
     This function displays the 3D structure of a protein from a given PDB file in a Jupyter notebook.
     The protein structure can be colored by chain, rainbow, pLDDT, or confidence value. The size of the
@@ -335,55 +427,91 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
     with open(pdb_path) as ifile:
         system = "".join([x for x in ifile])
 
-    view = py3Dmol.view(js='https://3dmol.org/build/3Dmol.js', width=size[0], height=size[1])
+    view = py3Dmol.view(
+        js="https://3dmol.org/build/3Dmol.js", width=size[0], height=size[1]
+    )
 
     view.addModelsAsFrames(system)
-    
+
     # Apply color styles based on function arguments
-    if color == "pLDDT" or color == 'confidence':
-        view.setStyle({}, {'cartoon': {'colorscheme': {'prop': 'b', 'gradient': 'rwb', 'min': vmin, 'max': vmax}}})
+    if color == "pLDDT" or color == "confidence":
+        view.setStyle(
+            {},
+            {
+                "cartoon": {
+                    "colorscheme": {
+                        "prop": "b",
+                        "gradient": "rwb",
+                        "min": vmin,
+                        "max": vmax,
+                    }
+                }
+            },
+        )
     elif color == "rainbow":
-        view.setStyle({}, {'cartoon': {'color': 'spectrum'}})
+        view.setStyle({}, {"cartoon": {"color": "spectrum"}})
     else:
         # Set default style as white
-        view.setStyle({}, {'cartoon': {'color': 'white'}})
-    
+        view.setStyle({}, {"cartoon": {"color": "white"}})
+
     # Highlight specific residues per chain
     if highlight and isinstance(highlight, dict):
         for chain, residues in highlight.items():
             for resi in residues:
-                highlight_style = {'stick' if resi in (sticks or []) else 'cartoon': {'colorscheme': 'blueCarbon', 'radius': 0.3}}
-                view.addStyle({'chain': chain, 'resi': str(resi)}, highlight_style)
-    
+                highlight_style = {
+                    "stick" if resi in (sticks or []) else "cartoon": {
+                        "colorscheme": "blueCarbon",
+                        "radius": 0.3,
+                    }
+                }
+                view.addStyle({"chain": chain, "resi": str(resi)}, highlight_style)
+
     if sticks:
-        stick_style = {'stick': {'radius': 0.3}}
+        stick_style = {"stick": {"radius": 0.3}}
         for resi in sticks:
-            view.addStyle({'resi': str(resi)}, stick_style)
+            view.addStyle({"resi": str(resi)}, stick_style)
 
     # Display ligands as sticks and ions as spheres
-    view.addStyle({'hetflag': True, 'bonds': 0, 'atom': 'not O'}, {'sphere': {'colorscheme': 'ionic', 'radius': 0.5}})
-    view.addStyle({'hetflag': True}, {'stick': {'colorscheme': 'organic', 'radius': 0.3}})  # Display organic ligands as sticks
+    view.addStyle(
+        {"hetflag": True, "bonds": 0, "atom": "not O"},
+        {"sphere": {"colorscheme": "ionic", "radius": 0.5}},
+    )
+    view.addStyle(
+        {"hetflag": True}, {"stick": {"colorscheme": "organic", "radius": 0.3}}
+    )  # Display organic ligands as sticks
 
     if show_sidechains:
-        BB = ['C', 'O', 'N']
-        view.addStyle({'and': [{'resn': ["GLY", "PRO"], 'invert': True}, {'atom': BB, 'invert': True}]},
-                      {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
-        view.addStyle({'and': [{'resn': "GLY"}, {'atom': 'CA'}]},
-                      {'sphere': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
-        view.addStyle({'and': [{'resn': "PRO"}, {'atom': ['C', 'O'], 'invert': True}]},
-                      {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
+        BB = ["C", "O", "N"]
+        view.addStyle(
+            {
+                "and": [
+                    {"resn": ["GLY", "PRO"], "invert": True},
+                    {"atom": BB, "invert": True},
+                ]
+            },
+            {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
+        view.addStyle(
+            {"and": [{"resn": "GLY"}, {"atom": "CA"}]},
+            {"sphere": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
+        view.addStyle(
+            {"and": [{"resn": "PRO"}, {"atom": ["C", "O"], "invert": True}]},
+            {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
 
     if show_mainchains:
-        BB = ['C', 'O', 'N', 'CA']
-        view.addStyle({'atom': BB}, {'stick': {'colorscheme': 'WhiteCarbon', 'radius': 0.3}})
+        BB = ["C", "O", "N", "CA"]
+        view.addStyle(
+            {"atom": BB}, {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}}
+        )
 
     view.zoomTo()
 
     return view
 
 
-
-def relax_pdb(file, dest='outputs/struc/relaxed'):
+def relax_pdb(file, dest="outputs/struc/relaxed"):
     """
     Processes and minimizes a protein structure file using molecular dynamics.
 
@@ -415,18 +543,24 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     try:
         from pdbfixer import PDBFixer
     except Exception as e:
-        raise ValueError(f'Relaxation of protein structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer. Error {e}')
-    
-    name = file.split('/')[-1].split('.')[0]
+        raise ValueError(
+            f"Relaxation of protein structures requires PDBFixer: Please install through conda:\nconda install conda-forge::pdbfixer. Error {e}"
+        )
+
+    name = file.split("/")[-1].split(".")[0]
 
     fixer = PDBFixer(filename=file)
     fixer.findMissingResidues()
     fixer.findMissingAtoms()
     fixer.addMissingAtoms()
-    fixer.addMissingHydrogens(7.0)  # pH value to decide protonation state of HIS, ASP, GLU
+    fixer.addMissingHydrogens(
+        7.0
+    )  # pH value to decide protonation state of HIS, ASP, GLU
 
     # Use a temporary file instead of a fixed file name
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdb', mode='w') as temp_file:
+    with tempfile.NamedTemporaryFile(
+        delete=False, suffix=".pdb", mode="w"
+    ) as temp_file:
         PDBFile.writeFile(fixer.topology, fixer.positions, temp_file)
         temp_file_path = temp_file.name  # Store the temporary file name to use it later
 
@@ -434,23 +568,26 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     pdb = app.PDBFile(temp_file_path)
 
     # Prepare the force field
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
 
     # Create a system
-    system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds)
+    system = forcefield.createSystem(
+        pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds
+    )
 
     # Create an integrator
-    integrator = mm.LangevinIntegrator(300*unit.kelvin, 1.0/unit.picoseconds, 2.0*unit.femtoseconds)
+    integrator = mm.LangevinIntegrator(
+        300 * unit.kelvin, 1.0 / unit.picoseconds, 2.0 * unit.femtoseconds
+    )
 
     # Try to use CUDA, otherwise fallback to CPU
     try:
-        platform = mm.Platform.getPlatformByName('CUDA')
-        properties = {'CudaPrecision': 'mixed'}
+        platform = mm.Platform.getPlatformByName("CUDA")
+        properties = {"CudaPrecision": "mixed"}
     except Exception:
         # Fallback to CPU if CUDA is not available
-        platform = mm.Platform.getPlatformByName('CPU')
+        platform = mm.Platform.getPlatformByName("CPU")
         properties = {}  # CPU does not need special properties
-
 
     # Create a simulation context
     simulation = app.Simulation(pdb.topology, system, integrator, platform, properties)
@@ -465,7 +602,7 @@ def relax_pdb(file, dest='outputs/struc/relaxed'):
     positions = simulation.context.getState(getPositions=True).getPositions()
 
     # Save the minimized structure to a new PDB file
-    relaxed_pdb = os.path.join(dest, f'{name}_relaxed.pdb')
-    app.PDBFile.writeFile(pdb.topology, positions, open(relaxed_pdb, 'w'))
+    relaxed_pdb = os.path.join(dest, f"{name}_relaxed.pdb")
+    app.PDBFile.writeFile(pdb.topology, positions, open(relaxed_pdb, "w"))
 
     return relaxed_pdb

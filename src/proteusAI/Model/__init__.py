@@ -8,4 +8,4 @@ A subpackage is concerned with the Model object of ProteusAI.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .model import Model # noqa: F401
+from .model import Model  # noqa: F401

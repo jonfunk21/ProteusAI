@@ -14,9 +14,10 @@ import biotite.structure as struc
 from biotite.structure import sasa
 import tempfile
 
-from proteusAI.data_tools import pdb #TODO: double check with Johny!
+from proteusAI.data_tools import pdb  # TODO: double check with Johny!
 
-#_____Sequence Constraints_____
+
+# _____Sequence Constraints_____
 def length_constraint(seqs: list, max_len: int = 200):
     """
     Constraint for the length of a seuqences.
@@ -34,7 +35,7 @@ def length_constraint(seqs: list, max_len: int = 200):
         if len(sequence) > max_len:
             energies[i] = float(len(sequence) - max_len)
         else:
-            energies[i] = 0.
+            energies[i] = 0.0
 
     return energies
 
@@ -68,12 +69,12 @@ def seq_identity(seqs, ref, matrix="BLOSUM62", local=False):
     return scores
 
 
-#_____Structure Constraints_____
+# _____Structure Constraints_____
 def string_to_tempfile(data):
     # create a temporary file
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         # write the string to the file
-        temp_file.write(data.encode('utf-8'))
+        temp_file.write(data.encode("utf-8"))
         # flush the file to make sure the data_tools is written
         temp_file.flush()
         # return the file object
@@ -97,9 +98,14 @@ def create_batched_sequence_datasest(
 
     yield batch_headers, batch_sequences
 
+
 def structure_prediction(
-        sequences: list, names: list, chunk_size: int = 124,
-        max_tokens_per_batch: int = 1024, num_recycles: int = None):
+    sequences: list,
+    names: list,
+    chunk_size: int = 124,
+    max_tokens_per_batch: int = 1024,
+    num_recycles: int = None,
+):
     """
     Predict the structure of proteins.
 
@@ -118,7 +124,9 @@ def structure_prediction(
     model.set_chunk_size(chunk_size)
     all_sequences = list(zip(names, sequences))
 
-    batched_sequences = create_batched_sequence_datasest(all_sequences, max_tokens_per_batch)
+    batched_sequences = create_batched_sequence_datasest(
+        all_sequences, max_tokens_per_batch
+    )
     all_headers = []
     all_sequences = []
     all_pdbs = []
@@ -129,11 +137,13 @@ def structure_prediction(
         output = {key: value.cpu() for key, value in output.items()}
         pdbs = model.output_to_pdb(output)
         for header, sequence, pdb_string, mean_plddt, ptm in zip(
-                headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
+            headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
         ):
             all_headers.append(header)
             all_sequences.append(sequence)
-            all_pdbs.append(PDBFile.read(string_to_tempfile(pdb_string).name)) # biotite pdb file name
+            all_pdbs.append(
+                PDBFile.read(string_to_tempfile(pdb_string).name)
+            )  # biotite pdb file name
             mean_pLDDTs.append(mean_plddt.item())
             pTMs.append(ptm.item())
 
@@ -158,6 +168,7 @@ def globularity(pdbs):
 
     return variances
 
+
 def surface_exposed_hydrophobics(pdbs):
     """
     Calculate the surface exposed hydrophobics using the Shrake-Rupley (“rolling probe”) algorithm.
@@ -171,8 +182,15 @@ def surface_exposed_hydrophobics(pdbs):
     avrg_sasa_values = np.zeros(len(pdbs))
     for i, pdb_list in enumerate(pdbs):
         struc = pdb_list.get_structure()
-        sasa_val = sasa(struc[0], probe_radius=1.4, atom_filter=None, ignore_ions=True,
-                                      point_number=1000, point_distr='Fibonacci', vdw_radii='ProtOr')
+        sasa_val = sasa(
+            struc[0],
+            probe_radius=1.4,
+            atom_filter=None,
+            ignore_ions=True,
+            point_number=1000,
+            point_distr="Fibonacci",
+            vdw_radii="ProtOr",
+        )
         sasa_mean = sasa_val.mean()
         avrg_sasa_values[i] = sasa_mean.item()
 
@@ -236,8 +254,12 @@ def all_atom_coordination(samples, refs, sample_consts, ref_consts):
         ref_struc = ref.get_structure()[0]
 
         # get indices for alignment
-        sample_indices = np.where(np.isin(sample_struc.res_id, [i + 1 for i in sample_const['all_atm']]))
-        ref_indices = np.where(np.isin(ref_struc.res_id, [i + 1 for i in ref_const['all_atm']]))
+        sample_indices = np.where(
+            np.isin(sample_struc.res_id, [i + 1 for i in sample_const["all_atm"]])
+        )
+        ref_indices = np.where(
+            np.isin(ref_struc.res_id, [i + 1 for i in ref_const["all_atm"]])
+        )
 
         sample_struc_common = sample_struc[sample_indices[0]]
         ref_struc_common = ref_struc[ref_indices[0]]

@@ -57,31 +57,32 @@ class ProteinDesign:
         verbose (bool): if verbose print information
     """
 
-    def __init__(self,
-                 native_seq: str = None,
-                 constraints=None,
-                 sampler: str = 'simulated_annealing',
-                 n_traj: int = 16,
-                 steps: int = 1000,
-                 T: float = 10.,
-                 M: float = 0.01,
-                 mut_p: list = (0.6, 0.2, 0.2),
-                 pred_struc: bool = True,
-                 max_len: int = 300,
-                 w_len: float=0.01,
-                 w_identity: float = 0.1,
-                 w_ptm: float = 1,
-                 w_plddt: float = 1,
-                 w_globularity: float = 0.001,
-                 w_bb_coord: float = 0.02,
-                 w_all_atm: float = 0.15,
-                 w_sasa: float = 0.02,
-                 outdir: str = None,
-                 verbose: bool = False,
-                 ):
+    def __init__(
+        self,
+        native_seq: str = None,
+        constraints=None,
+        sampler: str = "simulated_annealing",
+        n_traj: int = 16,
+        steps: int = 1000,
+        T: float = 10.0,
+        M: float = 0.01,
+        mut_p: list = (0.6, 0.2, 0.2),
+        pred_struc: bool = True,
+        max_len: int = 300,
+        w_len: float = 0.01,
+        w_identity: float = 0.1,
+        w_ptm: float = 1,
+        w_plddt: float = 1,
+        w_globularity: float = 0.001,
+        w_bb_coord: float = 0.02,
+        w_all_atm: float = 0.15,
+        w_sasa: float = 0.02,
+        outdir: str = None,
+        verbose: bool = False,
+    ):
 
         if constraints is None:
-            constraints = {'no_mut': [], 'all_atm': []}
+            constraints = {"no_mut": [], "all_atm": []}
         self.native_seq = native_seq
         self.sampler = sampler
         self.n_traj = n_traj
@@ -108,38 +109,38 @@ class ProteinDesign:
         self.ref_constraints = None
         self.initial_energy = None
 
-
     def __str__(self):
-        lines: list[str] = ['ProteusAI.MCMC.Design class: \n',
-             '---------------------------------------\n',
-             'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
-             f'{self.native_seq}\n',
-             '\nThe following variables were set:\n\n',
-             'variable\t|value\n',
-             '----------------+-------------------\n',
-             f'algorithm: \t|{self.sampler}\n',
-             f'steps: \t\t|{self.steps}\n',
-             f'n_traj: \t|{self.n_traj}\n',
-             f'mut_p: \t\t|{self.mut_p}\n',
-             f'T: \t\t|{self.T}\n',
-             f'M: \t\t|{self.M}\n\n',
-             'The energy function is a linear combination of the following constraints:\n\n',
-             'constraint\t|value\t|weight\n',
-             '----------------+-------+------------\n',
-             f'length \t\t|{self.max_len}\t|{self.w_max_len}\n',
-             f'identity\t|\t|{self.w_identity}\n',
-             ]
-        s = ''.join(lines)
+        lines: list[str] = [
+            "ProteusAI.MCMC.Design class: \n",
+            "---------------------------------------\n",
+            "When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n",
+            f"{self.native_seq}\n",
+            "\nThe following variables were set:\n\n",
+            "variable\t|value\n",
+            "----------------+-------------------\n",
+            f"algorithm: \t|{self.sampler}\n",
+            f"steps: \t\t|{self.steps}\n",
+            f"n_traj: \t|{self.n_traj}\n",
+            f"mut_p: \t\t|{self.mut_p}\n",
+            f"T: \t\t|{self.T}\n",
+            f"M: \t\t|{self.M}\n\n",
+            "The energy function is a linear combination of the following constraints:\n\n",
+            "constraint\t|value\t|weight\n",
+            "----------------+-------+------------\n",
+            f"length \t\t|{self.max_len}\t|{self.w_max_len}\n",
+            f"identity\t|\t|{self.w_identity}\n",
+        ]
+        s = "".join(lines)
         if self.pred_struc:
             lines = [
                 s,
-                f'pTM\t\t|\t|{self.w_ptm}\n',
-                f'pLDDT\t\t|\t|{self.w_plddt}\n',
-                f'bb_coord\t\t|{self.w_bb_coord}\n',
-                f'all_atm\t\t|\t|{self.w_all_atm}\n',
-                f'sasa\t\t|\t|{self.w_sasa}\n',
+                f"pTM\t\t|\t|{self.w_ptm}\n",
+                f"pLDDT\t\t|\t|{self.w_plddt}\n",
+                f"bb_coord\t\t|{self.w_bb_coord}\n",
+                f"all_atm\t\t|\t|{self.w_all_atm}\n",
+                f"sasa\t\t|\t|{self.w_sasa}\n",
             ]
-            s = ''.join(lines)
+            s = "".join(lines)
         return s
 
     ### SAMPLERS
@@ -159,11 +160,30 @@ class ProteinDesign:
         if mut_p is None:
             mut_p = [0.6, 0.2, 0.2]
 
-        AAs = ('A', 'C', 'D', 'E', 'F', 'G', 'H',
-               'I', 'K', 'L', 'M', 'N', 'P', 'Q',
-               'R', 'S', 'T', 'V', 'W', 'Y')
+        AAs = (
+            "A",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "K",
+            "L",
+            "M",
+            "N",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "V",
+            "W",
+            "Y",
+        )
 
-        mut_types = ('substitution', 'insertion', 'deletion')
+        mut_types = ("substitution", "insertion", "deletion")
 
         mutated_seqs = []
         mutated_constraints = []
@@ -176,56 +196,55 @@ class ProteinDesign:
             while mutate:
                 pos = random.randint(0, len(seq) - 1)
                 mut_type = random.choices(mut_types, mut_p)[0]
-                if pos in constraints[i]['no_mut'] or pos in constraints[i]['all_atm']:
+                if pos in constraints[i]["no_mut"] or pos in constraints[i]["all_atm"]:
                     pass
                 # secondary structure constraint disallows deletion
                 # insertions between two secondary structure constraints will have the constraint of their neighbors
                 else:
                     break
 
-            if mut_type == 'substitution':
+            if mut_type == "substitution":
                 replacement = random.choice(AAs)
-                mut_seq = ''.join([seq[:pos], replacement, seq[pos + 1:]])
+                mut_seq = "".join([seq[:pos], replacement, seq[pos + 1 :]])
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
                     mut_constraints[const] = positions
-                mutations.append(f'sub:{seq[pos]}{pos}{replacement}')
+                mutations.append(f"sub:{seq[pos]}{pos}{replacement}")
 
-            elif mut_type == 'insertion':
+            elif mut_type == "insertion":
                 insertion = random.choice(AAs)
-                mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
+                mut_seq = "".join([seq[:pos], insertion, seq[pos:]])
                 # shift constraints after insertion
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     mut_constraints[const] = positions
-                mutations.append(f'ins:{pos}{insertion}')
+                mutations.append(f"ins:{pos}{insertion}")
 
-            elif mut_type == 'deletion' and len(seq) > 1:
+            elif mut_type == "deletion" and len(seq) > 1:
                 lines = list(seq)
                 del lines[pos]
-                mut_seq = ''.join(lines)
+                mut_seq = "".join(lines)
                 # shift constraints after deletion
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
                     positions = [i if i < pos else i - 1 for i in positions]
                     mut_constraints[const] = positions
-                mutations.append(f'del:{seq[pos]}{pos}')
+                mutations.append(f"del:{seq[pos]}{pos}")
 
             else:
                 # will perform insertion if length is to small
                 insertion = random.choice(AAs)
-                mut_seq = ''.join([seq[:pos], insertion, seq[pos:]])
+                mut_seq = "".join([seq[:pos], insertion, seq[pos:]])
                 # shift constraints after insertion
                 for const in constraints[i].keys():
                     positions = constraints[i][const]
                     positions = [i if i < pos else i + 1 for i in positions]
                     mut_constraints[const] = positions
-                mutations.append(f'ins:{pos}{insertion}')
+                mutations.append(f"ins:{pos}{insertion}")
 
             mutated_seqs.append(mut_seq)
             mutated_constraints.append(mut_constraints)
-
 
         return mutated_seqs, mutated_constraints, mutations
 
@@ -249,20 +268,26 @@ class ProteinDesign:
         energies = np.zeros(len(seqs))
         energy_log = dict()
 
-        e_len = self.w_max_len * Constraints.length_constraint(seqs=seqs, max_len=self.max_len)
-        e_identity = self.w_identity * Constraints.seq_identity(seqs=seqs, ref=self.native_seq)
+        e_len = self.w_max_len * Constraints.length_constraint(
+            seqs=seqs, max_len=self.max_len
+        )
+        e_identity = self.w_identity * Constraints.seq_identity(
+            seqs=seqs, ref=self.native_seq
+        )
 
         energies += e_len
         energies += e_identity
 
-        energy_log[f'e_len x {self.w_max_len}'] = e_len
-        energy_log[f'e_identity x {self.w_identity}'] = e_identity
+        energy_log[f"e_len x {self.w_max_len}"] = e_len
+        energy_log[f"e_identity x {self.w_identity}"] = e_identity
 
         pdbs = []
         if self.pred_struc:
             # structure prediction
-            names = [f'sequence_{j}_cycle_{i}' for j in range(len(seqs))]
-            headers, sequences, pdbs, pTMs, mean_pLDDTs = Constraints.structure_prediction(seqs, names)
+            names = [f"sequence_{j}_cycle_{i}" for j in range(len(seqs))]
+            headers, sequences, pdbs, pTMs, mean_pLDDTs = (
+                Constraints.structure_prediction(seqs, names)
+            )
             pTMs = [1 - val for val in pTMs]
             mean_pLDDTs = [1 - val / 100 for val in mean_pLDDTs]
 
@@ -276,26 +301,30 @@ class ProteinDesign:
             energies += e_globularity
             energies += e_sasa
 
-            energy_log[f'e_pTMs x {self.w_ptm}'] = e_pTMs
-            energy_log[f'e_mean_pLDDTs x {self.w_plddt}'] = e_mean_pLDDTs
-            energy_log[f'e_globularity x {self.w_globularity}'] = e_globularity
-            energy_log[f'e_sasa x {self.w_sasa}'] = e_sasa
+            energy_log[f"e_pTMs x {self.w_ptm}"] = e_pTMs
+            energy_log[f"e_mean_pLDDTs x {self.w_plddt}"] = e_mean_pLDDTs
+            energy_log[f"e_globularity x {self.w_globularity}"] = e_globularity
+            energy_log[f"e_sasa x {self.w_sasa}"] = e_sasa
 
             # there are now ref pdbs before the first calculation
             if self.ref_pdbs is not None:
-                e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
-                e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, self.ref_constraints)
+                e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(
+                    pdbs, self.ref_pdbs
+                )
+                e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(
+                    pdbs, self.ref_pdbs, constraints, self.ref_constraints
+                )
 
                 energies += e_bb_coord
                 energies += e_all_atm
 
-                energy_log[f'e_bb_coord x {self.w_bb_coord}'] = e_bb_coord
-                energy_log[f'e_all_atm x {self.w_all_atm}'] = e_all_atm
+                energy_log[f"e_bb_coord x {self.w_bb_coord}"] = e_bb_coord
+                energy_log[f"e_all_atm x {self.w_all_atm}"] = e_all_atm
             else:
-                energy_log[f'e_bb_coord x {self.w_bb_coord}'] = []
-                energy_log[f'e_all_atm x {self.w_all_atm}'] = []
+                energy_log[f"e_bb_coord x {self.w_bb_coord}"] = []
+                energy_log[f"e_all_atm x {self.w_all_atm}"] = []
 
-        energy_log['iteration'] = i + 1
+        energy_log["iteration"] = i + 1
 
         return energies, pdbs, energy_log
 
@@ -340,9 +369,9 @@ class ProteinDesign:
         p_accept = self.p_accept
         mut_p = self.mut_p
         outdir = self.outdir
-        pdb_out = os.path.join(outdir, 'pdbs')
-        png_out = os.path.join(outdir, 'pngs')
-        data_out = os.path.join(outdir, 'data_tools')
+        pdb_out = os.path.join(outdir, "pdbs")
+        png_out = os.path.join(outdir, "pngs")
+        data_out = os.path.join(outdir, "data_tools")
 
         if outdir is not None:
             if not os.path.exists(outdir):
@@ -354,15 +383,15 @@ class ProteinDesign:
             if not os.path.exists(data_out):
                 os.mkdir(data_out)
 
-        if sampler == 'simulated_annealing':
+        if sampler == "simulated_annealing":
             mutate = self.mutate
 
         if native_seq is None:
-            raise 'The optimizer needs a sequence to run. Define a sequence by calling SequenceOptimizer(native_seq = <your_sequence>)'
+            raise "The optimizer needs a sequence to run. Define a sequence by calling SequenceOptimizer(native_seq = <your_sequence>)"
 
         seqs = [native_seq for _ in range(n_traj)]
         constraints = [constraints for _ in range(n_traj)]
-        self.ref_constraints = constraints.copy() # THESE ARE CORRECT
+        self.ref_constraints = constraints.copy()  # THESE ARE CORRECT
 
         # for initial calculation don't use the full sequences, unecessary
         # calculation of initial state
@@ -373,23 +402,23 @@ class ProteinDesign:
         # empty energies dictionary for the first run
         for key in energy_log.keys():
             energy_log[key] = []
-        energy_log['T'] = []
-        energy_log['M'] = []
-        energy_log['mut'] = []
-        energy_log['description'] = []
+        energy_log["T"] = []
+        energy_log["M"] = []
+        energy_log["mut"] = []
+        energy_log["description"] = []
 
         self.initial_energy = E_x_i.copy()
         self.ref_pdbs = pdbs.copy()
 
         if self.pred_struc and outdir is not None:
             # saves the n th structure
-            num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
-            pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
+            num = "{:0{}d}".format(len(energy_log["iteration"]), len(str(self.steps)))
+            pdbs[0].write(os.path.join(pdb_out, f"{num}_design.pdb"))
 
         # write energy_log in data_out
         if outdir is not None:
             df = pd.DataFrame(energy_log)
-            df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
+            df.to_csv(os.path.join(data_out, "energy_log.pdb"), index=False)
 
         for i in range(steps):
             mut_seqs, _constraints, mutations = mutate(seqs, mut_p, constraints)
@@ -398,7 +427,7 @@ class ProteinDesign:
             p = p_accept(E_x_mut, E_x_i, T, i, M)
 
             new_struc_found = False
-            accepted_ind = [] # indices of accepted structures
+            accepted_ind = []  # indices of accepted structures
             for n in range(n_traj):
                 if p[n] > random.random():
                     accepted_ind.append(n)
@@ -422,25 +451,27 @@ class ProteinDesign:
 
                 for key in energy_log.keys():
                     # skip skalar values in this step
-                    if key not in ['T', 'M', 'iteration', 'mut', 'description']:
+                    if key not in ["T", "M", "iteration", "mut", "description"]:
                         e = _energy_log[key]
                         energy_log[key].append(e[min_E].item())
 
-                energy_log['iteration'].append(i)
-                energy_log['T'].append(T)
-                energy_log['M'].append(M)
-                energy_log['mut'].append(mutations[min_E])
+                energy_log["iteration"].append(i)
+                energy_log["T"].append(T)
+                energy_log["M"].append(M)
+                energy_log["mut"].append(mutations[min_E])
 
-                num = '{:0{}d}'.format(len(energy_log['iteration']), len(str(self.steps)))
-                energy_log['description'].append(f'{num}_design')
+                num = "{:0{}d}".format(
+                    len(energy_log["iteration"]), len(str(self.steps))
+                )
+                energy_log["description"].append(f"{num}_design")
 
                 if self.pred_struc and outdir is not None:
                     # saves the n th structure
-                    pdbs[0].write(os.path.join(pdb_out, f'{num}_design.pdb'))
+                    pdbs[0].write(os.path.join(pdb_out, f"{num}_design.pdb"))
 
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
-                    df.to_csv(os.path.join(data_out, 'energy_log.pdb'), index=False)
+                    df.to_csv(os.path.join(data_out, "energy_log.pdb"), index=False)
 
-        return (seqs)
+        return seqs

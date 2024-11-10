@@ -8,4 +8,4 @@ A subpackage is concerned with the Protein object of ProteusAI.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .protein import Protein # noqa: F401
+from .protein import Protein  # noqa: F401
