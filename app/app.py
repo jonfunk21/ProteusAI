@@ -1309,8 +1309,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def design_chains():
-        num_chains = len(CHAINS())
         return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
+
 
 
     ### DOWNLOAD DESIGN RESULTS
