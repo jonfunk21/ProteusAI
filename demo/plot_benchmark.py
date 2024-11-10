@@ -1,8 +1,9 @@
-import json
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import argparse
+import json
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 # Initialize the argparse parser
 parser = argparse.ArgumentParser(description="Plot the benchmark results.")
@@ -94,7 +95,7 @@ g = sns.FacetGrid(
 # Function to create box plot and strip plot
 def plot_box_and_strip(data, x, y, **kwargs):
     ax = plt.gca()
-    boxplot = sns.boxplot(
+    sns.boxplot(
         data=data, x=x, y=y, color="lightgray", width=0.5, ax=ax
     )  # noqa: F841
     sns.stripplot(data=data, x=x, y=y, **kwargs)
