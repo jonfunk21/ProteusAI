@@ -58,24 +58,25 @@ class ZeroShot:
         verbose (bool): if verbose print information
     """
 
-    def __init__(self,
-                 seq: str = None,
-                 name = 'Prot',
-                 constraints = None,
-                 batch_size: int = 20,
-                 pred_struc: bool = True,
-                 w_ptm: float = 1,
-                 w_plddt: float = 1,
-                 w_globularity: float = 0.001,
-                 w_bb_coord: float = 0.02,
-                 w_all_atm: float = 0.15,
-                 w_sasa: float = 0.02,
-                 outdir: str = None,
-                 verbose: bool = False,
-                 ):
+    def __init__(
+        self,
+        seq: str = None,
+        name="Prot",
+        constraints=None,
+        batch_size: int = 20,
+        pred_struc: bool = True,
+        w_ptm: float = 1,
+        w_plddt: float = 1,
+        w_globularity: float = 0.001,
+        w_bb_coord: float = 0.02,
+        w_all_atm: float = 0.15,
+        w_sasa: float = 0.02,
+        outdir: str = None,
+        verbose: bool = False,
+    ):
 
         if constraints is None:
-            constraints = {'all_atm': []}
+            constraints = {"all_atm": []}
         self.seq = seq
         self.name = name
         self.constraints = constraints
@@ -92,30 +93,30 @@ class ZeroShot:
         # Parameters
         self.ref_pdbs = None
 
-
     def __str__(self):
-        l = ['ProteusAI.MCMC.ZeroShot class: \n',
-             '---------------------------------------\n',
-             'When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n',
-             f'{self.seq}\n',
-             '\nThe following variables were set:\n\n',
-             'variable\t|value\n',
-             '----------------+-------------------\n',
-             f'batch_size: \t|{self.batch_size}\n',
-             f'The energy function is a linear combination of the following constraints:\n\n',
-             f'constraint\t|value\t|weight\n',
-             '----------------+-------+------------\n',
-             ]
-        s = ''.join(l)
-        l = [
-            s,
-            f'pTM\t\t|\t|{self.w_ptm}\n',
-            f'pLDDT\t\t|\t|{self.w_plddt}\n',
-            f'bb_coord\t\t|{self.w_bb_coord}\n',
-            f'all_atm\t\t|\t|{self.w_all_atm}\n',
-            f'sasa\t\t|\t|{self.w_sasa}\n',
+        lines = [
+            "ProteusAI.MCMC.ZeroShot class: \n",
+            "---------------------------------------\n",
+            "When Hallucination.run() sequences will be hallucinated using this seed sequence:\n\n",
+            f"{self.seq}\n",
+            "\nThe following variables were set:\n\n",
+            "variable\t|value\n",
+            "----------------+-------------------\n",
+            f"batch_size: \t|{self.batch_size}\n",
+            "The energy function is a linear combination of the following constraints:\n\n",
+            "constraint\t|value\t|weight\n",
+            "----------------+-------+------------\n",
         ]
-        s = ''.join(l)
+        s = "".join(lines)
+        lines = [
+            s,
+            f"pTM\t\t|\t|{self.w_ptm}\n",
+            f"pLDDT\t\t|\t|{self.w_plddt}\n",
+            f"bb_coord\t\t|{self.w_bb_coord}\n",
+            f"all_atm\t\t|\t|{self.w_all_atm}\n",
+            f"sasa\t\t|\t|{self.w_sasa}\n",
+        ]
+        s = "".join(lines)
         return s
 
     ### SAMPLERS
@@ -131,9 +132,28 @@ class ZeroShot:
             list: mutated sequences
         """
 
-        AAs = ('A', 'C', 'D', 'E', 'F', 'G', 'H',
-               'I', 'K', 'L', 'M', 'N', 'P', 'Q',
-               'R', 'S', 'T', 'V', 'W', 'Y')
+        AAs = (
+            "A",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "K",
+            "L",
+            "M",
+            "N",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "V",
+            "W",
+            "Y",
+        )
 
         native_aa = seq[pos]
 
@@ -141,12 +161,10 @@ class ZeroShot:
         names = []
         for res in AAs:
             if res != native_aa:
-                mut_seq = ''.join([seq[:pos], res, seq[pos + 1:]])
+                mut_seq = "".join([seq[:pos], res, seq[pos + 1 :]])
                 mut_seqs.append(mut_seq)
-                names.append(str(seq[pos])+str(pos)+str(res))
+                names.append(str(seq[pos]) + str(pos) + str(res))
         return mut_seqs, names
-
-
 
     ### ENERGY FUNCTION and ACCEPTANCE CRITERION
     def energy_function(self, seqs: list, pos: int, names):
@@ -169,14 +187,16 @@ class ZeroShot:
         energy_log = dict()
         constraints = self.constraints
 
-        for i, c in enumerate(constraints['all_atm']):
+        for i, c in enumerate(constraints["all_atm"]):
             if c == pos:
-                del constraints['all_atm'][i]
+                del constraints["all_atm"][i]
         constraints = [constraints for i in range(len(seqs))]
 
         # structure prediction
-        names = [f'{name}_{self.name}' for name in names]
-        headers, sequences, pdbs, pTMs, mean_pLDDTs = Constraints.structure_prediction(seqs, names)
+        names = [f"{name}_{self.name}" for name in names]
+        headers, sequences, pdbs, pTMs, mean_pLDDTs = Constraints.structure_prediction(
+            seqs, names
+        )
         pTMs = [1 - val for val in pTMs]
         mean_pLDDTs = [1 - val / 100 for val in mean_pLDDTs]
 
@@ -190,26 +210,30 @@ class ZeroShot:
         energies += e_globularity
         energies += e_sasa
 
-        energy_log[f'e_pTMs x {self.w_ptm}'] = e_pTMs
-        energy_log[f'e_mean_pLDDTs x {self.w_plddt}'] = e_mean_pLDDTs
-        energy_log[f'e_globularity x {self.w_globularity}'] = e_globularity
-        energy_log[f'e_sasa x {self.w_sasa}'] = e_sasa
+        energy_log[f"e_pTMs x {self.w_ptm}"] = e_pTMs
+        energy_log[f"e_mean_pLDDTs x {self.w_plddt}"] = e_mean_pLDDTs
+        energy_log[f"e_globularity x {self.w_globularity}"] = e_globularity
+        energy_log[f"e_sasa x {self.w_sasa}"] = e_sasa
 
         # there are now ref pdbs before the first calculation
         if self.ref_pdbs is not None:
-            e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(pdbs, self.ref_pdbs)
-            e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(pdbs, self.ref_pdbs, constraints, constraints)
+            e_bb_coord = self.w_bb_coord * Constraints.backbone_coordination(
+                pdbs, self.ref_pdbs
+            )
+            e_all_atm = self.w_all_atm * Constraints.all_atom_coordination(
+                pdbs, self.ref_pdbs, constraints, constraints
+            )
 
             energies += e_bb_coord
             energies += e_all_atm
 
-            energy_log[f'e_bb_coord x {self.w_bb_coord}'] = e_bb_coord
-            energy_log[f'e_all_atm x {self.w_all_atm}'] = e_all_atm
+            energy_log[f"e_bb_coord x {self.w_bb_coord}"] = e_bb_coord
+            energy_log[f"e_all_atm x {self.w_all_atm}"] = e_all_atm
         else:
-            energy_log[f'e_bb_coord x {self.w_bb_coord}'] = [0]
-            energy_log[f'e_all_atm x {self.w_all_atm}'] = [0]
+            energy_log[f"e_bb_coord x {self.w_bb_coord}"] = [0]
+            energy_log[f"e_all_atm x {self.w_all_atm}"] = [0]
 
-        energy_log['position'] = [pos]
+        energy_log["position"] = [pos]
 
         return energies, pdbs, energy_log
 
@@ -223,11 +247,11 @@ class ZeroShot:
         energy_function = self.energy_function
         outdir = self.outdir
         mutate = self.mutate
-        pdb_out = os.path.join(outdir, 'pdbs')
-        png_out = os.path.join(outdir, 'pngs')
-        data_out = os.path.join(outdir, 'data_tools')
+        pdb_out = os.path.join(outdir, "pdbs")
+        png_out = os.path.join(outdir, "pngs")
+        data_out = os.path.join(outdir, "data_tools")
 
-        if outdir != None:
+        if outdir is not None:
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
             if not os.path.exists(pdb_out):
@@ -238,30 +262,30 @@ class ZeroShot:
                 os.mkdir(data_out)
 
         if seq is None:
-            raise 'Provide a sequence(seq = <your_sequence>)'
+            raise "Provide a sequence(seq = <your_sequence>)"
 
         # for initial calculation don't use the full sequences, unecessary
         # calculation of initial state
-        _, pdbs, energy_log = energy_function([seq], 0, ['native'])
-        pdbs = [pdbs[0] for _ in range(batch_size-1)]
-        energy_log['mut'] = ['-']
-        energy_log['description'] = ['native']
+        _, pdbs, energy_log = energy_function([seq], 0, ["native"])
+        pdbs = [pdbs[0] for _ in range(batch_size - 1)]
+        energy_log["mut"] = ["-"]
+        energy_log["description"] = ["native"]
 
         # make energies to list
         for key in energy_log.keys():
-            if type(energy_log[key]) != list:
+            if not isinstance(energy_log[key], list):
                 energy_log[key] = energy_log[key].tolist()
 
         self.ref_pdbs = pdbs.copy()
 
         if outdir is not None:
             # saves the n th structure
-            pdbs[0].write(os.path.join(pdb_out, f'native_{self.name}.pdb'))
+            pdbs[0].write(os.path.join(pdb_out, f"native_{self.name}.pdb"))
 
         # write energy_log in data_out
         if outdir is not None:
             df = pd.DataFrame(energy_log)
-            df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
+            df.to_csv(os.path.join(data_out, "energy_log.pdb"), index=False)
 
         for pos in range(len(seq)):
             seqs, names = mutate(seq, pos)
@@ -270,30 +294,29 @@ class ZeroShot:
             for n in range(len(seqs)):
                 for key in energy_log.keys():
                     # skip skalar values in this step
-                    if key not in ['position', 'mut', 'description']:
+                    if key not in ["position", "mut", "description"]:
                         e = _energy_log[key].tolist()
-                        with open('test', 'w') as f:
-                            print('energy_log', file=f)
+                        with open("test", "w") as f:
+                            print("energy_log", file=f)
                             print(energy_log, file=f)
-                            print('_energy_log', file=f)
+                            print("_energy_log", file=f)
                             print(_energy_log, file=f)
-                            print('key', file=f)
+                            print("key", file=f)
                             print(key, file=f)
-                            print('e', file=f)
+                            print("e", file=f)
                             print(e, file=f)
                         energy_log[key].append(e[n])
 
-                energy_log['position'].append(pos)
-                energy_log['mut'].append(names[n])
+                energy_log["position"].append(pos)
+                energy_log["mut"].append(names[n])
 
-                energy_log['description'].append(f'{names[n]}_{self.name}')
+                energy_log["description"].append(f"{names[n]}_{self.name}")
 
                 if outdir is not None:
                     # saves the n th structure
-                    pdbs[n].write(os.path.join(pdb_out, f'{names[n]}_{self.name}.pdb'))
+                    pdbs[n].write(os.path.join(pdb_out, f"{names[n]}_{self.name}.pdb"))
 
                 # write energy_log in data_out
                 if outdir is not None:
                     df = pd.DataFrame(energy_log)
-                    df.to_csv(os.path.join(data_out, f'energy_log.pdb'), index=False)
-
+                    df.to_csv(os.path.join(data_out, "energy_log.pdb"), index=False)

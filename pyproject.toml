@@ -46,4 +46,11 @@ docs = [
   "sphinx-new-tab-link!=0.2.2",
   "jupytext",
 ]
-dev = ["black", "ruff", "pytest"]
+dev = ["black", "ruff", "pytest", "flake8", "flake8-import-order", "flake8-builtins", "flake8-bugbear"]
+
+# Handle imports with flake8
+[tool.flake8]
+max-line-length = 88
+import-order-style = "google"
+application-import-names = ["proteusAI"]
+

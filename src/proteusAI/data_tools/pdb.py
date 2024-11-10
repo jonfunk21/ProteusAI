@@ -15,11 +15,48 @@ from string import ascii_uppercase, ascii_lowercase
 
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
-pymol_color_list = ["#33ff33", "#00ffff", "#ff33cc", "#ffff00", "#ff9999", "#e5e5e5", "#7f7fff", "#ff7f00",
-                    "#7fff7f", "#199999", "#ff007f", "#ffdd5e", "#8c3f99", "#b2b2b2", "#007fff", "#c4b200",
-                    "#8cb266", "#00bfbf", "#b27f7f", "#fcd1a5", "#ff7f7f", "#ffbfdd", "#7fffff", "#ffff7f",
-                    "#00ff7f", "#337fcc", "#d8337f", "#bfff3f", "#ff7fff", "#d8d8ff", "#3fffbf", "#b78c4c",
-                    "#339933", "#66b2b2", "#ba8c84", "#84bf00", "#b24c66", "#7f7f7f", "#3f3fa5", "#a5512b"]
+pymol_color_list = [
+    "#33ff33",
+    "#00ffff",
+    "#ff33cc",
+    "#ffff00",
+    "#ff9999",
+    "#e5e5e5",
+    "#7f7fff",
+    "#ff7f00",
+    "#7fff7f",
+    "#199999",
+    "#ff007f",
+    "#ffdd5e",
+    "#8c3f99",
+    "#b2b2b2",
+    "#007fff",
+    "#c4b200",
+    "#8cb266",
+    "#00bfbf",
+    "#b27f7f",
+    "#fcd1a5",
+    "#ff7f7f",
+    "#ffbfdd",
+    "#7fffff",
+    "#ffff7f",
+    "#00ff7f",
+    "#337fcc",
+    "#d8337f",
+    "#bfff3f",
+    "#ff7fff",
+    "#d8d8ff",
+    "#3fffbf",
+    "#b78c4c",
+    "#339933",
+    "#66b2b2",
+    "#ba8c84",
+    "#84bf00",
+    "#b24c66",
+    "#7f7f7f",
+    "#3f3fa5",
+    "#a5512b",
+]
 
 
 def get_atom_array(file_path):
@@ -32,15 +69,15 @@ def get_atom_array(file_path):
     Returns:
         atom array
     """
-    if file_path.endswith('pdb'):
+    if file_path.endswith("pdb"):
         atom_mol = PDBFile.read(file_path)
         atom_array = atom_mol.get_structure()
     else:
         try:
             atom_mol = MOLFile.read(file_path)
             atom_array = atom_mol.get_structure()
-        except:
-            raise f'file: {file_path} invalid file format'
+        except Exception as e:
+            raise ValueError(f"File: {file_path} has an invalid format. Error: {e}")
 
     return atom_array
 
@@ -76,7 +113,7 @@ def mol_contacts(mols, protein, dist=4.0):
             res_ids.update(contact_res_ids)
 
     res_ids = sorted(res_ids)
-    return (res_ids)
+    return res_ids
 
 
 def pdb_to_fasta(pdb_path: str):
@@ -90,9 +127,9 @@ def pdb_to_fasta(pdb_path: str):
         str: fasta sequence string
     """
     seq = ""
-    with open(pdb_path, 'r') as pdb_file:
-        for record in SeqIO.parse(pdb_file, 'pdb-atom'):
-            seq = "".join(['>', str(record.id), '\n', str(record.seq)])
+    with open(pdb_path, "r") as pdb_file:
+        for record in SeqIO.parse(pdb_file, "pdb-atom"):
+            seq = "".join([">", str(record.id), "\n", str(record.seq)])
 
     return seq
 
@@ -108,13 +145,23 @@ def get_sse(pdb_path: str):
     """
     array = strucio.load_structure(pdb_path)
     sse = struc.annotate_sse(array)
-    sse = ''.join(sse)
+    sse = "".join(sse)
     return sse
 
 
 ### Visualization
-def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=None, size=(800, 480), show_sidechains=False,
-         show_mainchains=False, highlight=None):
+def show_pdb(
+    pdb_path,
+    color="confidence",
+    vmin=50,
+    vmax=90,
+    chains=None,
+    Ls=None,
+    size=(800, 480),
+    show_sidechains=False,
+    show_mainchains=False,
+    highlight=None,
+):
     """
     This function displays the 3D structure of a protein from a given PDB file in a Jupyter notebook.
     The protein structure can be colored by chain, rainbow, pLDDT, or confidence value. The size of the
@@ -136,31 +183,57 @@ def show_pdb(pdb_path, color='confidence', vmin=50, vmax=90, chains=None, Ls=Non
     with open(pdb_path) as ifile:
         system = "".join([x for x in ifile])
 
-    view = py3Dmol.view(js='https://3dmol.org/build/3Dmol.js', width=size[0], height=size[1])
+    view = py3Dmol.view(
+        js="https://3dmol.org/build/3Dmol.js", width=size[0], height=size[1]
+    )
 
     if chains is None:
         chains = 1 if Ls is None else len(Ls)
 
     view.addModelsAsFrames(system)
-    if color == "pLDDT" or color == 'confidence':
-        view.setStyle({'cartoon': {'colorscheme': {'prop': 'b', 'gradient': 'rwb', 'min': vmin, 'max': vmax}}})
+    if color == "pLDDT" or color == "confidence":
+        view.setStyle(
+            {
+                "cartoon": {
+                    "colorscheme": {
+                        "prop": "b",
+                        "gradient": "rwb",
+                        "min": vmin,
+                        "max": vmax,
+                    }
+                }
+            }
+        )
     elif color == "rainbow":
-        view.setStyle({'cartoon': {'color': 'spectrum'}})
+        view.setStyle({"cartoon": {"color": "spectrum"}})
     elif color == "chain":
         for n, chain, color in zip(range(chains), alphabet_list, pymol_color_list):
-            view.setStyle({'chain': chain}, {'cartoon': {'color': color}})
+            view.setStyle({"chain": chain}, {"cartoon": {"color": color}})
 
     if show_sidechains:
-        BB = ['C', 'O', 'N']
-        view.addStyle({'and': [{'resn': ["GLY", "PRO"], 'invert': True}, {'atom': BB, 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
-        view.addStyle({'and': [{'resn': "GLY"}, {'atom': 'CA'}]},
-                      {'sphere': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
-        view.addStyle({'and': [{'resn': "PRO"}, {'atom': ['C', 'O'], 'invert': True}]},
-                      {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+        BB = ["C", "O", "N"]
+        view.addStyle(
+            {
+                "and": [
+                    {"resn": ["GLY", "PRO"], "invert": True},
+                    {"atom": BB, "invert": True},
+                ]
+            },
+            {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
+        view.addStyle(
+            {"and": [{"resn": "GLY"}, {"atom": "CA"}]},
+            {"sphere": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
+        view.addStyle(
+            {"and": [{"resn": "PRO"}, {"atom": ["C", "O"], "invert": True}]},
+            {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}},
+        )
     if show_mainchains:
-        BB = ['C', 'O', 'N', 'CA']
-        view.addStyle({'atom': BB}, {'stick': {'colorscheme': f"WhiteCarbon", 'radius': 0.3}})
+        BB = ["C", "O", "N", "CA"]
+        view.addStyle(
+            {"atom": BB}, {"stick": {"colorscheme": "WhiteCarbon", "radius": 0.3}}
+        )
         view.zoomTo()
 
     view.zoomTo()

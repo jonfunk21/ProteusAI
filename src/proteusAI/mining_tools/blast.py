@@ -9,9 +9,15 @@ import biotite.sequence.io.fasta as fasta
 import biotite.application.blast as blast
 import biotite.database.entrez as entrez
 
+
 # TODO: change email
-def search_related_sequences(query: str, program: str = 'blastp', database: str = 'nr', obey_rules: bool = True,
-                            mail: str = 'johnyfunk@gmail.com'):
+def search_related_sequences(
+    query: str,
+    program: str = "blastp",
+    database: str = "nr",
+    obey_rules: bool = True,
+    mail: str = "johnyfunk@gmail.com",
+):
     """
     Search for related sequences using the plast web app.
 
@@ -37,7 +43,13 @@ def search_related_sequences(query: str, program: str = 'blastp', database: str 
         hits, hit_seqs = blast_related_sequences(query=sequence, database='swissprot')
     """
     # Search only the UniProt/SwissProt database
-    blast_app = blast.BlastWebApp(program=program, query=query, database=database, obey_rules=obey_rules, mail=mail)
+    blast_app = blast.BlastWebApp(
+        program=program,
+        query=query,
+        database=database,
+        obey_rules=obey_rules,
+        mail=mail,
+    )
     blast_app.start()
     blast_app.join()
     alignments = blast_app.get_alignments()

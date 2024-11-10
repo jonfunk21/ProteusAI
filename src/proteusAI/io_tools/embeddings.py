@@ -8,7 +8,10 @@ import os
 import torch
 from typing import Union
 
-def load_embeddings(path: str, names: Union[list, None] = None, map_location: str = 'cpu') -> tuple:
+
+def load_embeddings(
+    path: str, names: Union[list, None] = None, map_location: str = "cpu"
+) -> tuple:
     """
     Loads all representations files from a directory, returns the names/ids and sequences as lists.
 
@@ -25,9 +28,9 @@ def load_embeddings(path: str, names: Union[list, None] = None, map_location: st
     """
 
     tensors = []
-    if names == None:
-        files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.pt')]
-        names = [f[:-3] for f in os.listdir(path) if f.endswith('.pt')]
+    if names is None:
+        files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pt")]
+        names = [f[:-3] for f in os.listdir(path) if f.endswith(".pt")]
         for f in files:
             t = torch.load(f, map_location=map_location)
             tensors.append(t)

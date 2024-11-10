@@ -8,4 +8,4 @@ A subpackage for structures.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .struc import *
+from proteusAI.struc.struc import *  # noqa: F403

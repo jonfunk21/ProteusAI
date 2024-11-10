@@ -8,5 +8,5 @@ A subpackage for bayesian optimization tools.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .acq_fn import *
-from .genetic_algorithm import *
+from proteusAI.ml_tools.bo_tools.acq_fn import *  # noqa: F403
+from proteusAI.ml_tools.bo_tools.genetic_algorithm import *  # noqa: F403
