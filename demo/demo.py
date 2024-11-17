@@ -1,5 +1,6 @@
 import os
 import sys
+
 import proteusAI as pai
 
 print(os.getcwd())
@@ -8,7 +9,7 @@ sys.path.append("src/")
 
 # will initiate storage space - else in memory
 datasets = ["demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"]
-y_columns = ["Data"]  # enter your names here, e.g. 'pae1', 'plddt1'
+y_columns = ["Data"]
 
 results_dictionary = {}
 for dataset in datasets:
@@ -34,5 +35,8 @@ for dataset in datasets:
         # search for new mutants
         out = model.search(optim_problem="max")
 
-        # df = out['df']
-        # df.to_csv('<your results path>')
+        # save results
+        if not os.path.exists("demo/demo_data/out/"):
+            os.makedirs("demo/demo_data/out/", exist_ok=True)
+
+        out.to_csv("demo/demo_data/out/demo_search_results.csv")
