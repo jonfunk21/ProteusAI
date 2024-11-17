@@ -6,8 +6,8 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python=3.8
-  - pytorch=2.4
+  - python
+  - pytorch
   - pip
   - sphinx
   - pdbfixer
