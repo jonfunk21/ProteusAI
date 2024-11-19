@@ -35,7 +35,7 @@ dependencies = [
   "openmm",
   "umap-learn",
   "proteusAI",
-  "pdbfixer @ git+https://github.com/openmm/pdbfixer"
+  "pdbfixer @ git+https://github.com/openmm/pdbfixer@1.9"
 ]
 
 [project.optional-dependencies]
