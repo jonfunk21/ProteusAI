@@ -37,6 +37,7 @@ Install a local version which picks up the latest changes using an editable inst
 
 ```bash
 # conda env create -n proteusAI 
+# conda activate proteusAI
 pip install -e . --find-links https://data.pyg.org/whl/torch-2.4.1+cpu.html
 ```
 
