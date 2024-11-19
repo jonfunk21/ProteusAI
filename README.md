@@ -30,7 +30,7 @@ Clone the repository and cd to ProteusAI.
 
 ```
 cd ProteusAI
-pip install . --find-links https://data.pyg.org/whl/torch-2.4.0+cpu.html
+pip install . --find-links https://data.pyg.org/whl/torch-2.4.1+cpu.html
 ```
 
 ### Setting python environment
