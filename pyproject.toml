@@ -10,7 +10,7 @@ description = "ProteusAI is a python package designed for AI driven protein engi
 readme = "README.md"
 
 dependencies = [
-  "torch==2.4",
+  "torch<2.5",
   "torch_geometric",
   "torch-scatter",
   "uvicorn",
