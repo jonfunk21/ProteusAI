@@ -7,3 +7,7 @@ from importlib import metadata
 __version__ = metadata.version("proteusAI")
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
+
+from .Protein import *  # noqa: F401
+from .Library import *  # noqa: F401
+from .Model import *  # noqa: F401
