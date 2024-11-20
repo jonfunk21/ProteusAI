@@ -11,8 +11,8 @@ from typing import Union
 
 import pandas as pd
 import torch
+import biotite
 import biotite.structure.io as strucio
-import biotite.structure.AtomArray as AtomArray
 
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.struc as struc
@@ -50,7 +50,7 @@ class Protein:
         self,
         name: Union[str, None] = None,
         seq: Union[str, None] = None,
-        struc: Union[str, AtomArray, None] = None,
+        struc: Union[str, biotite.structure.AtomArray, None] = None,
         reps: Union[list, tuple] = [],
         user: Union[str, None] = "guest",
         y=None,
