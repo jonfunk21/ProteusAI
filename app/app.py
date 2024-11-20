@@ -93,7 +93,7 @@ PAPER_URL = "https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1"
 app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
-    ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Click here</a>'),
+    ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
     ###############
     ## DATA PAGE ##
     ###############
