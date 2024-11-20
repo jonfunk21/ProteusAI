@@ -21,6 +21,7 @@ from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
 
 import proteusAI as pai
+import tooltips
 
 app_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(
@@ -30,7 +31,7 @@ sys.path.append(
 is_zs_running = False
 executor = ThreadPoolExecutor()
 
-VERSION = "version " + "0.1"
+VERSION = "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs)" 
 REP_TYPES = [
     "ESM-2",
     "ESM-1v",
@@ -121,12 +122,26 @@ app_ui = ui.page_fluid(
                     ui.navset_tab(
                         ui.nav_panel(
                             "Library",
-                            ui.input_file(
-                                id="dataset_file",
-                                label="Select dataset (Default: demo dataset)",
-                                accept=[".csv", ".xlsx", ".xls"],
-                                placeholder="None",
+                            ui.row(
+                                ui.column(8,
+                                    ui.input_file(
+                                        id="dataset_file",
+                                        label="Upload Dataset",
+                                        accept=[".csv", ".xlsx", ".xls"],
+                                        placeholder="None",
+                                    ),
+                                ),
+                                ui.column(4,
+                                    ui.input_checkbox(
+                                        "demo_library_check", 
+                                        "Use Demo Data"
+                                    ),
+                                    style='padding:27px;',
+                                )
+
                             ),
+                            
+
                             "Data selection",
                             ui.row(
                                 ui.column(
@@ -156,21 +171,43 @@ app_ui = ui.page_fluid(
                         ),
                         ui.nav_panel(
                             "Sequence",
-                            ui.input_file(
-                                id="protein_file",
-                                label="Upload FASTA",
-                                accept=[".fasta"],
-                                placeholder="None",
+                            ui.row(
+                                ui.column(8,
+                                    ui.input_file(
+                                        id="protein_file",
+                                        label="Upload FASTA",
+                                        accept=[".fasta"],
+                                        placeholder="None",
+                                    ),
+                                ),
+                                ui.column(4,
+                                    ui.input_checkbox(
+                                        "demo_sequence_check", 
+                                        "Use Demo Data"
+                                    ),
+                                    style='padding:27px;',
+                                ),
                             ),
                             ui.input_action_button("confirm_protein", "Continue"),
                         ),
                         ui.nav_panel(
                             "Structure",
-                            ui.input_file(
-                                id="structure_file",
-                                label="Upload Structure",
-                                accept=[".pdb"],
-                                placeholder="None",
+                            ui.row(
+                                ui.column(8,
+                                    ui.input_file(
+                                        id="structure_file",
+                                        label="Upload Structure",
+                                        accept=[".pdb"],
+                                        placeholder="None",
+                                    ),
+                                ),
+                                ui.column(4,
+                                    ui.input_checkbox(
+                                        "demo_structure_check", 
+                                        "Use Demo Data"
+                                    ),
+                                    style='padding:27px;',
+                                ),
                             ),
                             ui.input_action_button("confirm_structure", "Continue"),
                         ),
@@ -178,6 +215,7 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
+                tooltips.data_tooltips,
                 ui.panel_conditional(
                     "typeof output.protein_fasta !== 'string'",
                     "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
@@ -196,6 +234,7 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("design_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
+                tooltips.design_tooltips,
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
@@ -212,6 +251,7 @@ app_ui = ui.page_fluid(
             "Zero-Shot",
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("zero_shot_ui"), width=SIDEBAR_WIDTH),
+                tooltips.zs_tooltips,
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
                     # ui.output_plot("entropy_plot"),
@@ -233,6 +273,7 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
+                tooltips.representations_tooltips,
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D"),
@@ -253,6 +294,7 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
+                tooltips.mlde_tooltips,
                 ui.navset_tab(
                     ui.nav_panel(
                         "Model Diagnostics",
@@ -275,6 +317,7 @@ app_ui = ui.page_fluid(
                     ui.output_ui("discovery_search_ui"),
                     width=SIDEBAR_WIDTH,
                 ),
+                tooltips.discovery_tooltips,
                 ### MAIN PANEL ###
                 ui.navset_tab(
                     ui.nav_panel(
@@ -450,7 +493,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             return ui.TagList(
-                "Upload a protein structure in the 'Data' tab to proceed."
+                "Upload a protein structure in the 'Data' tab to proceed with the Design module."
             )
 
     ### DYNAMIC DESIGN OUTPUT ###
@@ -573,7 +616,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             return ui.TagList(
-                "Upload a Library in the 'Data' tab or compute a library in the 'Zero-shot' tab for more visualization options.",
+                "Upload a library in the 'Data' tab or compute a library in the 'Zero-shot' tab to proceed with the Representations module.",
             )
 
     #####################
@@ -686,7 +729,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             return ui.TagList(
-                "The zero-shot mode is available for individual proteins and structures."
+                "Upload a protein sequence or protein structure in the 'Data' tab to proceed with the Zero Shot Module."
             )
 
     ################
@@ -932,7 +975,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList("Upload data in the 'Data' tab to proceed.")
+            return ui.TagList("Upload a library in the 'Data' tab to proceed with the Discovery module.")
 
     ### Discovery SEARCH UI ###
     @output
@@ -1058,14 +1101,30 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.confirm_dataset)
     async def _():
         df = DATASET()
-        if input.dataset_file() is None:
+        if input.dataset_file() is None and not input.demo_library_check():
             with ui.Progress(min=1, max=15) as p:
-                p.set(message="No data uploaded", detail="Upload data to continue")
+                p.set(message="No data uploaded", detail="Upload a library in the 'Data' tab to proceed with the MLDE module.")
                 time.sleep(2.5)
+
         else:
-            f: list[FileInfo] = input.dataset_file()
-            file_name = f[0]["name"]
-            ys = df[input.y_col()].to_list()
+            if input.demo_library_check():
+                data_path = os.path.join(app_path, '../demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv')
+                df = pd.read_csv(data_path)
+                file_name = data_path.split('/')[-1]
+                y_col = 'Data'
+                ys = df[y_col]
+                seqs_col = 'Sequence'
+                names_col = 'Description'
+                DATASET.set(df)
+                
+            else:
+                f: list[FileInfo] = input.dataset_file()
+                file_name = f[0]["name"]
+                ys = df[input.y_col()].to_list()
+                data_path = f[0]["datapath"]
+                seqs_col = input.seq_col()
+                y_col = input.y_col()
+                names_col = input.description_col()
 
             # Determine if the data is numerical or categorical
             if is_numerical(ys):
@@ -1081,11 +1140,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             lib = pai.Library(
                 user=input.USER().lower(),
-                source=f[0]["datapath"],
-                seqs_col=input.seq_col(),
-                y_col=input.y_col(),
+                source=data_path,
+                seqs_col=seqs_col,
+                y_col=y_col,
                 y_type=y_type,
-                names_col=input.description_col(),
+                names_col=names_col,
                 fname=file_name,
             )
 
@@ -1628,6 +1687,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
                 loop = asyncio.get_running_loop()
+                prot.zs_prediction(model, BATCH_SIZE, None, None, chain)
                 data = await loop.run_in_executor(
                     executor,
                     prot.zs_prediction,
@@ -1729,6 +1789,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop("sequence", axis=1)
+        df = df.rename(columns={'mutant': 'Mutation', 'p': 'Mutation Probability', 'mmp':'Zero-Shot Score', 'entropy':'Entropy'})
         return df
 
     ### DOWNLOAD ZS RESULTS ###
@@ -1740,6 +1801,37 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.TagList(
                 ui.output_plot("entropy_plot"),
                 ui.output_plot("scores_plot"),
+
+                # Descriptors
+                ui.h4("Table Interpretation"),
+                ui.row(
+                    ui.column(3,
+                    ui.h5("Mutation:")),
+                    ui.column(9,
+                    ui.h6("Sequence change from wild-type descriptor")),
+                    ui.column(3,
+                        ui.h5("Mutation Probability: "),
+                    ),
+                    ui.column(9,
+                        ui.h6("Predicted probability of the new amino acid at the position")
+                    ),
+                    ui.column(3,
+                        ui.h5("Zero-Shot Score:"),
+                    ),
+                    ui.column(9,
+                        ui.h6("Log probability of the wild type vs the mutant (higher is better).")
+                    ),
+                    ui.column(3,
+                        ui.h5("Entropy:")
+                    ),
+                    ui.column(9,
+                        ui.h6("Measure of the diversity tolarated at the position.")
+                    ),
+                    ui.column(12,
+                        ui.h6("Click column headder to sort the table by that column."),
+                    ),
+                ),
+
                 ui.output_data_frame("zs_df"),
                 ui.download_button("download_zs_df", "Download discovery results"),
             )
