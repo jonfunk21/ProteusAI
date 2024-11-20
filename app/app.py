@@ -215,7 +215,10 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                tooltips.data_tooltips,
+                ui.input_switch("data_switch", "Show more information", False),
+                ui.panel_conditional("input.data_switch",
+                    tooltips.data_tooltips,
+                ),
                 ui.panel_conditional(
                     "typeof output.protein_fasta !== 'string'",
                     "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
@@ -234,7 +237,10 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("design_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
-                tooltips.design_tooltips,
+                ui.input_switch("design_switch", "Show more information", False),
+                ui.panel_conditional("input.design_switch",
+                    tooltips.design_tooltips,
+                ),
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
@@ -251,7 +257,11 @@ app_ui = ui.page_fluid(
             "Zero-Shot",
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("zero_shot_ui"), width=SIDEBAR_WIDTH),
-                tooltips.zs_tooltips,
+                ui.input_switch("zs_switch", "Show more information", False),
+                ui.panel_conditional("input.zs_switch",
+                    tooltips.zs_tooltips,
+                ),
+                
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
                     # ui.output_plot("entropy_plot"),
@@ -273,7 +283,11 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                tooltips.representations_tooltips,
+                ui.input_switch("rep_switch", "Show more information", False),
+                ui.panel_conditional("input.rep_switch",
+                    tooltips.representations_tooltips,
+                ),
+                
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D"),
@@ -294,7 +308,11 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                tooltips.mlde_tooltips,
+                ui.input_switch("mlde_switch", "Show more information", False),
+                ui.panel_conditional("input.mlde_switch",
+                    tooltips.mlde_tooltips,
+                ),
+                
                 ui.navset_tab(
                     ui.nav_panel(
                         "Model Diagnostics",
@@ -317,7 +335,11 @@ app_ui = ui.page_fluid(
                     ui.output_ui("discovery_search_ui"),
                     width=SIDEBAR_WIDTH,
                 ),
-                tooltips.discovery_tooltips,
+                ui.input_switch("discovery_switch", "Show more information", False),
+                ui.panel_conditional("input.discovery_switch",
+                    tooltips.discovery_tooltips,
+                ),
+                
                 ### MAIN PANEL ###
                 ui.navset_tab(
                     ui.nav_panel(
@@ -1203,7 +1225,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_protein)
     async def _():
-        if input.protein_file() is None:
+        if input.protein_file() is None and not input.demo_sequence_check():
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
                 time.sleep(2.5)
@@ -1214,20 +1236,28 @@ def server(input: Inputs, output: Outputs, session: Session):
                     message="Searching for available data...",
                     detail="This may take a while...",
                 )
-                # initialize protein
-                # prot = protein()
-                f: list[FileInfo] = input.protein_file()
+
                 usr_path = os.path.join(USR_PATH, input.USER().lower())
-                file_name = f[0]["name"]
+
+                if input.demo_sequence_check():
+                    data_path = os.path.join(
+                        app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase_wt.fasta"
+                    )
+                    file_name = data_path.split("/")[-1]
+
+                else:
+                    f: list[FileInfo] = input.protein_file()
+                    data_path = f[0]["datapath"]
+                    file_name = f[0]["name"]
 
                 prot = pai.Protein(
-                    source=f[0]["datapath"], user=usr_path, fname=file_name
+                    source=data_path, user=usr_path, fname=file_name
                 )
 
                 # set shiny variables
                 PROTEIN.set(prot)
 
-                DATASET_PATH.set(f[0]["datapath"])
+                DATASET_PATH.set(data_path)
                 MODE.set("zero-shot")
 
                 # check for zs-computations # TODO: test if the number of computations match with the number of sequences.
@@ -1342,7 +1372,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_structure)
     async def _():
-        if input.structure_file() is None:
+        if input.structure_file() is None and not input.demo_structure_check():
             with ui.Progress(min=1, max=15) as p:
                 p.set(message="No data uploaded", detail="Upload data to continue")
                 time.sleep(2.5)
@@ -1353,15 +1383,23 @@ def server(input: Inputs, output: Outputs, session: Session):
                     detail="This may take a while...",
                 )
                 prot = PROTEIN()
-                f: list[FileInfo] = input.structure_file()
-                file_name = f[0]["name"]
+
+                if input.demo_structure_check():
+                    data_path = os.path.join(
+                        app_path, "../demo/demo_data/GB1.pdb"
+                    )
+                    file_name = data_path.split("/")[-1]
+                else:
+                    f: list[FileInfo] = input.structure_file()
+                    file_name = f[0]["name"]
+                    data_path = f[0]["datapath"]
 
                 usr_path = os.path.join(USR_PATH, input.USER().lower())
                 prot = pai.Protein(
-                    source=f[0]["datapath"], user=usr_path, fname=file_name
+                    source=data_path, user=usr_path, fname=file_name
                 )
 
-                name = f[0]["name"].split(".")[0]
+                name = file_name.split(".")[0]
                 prot.name = name
 
                 # load zs-library if exists
@@ -1394,7 +1432,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # set reactive variables
                 PROTEIN.set(prot)
-                DATASET_PATH.set(f[0]["datapath"])
+                DATASET_PATH.set(data_path)
                 MODE.set("structure")
 
                 ui.update_select("model_rep_type", choices=reps)
