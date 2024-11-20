@@ -31,7 +31,7 @@ sys.path.append(
 is_zs_running = False
 executor = ThreadPoolExecutor()
 
-VERSION = "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs)"
+VERSION = "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
 REP_TYPES = [
     "ESM-2",
     "ESM-1v",
@@ -86,10 +86,12 @@ MAX_EVAL_DICT = {
     "esm1v": 200,
 }
 
+PAPER_URL = "https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1"
 
 app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
+    ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Click here</a>'),
     ###############
     ## DATA PAGE ##
     ###############
