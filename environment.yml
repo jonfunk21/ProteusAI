@@ -8,11 +8,11 @@ channels:
 dependencies:
   - python=3.8
   # - pytorch-scatter
-  - pytorch=2.4
+  - pytorch=2.4.1
   # - pyg
   # - cpuonly
   - pip
   - sphinx
   - pdbfixer
   - pip:
-    - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.0+cpu.html
+    - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.1+cpu.html
