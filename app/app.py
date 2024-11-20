@@ -31,7 +31,7 @@ sys.path.append(
 is_zs_running = False
 executor = ThreadPoolExecutor()
 
-VERSION = "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs)" 
+VERSION = "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs)"
 REP_TYPES = [
     "ESM-2",
     "ESM-1v",
@@ -123,7 +123,8 @@ app_ui = ui.page_fluid(
                         ui.nav_panel(
                             "Library",
                             ui.row(
-                                ui.column(8,
+                                ui.column(
+                                    8,
                                     ui.input_file(
                                         id="dataset_file",
                                         label="Upload Dataset",
@@ -131,17 +132,14 @@ app_ui = ui.page_fluid(
                                         placeholder="None",
                                     ),
                                 ),
-                                ui.column(4,
+                                ui.column(
+                                    4,
                                     ui.input_checkbox(
-                                        "demo_library_check", 
-                                        "Use Demo Data"
+                                        "demo_library_check", "Use Demo Data"
                                     ),
-                                    style='padding:27px;',
-                                )
-
+                                    style="padding:27px;",
+                                ),
                             ),
-                            
-
                             "Data selection",
                             ui.row(
                                 ui.column(
@@ -172,7 +170,8 @@ app_ui = ui.page_fluid(
                         ui.nav_panel(
                             "Sequence",
                             ui.row(
-                                ui.column(8,
+                                ui.column(
+                                    8,
                                     ui.input_file(
                                         id="protein_file",
                                         label="Upload FASTA",
@@ -180,12 +179,12 @@ app_ui = ui.page_fluid(
                                         placeholder="None",
                                     ),
                                 ),
-                                ui.column(4,
+                                ui.column(
+                                    4,
                                     ui.input_checkbox(
-                                        "demo_sequence_check", 
-                                        "Use Demo Data"
+                                        "demo_sequence_check", "Use Demo Data"
                                     ),
-                                    style='padding:27px;',
+                                    style="padding:27px;",
                                 ),
                             ),
                             ui.input_action_button("confirm_protein", "Continue"),
@@ -193,7 +192,8 @@ app_ui = ui.page_fluid(
                         ui.nav_panel(
                             "Structure",
                             ui.row(
-                                ui.column(8,
+                                ui.column(
+                                    8,
                                     ui.input_file(
                                         id="structure_file",
                                         label="Upload Structure",
@@ -201,12 +201,12 @@ app_ui = ui.page_fluid(
                                         placeholder="None",
                                     ),
                                 ),
-                                ui.column(4,
+                                ui.column(
+                                    4,
                                     ui.input_checkbox(
-                                        "demo_structure_check", 
-                                        "Use Demo Data"
+                                        "demo_structure_check", "Use Demo Data"
                                     ),
-                                    style='padding:27px;',
+                                    style="padding:27px;",
                                 ),
                             ),
                             ui.input_action_button("confirm_structure", "Continue"),
@@ -975,7 +975,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList("Upload a library in the 'Data' tab to proceed with the Discovery module.")
+            return ui.TagList(
+                "Upload a library in the 'Data' tab to proceed with the Discovery module."
+            )
 
     ### Discovery SEARCH UI ###
     @output
@@ -1103,20 +1105,25 @@ def server(input: Inputs, output: Outputs, session: Session):
         df = DATASET()
         if input.dataset_file() is None and not input.demo_library_check():
             with ui.Progress(min=1, max=15) as p:
-                p.set(message="No data uploaded", detail="Upload a library in the 'Data' tab to proceed with the MLDE module.")
+                p.set(
+                    message="No data uploaded",
+                    detail="Upload a library in the 'Data' tab to proceed with the MLDE module.",
+                )
                 time.sleep(2.5)
 
         else:
             if input.demo_library_check():
-                data_path = os.path.join(app_path, '../demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv')
+                data_path = os.path.join(
+                    app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"
+                )
                 df = pd.read_csv(data_path)
-                file_name = data_path.split('/')[-1]
-                y_col = 'Data'
+                file_name = data_path.split("/")[-1]
+                y_col = "Data"
                 ys = df[y_col]
-                seqs_col = 'Sequence'
-                names_col = 'Description'
+                seqs_col = "Sequence"
+                names_col = "Description"
                 DATASET.set(df)
-                
+
             else:
                 f: list[FileInfo] = input.dataset_file()
                 file_name = f[0]["name"]
@@ -1789,7 +1796,14 @@ def server(input: Inputs, output: Outputs, session: Session):
             path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop("sequence", axis=1)
-        df = df.rename(columns={'mutant': 'Mutation', 'p': 'Mutation Probability', 'mmp':'Zero-Shot Score', 'entropy':'Entropy'})
+        df = df.rename(
+            columns={
+                "mutant": "Mutation",
+                "p": "Mutation Probability",
+                "mmp": "Zero-Shot Score",
+                "entropy": "Entropy",
+            }
+        )
         return df
 
     ### DOWNLOAD ZS RESULTS ###
@@ -1801,37 +1815,40 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.TagList(
                 ui.output_plot("entropy_plot"),
                 ui.output_plot("scores_plot"),
-
                 # Descriptors
                 ui.h4("Table Interpretation"),
                 ui.row(
-                    ui.column(3,
-                    ui.h5("Mutation:")),
-                    ui.column(9,
-                    ui.h6("Sequence change from wild-type descriptor")),
-                    ui.column(3,
+                    ui.column(3, ui.h5("Mutation:")),
+                    ui.column(9, ui.h6("Sequence change from wild-type descriptor")),
+                    ui.column(
+                        3,
                         ui.h5("Mutation Probability: "),
                     ),
-                    ui.column(9,
-                        ui.h6("Predicted probability of the new amino acid at the position")
+                    ui.column(
+                        9,
+                        ui.h6(
+                            "Predicted probability of the new amino acid at the position"
+                        ),
                     ),
-                    ui.column(3,
+                    ui.column(
+                        3,
                         ui.h5("Zero-Shot Score:"),
                     ),
-                    ui.column(9,
-                        ui.h6("Log probability of the wild type vs the mutant (higher is better).")
+                    ui.column(
+                        9,
+                        ui.h6(
+                            "Log probability of the wild type vs the mutant (higher is better)."
+                        ),
                     ),
-                    ui.column(3,
-                        ui.h5("Entropy:")
+                    ui.column(3, ui.h5("Entropy:")),
+                    ui.column(
+                        9, ui.h6("Measure of the diversity tolarated at the position.")
                     ),
-                    ui.column(9,
-                        ui.h6("Measure of the diversity tolarated at the position.")
-                    ),
-                    ui.column(12,
+                    ui.column(
+                        12,
                         ui.h6("Click column headder to sort the table by that column."),
                     ),
                 ),
-
                 ui.output_data_frame("zs_df"),
                 ui.download_button("download_zs_df", "Download discovery results"),
             )

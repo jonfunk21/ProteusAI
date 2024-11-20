@@ -9,7 +9,7 @@ sys.path.append("src/")
 
 # will initiate storage space - else in memory
 datasets = ["demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"]
-y_columns = ["Data"] 
+y_columns = ["Data"]
 
 results_dictionary = {}
 for dataset in datasets:
