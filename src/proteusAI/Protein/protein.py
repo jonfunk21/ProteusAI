@@ -9,6 +9,7 @@ import sys
 import warnings
 from typing import Union
 
+import biotite.structure
 import pandas as pd
 import torch
 import biotite
@@ -254,7 +255,7 @@ class Protein:
         prot = struc.load_struc(prot_f)
 
         if filter_solvent:
-            non_solvent_mask = ~struc.filter_solvent(prot)
+            non_solvent_mask = biotite.structure.filter_solvent(prot)
             prot = prot[non_solvent_mask]
 
         seqs = struc.get_sequences(prot_f)
