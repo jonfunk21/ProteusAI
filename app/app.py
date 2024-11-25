@@ -17,11 +17,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
+import tooltips
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
 
 import proteusAI as pai
-import tooltips
 
 app_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(
@@ -126,25 +126,27 @@ app_ui = ui.page_fluid(
                     ui.navset_tab(
                         ui.nav_panel(
                             "Library",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="dataset_file",
-                                        label="Upload Dataset",
-                                        accept=[".csv", ".xlsx", ".xls"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_library_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+                        
+                            ui.input_checkbox(
+                                "demo_library_check", "Use Demo Data"
+                            ),
+
+                            ui.panel_conditional(
+                                "!input.demo_library_check",
+                                ui.input_file(
+                                    id="dataset_file",
+                                    label="Upload Dataset",
+                                    accept=[".csv", ".xlsx", ".xls"],
+                                    placeholder="None",
                                 ),
                             ),
-                            "Data selection",
+                            
+                            ui.panel_conditional(
+                                "input.demo_library_check",
+                                ui.input_select("library_demo_data", "Select MLDE or Discovery Demo", ["MLDE", "Discovery"])
+                            ),
+                            
+                            "Data Selection",
                             ui.row(
                                 ui.column(
                                     6,
@@ -169,50 +171,44 @@ app_ui = ui.page_fluid(
                                     ),
                                 ),
                             ),
-                            ui.input_action_button("confirm_dataset", "Continue"),
+                            ui.input_action_button("confirm_library", "Continue"),
                         ),
                         ui.nav_panel(
                             "Sequence",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="protein_file",
-                                        label="Upload FASTA",
-                                        accept=[".fasta"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_sequence_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+
+                            ui.input_checkbox(
+                                "demo_sequence_check", "Use Demo Data"
+                            ),
+
+                            ui.panel_conditional(
+                                "!input.demo_sequence_check",
+                                ui.input_file(
+                                    id="protein_file",
+                                    label="Upload FASTA",
+                                    accept=[".fasta"],
+                                    placeholder="None",
                                 ),
                             ),
+                            
+
                             ui.input_action_button("confirm_protein", "Continue"),
                         ),
                         ui.nav_panel(
                             "Structure",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="structure_file",
-                                        label="Upload Structure",
-                                        accept=[".pdb"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_structure_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+                            ui.input_checkbox(
+                                "demo_structure_check", "Use Demo Data"
+                            ),
+
+                            ui.panel_conditional(
+                                "!input.demo_structure_check",
+                                ui.input_file(
+                                    id="structure_file",
+                                    label="Upload Structure",
+                                    accept=[".pdb"],
+                                    placeholder="None",
                                 ),
                             ),
+
                             ui.input_action_button("confirm_structure", "Continue"),
                         ),
                     ),
@@ -373,9 +369,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     # DUMMY DATA
     dummy = pd.DataFrame(
         {
-            "Sequence": ["MGVARGTV...G", "AGVARGTV...G", "...", "MGVARGTV...V"],
-            "Description": ["wt", "M1A", "...", "G142V"],
-            "Activity": ["0.0", "0.32", "...", "-0.21"],
+            "Sequence": ["MGVARGTV...G", "AGVARGTV...G", "AGVARGTV...G", "AGVARGTV...G" ,"...", "MGVARGTV...V"],
+            "Description": ["wt", "M1A", "D147I", "A176L", "...", "G142V"],
+            "Class":["A", None, "B", "A", "...", "A"],
+            "Activity": ["0.0", "0.32", "0.67", "1.2", "...", "-0.21"],
         }
     )
 
@@ -524,40 +521,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "Upload a protein structure in the 'Data' tab to proceed with the Design module."
             )
 
-    ### DYNAMIC DESIGN OUTPUT ###
-    # @output
-    # @render.ui
-    # def folding():
-    #    out = DESIGN_OUTPUT()
-    #    if type(out) != str:
-    #        return ui.TagList(
-    #            ui.h5("Fold designed sequences"),
-    #            ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
-    #            ui.row(
-    #                ui.column(6,
-    #                    ui.input_select("folding_model", "Select folding model", FOLDING_MODELS),
-    #                ),
-    #                ui.column(6,
-    #                    ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8),
-    #                ),
-    #
-    #            ),
-    #            ui.row(
-    #                ui.column(6,
-    #                    ui.input_action_button("folding_button", "Fold")
-    #                ),
-    #                ui.column(6,
-    #                    ui.input_checkbox("energy_minimization", "Energy minimization"),
-    #                    style='padding:10px;',
-    #                ),
-    #            ),
-
-    #            ui.h5("Analyze protein structures"),
-    #            ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=FIXED_RES(), multiple=True),
-    #            ui.column(6,
-    #                ui.input_action_button("analyze_designs", "Analyze Strucures"),
-    #            ),
-    #        )
 
     ###########################
     ### REPRESENTATIONS TAB ###
@@ -596,39 +559,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.input_action_button("train_vae", "Train VAE"),
                 ),
                 ui.input_select("vis_method", "Visualization Method", REP_VISUAL),
-                # ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
-                # Conditional panel for Site
-                # ui.panel_conditional("input.color_by === 'Site'",
-                #        ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)"),
-                #    ),
-                # Conditional panel for Y-value with numeric data
-                # ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
-                #        ui.row(
-                #            ui.column(6,
-                #                    ui.input_numeric("y_upper", "Choose an upper limit for y", value=None),
-                #                ),
-                #            ui.column(6,
-                #                    ui.input_numeric("y_lower", "Choose an lower limit for y", value=None),
-                #                ),
-                #        ),
-                #    ),
-                # Conditional panel fo Y-value with categorical data
-                # ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
-                #        ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)"),
-                #    ),
-                # ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
-                # ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
-                # ui.panel_conditional("input.hide_by_y === true",
-                #    ui.row(
-                #    # change these to be the min and max values observed in the library
-                #    ui.column(6,
-                #                ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100),
-                #        ),
-                #    ui.column(6,
-                #                ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0),
-                #        ),
-                #    ),
-                # ),
+
                 ui.row(
                     ui.column(12, "Visualize representations"),
                     ui.column(
@@ -1091,6 +1022,43 @@ def server(input: Inputs, output: Outputs, session: Session):
         # set reactive variables
         DATASET.set(df)
         DATASET_PATH.set(f[0]["datapath"])
+    
+    ### READ MLDE DEMO ###
+    def read_MLDE_demo():
+        data_path = os.path.join(
+            app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase.csv"
+        )
+        df = pd.read_csv(data_path)
+        file_name = data_path.split("/")[-1]
+        y_col = "Data"
+        ys = df[y_col]
+        seqs_col = "Sequence"
+        names_col = "Description"
+        DATASET.set(df)
+        DATASET_PATH.set(data_path)
+        return seqs_col, names_col, y_col 
+    
+    ### READ DISCOVERY DEMO ###
+    def read_discovery_demo():
+        data_path = os.path.join(
+            app_path, "../demo/demo_data/methyltransfereases.csv"
+        )
+        df = pd.read_csv(data_path)
+        file_name = data_path.split("/")[-1]
+        y_col = "coverage_5"
+        ys = df[y_col]
+        seqs_col = "sequence"
+        names_col = "uid"
+        DATASET.set(df)
+        DATASET_PATH.set(data_path)
+        return seqs_col, names_col, y_col 
+    
+    ### READ DEMO LIBRARY
+    def demo_library():
+        if input.library_demo_data() == "MLDE":
+            seqs_col, names_col, y_col = read_MLDE_demo()
+        elif input.library_demo_data() == "Discovery":
+            seqs_col, names_col, y_col = read_discovery_demo()
 
     ### RENDER DATASET TABLE ###
     @output
@@ -1098,37 +1066,55 @@ def server(input: Inputs, output: Outputs, session: Session):
     def dataset_table():
         df = render.DataTable(DATASET(), summary=True)
         return df
-
-    ### EXTRACT DATASET COLUMNS ###
-    @reactive.Effect()
+    
+    ### UPDATE DATASET
+    @reactive.Effect
+    @reactive.event(input.library_demo_data)
     def _():
+        if input.demo_library_check():
+            demo_library()
+
+    ### UPDATE DATASET
+    @reactive.Effect
+    @reactive.event(input.demo_library_check)
+    def _():
+        if input.demo_library_check():
+            demo_library()
+            
+    ### UPDATE COL SELECTION
+    def update_col_selection(seq_col="Sequences", description_col="Descriptions", y_col="Y-values"):
         cols = list(DATASET().columns)
 
         # set reactive variables
         ui.update_select(
             "seq_col",
-            label="Sequences",
+            label=seq_col,
             choices=cols,
             selected=cols[0],
         )
 
         ui.update_select(
             "description_col",
-            label="Descriptions",
+            label=description_col,
             choices=cols,
             selected=cols[1],
         )
 
         ui.update_select(
             "y_col",
-            label="Y-values",
+            label=y_col,
             choices=cols,
             selected=cols[-1],
         )
 
+    ### EXTRACT DATASET COLUMNS ###
+    @reactive.Effect()
+    def _():
+        update_col_selection()
+
     ### CONFIRM DATASET ###
     @reactive.Effect
-    @reactive.event(input.confirm_dataset)
+    @reactive.event(input.confirm_library)
     async def _():
         df = DATASET()
         if input.dataset_file() is None and not input.demo_library_check():
@@ -1141,25 +1127,18 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             if input.demo_library_check():
-                data_path = os.path.join(
-                    app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"
-                )
-                df = pd.read_csv(data_path)
+                data_path = DATASET_PATH()
                 file_name = data_path.split("/")[-1]
-                y_col = "Data"
-                ys = df[y_col]
-                seqs_col = "Sequence"
-                names_col = "Description"
-                DATASET.set(df)
 
             else:
                 f: list[FileInfo] = input.dataset_file()
                 file_name = f[0]["name"]
-                ys = df[input.y_col()].to_list()
                 data_path = f[0]["datapath"]
-                seqs_col = input.seq_col()
-                y_col = input.y_col()
-                names_col = input.description_col()
+
+            ys = df[input.y_col()].to_list()
+            seqs_col = input.seq_col()
+            y_col = input.y_col()
+            names_col = input.description_col()
 
             # Determine if the data is numerical or categorical
             if is_numerical(ys):
@@ -1661,41 +1640,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         if not isinstance(out, str):
             msg = "Residues that were fixed during design: \n" + ", ".join(FIXED_RES())
             return msg
-
-    ### FOLDING BUTTON ###
-    # @reactive.Effect
-    # @reactive.event(input.folding_button)
-    # def _():
-    #    """
-    #    Fold selected proteins
-    #    """
-    #    lib = DESIGN_LIB()
-    #    out = DESIGN_OUTPUT()
-    #    prot = PROTEIN()
-    #    selection = input.fold_these()
-    #    with ui.Progress(min=1, max=len(selection)) as p:
-    #        p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
-    #        model = MODEL_DICT[input.folding_model()]
-    #        num_recycles = input.num_recycles()
-    #        to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
-    #        out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
-    #        fold_lib = pai.Library(user=prot.user, source=out)
-    #        FOLD_LIB.set(fold_lib)
-
-    ### ANALYZE DESIGNS ###
-    # @reactive.Effect
-    # @reactive.event(input.analyze_designs)
-    # def _():
-    #    if input.design_sidechains() == None:
-    #        sidechains = []
-    #    else:
-    #        sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-    #
-    #    lib = FOLD_LIB()
-    #    prot = PROTEIN()
-    #
-    #    sidechains_dict = {input.mutlichain_chain():sidechains}
-    #    lib.struc_geom(ref=prot, residues=sidechains_dict)
 
     ###############
     ## ZERO-SHOT ##
@@ -2524,6 +2468,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     fig, ax, df = await loop.run_in_executor(
                         executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
                     )
+                    model_lib.plot_tsne(m.x, None, None, model_lib.names)
                 elif vis_method == "PCA":
                     fig, ax, df = await loop.run_in_executor(
                         executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
