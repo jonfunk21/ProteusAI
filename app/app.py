@@ -1022,9 +1022,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase.csv"
         )
         df = pd.read_csv(data_path)
-        file_name = data_path.split("/")[-1]
         y_col = "Data"
-        ys = df[y_col]
         seqs_col = "Sequence"
         names_col = "Description"
         DATASET.set(df)
@@ -1035,9 +1033,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def read_discovery_demo():
         data_path = os.path.join(app_path, "../demo/demo_data/methyltransfereases.csv")
         df = pd.read_csv(data_path)
-        file_name = data_path.split("/")[-1]
         y_col = "coverage_5"
-        ys = df[y_col]
         seqs_col = "sequence"
         names_col = "uid"
         DATASET.set(df)
