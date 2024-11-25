@@ -183,7 +183,7 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-                            ui.input_action_button("confirm_protein", "Continue"),
+                            ui.input_action_button("confirm_sequence", "Continue"),
                         ),
                         ui.nav_panel(
                             "Structure",
@@ -1201,7 +1201,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### CONFIRM PROTEIN ###
     @reactive.Effect
-    @reactive.event(input.confirm_protein)
+    @reactive.event(input.confirm_sequence)
     async def _():
         if input.protein_file() is None and not input.demo_sequence_check():
             with ui.Progress(min=1, max=15) as p:
