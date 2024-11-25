@@ -126,11 +126,7 @@ app_ui = ui.page_fluid(
                     ui.navset_tab(
                         ui.nav_panel(
                             "Library",
-                        
-                            ui.input_checkbox(
-                                "demo_library_check", "Use Demo Data"
-                            ),
-
+                            ui.input_checkbox("demo_library_check", "Use Demo Data"),
                             ui.panel_conditional(
                                 "!input.demo_library_check",
                                 ui.input_file(
@@ -140,12 +136,14 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-                            
                             ui.panel_conditional(
                                 "input.demo_library_check",
-                                ui.input_select("library_demo_data", "Select MLDE or Discovery Demo", ["MLDE", "Discovery"])
+                                ui.input_select(
+                                    "library_demo_data",
+                                    "Select MLDE or Discovery Demo",
+                                    ["MLDE", "Discovery"],
+                                ),
                             ),
-                            
                             "Data Selection",
                             ui.row(
                                 ui.column(
@@ -175,11 +173,7 @@ app_ui = ui.page_fluid(
                         ),
                         ui.nav_panel(
                             "Sequence",
-
-                            ui.input_checkbox(
-                                "demo_sequence_check", "Use Demo Data"
-                            ),
-
+                            ui.input_checkbox("demo_sequence_check", "Use Demo Data"),
                             ui.panel_conditional(
                                 "!input.demo_sequence_check",
                                 ui.input_file(
@@ -189,16 +183,11 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-                            
-
                             ui.input_action_button("confirm_protein", "Continue"),
                         ),
                         ui.nav_panel(
                             "Structure",
-                            ui.input_checkbox(
-                                "demo_structure_check", "Use Demo Data"
-                            ),
-
+                            ui.input_checkbox("demo_structure_check", "Use Demo Data"),
                             ui.panel_conditional(
                                 "!input.demo_structure_check",
                                 ui.input_file(
@@ -208,7 +197,6 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-
                             ui.input_action_button("confirm_structure", "Continue"),
                         ),
                     ),
@@ -369,9 +357,16 @@ def server(input: Inputs, output: Outputs, session: Session):
     # DUMMY DATA
     dummy = pd.DataFrame(
         {
-            "Sequence": ["MGVARGTV...G", "AGVARGTV...G", "AGVARGTV...G", "AGVARGTV...G" ,"...", "MGVARGTV...V"],
+            "Sequence": [
+                "MGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "...",
+                "MGVARGTV...V",
+            ],
             "Description": ["wt", "M1A", "D147I", "A176L", "...", "G142V"],
-            "Class":["A", None, "B", "A", "...", "A"],
+            "Class": ["A", None, "B", "A", "...", "A"],
             "Activity": ["0.0", "0.32", "0.67", "1.2", "...", "-0.21"],
         }
     )
@@ -521,7 +516,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "Upload a protein structure in the 'Data' tab to proceed with the Design module."
             )
 
-
     ###########################
     ### REPRESENTATIONS TAB ###
     ###########################
@@ -559,7 +553,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.input_action_button("train_vae", "Train VAE"),
                 ),
                 ui.input_select("vis_method", "Visualization Method", REP_VISUAL),
-
                 ui.row(
                     ui.column(12, "Visualize representations"),
                     ui.column(
@@ -1022,7 +1015,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # set reactive variables
         DATASET.set(df)
         DATASET_PATH.set(f[0]["datapath"])
-    
+
     ### READ MLDE DEMO ###
     def read_MLDE_demo():
         data_path = os.path.join(
@@ -1036,13 +1029,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         names_col = "Description"
         DATASET.set(df)
         DATASET_PATH.set(data_path)
-        return seqs_col, names_col, y_col 
-    
+        return seqs_col, names_col, y_col
+
     ### READ DISCOVERY DEMO ###
     def read_discovery_demo():
-        data_path = os.path.join(
-            app_path, "../demo/demo_data/methyltransfereases.csv"
-        )
+        data_path = os.path.join(app_path, "../demo/demo_data/methyltransfereases.csv")
         df = pd.read_csv(data_path)
         file_name = data_path.split("/")[-1]
         y_col = "coverage_5"
@@ -1051,8 +1042,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         names_col = "uid"
         DATASET.set(df)
         DATASET_PATH.set(data_path)
-        return seqs_col, names_col, y_col 
-    
+        return seqs_col, names_col, y_col
+
     ### READ DEMO LIBRARY
     def demo_library():
         if input.library_demo_data() == "MLDE":
@@ -1066,7 +1057,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def dataset_table():
         df = render.DataTable(DATASET(), summary=True)
         return df
-    
+
     ### UPDATE DATASET
     @reactive.Effect
     @reactive.event(input.library_demo_data)
@@ -1080,9 +1071,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         if input.demo_library_check():
             demo_library()
-            
+
     ### UPDATE COL SELECTION
-    def update_col_selection(seq_col="Sequences", description_col="Descriptions", y_col="Y-values"):
+    def update_col_selection(
+        seq_col="Sequences", description_col="Descriptions", y_col="Y-values"
+    ):
         cols = list(DATASET().columns)
 
         # set reactive variables
