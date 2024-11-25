@@ -6,28 +6,31 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
-import proteusAI.visual_tools as vis
-import proteusAI.ml_tools.bo_tools as BO
-import random
-import json
-import csv
-import torch
-import pandas as pd
-import gpytorch
-import numpy as np
-from joblib import dump
-from typing import Union
-from proteusAI.Library import Library
-from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
-from sklearn.linear_model import Ridge, RidgeClassifier
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
+import csv
+import json
+import random
+from typing import Union
+
+import gpytorch
+import numpy as np
+import pandas as pd
+import torch
+from joblib import dump
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import Ridge, RidgeClassifier
+from sklearn.model_selection import KFold
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
+
+import proteusAI.io_tools as io_tools
+import proteusAI.ml_tools.bo_tools as BO
+import proteusAI.visual_tools as vis
+from proteusAI.Library import Library
+from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 
 class Model:
@@ -82,6 +85,7 @@ class Model:
         self.train_data = []
         self.test_data = []
         self.val_data = []
+        self.unlabelled = []
         self.test_true = []
         self.test_predictions = []
         self.val_true = []
@@ -174,7 +178,9 @@ class Model:
         # self._update_attributes(**kwargs)
 
         # split data
-        self.train_data, self.test_data, self.val_data = self.split_data()
+        self.train_data, self.test_data, self.val_data, self.unlabelled = (
+            self.split_data()
+        )
 
         # load model
         self._model = self.model()
@@ -209,27 +215,34 @@ class Model:
 
         proteins = self.library.proteins
 
+        unlabelled_data = [
+            prot for prot in proteins if self.library.class_dict[prot.y] == "nan"
+        ]
+        labelled_data = [
+            prot for prot in proteins if self.library.class_dict[prot.y] != "nan"
+        ]
+
         if self.seed:
             random.seed(self.seed)
 
         train_data, test_data, val_data = [], [], []
 
-        if isinstance(self.split, tuple):
+        if type(self.split) == tuple:
             train_ratio, test_ratio, val_ratio = tuple(
                 value / sum(self.split) for value in self.split
             )
-            train_size = int(train_ratio * len(proteins))
-            test_size = int(test_ratio * len(proteins))
+            train_size = int(train_ratio * len(labelled_data))
+            test_size = int(test_ratio * len(labelled_data))
 
-            random.shuffle(proteins)
+            random.shuffle(labelled_data)
 
             # Split the data
-            train_data = proteins[:train_size]
-            test_data = proteins[train_size : train_size + test_size]
-            val_data = proteins[train_size + test_size :]
+            train_data = labelled_data[:train_size]
+            test_data = labelled_data[train_size : train_size + test_size]
+            val_data = labelled_data[train_size + test_size :]
 
         # custom datasplit
-        elif isinstance(self.split, dict):
+        elif type(self.split) == dict:
             train_data = self.split["train"]
             test_data = self.split["test"]
             val_data = self.split["val"]
@@ -238,7 +251,7 @@ class Model:
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
 
-        return train_data, test_data, val_data
+        return train_data, test_data, val_data, unlabelled_data
 
     def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
@@ -271,7 +284,7 @@ class Model:
         model = None
 
         # Define the path for the params.json and model
-        if self.dest is not None:
+        if self.dest != None:
             params_path = f"{self.dest}/params.json"
         else:
             params_path = os.path.join(
@@ -335,7 +348,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message="Loading representations", detail="...")
+            pbar.set(message="Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -366,7 +379,7 @@ class Model:
 
         if self.k_folds is None:
             if pbar:
-                pbar.set(message="Training {self.model_type}", detail="...")
+                pbar.set(message=f"Training {self.model_type}", detail=f"...")
 
             # train model
             self._model.fit(x_train, self.y_train)
@@ -384,7 +397,7 @@ class Model:
             self.y_test_sigma = [None] * len(self.y_test)
 
             # Save the model
-            if self.dest is not None:
+            if self.dest != None:
                 model_save_path = f"{self.dest}/model.joblib"
                 csv_dest = f"{self.dest}"
             else:
@@ -461,7 +474,7 @@ class Model:
                 if pbar:
                     pbar.set(
                         message=f"Training {self.model_type} {i+1}/{self.k_folds}",
-                        detail="...",
+                        detail=f"...",
                     )
 
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
@@ -592,7 +605,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message="Loading representations", detail="...")
+            pbar.set(message=f"Loading representations", detail=f"...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -654,22 +667,17 @@ class Model:
             device=self.device
         )
         self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
-        # fix_mean = True
 
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
 
-        # for param in self._model.named_parameters():
-        #    print(param)
-
-        # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
         self._model.train()
         self.likelihood.train()
         prev_loss = float("inf")
 
         if pbar:
-            pbar.set(message=f"Training {self.model_type}", detail="...")
+            pbar.set(message=f"Training {self.model_type}", detail=f"...")
 
         for _ in range(epochs):
             optimizer.zero_grad()
@@ -737,7 +745,7 @@ class Model:
             self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # Save the model
-        if self.dest is not None:
+        if self.dest != None:
             model_save_path = f"{self.dest}/model.pt"
             csv_dest = self.dest
         else:
@@ -981,7 +989,7 @@ class Model:
         """
 
         if self._model is None:
-            raise ValueError("Model is 'None'")
+            raise ValueError(f"Model is 'None'")
 
         reps = self.load_representations(proteins, rep_path)
 
@@ -993,7 +1001,7 @@ class Model:
 
         # ensemble
         ensemble_scores = []
-        if isinstance(self._model, list):
+        if type(self._model) == list:
             for model in self._model:
                 score = model.score(x, y)
                 ensemble_scores.append(score)
@@ -1030,7 +1038,7 @@ class Model:
         """
 
         if self.dest:
-            dest = os.path.join(self.dest, "plots")
+            dest = os.path.join(self.dest, f"plots")
         else:
             dest = os.path.join(
                 self.library.rep_path, f"../models/{self.model_type}/{self.x}/plots"
@@ -1118,7 +1126,7 @@ class Model:
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         if pbar:
-            pbar.set(message=f"Searching {N} diverse sequences", detail="...")
+            pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
 
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
 
@@ -1138,7 +1146,7 @@ class Model:
         y_sigma = [prot.y_sigma for prot in selected_proteins]
 
         # Save the search results
-        if self.dest is not None:
+        if self.dest != None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(
@@ -1186,7 +1194,7 @@ class Model:
             pbar: Progress bar for ProteusAI app.
         """
         if pbar:
-            pbar.set(message=f"Evaluation {max_eval} sequences", detail="...")
+            pbar.set(message=f"Evaluation {max_eval} sequences", detail=f"...")
 
         # Sort proteins based on the optimization problem
         if optim_problem == "max":
@@ -1242,7 +1250,7 @@ class Model:
             mutations = BO.find_mutations(improved_seqs)
 
         # Save destination for search_results
-        if self.dest is not None:
+        if self.dest != None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(
@@ -1347,7 +1355,7 @@ class Model:
                     mutated_name = (
                         name + f"+{seq_list[pos]}{pos+1}{mut}"
                     )  # list is indexed at 0 but mutation descriptions at 1
-                except Exception:
+                except:
                     pos = random.randint(0, len(seq_list) - 1)
                     mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
                     mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"
