@@ -6,31 +6,28 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
+import proteusAI.visual_tools as vis
+import proteusAI.ml_tools.bo_tools as BO
+import random
+import json
+import csv
+import torch
+import pandas as pd
+import gpytorch
+import numpy as np
+from joblib import dump
+from typing import Union
+from proteusAI.Library import Library
+from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
+from sklearn.linear_model import Ridge, RidgeClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.svm import SVC, SVR
+from sklearn.model_selection import KFold
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
-import csv
-import json
-import random
-from typing import Union
-
-import gpytorch
-import numpy as np
-import pandas as pd
-import torch
-from joblib import dump
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import Ridge, RidgeClassifier
-from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.svm import SVC, SVR
-
-import proteusAI.io_tools as io_tools
-import proteusAI.ml_tools.bo_tools as BO
-import proteusAI.visual_tools as vis
-from proteusAI.Library import Library
-from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 
 class Model:
@@ -227,7 +224,7 @@ class Model:
 
         train_data, test_data, val_data = [], [], []
 
-        if type(self.split) == tuple:
+        if isinstance(self.split, tuple):
             train_ratio, test_ratio, val_ratio = tuple(
                 value / sum(self.split) for value in self.split
             )
@@ -242,7 +239,7 @@ class Model:
             val_data = labelled_data[train_size + test_size :]
 
         # custom datasplit
-        elif type(self.split) == dict:
+        elif isinstance(self.split, dict):
             train_data = self.split["train"]
             test_data = self.split["test"]
             val_data = self.split["val"]
@@ -284,7 +281,7 @@ class Model:
         model = None
 
         # Define the path for the params.json and model
-        if self.dest != None:
+        if self.dest is not None:
             params_path = f"{self.dest}/params.json"
         else:
             params_path = os.path.join(
@@ -348,7 +345,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message="Loading representations", detail=f"...")
+            pbar.set(message="Loading representations", detail="...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -379,7 +376,7 @@ class Model:
 
         if self.k_folds is None:
             if pbar:
-                pbar.set(message=f"Training {self.model_type}", detail=f"...")
+                pbar.set(message="Training {self.model_type}", detail="...")
 
             # train model
             self._model.fit(x_train, self.y_train)
@@ -397,7 +394,7 @@ class Model:
             self.y_test_sigma = [None] * len(self.y_test)
 
             # Save the model
-            if self.dest != None:
+            if self.dest is not None:
                 model_save_path = f"{self.dest}/model.joblib"
                 csv_dest = f"{self.dest}"
             else:
@@ -474,7 +471,7 @@ class Model:
                 if pbar:
                     pbar.set(
                         message=f"Training {self.model_type} {i+1}/{self.k_folds}",
-                        detail=f"...",
+                        detail="...",
                     )
 
                 x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
@@ -605,7 +602,7 @@ class Model:
         assert self._model is not None
 
         if pbar:
-            pbar.set(message=f"Loading representations", detail=f"...")
+            pbar.set(message="Loading representations", detail="...")
 
         # This is for representations that are not stored in memory
         train = self.load_representations(self.train_data, rep_path=rep_path)
@@ -677,7 +674,7 @@ class Model:
         prev_loss = float("inf")
 
         if pbar:
-            pbar.set(message=f"Training {self.model_type}", detail=f"...")
+            pbar.set(message=f"Training {self.model_type}", detail="...")
 
         for _ in range(epochs):
             optimizer.zero_grad()
@@ -745,7 +742,7 @@ class Model:
             self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # Save the model
-        if self.dest != None:
+        if self.dest is not None:
             model_save_path = f"{self.dest}/model.pt"
             csv_dest = self.dest
         else:
@@ -989,7 +986,7 @@ class Model:
         """
 
         if self._model is None:
-            raise ValueError(f"Model is 'None'")
+            raise ValueError("Model is 'None'")
 
         reps = self.load_representations(proteins, rep_path)
 
@@ -1001,7 +998,7 @@ class Model:
 
         # ensemble
         ensemble_scores = []
-        if type(self._model) == list:
+        if isinstance(self._model, list):
             for model in self._model:
                 score = model.score(x, y)
                 ensemble_scores.append(score)
@@ -1038,7 +1035,7 @@ class Model:
         """
 
         if self.dest:
-            dest = os.path.join(self.dest, f"plots")
+            dest = os.path.join(self.dest, "plots")
         else:
             dest = os.path.join(
                 self.library.rep_path, f"../models/{self.model_type}/{self.x}/plots"
@@ -1126,7 +1123,7 @@ class Model:
         vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
 
         if pbar:
-            pbar.set(message=f"Searching {N} diverse sequences", detail=f"...")
+            pbar.set(message=f"Searching {N} diverse sequences", detail="...")
 
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
 
@@ -1146,7 +1143,7 @@ class Model:
         y_sigma = [prot.y_sigma for prot in selected_proteins]
 
         # Save the search results
-        if self.dest != None:
+        if self.dest is not None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(
@@ -1194,7 +1191,7 @@ class Model:
             pbar: Progress bar for ProteusAI app.
         """
         if pbar:
-            pbar.set(message=f"Evaluation {max_eval} sequences", detail=f"...")
+            pbar.set(message=f"Evaluation {max_eval} sequences", detail="...")
 
         # Sort proteins based on the optimization problem
         if optim_problem == "max":
@@ -1250,7 +1247,7 @@ class Model:
             mutations = BO.find_mutations(improved_seqs)
 
         # Save destination for search_results
-        if self.dest != None:
+        if self.dest is not None:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(
@@ -1355,7 +1352,7 @@ class Model:
                     mutated_name = (
                         name + f"+{seq_list[pos]}{pos+1}{mut}"
                     )  # list is indexed at 0 but mutation descriptions at 1
-                except:
+                except Exception:
                     pos = random.randint(0, len(seq_list) - 1)
                     mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
                     mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"
