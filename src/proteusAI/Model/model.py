@@ -89,6 +89,9 @@ class Model:
         self.val_predictions = []
         self.test_r2 = []
         self.val_r2 = []
+        self.y_unlabelled_pred = []
+        self.y_unlabelled_sigma = []
+        self.y_unlabelled = []
         self.rep_path = None
         self.dest = None
         self.y_best = None
@@ -498,6 +501,14 @@ class Model:
             self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
                 self.predict(self.train_data)
             )
+
+            # Prediction unlabelled data if exists
+            if len(self.unlabelled) > 0:
+                self.unlabelled, self.y_unlabelled_pred, self.y_unlabelled_sigma, self.y_unlabelled, _ = (
+                    self.predict(self.unlabelled)
+                )
+            
+            # Compute R-squared on validataion dataset
             self.val_r2 = self.score(self.val_data)
 
             # Save the model
@@ -535,6 +546,16 @@ class Model:
                 self.y_val_sigma,
                 f"{csv_dest}/val_data.csv",
             )
+            
+            # save unlabelled data if exists
+            if len(self.unlabelled) > 0:
+                unlabelled_df = self.save_to_csv(
+                    self.unlabelled,
+                    self.y_unlabelled,
+                    self.y_unlabelled_pred,
+                    self.y_unlabelled_sigma,
+                    f"{csv_dest}/unlabelled_data.csv",
+                )
 
             # Save results to a JSON file
             results = {
@@ -548,21 +569,17 @@ class Model:
             # add split information to df
             train_df["split"] = "train"
             val_df["split"] = "val"
+            if len(self.unlabelled) > 0:
+                unlabelled_df["split"] = "unlabelled"
+                comb_df = [train_df, val_df, unlabelled_df]
+            else:
+                comb_df = [train_df, val_df]
 
             # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
+            self.out_df = pd.concat(comb_df, axis=0).reset_index(drop=True)
 
+            # TODO: that depends on minimization or maximization goal
             self.y_best = max((max(self.y_train), max(self.y_val)))
-
-        # Add predictions to proteins
-        for i in range(len(train)):
-            self.train_data[i].y_pred = self.y_train_pred[i]
-            self.train_data[i].y_sigma = self.y_train_sigma[i]
-
-        # Add predictions to test proteins
-        for i in range(len(val)):
-            self.val_data[i].y_pred = self.y_val_pred[i]
-            self.val_data[i].y_sigma = self.y_val_sigma[i]
 
         out = {
             "df": self.out_df,
