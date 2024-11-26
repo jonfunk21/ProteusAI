@@ -24,9 +24,6 @@ from shiny.types import FileInfo, ImgData
 import proteusAI as pai
 
 app_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(
-    os.path.join(app_path, "../src/")
-)  # for server '/home/jonfunk/ProteusAI/src/'
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
@@ -931,7 +928,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "Upload a library in the 'Data' tab to proceed with the Discovery module."
             )
 
-    ### Discovery SEARCH UI ###
+    ### DISCOVERY SEARCH UI ###
     @output
     @render.ui
     def discovery_search_ui(alt=None):
@@ -2188,7 +2185,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(
+            model = pai.Model(
                 model_type=MODEL_DICT[input.model_type()],
                 library=lib,
                 x=rep_type,
@@ -2199,30 +2196,30 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             try:
                 loop = asyncio.get_running_loop()
-                await loop.run_in_executor(executor, m.train)
+                await loop.run_in_executor(executor, model.train)
                 print("done")
                 val_df = pd.DataFrame(
                     {
-                        "names": m.val_names,
-                        "y_true": m.y_val,
-                        "y_pred": m.y_val_pred,
-                        "y_sigma": m.y_val_sigma,
+                        "names": model.val_names,
+                        "y_true": model.y_val,
+                        "y_pred": model.y_val_pred,
+                        "y_sigma": model.y_val_sigma,
                     }
                 )
 
                 search_dest = os.path.join(
-                    f"{m.library.rep_path}",
-                    f"../models/{m.model_type}/{m.x}/predictions",
+                    f"{model.library.rep_path}",
+                    f"../models/{model.model_type}/{model.x}/predictions",
                 )
                 search_file = os.path.join(
-                    search_dest, f"{m.model_type}_{m.x}_predictions.csv"
+                    search_dest, f"{model.model_type}_{model.x}_predictions.csv"
                 )
 
                 if os.path.exists(search_file):
                     MLDE_SEARCH_DF.set(pd.read_csv(search_file))
 
                 # set reactive variables
-                MODEL.set(m)
+                MODEL.set(model)
                 VAL_DF.set(val_df)
 
             except Exception as e:
@@ -2268,7 +2265,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             p = None
         return p
 
-    ### RENDER DISCOVERY TABLE ###
+    ### RENDER MLDE TABLE ###
     @output
     @render.data_frame
     def mlde_model_table(alt=None):
@@ -2298,7 +2295,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             try:
                 loop = asyncio.get_running_loop()
-                #  N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'
                 out = await loop.run_in_executor(
                     executor,
                     model.search,
@@ -2395,9 +2391,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         ui.update_numeric("n_val", max=n_val_max, value=n_val_max)
 
-    ################
-    ##  DISCOVERY ##
-    ################
+    ###############
+    ## DISCOVERY ##
+    ###############
 
     ### TRAIN DISCOVERY MODEL ###
     IS_DISCOVERY_TRAIN_RUNNING = reactive.Value(False)
@@ -2420,7 +2416,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(
+            model = pai.Model(
                 model_type=MODEL_DICT[input.discovery_model_type()],
                 library=lib,
                 x=rep_type,
@@ -2429,18 +2425,20 @@ def server(input: Inputs, output: Outputs, session: Session):
                 k_folds=k_folds,
             )
             try:
+                # train model
                 loop = asyncio.get_running_loop()
-                out = await loop.run_in_executor(
+                model, out = await loop.run_in_executor(
                     executor,
-                    m.train,
+                    model.train,
                 )
+
                 model_lib = pai.Library(user=lib.user, source=out)
                 val_df = pd.DataFrame(
                     {
-                        "names": m.val_names,
-                        "y_true": m.y_val,
-                        "y_pred": m.y_val_pred,
-                        "y_sigma": m.y_val_sigma,
+                        "names": model.val_names,
+                        "y_true": model.y_val,
+                        "y_pred": model.y_val_pred,
+                        "y_sigma": model.y_val_sigma,
                     }
                 )
 
@@ -2451,21 +2449,20 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # Update to pass the new parameters
                 if vis_method == "t-SNE":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
+                        executor, model_lib.plot_tsne, model.x, None, None, model_lib.names
                     )
                 elif vis_method == "UMAP":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
+                        executor, model_lib.plot_umap, model.x, None, None, model_lib.names
                     )
-                    model_lib.plot_tsne(m.x, None, None, model_lib.names)
                 elif vis_method == "PCA":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
+                        executor, model_lib.plot_pca, model.x, None, None, model_lib.names
                     )
 
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
-                DISCOVERY_MODEL.set(m)
+                DISCOVERY_MODEL.set(model)
                 DISCOVERY_VAL_DF.set(val_df)
                 DISCOVERY_MODEL_PLOT.set((fig, ax))
 
