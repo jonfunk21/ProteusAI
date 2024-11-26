@@ -82,7 +82,7 @@ class Model:
         self.train_data = []
         self.test_data = []
         self.val_data = []
-        self.unlabelled = []
+        self.unlabelled_data = []
         self.test_true = []
         self.test_predictions = []
         self.val_true = []
@@ -153,32 +153,18 @@ class Model:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def train(self):
+    def train(self, pbar = None):
         """
         Train the model.
 
         Args:
-            library (proteusAI.Library): Data for training.
-            model_type (str): choose the model type ['rf', 'svm', 'knn', 'ffnn'],
-            x (str): choose the representation type ['esm2', 'esm1v', 'ohe', 'blosum50', 'blosum62'].
-            rep_path (str): Path to representations. Default None - will extract from library object.
-            split (tuple or dict): Choose the split ratio of training, testing and validation data as a tuple. Default (80,10,10).
-                                   Alternatively, provide a dictionary of proteins, with the keys 'train', 'test', and 'val', with
-                                   list of proteins as values for custom data splitting.
-            k_folds (int): Number of folds for cross validation.
-            grid_search: Enable grid search.
-            custom_params: None. Not implemented yet.
-            custom_model: None. Not implemented yet.
-            optim (str): Choose optimizer for feed forward neural network. e.g. 'adam'.
-            lr (float): Choose a learning rate for feed forward neural networks. e.g. 10e-4.
-            seed (int): Choose a random seed. e.g. 42
-            pbar: Progress bar for shiny app.
+            pbar: Shiny progress bar
         """
         # Update attributes if new values are provided
         # self._update_attributes(**kwargs)
 
         # split data
-        self.train_data, self.test_data, self.val_data, self.unlabelled = (
+        self.train_data, self.test_data, self.val_data, self.unlabelled_data = (
             self.split_data()
         )
 
@@ -215,12 +201,16 @@ class Model:
 
         proteins = self.library.proteins
 
-        unlabelled_data = [
-            prot for prot in proteins if self.library.class_dict[prot.y] == "nan"
-        ]
-        labelled_data = [
-            prot for prot in proteins if self.library.class_dict[prot.y] != "nan"
-        ]
+        if self.y_type == "class":
+            unlabelled_data = [
+                prot for prot in proteins if self.library.class_dict[prot.y] == "nan"
+            ]
+            labelled_data = [
+                prot for prot in proteins if self.library.class_dict[prot.y] != "nan"
+            ]
+        else:
+            labelled_data = proteins
+            unlabelled_data = []
 
         if self.seed:
             random.seed(self.seed)
@@ -503,9 +493,9 @@ class Model:
             )
 
             # Prediction unlabelled data if exists
-            if len(self.unlabelled) > 0:
-                self.unlabelled, self.y_unlabelled_pred, self.y_unlabelled_sigma, self.y_unlabelled, _ = (
-                    self.predict(self.unlabelled)
+            if len(self.unlabelled_data) > 0:
+                self.unlabelled_data, self.y_unlabelled_pred, self.y_unlabelled_sigma, self.y_unlabelled, _ = (
+                    self.predict(self.unlabelled_data)
                 )
             
             # Compute R-squared on validataion dataset
@@ -548,9 +538,9 @@ class Model:
             )
             
             # save unlabelled data if exists
-            if len(self.unlabelled) > 0:
+            if len(self.unlabelled_data) > 0:
                 unlabelled_df = self.save_to_csv(
-                    self.unlabelled,
+                    self.unlabelled_data,
                     self.y_unlabelled,
                     self.y_unlabelled_pred,
                     self.y_unlabelled_sigma,
@@ -569,7 +559,7 @@ class Model:
             # add split information to df
             train_df["split"] = "train"
             val_df["split"] = "val"
-            if len(self.unlabelled) > 0:
+            if len(self.unlabelled_data) > 0:
                 unlabelled_df["split"] = "unlabelled"
                 comb_df = [train_df, val_df, unlabelled_df]
             else:
