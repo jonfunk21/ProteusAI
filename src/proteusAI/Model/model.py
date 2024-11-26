@@ -153,7 +153,7 @@ class Model:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def train(self, pbar = None):
+    def train(self, pbar=None):
         """
         Train the model.
 
@@ -494,10 +494,14 @@ class Model:
 
             # Prediction unlabelled data if exists
             if len(self.unlabelled_data) > 0:
-                self.unlabelled_data, self.y_unlabelled_pred, self.y_unlabelled_sigma, self.y_unlabelled, _ = (
-                    self.predict(self.unlabelled_data)
-                )
-            
+                (
+                    self.unlabelled_data,
+                    self.y_unlabelled_pred,
+                    self.y_unlabelled_sigma,
+                    self.y_unlabelled,
+                    _,
+                ) = self.predict(self.unlabelled_data)
+
             # Compute R-squared on validataion dataset
             self.val_r2 = self.score(self.val_data)
 
@@ -536,7 +540,7 @@ class Model:
                 self.y_val_sigma,
                 f"{csv_dest}/val_data.csv",
             )
-            
+
             # save unlabelled data if exists
             if len(self.unlabelled_data) > 0:
                 unlabelled_df = self.save_to_csv(

@@ -11,7 +11,6 @@ __author__ = "Jonathan Funk"
 import asyncio
 import datetime
 import os
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -2427,7 +2426,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             try:
                 # train model
                 loop = asyncio.get_running_loop()
-                model, out = await loop.run_in_executor(
+                out = await loop.run_in_executor(
                     executor,
                     model.train,
                 )
@@ -2449,15 +2448,30 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # Update to pass the new parameters
                 if vis_method == "t-SNE":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, model.x, None, None, model_lib.names
+                        executor,
+                        model_lib.plot_tsne,
+                        model.x,
+                        None,
+                        None,
+                        model_lib.names,
                     )
                 elif vis_method == "UMAP":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_umap, model.x, None, None, model_lib.names
+                        executor,
+                        model_lib.plot_umap,
+                        model.x,
+                        None,
+                        None,
+                        model_lib.names,
                     )
                 elif vis_method == "PCA":
                     fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_pca, model.x, None, None, model_lib.names
+                        executor,
+                        model_lib.plot_pca,
+                        model.x,
+                        None,
+                        None,
+                        model_lib.names,
                     )
 
                 # set reactive variables
