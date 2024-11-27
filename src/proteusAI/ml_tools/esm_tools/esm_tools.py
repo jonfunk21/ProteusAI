@@ -212,13 +212,31 @@ def batch_compute(
 
     counter = 0
     for i in range(0, len(seqs), batch_size):
-        results, batch_lens, _, _ = esm_compute(
-            seqs[i : i + batch_size],
-            names[i : i + batch_size],
-            model=model,
-            rep_layer=rep_layer,
-            device=device,
-        )
+        if device == "cuda":
+            try:
+                results, batch_lens, _, _ = esm_compute(
+                    seqs[i : i + batch_size],
+                    names[i : i + batch_size],
+                    model=model,
+                    rep_layer=rep_layer,
+                    device=device,
+                )
+            except Exception:
+                results, batch_lens, _, _ = esm_compute(
+                    seqs[i : i + batch_size],
+                    names[i : i + batch_size],
+                    model=model,
+                    rep_layer=rep_layer,
+                    device="cpu",
+                )
+        else:
+            results, batch_lens, _, _ = esm_compute(
+                seqs[i : i + batch_size],
+                names[i : i + batch_size],
+                model=model,
+                rep_layer=rep_layer,
+                device=device,
+            )
         sequence_representations = get_seq_rep(results, batch_lens)
         if dest is not None:
             for j in range(len(sequence_representations)):
