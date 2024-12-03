@@ -346,74 +346,6 @@ app_ui = ui.page_fluid(
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    #######################
-    ### Reactive Values ###
-    #######################
-
-    # DUMMY DATA
-    dummy = pd.DataFrame(
-        {
-            "Sequence": [
-                "MGVARGTV...G",
-                "AGVARGTV...G",
-                "AGVARGTV...G",
-                "AGVARGTV...G",
-                "...",
-                "MGVARGTV...V",
-            ],
-            "Description": ["wt", "M1A", "D147I", "A176L", "...", "G142V"],
-            "Class": ["A", None, "B", "A", "...", "A"],
-            "Activity": ["0.0", "0.32", "0.67", "1.2", "...", "-0.21"],
-        }
-    )
-
-    # INPUT
-    MODE = reactive.Value("start")
-    DATASET = reactive.Value(dummy)
-    DATASET_PATH = reactive.Value(str)
-    LIBRARY = reactive.Value(None)
-    REP_PATH = reactive.Value(None)
-    REPS_AVAIL = reactive.Value(REP_TYPES)
-    PROTEIN = reactive.Value(None)
-    ZS_RESULTS = reactive.Value([])
-    CHAINS = reactive.Value(None)
-    Y_TYPE = reactive.Value(None)
-    _MODEL_TYPES = reactive.Value(MODEL_TYPES.copy())
-
-    # DESIGN
-    PROT_INTERFACE = reactive.Value(None)
-    LIG_INTERFACE = reactive.Value(None)
-    DESIGN_OUTPUT = reactive.Value("start")
-    FIXED_RES = reactive.Value(None)
-    DESIGN_LIB = reactive.Value(None)
-    # FOLD_LIB = reactive.Value(None)
-
-    # ZER0-SHOT
-    ZS_SCORES = reactive.Value(pd.DataFrame())
-    COMP_ZS_SCORES = reactive.Value([])
-
-    # REPRESENTATIONS
-    TSNE_DF = reactive.Value(None)
-    LIBRARY_PLOT = reactive.Value(None)
-
-    # MLDE
-    MODEL = reactive.Value(None)
-    DISCOVERY_MODEL = reactive.Value(None)
-    VAL_DF = reactive.Value(
-        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
-    )
-    DISCOVERY_VAL_DF = reactive.Value(
-        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
-    )
-    DISCOVERY_LIB = reactive.Value(None)
-    MLDE_SEARCH_DF = reactive.Value(None)
-
-    # Discovery
-    DISCOVERY_SEARCH = reactive.Value(None)
-    DISCOVERY_DF = reactive.Value(None)
-    DISCOVERY_MODEL_PLOT = reactive.Value(None)
-    DISCOVERY_SEARCH_PLOT = reactive.Value(None)
-
     ##############
     ## FRONTEND ##
     ##############
@@ -978,6 +910,74 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ),
             )
 
+    #######################
+    ### Reactive Values ###
+    #######################
+
+    # DUMMY DATA
+    dummy = pd.DataFrame(
+        {
+            "Sequence": [
+                "MGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "...",
+                "MGVARGTV...V",
+            ],
+            "Description": ["wt", "M1A", "D147I", "A176L", "...", "G142V"],
+            "Class": ["A", None, "B", "A", "...", "A"],
+            "Activity": ["0.0", "0.32", "0.67", "1.2", "...", "-0.21"],
+        }
+    )
+
+    # INPUT
+    MODE = reactive.Value("start")
+    DATASET = reactive.Value(dummy)
+    DATASET_PATH = reactive.Value(str)
+    LIBRARY = reactive.Value(None)
+    REP_PATH = reactive.Value(None)
+    REPS_AVAIL = reactive.Value(REP_TYPES)
+    PROTEIN = reactive.Value(None)
+    ZS_RESULTS = reactive.Value([])
+    CHAINS = reactive.Value(None)
+    Y_TYPE = reactive.Value(None)
+    _MODEL_TYPES = reactive.Value(MODEL_TYPES.copy())
+
+    # DESIGN
+    PROT_INTERFACE = reactive.Value(None)
+    LIG_INTERFACE = reactive.Value(None)
+    DESIGN_OUTPUT = reactive.Value("start")
+    FIXED_RES = reactive.Value(None)
+    DESIGN_LIB = reactive.Value(None)
+    # FOLD_LIB = reactive.Value(None)
+
+    # ZER0-SHOT
+    ZS_SCORES = reactive.Value(pd.DataFrame())
+    COMP_ZS_SCORES = reactive.Value([])
+
+    # REPRESENTATIONS
+    TSNE_DF = reactive.Value(None)
+    LIBRARY_PLOT = reactive.Value(None)
+
+    # MLDE
+    MODEL = reactive.Value(None)
+    DISCOVERY_MODEL = reactive.Value(None)
+    VAL_DF = reactive.Value(
+        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
+    )
+    DISCOVERY_VAL_DF = reactive.Value(
+        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
+    )
+    DISCOVERY_LIB = reactive.Value(None)
+    MLDE_SEARCH_DF = reactive.Value(None)
+
+    # Discovery
+    DISCOVERY_SEARCH = reactive.Value(None)
+    DISCOVERY_DF = reactive.Value(None)
+    DISCOVERY_MODEL_PLOT = reactive.Value(None)
+    DISCOVERY_SEARCH_PLOT = reactive.Value(None)
+
     ###############
     ### BACKEND ###
     ###############
@@ -1137,47 +1137,56 @@ def server(input: Inputs, output: Outputs, session: Session):
                 _y_type = "Categorical"
                 _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
 
-            lib = pai.Library(
-                user=input.USER().lower(),
-                source=data_path,
-                seqs_col=seqs_col,
-                y_col=y_col,
-                y_type=y_type,
-                names_col=names_col,
-                fname=file_name,
-            )
+            try:
+                lib = pai.Library(
+                    user=input.USER().lower(),
+                    source=data_path,
+                    seqs_col=seqs_col,
+                    y_col=y_col,
+                    y_type=y_type,
+                    names_col=names_col,
+                    fname=file_name,
+                )
 
-            # set reactive variables
-            LIBRARY.set(lib)
-            ui.update_select(
-                "model_rep_type", choices=[INVERTED_REPS[i] for i in lib.reps]
-            )
+                # set reactive variables
+                LIBRARY.set(lib)
+                ui.update_select(
+                    "model_rep_type", choices=[INVERTED_REPS[i] for i in lib.reps]
+                )
 
-            Y_TYPE.set(y_type)
+                Y_TYPE.set(y_type)
 
-            reps = [INVERTED_REPS[i] for i in lib.reps]
+                reps = [INVERTED_REPS[i] for i in lib.reps]
 
-            for rep in IN_MEMORY:
-                if rep not in reps:
-                    reps.append(rep)
+                for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
 
-            REPS_AVAIL.set(reps)
+                REPS_AVAIL.set(reps)
 
-            ui.update_select("model_task", choices=[choice])
+                ui.update_select("model_task", choices=[choice])
 
-            ui.update_select("model_type", choices=_MODEL_TYPES())
+                ui.update_select("model_type", choices=_MODEL_TYPES())
 
-            ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
+                ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
 
-            ui.update_select("y_type", choices=[_y_type])
+                ui.update_select("y_type", choices=[_y_type])
 
-            PROTEIN.set(None)
+                PROTEIN.set(None)
 
-            REP_PATH.set(None)  # used in train
+                REP_PATH.set(None)  # used in train
 
-            MODE.set("dataset")
+                MODE.set("dataset")
 
-            LIBRARY_PLOT.set(None)
+                LIBRARY_PLOT.set(None)
+            
+            except Exception:
+                with ui.Progress(min=1, max=15) as p:
+                    p.set(
+                        message="Problem with input file",
+                        detail="Please check if there are any problems with the input file.",
+                    )
+                    time.sleep(2.5)
 
     ### READING PROTEIN FILE ###
     @reactive.Effect
