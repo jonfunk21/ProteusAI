@@ -68,6 +68,7 @@ BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
+CLUSTERING_ALG = ["K-means", "DBSCAN", "GMM"]
 ACQ_DICT = {
     "Expected Improvement": "ei",
     "Upper Confidence Bound": "ucb",
@@ -90,6 +91,7 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
+    ui.output_text("current_time", inline=True), # for debugging
     ###############
     ## DATA PAGE ##
     ###############
@@ -317,8 +319,18 @@ app_ui = ui.page_fluid(
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.output_ui("discovery_ui"),
-                    ui.output_ui("discovery_search_ui"),
+                    ui.navset_tab(
+                        ui.nav_panel(
+                            "Clustering",
+                            ui.output_ui("discovery_ui_clu")
+                        ),
+
+                        ui.nav_panel(
+                            "Classification",
+                            ui.output_ui("discovery_ui_class"),
+                            ui.output_ui("discovery_search_ui"),
+                        ),
+                    ),
                     width=SIDEBAR_WIDTH,
                 ),
                 ui.input_switch("discovery_switch", "Show more information", False),
@@ -753,7 +765,52 @@ def server(input: Inputs, output: Outputs, session: Session):
     ###################
     @output
     @render.ui
-    def discovery_ui(alt=None):
+    def discovery_ui_clu(alt=None):
+        if Y_TYPE == "num":
+            return ui.TagList(
+                "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
+            )
+
+        elif MODE() != "start":
+            return ui.TagList(
+                ui.row(
+                    ui.h5("Protein Discovery and Annotation"),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "clustering_alg", "Clustering algorithm", CLUSTERING_ALG
+                        ),
+                    ),
+                ),
+                ui.panel_conditional(
+                    "input.clustering_alg === 'K-means'",
+                    ui.input_checkbox("custom_k_means", "Customize K-means"),
+                    ui.panel_conditional(
+                        "input.custom_k_means",
+                        ui.input_numeric(
+                            "k_means_k", "K-number of clusters", value=5, min=0)
+                    ),
+                ),
+                ui.panel_conditional(
+                    "input.clustering_alg === 'DBSCAN'",
+                    ui.input_checkbox("custom_dbscan", "Customize DBSCAN"),
+                ),
+                ui.panel_conditional(
+                    "input.clustering_alg === 'GMM'",
+                    ui.input_checkbox("custom_gmm", "Customize GMM"),
+                ),
+                ui.input_task_button("clustering_button", "Cluster")
+            )
+        
+        else:
+            return ui.TagList(
+                "Upload a library in the 'Data' tab to proceed with the Discovery module."
+            )
+        
+
+    @output
+    @render.ui
+    def discovery_ui_class(alt=None):
         if Y_TYPE == "num":
             return ui.TagList(
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
@@ -2507,6 +2564,38 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         # Launch the expensive computation asynchronously
         asyncio.create_task(discovery_train())
+    
+    IS_CLUSTERING_RUNNING = reactive.Value(False)
+
+    async def clustering():
+        IS_CLUSTERING_RUNNING.set(True)
+
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Clustering data", detail="This may take a while...")
+
+            try:
+                print("something")
+                await asyncio.sleep(5)
+            
+            except Exception as e:
+                print(f"An error occurred in training the Discovery model: {e}")
+
+            finally:
+                # Reset the task running state in the session
+                IS_DISCOVERY_TRAIN_RUNNING.set(False)
+            
+
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.clustering_button)
+    async def discovery_train_btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_CLUSTERING_RUNNING():
+            print("Discovery train is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(clustering())
 
     ### RENDER DISCOVERY PLOT ###
     @output
@@ -2670,5 +2759,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         return all(isinstance(x, (int, float, complex)) for x in data)
 
+    @render.text
+    def current_time():
+        reactive.invalidate_later(1)
+        return datetime.datetime.now().strftime("%H:%M:%S %p")
 
 app = App(app_ui, server)
