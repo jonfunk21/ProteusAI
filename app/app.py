@@ -1179,7 +1179,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 MODE.set("dataset")
 
                 LIBRARY_PLOT.set(None)
-            
+
             except Exception:
                 with ui.Progress(min=1, max=15) as p:
                     p.set(
