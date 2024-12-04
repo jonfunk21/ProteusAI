@@ -28,7 +28,7 @@ is_zs_running = False
 executor = ThreadPoolExecutor()
 
 VERSION = (
-    "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
+    "version " + "0.5 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
 )
 REP_TYPES = [
     "ESM-2",
@@ -50,6 +50,8 @@ MODEL_DICT = {
     "Gaussian Process": "gp",
     "ESM-Fold": "esm_fold",
     "Ridge": "ridge",
+    "K-means": "k_means",
+    "HDBSCAN": "hdbscan",
 }
 REP_DICT = {
     "One-hot": "ohe",
@@ -68,7 +70,7 @@ BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
-CLUSTERING_ALG = ["K-means", "DBSCAN", "GMM"]
+CLUSTERING_ALG = ["HDBSCAN", "K-means"]
 ACQ_DICT = {
     "Expected Improvement": "ei",
     "Upper Confidence Bound": "ucb",
@@ -91,7 +93,7 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
-    ui.output_text("current_time", inline=True), # for debugging
+    ui.output_text("current_time", inline=True),  # for debugging
     ###############
     ## DATA PAGE ##
     ###############
@@ -252,9 +254,6 @@ app_ui = ui.page_fluid(
                 ),
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
-                    # ui.output_plot("entropy_plot"),
-                    # ui.output_plot("scores_plot"),
-                    # ui.output_data_frame("zs_df"),
                     ui.output_ui("zs_download_ui"),
                 ),
             ),
@@ -320,11 +319,7 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(
                     ui.navset_tab(
-                        ui.nav_panel(
-                            "Clustering",
-                            ui.output_ui("discovery_ui_clu")
-                        ),
-
+                        ui.nav_panel("Clustering", ui.output_ui("discovery_ui_clu")),
                         ui.nav_panel(
                             "Classification",
                             ui.output_ui("discovery_ui_class"),
@@ -788,25 +783,21 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.panel_conditional(
                         "input.custom_k_means",
                         ui.input_numeric(
-                            "k_means_k", "K-number of clusters", value=5, min=0)
+                            "k_means_k", "K-number of clusters", value=5, min=0
+                        ),
                     ),
                 ),
                 ui.panel_conditional(
-                    "input.clustering_alg === 'DBSCAN'",
-                    ui.input_checkbox("custom_dbscan", "Customize DBSCAN"),
+                    "input.clustering_alg === 'HDBSCAN'",
+                    ui.input_checkbox("custom_hdbscan", "Customize HDBSCAN"),
                 ),
-                ui.panel_conditional(
-                    "input.clustering_alg === 'GMM'",
-                    ui.input_checkbox("custom_gmm", "Customize GMM"),
-                ),
-                ui.input_task_button("clustering_button", "Cluster")
+                ui.input_task_button("clustering_button", "Cluster"),
             )
-        
+
         else:
             return ui.TagList(
                 "Upload a library in the 'Data' tab to proceed with the Discovery module."
             )
-        
 
     @output
     @render.ui
@@ -2564,7 +2555,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         # Launch the expensive computation asynchronously
         asyncio.create_task(discovery_train())
-    
+
     IS_CLUSTERING_RUNNING = reactive.Value(False)
 
     async def clustering():
@@ -2573,22 +2564,81 @@ def server(input: Inputs, output: Outputs, session: Session):
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Clustering data", detail="This may take a while...")
 
+            # rep_type = REP_DICT[input.discovery_model_rep_type()]
+            rep_type = "esm2"
+            lib = LIBRARY()
+
+            # split = (
+            #    input.discovery_n_train(),
+            #    input.discovery_n_test(),
+            #    input.discovery_n_val(),
+            # )
+            split = (0.8, 0.1, 0.1)
+
+            # k_folds = input.discovery_k_folds()
+            # if k_folds <= 1:
+            #    k_folds = None
+            k_folds = None
+
+            model = pai.Model(
+                model_type=MODEL_DICT[input.clustering_alg()],  #
+                library=lib,
+                x=rep_type,
+                split=split,
+                seed=None,
+                k_folds=k_folds,
+            )
+
             try:
-                print("something")
-                await asyncio.sleep(5)
-            
+                loop = asyncio.get_running_loop()
+                out = await loop.run_in_executor(
+                    executor,
+                    model.train,
+                )
+
+                model_lib = pai.Library(user=lib.user, source=out)
+
+                # Visualize results
+                p.set(message="Visualizing results", detail="This may take a while...")
+
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model_lib.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model_lib.names,
+                    None,
+                    None,
+                    True,
+                )
+
+                out_df = pd.DataFrame(
+                    {
+                        "names": out["df"][out["names_col"]],
+                        "y_true": out["df"][out["y_col"]],
+                        "y_pred": out["df"][out["y_pred_col"]],
+                        "y_sigma": out["df"][out["y_sigma_col"]],
+                    }
+                )
+
+                # set reactive variables
+                DISCOVERY_LIB.set(model_lib)
+                DISCOVERY_MODEL.set(model)
+                DISCOVERY_VAL_DF.set(out_df)
+                DISCOVERY_MODEL_PLOT.set((fig, ax))
+
             except Exception as e:
                 print(f"An error occurred in training the Discovery model: {e}")
 
             finally:
                 # Reset the task running state in the session
-                IS_DISCOVERY_TRAIN_RUNNING.set(False)
-            
+                IS_CLUSTERING_RUNNING.set(False)
 
     # Button click event
     @reactive.effect
     @reactive.event(input.clustering_button)
-    async def discovery_train_btn_click():
+    async def clustering_btn_click():
         # Prevent multiple invocations of the task within the same session
         if IS_CLUSTERING_RUNNING():
             print("Discovery train is already in progress for this session.")
@@ -2615,8 +2665,12 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             model = DISCOVERY_MODEL()
             class_dict = model.library.class_dict
+            print(df)
             df["y_true"] = [class_dict[i] for i in df["y_true"]]
-            df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+            try:
+                df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+            except Exception:
+                pass
             return df
 
     ### DISCOVERY SEARCH ###
@@ -2759,9 +2813,5 @@ def server(input: Inputs, output: Outputs, session: Session):
         """
         return all(isinstance(x, (int, float, complex)) for x in data)
 
-    @render.text
-    def current_time():
-        reactive.invalidate_later(1)
-        return datetime.datetime.now().strftime("%H:%M:%S %p")
 
 app = App(app_ui, server)
