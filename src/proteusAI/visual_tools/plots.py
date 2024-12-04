@@ -199,7 +199,10 @@ def plot_umap(
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
 
-    umap_model = umap.UMAP(n_components=2, random_state=random_state)
+    umap_model = umap.UMAP(
+        n_neighbors=70, min_dist=0.0, n_components=2, random_state=random_state
+    )
+
     z = umap_model.fit_transform(x)
 
     df = pd.DataFrame(z, columns=["z1", "z2"])
