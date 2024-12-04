@@ -24,6 +24,9 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.cluster import KMeans
+import hdbscan
+import umap
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -56,7 +59,8 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
-    _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge"]
+    _clustering_algs = ["hdbscan"]
+    _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge", "k_means", "gmm"]
     _pt_models = ["gp"]
     _in_memory_representations = ["ohe", "blosum50", "blosum62"]
 
@@ -175,6 +179,8 @@ class Model:
         out = None
         if self.model_type in self._sklearn_models:
             out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
+        elif self.model_type in self._clustering_algs:
+            out = self.cluster(rep_path=self.rep_path, pbar=self.pbar)
         elif self.model_type in self._pt_models:
             out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
         else:
@@ -301,6 +307,8 @@ class Model:
                     model = KNeighborsClassifier(**model_params)
                 elif model_type == "ridge":  # Added support for Ridge Classification
                     model = RidgeClassifier(**model_params)
+                elif model_type == "k_means":
+                    model = KMeans(**model_params)
             elif self.y_type == "num":
                 if model_type == "rf":
                     model = RandomForestRegressor(**model_params)
@@ -311,6 +319,15 @@ class Model:
                 elif model_type == "ridge":  # Added support for Ridge Regression
                     model = Ridge(**model_params)
 
+            return model
+
+        elif model_type == "hdbscan":
+            model = hdbscan.HDBSCAN(
+                min_cluster_size=30,
+                min_samples=50,
+                metric="euclidean",
+                cluster_selection_epsilon=0.1,
+            )
             return model
 
         elif model_type in self._pt_models:
@@ -1059,6 +1076,84 @@ class Model:
         )
 
         return fig, ax
+
+    def cluster(self, rep_path, pbar=None):
+        """
+        Clustering
+
+        Args:
+            rep_path (str): representation path
+            pbar: Progress bar for shiny app.
+        """
+        assert self._model is not None
+
+        if pbar:
+            pbar.set(message="Loading representations", detail="...")
+
+        reps = self.load_representations(self.library.proteins, rep_path=rep_path)
+
+        # handle representations that are not esm
+        if len(reps[0].shape) == 2:
+            reps = [x.view(-1) for x in reps]
+
+        x_reps = torch.stack(reps).cpu().numpy()
+
+        # do UMAP
+        clusterable_embedding = umap.UMAP(
+            n_neighbors=70,
+            min_dist=0.0,
+            n_components=2,
+            random_state=42,
+        ).fit_transform(x_reps)
+
+        # perform clustering
+        if self._model_type == "hdbscan":
+            labels = self._model.fit_predict(clusterable_embedding)
+
+        elif self._model_type in self._sklearn_models:
+            self._model.fit(clusterable_embedding)
+            labels = self._model.labels_
+
+        # store prediction results in protein
+        y_trues = []
+        for i, prot in enumerate(self.library.proteins):
+            self.library.proteins[i].y_pred = labels[i]
+            y_true = prot.y
+            y_trues.append(y_true)
+
+        if self.dest is not None:
+            csv_dest = f"{self.dest}"
+        else:
+            csv_dest = os.path.join(
+                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+            )
+
+        # create out dataframe
+        out_df = self.save_to_csv(
+            self.library.proteins,
+            y_trues,
+            labels,
+            [None] * len(self.library.proteins),
+            f"{csv_dest}/clustering.csv",
+        )
+        print(out_df)
+        self.out_df = out_df
+
+        out = {
+            "df": self.out_df,
+            "rep_path": self.library.rep_path,
+            "struc_path": self.library.struc_path,
+            "y_type": self.library.y_type,
+            "y_col": "y_true",
+            "y_pred_col": "y_predicted",
+            "y_sigma_col": "y_sigma",
+            "seqs_col": "sequence",
+            "names_col": "name",
+            "reps": self.library.reps,
+            "class_dict": self.library.class_dict,
+        }
+
+        return out
 
     def search(
         self,
