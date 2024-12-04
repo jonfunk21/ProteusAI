@@ -907,6 +907,7 @@ class Library:
         names=None,
         highlight_mask=None,
         highlight_label=None,
+        use_y_pred=False,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -921,10 +922,13 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
+
+        print(y)
 
         fig, ax, df = vis.plot_umap(
             x,
