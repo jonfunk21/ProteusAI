@@ -879,9 +879,10 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
 
         fig, ax, df = vis.plot_tsne(
@@ -920,15 +921,12 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
         """
-
         x = self.load_representations(rep)
 
         y = [str(i) for i in self.y_pred] if use_y_pred else self.y
 
         if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
-
-        print(y)
 
         fig, ax, df = vis.plot_umap(
             x,
@@ -942,6 +940,7 @@ class Library:
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
+        print('done plotting')
 
         return fig, ax, df
 
@@ -967,9 +966,10 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
 
         fig, ax, df = vis.plot_pca(

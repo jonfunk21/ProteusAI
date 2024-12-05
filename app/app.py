@@ -28,7 +28,7 @@ is_zs_running = False
 executor = ThreadPoolExecutor()
 
 VERSION = (
-    "version " + "0.5 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
+    "Version " + "0.5 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
 )
 REP_TYPES = [
     "ESM-2",
@@ -827,6 +827,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.input_task_button("clustering_button", "Cluster"),
+                ui.output_ui("clustering_search_ui"),
             )
 
         else:
@@ -954,7 +955,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
 
             return ui.TagList(
-                ui.h5("Search new mutants"),
+                ui.h5("Sample sequnces from clusters"),
                 ui.row(
                     ui.column(
                         6,
@@ -974,7 +975,58 @@ def server(input: Inputs, output: Outputs, session: Session):
                         6,
                         ui.input_selectize(
                             "sample_from",
-                            "Sample from Cluster",
+                            "Clusters of interest",
+                            sample_from,
+                            multiple=True,
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_numeric(
+                            "n_samples", "Number of sequences", value=10, min=2
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_task_button("discovery_search", "Search"),
+                        style="padding:25px;",
+                    ),
+                ),
+            )
+
+    ### CLUSTERIN SEARCH UI ###
+    @output
+    @render.ui
+    def clustering_search_ui(alt=None):
+        model = DISCOVERY_MODEL()
+        if model is not None:
+            clusters = [str(i) for i in set([prot.y_pred for prot in model.library.proteins])]
+            sample_from = clusters
+            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
+            model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
+
+            return ui.TagList(
+                ui.h5("Sample sequnces from clusters"),
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "discovery_search_criteria",
+                            "Search heuristic",
+                            SEARCH_HEURISTICS,
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "discovery_search_model", "Model", [model_type]
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_selectize(
+                            "sample_from",
+                            "Clusters of interest",
                             sample_from,
                             multiple=True,
                         ),
@@ -2537,37 +2589,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
 
                 # Visualize results
-                vis_method = input.discovery_vis_method()
                 p.set(message="Visualizing results", detail="This may take a while...")
-
-                # Update to pass the new parameters
-                if vis_method == "t-SNE":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model_lib.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model_lib.names,
-                    )
-                elif vis_method == "UMAP":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model_lib.plot_umap,
-                        model.x,
-                        None,
-                        None,
-                        model_lib.names,
-                    )
-                elif vis_method == "PCA":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model_lib.plot_pca,
-                        model.x,
-                        None,
-                        None,
-                        model_lib.names,
-                    )
+                
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model_lib.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model_lib.names,
+                )
+                
 
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
@@ -2694,7 +2726,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             model = DISCOVERY_MODEL()
             class_dict = model.library.class_dict
-            print(df)
             df["y_true"] = [class_dict[i] for i in df["y_true"]]
             try:
                 df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
@@ -2712,7 +2743,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             labels = input.sample_from()
             if labels == ():
-                labels = ["all"]
+                labels = []
             if isinstance(labels, str):
                 labels = [labels]
 
@@ -2734,42 +2765,28 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
 
                 # Visualize results
-                vis_method = input.discovery_vis_method()
                 p.set(message="Visualizing results", detail="This may take a while...")
 
-                # Update to pass the new parameters
-                if vis_method == "t-SNE":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
-                elif vis_method == "UMAP":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
-                elif vis_method == "PCA":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
-
+                print('We start here')
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model.library.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model.library.names,
+                    None,
+                    None,
+                    True
+                )
+                
+                print('gets here')
                 DISCOVERY_SEARCH_PLOT.set((fig, ax))
-
+                
+                print('gets there')
                 DISCOVERY_DF.set(out["df"])
 
+                print('gets everywhere')
                 DISCOVERY_SEARCH.set(search_results)
 
             except Exception as e:
@@ -2809,8 +2826,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         seq_col = model.library.seq_col
         df = df.drop(seq_col, axis=1)
         class_dict = model.library.class_dict
-        df["y_true"] = [class_dict[i] for i in df["y_true"]]
-        df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+        try:
+            df["y_true"] = [class_dict[i] for i in df["y_true"]]
+            df["y_predicted"] = [class_dict[int(i)] for i in df["y_predicted"]]
+        except Exception:
+            pass
         return df
 
     ### DOWNLOAD DISCOVERY RESULTS ###

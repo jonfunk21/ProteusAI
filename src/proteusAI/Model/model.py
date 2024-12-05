@@ -60,7 +60,7 @@ class Model:
     """
 
     _clustering_algs = ["hdbscan"]
-    _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge", "k_means", "gmm"]
+    _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge"]
     _pt_models = ["gp"]
     _in_memory_representations = ["ohe", "blosum50", "blosum62"]
     defaults = {
@@ -163,7 +163,7 @@ class Model:
         )
 
         # load model
-        self._model = self.model()
+        self._model = self.model(**self.defaults)
 
         # train
         out = None
@@ -288,33 +288,35 @@ class Model:
                 json.dump(kwargs, f)
 
         if model_type in self._sklearn_models:
-            model_params = kwargs.copy()
+            # model_params = kwargs.copy() # optional to add custom parameters
 
             if self.y_type == "class":
                 if model_type == "rf":
-                    model = RandomForestClassifier(**model_params)
+                    model = RandomForestClassifier()
                 elif model_type == "svm":
-                    model = SVC(**model_params)
+                    model = SVC()
                 elif model_type == "knn":
-                    model = KNeighborsClassifier(**model_params)
+                    model = KNeighborsClassifier()
                 elif model_type == "ridge":  # Added support for Ridge Classification
-                    model = RidgeClassifier(**model_params)
-                elif model_type == "k_means":
-                    model = KMeans(**model_params)
+                    model = RidgeClassifier()
             elif self.y_type == "num":
                 if model_type == "rf":
-                    model = RandomForestRegressor(**model_params)
+                    model = RandomForestRegressor()
                 elif model_type == "svm":
-                    model = SVR(**model_params)
+                    model = SVR()
                 elif model_type == "knn":
-                    model = KNeighborsRegressor(**model_params)
+                    model = KNeighborsRegressor()
                 elif model_type == "ridge":  # Added support for Ridge Regression
-                    model = Ridge(**model_params)
+                    model = Ridge()
 
             return model
 
         elif model_type == "hdbscan":
-            model = hdbscan.HDBSCAN(**model_params)
+            model_params = kwargs.copy()
+            model = hdbscan.HDBSCAN(
+                min_samples=model_params["min_samples"],
+                min_cluster_size=model_params["min_cluster_size"],
+            )
             return model
 
         elif model_type in self._pt_models:
@@ -1108,6 +1110,8 @@ class Model:
             self.library.proteins[i].y_pred = labels[i]
             y_true = prot.y
             y_trues.append(y_true)
+        
+        self.library.y_pred = labels
 
         if self.dest is not None:
             csv_dest = f"{self.dest}"
@@ -1124,7 +1128,7 @@ class Model:
             [None] * len(self.library.proteins),
             f"{csv_dest}/clustering.csv",
         )
-        print(out_df)
+
         self.out_df = out_df
 
         out = {
@@ -1178,7 +1182,7 @@ class Model:
         self,
         N=10,
         optim_problem="max",
-        labels=["all"],
+        labels=[],
         method="ga",
         max_eval=10000,
         pbar=None,
@@ -1189,7 +1193,7 @@ class Model:
         Args:
             N (int): Number of sequences to be returned.
             optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
-            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            labels (list): list of labels to sample from. Default [] will sample from all labels.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
             max_eval (int): Maximum number of evaluations. Default 1000.
             pbar: Progress bar for ProteusAI app.
@@ -1198,8 +1202,12 @@ class Model:
         class_dict = self.library.class_dict
         full_proteins = self.library.proteins  # Full list of proteins
 
-        if "all" in labels or len(labels) < 1:
-            labels = list(class_dict.keys())
+        if len(labels) < 1:
+            if self.model_type in self._clustering_algs:
+                labels = list(set([prot.y_pred for prot in full_proteins]))
+            else:
+                labels = list(class_dict.keys())
+                labels = [class_dict[label] for label in labels]
             proteins = full_proteins
             full_indices = list(range(len(full_proteins)))  # Indices for all proteins
         else:
@@ -1208,7 +1216,7 @@ class Model:
                 *[
                     (prot, idx)
                     for idx, prot in enumerate(full_proteins)
-                    if class_dict[prot.y] in labels
+                    if prot.y_pred in labels
                 ]
             )
             proteins = list(proteins)
