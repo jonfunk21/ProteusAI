@@ -1066,10 +1066,11 @@ class Model:
 
     def cluster(self, rep_path, n_neighbors=70, pbar=None):
         """
-        Clustering
+        Clustering algorithm using UMAP.
 
         Args:
-            rep_path (str): representation path
+            rep_path (str): representation path.
+            n_neighbors (int): number of neighbors. Default 70.
             pbar: Progress bar for shiny app.
         """
         assert self._model is not None

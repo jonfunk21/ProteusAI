@@ -130,7 +130,7 @@ app_ui = ui.page_fluid(
                             ui.panel_conditional(
                                 "!input.demo_library_check",
                                 ui.input_file(
-                                    id="dataset_file",
+                                    id="library_file",
                                     label="Upload Dataset",
                                     accept=[".csv", ".xlsx", ".xls"],
                                     placeholder="None",
@@ -1085,10 +1085,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### READING DATASET ###
     @reactive.Effect
-    @reactive.event(input.dataset_file)
+    @reactive.event(input.library_file)
     def _():
         df = DATASET()
-        f: list[FileInfo] = input.dataset_file()
+        f: list[FileInfo] = input.library_file()
         df = pd.read_csv(f[0]["datapath"])
 
         # set reactive variables
@@ -1180,12 +1180,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         update_col_selection()
 
-    ### CONFIRM DATASET ###
+    ### CONFIRM LIBRARY ###
     @reactive.Effect
     @reactive.event(input.confirm_library)
     async def _():
         df = DATASET()
-        if input.dataset_file() is None and not input.demo_library_check():
+        if input.library_file() is None and not input.demo_library_check():
             with ui.Progress(min=1, max=15) as p:
                 p.set(
                     message="No data uploaded",
@@ -1199,7 +1199,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 file_name = data_path.split("/")[-1]
 
             else:
-                f: list[FileInfo] = input.dataset_file()
+                f: list[FileInfo] = input.library_file()
                 file_name = f[0]["name"]
                 data_path = f[0]["datapath"]
 
@@ -1209,7 +1209,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             names_col = input.description_col()
 
             # Determine if the data is numerical or categorical
-            if is_numerical(ys):
+            if all(pd.isna(ys)):  # Check if all values are NaN
+                y_type = "class"
+                choice = "Classification"
+                _y_type = "Categorical"
+                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+            elif is_numerical(ys):
                 y_type = "num"
                 choice = "Regression"
                 _y_type = "Numeric"
@@ -2256,7 +2261,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             if MODE() == "structure":
                 f: list[FileInfo] = input.structure_file()  # noqa: F841
             else:
-                f: list[FileInfo] = input.dataset_file()  # noqa: F841
+                f: list[FileInfo] = input.library_file()  # noqa: F841
 
             lib = LIBRARY()
 
