@@ -70,7 +70,7 @@ BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
-CLUSTERING_ALG = ["HDBSCAN", "K-means"]
+CLUSTERING_ALG = ["HDBSCAN"]
 ACQ_DICT = {
     "Expected Improvement": "ei",
     "Upper Confidence Bound": "ucb",
@@ -776,6 +776,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                             "clustering_alg", "Clustering algorithm", CLUSTERING_ALG
                         ),
                     ),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "clustering_rep", "Representations", REPS_AVAIL()
+                        ),
+                    ),
                 ),
                 ui.panel_conditional(
                     "input.clustering_alg === 'K-means'",
@@ -790,6 +796,35 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.panel_conditional(
                     "input.clustering_alg === 'HDBSCAN'",
                     ui.input_checkbox("custom_hdbscan", "Customize HDBSCAN"),
+                    ui.panel_conditional(
+                        "input.custom_hdbscan",
+                        ui.row(
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_n_neighbors",
+                                    "Cluster Density",
+                                    70,
+                                    min=1,
+                                ),  # n_neighbors UMAP
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_min_cluster_size",
+                                    "Minimum Cluster Size",
+                                    30,
+                                    min=1,
+                                ),
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_min_samples", "Minimum Samples", 50, min=1
+                                ),
+                            ),
+                        ),
+                    ),
                 ),
                 ui.input_task_button("clustering_button", "Cluster"),
             )
@@ -1874,7 +1909,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.output_data_frame("zs_df"),
-                ui.download_button("download_zs_df", "Download discovery results"),
+                ui.download_button("download_zs_df", "Download Zero-Shot results"),
             )
 
     ### DOWNLOAD LOGIC FOR ZS RESULTS ###
@@ -2407,9 +2442,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if out is not None:
             return ui.TagList(
                 ui.output_data_frame("mlde_search_table"),
-                ui.download_button(
-                    "download_mlde_search", "Download discovery results"
-                ),
+                ui.download_button("download_mlde_search", "Download MLDE results"),
             )
 
     ### DOWNLOAD LOGIC FOR MLDE RESULTS ###
@@ -2558,43 +2591,34 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     IS_CLUSTERING_RUNNING = reactive.Value(False)
 
+    ### CLUSTERING DISCOVERY ###
     async def clustering():
         IS_CLUSTERING_RUNNING.set(True)
 
         with ui.Progress(min=1, max=15) as p:
             p.set(message="Clustering data", detail="This may take a while...")
 
-            # rep_type = REP_DICT[input.discovery_model_rep_type()]
-            rep_type = "esm2"
+            rep_type = REP_DICT[input.clustering_rep()]
             lib = LIBRARY()
 
-            # split = (
-            #    input.discovery_n_train(),
-            #    input.discovery_n_test(),
-            #    input.discovery_n_val(),
-            # )
-            split = (0.8, 0.1, 0.1)
-
-            # k_folds = input.discovery_k_folds()
-            # if k_folds <= 1:
-            #    k_folds = None
-            k_folds = None
+            # hdbscan_n_neighbors, hdbscan_min_cluster_size, hdbscan_min_samples
+            n_neighbors = input.hdbscan_n_neighbors()
+            min_cluster_size = input.hdbscan_min_cluster_size()
+            min_samples = input.hdbscan_min_samples()
 
             model = pai.Model(
                 model_type=MODEL_DICT[input.clustering_alg()],  #
                 library=lib,
                 x=rep_type,
-                split=split,
                 seed=None,
-                k_folds=k_folds,
+                min_cluster_size=min_cluster_size,
+                min_samples=min_samples,
             )
 
             try:
                 loop = asyncio.get_running_loop()
-                out = await loop.run_in_executor(
-                    executor,
-                    model.train,
-                )
+
+                out = await loop.run_in_executor(executor, model.train, n_neighbors)
 
                 model_lib = pai.Library(user=lib.user, source=out)
 

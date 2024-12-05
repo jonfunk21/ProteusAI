@@ -63,6 +63,26 @@ class Model:
     _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge", "k_means", "gmm"]
     _pt_models = ["gp"]
     _in_memory_representations = ["ohe", "blosum50", "blosum62"]
+    defaults = {
+        "library": None,
+        "model_type": "rf",
+        "x": "ohe",
+        "rep_path": None,
+        "split": (80, 10, 10),
+        "k_folds": None,
+        "grid_search": False,
+        "custom_params": None,
+        "custom_model": None,
+        "optim": "adam",
+        "lr": 10e-4,
+        "seed": None,
+        "dest": None,
+        "pbar": None,
+        "min_cluster_size": 30,
+        "min_samples": 50,
+        "metric": "euclidean",
+        "cluster_selection_epsilon": 0.1,
+    }
 
     def __init__(self, **kwargs):
         """
@@ -110,22 +130,7 @@ class Model:
 
     ### args
     def _set_attributes(self, **kwargs):
-        defaults = {
-            "library": None,
-            "model_type": "rf",
-            "x": "ohe",
-            "rep_path": None,
-            "split": (80, 10, 10),
-            "k_folds": None,
-            "grid_search": False,
-            "custom_params": None,
-            "custom_model": None,
-            "optim": "adam",
-            "lr": 10e-4,
-            "seed": None,
-            "dest": None,
-            "pbar": None,
-        }
+        defaults = self.defaults
 
         # Update defaults with provided keyword arguments
         defaults.update(kwargs)
@@ -134,22 +139,7 @@ class Model:
             setattr(self, key, value)
 
     def _update_attributes(self, **kwargs):
-        defaults = {
-            "library": None,
-            "model_type": "rf",
-            "x": "ohe",
-            "rep_path": None,
-            "split": (80, 10, 10),
-            "k_folds": None,
-            "grid_search": False,
-            "custom_params": None,
-            "custom_model": None,
-            "optim": "adam",
-            "lr": 10e-4,
-            "seed": None,
-            "dest": None,
-            "pbar": None,
-        }
+        defaults = self.defaults
 
         # Update defaults with provided keyword arguments
         defaults.update(kwargs)
@@ -157,7 +147,7 @@ class Model:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def train(self, pbar=None):
+    def train(self, n_neighbors=70, pbar=None):
         """
         Train the model.
 
@@ -180,7 +170,9 @@ class Model:
         if self.model_type in self._sklearn_models:
             out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
         elif self.model_type in self._clustering_algs:
-            out = self.cluster(rep_path=self.rep_path, pbar=self.pbar)
+            out = self.cluster(
+                rep_path=self.rep_path, n_neighbors=n_neighbors, pbar=self.pbar
+            )
         elif self.model_type in self._pt_models:
             out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
         else:
@@ -322,12 +314,7 @@ class Model:
             return model
 
         elif model_type == "hdbscan":
-            model = hdbscan.HDBSCAN(
-                min_cluster_size=30,
-                min_samples=50,
-                metric="euclidean",
-                cluster_selection_epsilon=0.1,
-            )
+            model = hdbscan.HDBSCAN(**model_params)
             return model
 
         elif model_type in self._pt_models:
@@ -1077,7 +1064,7 @@ class Model:
 
         return fig, ax
 
-    def cluster(self, rep_path, pbar=None):
+    def cluster(self, rep_path, n_neighbors=70, pbar=None):
         """
         Clustering
 
