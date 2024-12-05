@@ -666,7 +666,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                             "random_seed", "Random seed", min=0, max=1024, value=42
                         ),
                     ),
-                    
                     ui.column(
                         6,
                         ui.panel_conditional(
@@ -680,14 +679,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ),
                         ),
                     ),
-                    
                     ui.column(
                         12,
                         "Cross-validation split:",
                     ),
                 ),
                 ui.input_checkbox("smart_split", "Use smart data split", True),
-
                 ui.panel_conditional(
                     "!input.smart_split",
                     ui.row(
@@ -1010,7 +1007,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def clustering_search_ui(alt=None):
         model = DISCOVERY_MODEL()
         if model is not None and INV_MODEL_DICT[model.model_type] in CLUSTERING_ALG:
-            clusters = [str(i) for i in set([prot.y_pred for prot in model.library.proteins])]
+            clusters = [
+                str(i) for i in set([prot.y_pred for prot in model.library.proteins])
+            ]
             sample_from = clusters
             model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
@@ -1606,16 +1605,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
 
         highlights = list(set(input.design_res().strip().split(",")))  # + sidechains))
+        print(highlights)
 
         if PROT_INTERFACE():
-            highlights = highlights + PROT_INTERFACE()
+            highlights = highlights + [str(i) for i in PROT_INTERFACE()]
+            print(highlights)
 
         if LIG_INTERFACE():
-            highlights = highlights + LIG_INTERFACE()
-
-        highlights = [i for i in set(highlights) if not isinstance(i, str)]
+            highlights = highlights + [str(i) for i in LIG_INTERFACE()]
+            print(highlights)
 
         highlights_dict = {input.mutlichain_chain(): highlights}
+        print(highlights_dict)
 
         view = PROTEIN().view_struc(
             color="white", highlight=highlights_dict
@@ -1629,7 +1630,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         if input.design_protein_interface():
             prot_contacts = prot.get_contacts(
-                chain=input.mutlichain_chain(),
+                source_chain=input.mutlichain_chain(),
                 dist=input.design_protein_interface_distance(),
                 target="protein",
             )
@@ -1646,7 +1647,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         if input.design_ligand_interface():
             prot_contacts = prot.get_contacts(
-                chain=input.mutlichain_chain(),
+                source_chain=input.mutlichain_chain(),
                 dist=input.design_protein_interface_distance(),
                 target="ligand",
             )
@@ -2336,7 +2337,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     model=MODEL_DICT[input.mlde_computed_zs_scores()], chain=chain
                 )
                 lib = pai.Library(user=prot.user, source=data)
-            
+
             smart_split = input.smart_split()
             if smart_split:
                 split = "smart"
@@ -2604,7 +2605,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # Visualize results
                 p.set(message="Visualizing results", detail="This may take a while...")
-                
+
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model_lib.plot_umap,
@@ -2613,7 +2614,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     None,
                     model_lib.names,
                 )
-                
 
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
@@ -2781,7 +2781,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # Visualize results
                 p.set(message="Visualizing results", detail="This may take a while...")
 
-                print('We start here')
+                print("We start here")
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model.library.plot_umap,
@@ -2791,11 +2791,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                     model.library.names,
                     search_results,
                     None,
-                    True
+                    True,
                 )
-                
+
                 DISCOVERY_SEARCH_PLOT.set((fig, ax))
-                
+
                 DISCOVERY_DF.set(out["df"])
 
                 DISCOVERY_SEARCH.set(search_results)

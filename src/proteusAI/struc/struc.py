@@ -8,20 +8,19 @@ A subpackage for mining_tools.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import biotite.structure.io as strucio
-import biotite.structure as struc
-import biotite.structure.io.pdbx as pdbx
-import py3Dmol
-from string import ascii_uppercase, ascii_lowercase
-from openmm import unit
-import openmm as mm
-from openmm import app
-from openmm.unit import *  # noqa: F403
-from openmm.app import PDBFile
-import tempfile
 import os
-import numpy as np
+import tempfile
+from string import ascii_lowercase, ascii_uppercase
 
+import biotite.structure as struc
+import biotite.structure.io as strucio
+import biotite.structure.io.pdbx as pdbx
+import numpy as np
+import openmm as mm
+import py3Dmol
+from openmm import app, unit
+from openmm.app import PDBFile
+from openmm.unit import *  # noqa: F403
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
 pymol_color_list = [
@@ -224,48 +223,69 @@ def get_sequences(prot_f):
     return sequences
 
 
-def get_contacts(structure, chain=None, target="protein", dist=7.0):
+def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     """
-    Get contacts within a protein structure or between a protein and ligands, based on the specified chain.
-
-    Args:
-        structure (biotite.structure.AtomArray): The complete protein structure.
-        chain (str, optional): Specific chain for which to compute the contacts.
-            Default is None, which will use the first protein chain if not specified.
-        target (str): Specify 'protein' for protein-protein contacts or 'ligand'
-            for protein-ligand contacts. Default is 'protein'.
-        dist (float): Specified distance threshold in Angstroms. Default is 7.
-
-    Returns:
-        list: Unique residue IDs in contact from the specified chain.
+    Detect contact residues between specified targets.
     """
-    if chain is None:
-        chain = structure.chain_id[0]  # Default to the first chain if none specified
+    print(f"DEBUG: Initial structure shape: {structure.shape}")
+    print(f"DEBUG: Unique chain IDs: {np.unique(structure.chain_id)}")
+    print(f"DEBUG: Hetero atom mask: {np.unique(structure.hetero)}")
 
+    inversion_dict = {k: i for i, k in enumerate(structure.res_id)}
+    print("DEBUG: inversion dict:", inversion_dict)
+
+    # Try different atom selection strategies
+    non_hetero_atoms = structure[~structure.hetero]
+    print(f"DEBUG: Non-hetero atoms shape: {non_hetero_atoms.shape}")
+
+    # If no non-hetero atoms, use all atoms
+    if len(non_hetero_atoms) == 0:
+        non_hetero_atoms = structure
+
+    # Handle chain selection
+    if source_chain is None:
+        source_chain = np.unique(non_hetero_atoms.chain_id)
+    elif isinstance(source_chain, str):
+        source_chain = [source_chain]
+
+    # Target atom selection
     if target == "protein":
-        # Select atoms from all other chains, excluding heteroatoms if needed
-        target_atoms = structure[(structure.chain_id != chain) & (~structure.hetero)]
+        target_atoms = non_hetero_atoms[
+            ~np.isin(non_hetero_atoms.chain_id, source_chain)
+        ]
     elif target == "ligand":
-        # Assuming ligands are identified as heteroatoms
         target_atoms = structure[structure.hetero]
     else:
-        raise ValueError("Invalid target specified. Use 'protein' or 'ligand'.")
+        raise ValueError("Target must be 'protein' or 'ligand'")
 
-    # Select the atoms in the target chain, excluding heteroatoms if needed
-    chain_atoms = structure[(structure.chain_id == chain) & (~structure.hetero)]
+    print(f"DEBUG: Target atoms shape: {target_atoms.shape}")
 
-    # Initialize cell list with target atoms
-    cell_list = struc.CellList(target_atoms, cell_size=dist)
-    contact_indices = cell_list.get_atoms(chain_atoms.coord, radius=dist)
+    # Chain atoms selection
+    chain_atoms = non_hetero_atoms[np.isin(non_hetero_atoms.chain_id, source_chain)]
+    print(f"DEBUG: Chain atoms shape: {chain_atoms.shape}")
 
-    # Determine contact residue IDs
-    contact_residue_indices = np.where((contact_indices != -1).any(axis=1))[0]
-    contact_res_ids = chain_atoms.res_id[contact_residue_indices]
+    # Contact detection
+    contact_sets = {}
+    for chain in source_chain:
+        current_chain_atoms = chain_atoms[chain_atoms.chain_id == chain]
 
-    # Removing duplicate IDs by converting to a set, then back to sorted list
-    unique_contact_res_ids = sorted(set(contact_res_ids))
+        cell_list = struc.CellList(target_atoms, cell_size=dist)
+        contacts = cell_list.get_atoms(current_chain_atoms.coord, radius=dist)
 
-    return unique_contact_res_ids
+        contact_indices = np.where((contacts != -1).any(axis=1))[0]
+        contact_sets[chain] = set(current_chain_atoms.res_id[contact_indices])
+
+    # Result processing
+    if len(contact_sets) > 1:
+        result = sorted(set.intersection(*contact_sets.values()))
+    elif len(contact_sets) == 1:
+        result = sorted(next(iter(contact_sets.values())))
+    else:
+        result = []
+
+    result = [inversion_dict[i] for i in result]
+    print(f"DEBUG: Final contact residues: {result}")
+    return result
 
 
 def compute_chi_angles(protein, res_ids):

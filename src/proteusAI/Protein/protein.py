@@ -9,11 +9,11 @@ import sys
 import warnings
 from typing import Union
 
+import biotite
 import biotite.structure
+import biotite.structure.io as strucio
 import pandas as pd
 import torch
-import biotite
-import biotite.structure.io as strucio
 
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.struc as struc
@@ -723,9 +723,7 @@ class Protein:
         return fig
 
     # structure utils
-    def get_contacts(
-        self, chain: Union[str, None] = None, target: str = "protein", dist=7.0
-    ):
+    def get_contacts(self, source_chain="A", target="protein", dist=7.0):
         """
         Get protein protein contacts for a specific chain in a protein.
 
@@ -733,7 +731,7 @@ class Protein:
             chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
             target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
         """
-        return struc.get_contacts(self.struc, chain, target, dist)
+        return struc.get_contacts(self.struc, source_chain, target, dist)
 
     ### getters and setters ###
     @property
