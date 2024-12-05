@@ -53,6 +53,7 @@ MODEL_DICT = {
     "K-means": "k_means",
     "HDBSCAN": "hdbscan",
 }
+INV_MODEL_DICT = {value: key for key, value in MODEL_DICT.items()}
 REP_DICT = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
@@ -715,8 +716,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def mlde_search_ui(alt=None):
         if MODEL() is not None:
-            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[MODEL().model_type]
+            model_type = INV_MODEL_DICT[MODEL().model_type]
             return ui.TagList(
                 ui.h5("Search new mutants"),
                 ui.row(
@@ -948,11 +948,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def discovery_search_ui(alt=None):
         model = DISCOVERY_MODEL()
-        if model is not None:
+        if model is not None and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG:
             clusters = list(model.library.class_dict.values())
             sample_from = clusters
-            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
+            model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
             return ui.TagList(
                 ui.h5("Sample sequnces from clusters"),
@@ -999,11 +998,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def clustering_search_ui(alt=None):
         model = DISCOVERY_MODEL()
-        if model is not None:
+        if model is not None and INV_MODEL_DICT[model.model_type] in CLUSTERING_ALG:
             clusters = [str(i) for i in set([prot.y_pred for prot in model.library.proteins])]
             sample_from = clusters
-            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
+            model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
             return ui.TagList(
                 ui.h5("Sample sequnces from clusters"),
@@ -2775,18 +2773,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                     None,
                     None,
                     model.library.names,
-                    None,
+                    search_results,
                     None,
                     True
                 )
                 
-                print('gets here')
                 DISCOVERY_SEARCH_PLOT.set((fig, ax))
                 
-                print('gets there')
                 DISCOVERY_DF.set(out["df"])
 
-                print('gets everywhere')
                 DISCOVERY_SEARCH.set(search_results)
 
             except Exception as e:
