@@ -39,7 +39,7 @@ REP_TYPES = [
 ]  # Add VAE and MSA-Transformer later
 IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
-MODEL_TYPES = ["KNN", "Gaussian Process", "Random Forrest", "Ridge", "SVM"]
+MODEL_TYPES = ["KNN", "Random Forrest", "Ridge", "SVM", "Gaussian Process"]
 MODEL_DICT = {
     "Random Forrest": "rf",
     "KNN": "knn",
@@ -666,10 +666,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                             "random_seed", "Random seed", min=0, max=1024, value=42
                         ),
                     ),
-                    ui.panel_conditional(
-                        "input.model_type !== 'Gaussian Process'",
-                        ui.column(
-                            6,
+                    
+                    ui.column(
+                        6,
+                        ui.panel_conditional(
+                            "input.model_type !== 'Gaussian Process'",
                             ui.input_numeric(
                                 "k_folds",
                                 "K-Fold cross validation",
@@ -679,30 +680,40 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ),
                         ),
                     ),
+                    
                     ui.column(
                         12,
                         "Cross-validation split:",
                     ),
-                    ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_train", "Training (%)", value=80, min=0, max=100
+                ),
+                ui.input_checkbox("smart_split", "Use smart data split", True),
+
+                ui.panel_conditional(
+                    "!input.smart_split",
+                    ui.row(
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_train", "Training (%)", value=80, min=0, max=100
+                            ),
+                        ),
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_test", "Test (%)", value=10, min=0, max=100
+                            ),
+                        ),
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_val", "Validation (%)", value=10, min=0, max=100
+                            ),
                         ),
                     ),
+                ),
+                ui.row(
                     ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_test", "Test (%)", value=10, min=0, max=100
-                        ),
-                    ),
-                    ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_val", "Validation (%)", value=10, min=0, max=100
-                        ),
-                    ),
-                    ui.column(
-                        4,
+                        6,
                         ui.input_task_button("mlde_train_button", "Train"),
                     ),
                 ),
@@ -2325,8 +2336,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                     model=MODEL_DICT[input.mlde_computed_zs_scores()], chain=chain
                 )
                 lib = pai.Library(user=prot.user, source=data)
+            
+            smart_split = input.smart_split()
+            if smart_split:
+                split = "smart"
+            else:
+                split = (input.n_train(), input.n_test(), input.n_val())
 
-            split = (input.n_train(), input.n_test(), input.n_val())
             k_folds = input.k_folds()
             if k_folds <= 1:
                 k_folds = None

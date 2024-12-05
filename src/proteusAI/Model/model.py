@@ -25,6 +25,7 @@ from sklearn.svm import SVC, SVR
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.cluster import KMeans
+from sklearn.model_selection import train_test_split
 import hdbscan
 import umap
 
@@ -192,9 +193,10 @@ class Model:
                 such that the same site cannot be found
                 in the training, testing and validation set
             3. 'custom': Splits the data according to a custom pattern
+            4. 'smart': Stratified split for both classification and regression
 
         Returns:
-            tuple: returns three lists of train, test and validation proteins.
+            tuple: returns three lists of train, test, and validation proteins.
         """
 
         proteins = self.library.proteins
@@ -235,11 +237,88 @@ class Model:
             test_data = self.split["test"]
             val_data = self.split["val"]
 
-        # TODO: implement other splitting methods
+        # use stratified split that works for both regression and classification
+        elif self.split == "smart":
+            if self.y_type == "class":
+                # get the unique classes
+                classes = list(set([prot.y for prot in labelled_data]))
+
+                # split the data into classes
+                class_data = {c: [prot for prot in labelled_data if prot.y == c] for c in classes}
+
+                # split the data into train, test, val
+                for c in classes:
+                    class_size = len(class_data[c])
+                    train_size = int(0.8 * class_size)
+                    test_size = int(0.1 * class_size)
+                    val_size = class_size - train_size - test_size
+
+                    random.shuffle(class_data[c])
+
+                    train_data += class_data[c][:train_size]
+                    test_data += class_data[c][train_size : train_size + test_size]
+                    val_data += class_data[c][train_size + test_size :]
+            else:
+                # Bin continuous y values into categories
+                y_values = np.array([prot.y for prot in labelled_data])
+
+                # Dynamically adjust the number of bins based on dataset size
+                n_bins = min(10, max(2, len(labelled_data) // 5))  # At least 2 bins, at most 10
+                bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
+                y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
+
+                # Merge rare bins
+                class_counts = np.bincount(y_binned)
+
+                # Ensure bins are not too small
+                while np.any(class_counts < 2):
+                    if n_bins <= 2:
+                        break  # Exit when bins reach minimum allowed size
+                    n_bins = max(2, n_bins - 1)
+                    bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
+                    y_binned = np.digitize(y_values, bins) - 1
+                    class_counts = np.bincount(y_binned)
+
+                # Split data into train/test, then test/val
+                try:
+                    train_data_idx, temp_data_idx = train_test_split(
+                        range(len(labelled_data)),
+                        test_size=0.2,
+                        stratify=y_binned,
+                        random_state=self.seed,
+                    )
+                    temp_y_binned = y_binned[temp_data_idx]
+
+                    test_data_idx, val_data_idx = train_test_split(
+                        temp_data_idx,
+                        test_size=0.5,
+                        stratify=temp_y_binned,
+                        random_state=self.seed,
+                    )
+                except ValueError as e:
+                    # Fallback to random split if stratification fails
+                    train_data_idx, temp_data_idx = train_test_split(
+                        range(len(labelled_data)),
+                        test_size=0.2,
+                        random_state=self.seed,
+                    )
+                    test_data_idx, val_data_idx = train_test_split(
+                        temp_data_idx,
+                        test_size=0.5,
+                        random_state=self.seed,
+                    )
+
+                # Map indices back to the data
+                train_data = [labelled_data[i] for i in train_data_idx]
+                test_data = [labelled_data[i] for i in test_data_idx]
+                val_data = [labelled_data[i] for i in val_data_idx]
+                print(len(train_data), len(test_data), len(val_data))
+
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
 
         return train_data, test_data, val_data, unlabelled_data
+
 
     def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
