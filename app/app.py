@@ -1413,11 +1413,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                         df_path = os.path.join(
                             prot.user,
-                            f"{prot.name}/zero_shot/{REP_DICT[model]}/zs_scores.csv",
+                            f"{prot.name}/zero_shot/results/{REP_DICT[model]}/zs_scores.csv",
                         )
 
                         if os.path.exists(df_path):
                             df = pd.read_csv(df_path)  # noqa: F841
+
                             p.set(
                                 message="Loading data...",
                                 detail="This may take a while...",
@@ -1930,6 +1931,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "entropy": "Entropy",
             }
         )
+        ZS_SCORES.set(df)
         return df
 
     ### DOWNLOAD ZS RESULTS ###
@@ -1984,6 +1986,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         filename=lambda: f"{PROTEIN().name}_{input.zs_model()}_zs_predictions.csv"
     )
     def download_zs_df():
+        print(ZS_SCORES())
         yield ZS_SCORES().to_csv(index=False)
 
     ### OUTPUT PROTEIN MODE ###
