@@ -940,7 +940,7 @@ class Library:
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
-        print('done plotting')
+        print("done plotting")
 
         return fig, ax, df
 

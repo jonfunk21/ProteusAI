@@ -244,7 +244,9 @@ class Model:
                 classes = list(set([prot.y for prot in labelled_data]))
 
                 # split the data into classes
-                class_data = {c: [prot for prot in labelled_data if prot.y == c] for c in classes}
+                class_data = {
+                    c: [prot for prot in labelled_data if prot.y == c] for c in classes
+                }
 
                 # split the data into train, test, val
                 for c in classes:
@@ -263,7 +265,9 @@ class Model:
                 y_values = np.array([prot.y for prot in labelled_data])
 
                 # Dynamically adjust the number of bins based on dataset size
-                n_bins = min(10, max(2, len(labelled_data) // 5))  # At least 2 bins, at most 10
+                n_bins = min(
+                    10, max(2, len(labelled_data) // 5)
+                )  # At least 2 bins, at most 10
                 bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
                 y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
 
@@ -318,7 +322,6 @@ class Model:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
 
         return train_data, test_data, val_data, unlabelled_data
-
 
     def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
@@ -1189,7 +1192,7 @@ class Model:
             self.library.proteins[i].y_pred = labels[i]
             y_true = prot.y
             y_trues.append(y_true)
-        
+
         self.library.y_pred = labels
 
         if self.dest is not None:
