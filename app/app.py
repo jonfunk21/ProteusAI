@@ -11,28 +11,24 @@ __author__ = "Jonathan Funk"
 import asyncio
 import datetime
 import os
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
+import tooltips
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
 
 import proteusAI as pai
-import tooltips
 
 app_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(
-    os.path.join(app_path, "../src/")
-)  # for server '/home/jonfunk/ProteusAI/src/'
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
 
 VERSION = (
-    "version " + "0.1 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
+    "Version " + "0.5 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
 )
 REP_TYPES = [
     "ESM-2",
@@ -43,7 +39,7 @@ REP_TYPES = [
 ]  # Add VAE and MSA-Transformer later
 IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
-MODEL_TYPES = ["KNN", "Gaussian Process", "Random Forrest", "Ridge", "SVM"]
+MODEL_TYPES = ["KNN", "Random Forrest", "Ridge", "SVM", "Gaussian Process"]
 MODEL_DICT = {
     "Random Forrest": "rf",
     "KNN": "knn",
@@ -54,7 +50,10 @@ MODEL_DICT = {
     "Gaussian Process": "gp",
     "ESM-Fold": "esm_fold",
     "Ridge": "ridge",
+    "K-means": "k_means",
+    "HDBSCAN": "hdbscan",
 }
+INV_MODEL_DICT = {value: key for key, value in MODEL_DICT.items()}
 REP_DICT = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
@@ -72,6 +71,7 @@ BATCH_SIZE = 1
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
+CLUSTERING_ALG = ["HDBSCAN"]
 ACQ_DICT = {
     "Expected Improvement": "ei",
     "Upper Confidence Bound": "ucb",
@@ -94,6 +94,7 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
+    ui.output_text("current_time", inline=True),  # for debugging
     ###############
     ## DATA PAGE ##
     ###############
@@ -112,39 +113,39 @@ app_ui = ui.page_fluid(
                                 value="Guest",
                             ),
                         ),
-                        ui.column(
-                            6,
-                            ui.input_action_button("login", "Login"),
-                            style="padding:50px;",
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_action_button("sign_up", "Create account"),
-                        ),
+                        # ui.column(
+                        #    6,
+                        #    ui.input_action_button("login", "Login"),
+                        #    style="padding:50px;",
+                        # ),
+                        # ui.column(
+                        #    6,
+                        #    ui.input_action_button("sign_up", "Create account"),
+                        # ),
                     ),
                     ### NAVSET ###
                     ui.navset_tab(
                         ui.nav_panel(
                             "Library",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="dataset_file",
-                                        label="Upload Dataset",
-                                        accept=[".csv", ".xlsx", ".xls"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_library_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+                            ui.input_checkbox("demo_library_check", "Use Demo Data"),
+                            ui.panel_conditional(
+                                "!input.demo_library_check",
+                                ui.input_file(
+                                    id="library_file",
+                                    label="Upload Dataset",
+                                    accept=[".csv", ".xlsx", ".xls"],
+                                    placeholder="None",
                                 ),
                             ),
-                            "Data selection",
+                            ui.panel_conditional(
+                                "input.demo_library_check",
+                                ui.input_select(
+                                    "library_demo_data",
+                                    "Select MLDE or Discovery Demo",
+                                    ["MLDE", "Discovery"],
+                                ),
+                            ),
+                            "Data Selection",
                             ui.row(
                                 ui.column(
                                     6,
@@ -169,48 +170,32 @@ app_ui = ui.page_fluid(
                                     ),
                                 ),
                             ),
-                            ui.input_action_button("confirm_dataset", "Continue"),
+                            ui.input_action_button("confirm_library", "Continue"),
                         ),
                         ui.nav_panel(
                             "Sequence",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="protein_file",
-                                        label="Upload FASTA",
-                                        accept=[".fasta"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_sequence_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+                            ui.input_checkbox("demo_sequence_check", "Use Demo Data"),
+                            ui.panel_conditional(
+                                "!input.demo_sequence_check",
+                                ui.input_file(
+                                    id="protein_file",
+                                    label="Upload FASTA",
+                                    accept=[".fasta"],
+                                    placeholder="None",
                                 ),
                             ),
-                            ui.input_action_button("confirm_protein", "Continue"),
+                            ui.input_action_button("confirm_sequence", "Continue"),
                         ),
                         ui.nav_panel(
                             "Structure",
-                            ui.row(
-                                ui.column(
-                                    8,
-                                    ui.input_file(
-                                        id="structure_file",
-                                        label="Upload Structure",
-                                        accept=[".pdb"],
-                                        placeholder="None",
-                                    ),
-                                ),
-                                ui.column(
-                                    4,
-                                    ui.input_checkbox(
-                                        "demo_structure_check", "Use Demo Data"
-                                    ),
-                                    style="padding:27px;",
+                            ui.input_checkbox("demo_structure_check", "Use Demo Data"),
+                            ui.panel_conditional(
+                                "!input.demo_structure_check",
+                                ui.input_file(
+                                    id="structure_file",
+                                    label="Upload Structure",
+                                    accept=[".pdb"],
+                                    placeholder="None",
                                 ),
                             ),
                             ui.input_action_button("confirm_structure", "Continue"),
@@ -270,9 +255,6 @@ app_ui = ui.page_fluid(
                 ),
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
-                    # ui.output_plot("entropy_plot"),
-                    # ui.output_plot("scores_plot"),
-                    # ui.output_data_frame("zs_df"),
                     ui.output_ui("zs_download_ui"),
                 ),
             ),
@@ -337,8 +319,14 @@ app_ui = ui.page_fluid(
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
-                    ui.output_ui("discovery_ui"),
-                    ui.output_ui("discovery_search_ui"),
+                    ui.navset_tab(
+                        ui.nav_panel("Clustering", ui.output_ui("discovery_ui_clu")),
+                        ui.nav_panel(
+                            "Classification",
+                            ui.output_ui("discovery_ui_class"),
+                            ui.output_ui("discovery_search_ui"),
+                        ),
+                    ),
                     width=SIDEBAR_WIDTH,
                 ),
                 ui.input_switch("discovery_switch", "Show more information", False),
@@ -366,66 +354,6 @@ app_ui = ui.page_fluid(
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    #######################
-    ### Reactive Values ###
-    #######################
-
-    # DUMMY DATA
-    dummy = pd.DataFrame(
-        {
-            "Sequence": ["MGVARGTV...G", "AGVARGTV...G", "...", "MGVARGTV...V"],
-            "Description": ["wt", "M1A", "...", "G142V"],
-            "Activity": ["0.0", "0.32", "...", "-0.21"],
-        }
-    )
-
-    # INPUT
-    MODE = reactive.Value("start")
-    DATASET = reactive.Value(dummy)
-    DATASET_PATH = reactive.Value(str)
-    LIBRARY = reactive.Value(None)
-    REP_PATH = reactive.Value(None)
-    REPS_AVAIL = reactive.Value(REP_TYPES)
-    PROTEIN = reactive.Value(None)
-    ZS_RESULTS = reactive.Value([])
-    CHAINS = reactive.Value(None)
-    Y_TYPE = reactive.Value(None)
-    _MODEL_TYPES = reactive.Value(MODEL_TYPES.copy())
-
-    # DESIGN
-    PROT_INTERFACE = reactive.Value(None)
-    LIG_INTERFACE = reactive.Value(None)
-    DESIGN_OUTPUT = reactive.Value("start")
-    FIXED_RES = reactive.Value(None)
-    DESIGN_LIB = reactive.Value(None)
-    # FOLD_LIB = reactive.Value(None)
-
-    # ZER0-SHOT
-    ZS_SCORES = reactive.Value(pd.DataFrame())
-    COMP_ZS_SCORES = reactive.Value([])
-
-    # REPRESENTATIONS
-    TSNE_DF = reactive.Value(None)
-    LIBRARY_PLOT = reactive.Value(None)
-
-    # MLDE
-    MODEL = reactive.Value(None)
-    DISCOVERY_MODEL = reactive.Value(None)
-    VAL_DF = reactive.Value(
-        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
-    )
-    DISCOVERY_VAL_DF = reactive.Value(
-        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
-    )
-    DISCOVERY_LIB = reactive.Value(None)
-    MLDE_SEARCH_DF = reactive.Value(None)
-
-    # Discovery
-    DISCOVERY_SEARCH = reactive.Value(None)
-    DISCOVERY_DF = reactive.Value(None)
-    DISCOVERY_MODEL_PLOT = reactive.Value(None)
-    DISCOVERY_SEARCH_PLOT = reactive.Value(None)
-
     ##############
     ## FRONTEND ##
     ##############
@@ -524,41 +452,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "Upload a protein structure in the 'Data' tab to proceed with the Design module."
             )
 
-    ### DYNAMIC DESIGN OUTPUT ###
-    # @output
-    # @render.ui
-    # def folding():
-    #    out = DESIGN_OUTPUT()
-    #    if type(out) != str:
-    #        return ui.TagList(
-    #            ui.h5("Fold designed sequences"),
-    #            ui.input_selectize("fold_these", "Select sequences to be folded", out['names'].to_list(), multiple=True),
-    #            ui.row(
-    #                ui.column(6,
-    #                    ui.input_select("folding_model", "Select folding model", FOLDING_MODELS),
-    #                ),
-    #                ui.column(6,
-    #                    ui.input_slider("num_recycles", "Recycling steps", value=0, min=0, max=8),
-    #                ),
-    #
-    #            ),
-    #            ui.row(
-    #                ui.column(6,
-    #                    ui.input_action_button("folding_button", "Fold")
-    #                ),
-    #                ui.column(6,
-    #                    ui.input_checkbox("energy_minimization", "Energy minimization"),
-    #                    style='padding:10px;',
-    #                ),
-    #            ),
-
-    #            ui.h5("Analyze protein structures"),
-    #            ui.input_selectize("design_sidechains", "Compare geometries of fixed before and after folding", choices=FIXED_RES(), multiple=True),
-    #            ui.column(6,
-    #                ui.input_action_button("analyze_designs", "Analyze Strucures"),
-    #            ),
-    #        )
-
     ###########################
     ### REPRESENTATIONS TAB ###
     ###########################
@@ -596,39 +489,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.input_action_button("train_vae", "Train VAE"),
                 ),
                 ui.input_select("vis_method", "Visualization Method", REP_VISUAL),
-                # ui.input_select("color_by", "Color by", ["Y-value", "Site", "Custom"]),
-                # Conditional panel for Site
-                # ui.panel_conditional("input.color_by === 'Site'",
-                #        ui.input_text("color_text","Select sites to color seperated by ';' (e.g. 21;42)"),
-                #    ),
-                # Conditional panel for Y-value with numeric data
-                # ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Numeric'",
-                #        ui.row(
-                #            ui.column(6,
-                #                    ui.input_numeric("y_upper", "Choose an upper limit for y", value=None),
-                #                ),
-                #            ui.column(6,
-                #                    ui.input_numeric("y_lower", "Choose an lower limit for y", value=None),
-                #                ),
-                #        ),
-                #    ),
-                # Conditional panel fo Y-value with categorical data
-                # ui.panel_conditional("input.color_by === 'Y-value' && input.y_type === 'Categorical'",
-                #        ui.input_text("selected_classes","Select classes to colorize seperated by ';' (e.g. class1;class2)"),
-                #    ),
-                # ui.input_text("hide_sites", "Hide points based on site seperated by ';' (e.g. 21;42)"),
-                # ui.input_checkbox("hide_by_y", "Hide points based Y-Value", value=False),
-                # ui.panel_conditional("input.hide_by_y === true",
-                #    ui.row(
-                #    # change these to be the min and max values observed in the library
-                #    ui.column(6,
-                #                ui.input_slider("hide_upper_y","hide points above y", min=0, max=100, value=100),
-                #        ),
-                #    ui.column(6,
-                #                ui.input_slider("hide_lower_y","hide points below y", min=0, max=100, value=0),
-                #        ),
-                #    ),
-                # ),
                 ui.row(
                     ui.column(12, "Visualize representations"),
                     ui.column(
@@ -806,10 +666,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                             "random_seed", "Random seed", min=0, max=1024, value=42
                         ),
                     ),
-                    ui.panel_conditional(
-                        "input.model_type !== 'Gaussian Process'",
-                        ui.column(
-                            6,
+                    ui.column(
+                        6,
+                        ui.panel_conditional(
+                            "input.model_type !== 'Gaussian Process'",
                             ui.input_numeric(
                                 "k_folds",
                                 "K-Fold cross validation",
@@ -823,26 +683,34 @@ def server(input: Inputs, output: Outputs, session: Session):
                         12,
                         "Cross-validation split:",
                     ),
-                    ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_train", "Training (%)", value=80, min=0, max=100
+                ),
+                ui.input_checkbox("smart_split", "Use smart data split", True),
+                ui.panel_conditional(
+                    "!input.smart_split",
+                    ui.row(
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_train", "Training (%)", value=80, min=0, max=100
+                            ),
+                        ),
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_test", "Test (%)", value=10, min=0, max=100
+                            ),
+                        ),
+                        ui.column(
+                            4,
+                            ui.input_numeric(
+                                "n_val", "Validation (%)", value=10, min=0, max=100
+                            ),
                         ),
                     ),
+                ),
+                ui.row(
                     ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_test", "Test (%)", value=10, min=0, max=100
-                        ),
-                    ),
-                    ui.column(
-                        4,
-                        ui.input_numeric(
-                            "n_val", "Validation (%)", value=10, min=0, max=100
-                        ),
-                    ),
-                    ui.column(
-                        4,
+                        6,
                         ui.input_task_button("mlde_train_button", "Train"),
                     ),
                 ),
@@ -856,8 +724,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def mlde_search_ui(alt=None):
         if MODEL() is not None:
-            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[MODEL().model_type]
+            model_type = INV_MODEL_DICT[MODEL().model_type]
             return ui.TagList(
                 ui.h5("Search new mutants"),
                 ui.row(
@@ -901,7 +768,84 @@ def server(input: Inputs, output: Outputs, session: Session):
     ###################
     @output
     @render.ui
-    def discovery_ui(alt=None):
+    def discovery_ui_clu(alt=None):
+        if Y_TYPE == "num":
+            return ui.TagList(
+                "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
+            )
+
+        elif MODE() != "start":
+            return ui.TagList(
+                ui.row(
+                    ui.h5("Protein Discovery and Annotation"),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "clustering_alg", "Clustering algorithm", CLUSTERING_ALG
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "clustering_rep", "Representations", REPS_AVAIL()
+                        ),
+                    ),
+                ),
+                ui.panel_conditional(
+                    "input.clustering_alg === 'K-means'",
+                    ui.input_checkbox("custom_k_means", "Customize K-means"),
+                    ui.panel_conditional(
+                        "input.custom_k_means",
+                        ui.input_numeric(
+                            "k_means_k", "K-number of clusters", value=5, min=0
+                        ),
+                    ),
+                ),
+                ui.panel_conditional(
+                    "input.clustering_alg === 'HDBSCAN'",
+                    ui.input_checkbox("custom_hdbscan", "Customize HDBSCAN"),
+                    ui.panel_conditional(
+                        "input.custom_hdbscan",
+                        ui.row(
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_n_neighbors",
+                                    "Cluster Density",
+                                    70,
+                                    min=1,
+                                ),  # n_neighbors UMAP
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_min_cluster_size",
+                                    "Minimum Cluster Size",
+                                    30,
+                                    min=1,
+                                ),
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "hdbscan_min_samples", "Minimum Samples", 50, min=1
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                ui.input_task_button("clustering_button", "Cluster"),
+                ui.output_ui("clustering_search_ui"),
+            )
+
+        else:
+            return ui.TagList(
+                "Upload a library in the 'Data' tab to proceed with the Discovery module."
+            )
+
+    @output
+    @render.ui
+    def discovery_ui_class(alt=None):
         if Y_TYPE == "num":
             return ui.TagList(
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
@@ -1007,19 +951,18 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "Upload a library in the 'Data' tab to proceed with the Discovery module."
             )
 
-    ### Discovery SEARCH UI ###
+    ### DISCOVERY SEARCH UI ###
     @output
     @render.ui
     def discovery_search_ui(alt=None):
         model = DISCOVERY_MODEL()
-        if model is not None:
+        if model is not None and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG:
             clusters = list(model.library.class_dict.values())
             sample_from = clusters
-            inv_model_dict = {value: key for key, value in MODEL_DICT.items()}
-            model_type = inv_model_dict[DISCOVERY_MODEL().model_type]
+            model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
             return ui.TagList(
-                ui.h5("Search new mutants"),
+                ui.h5("Sample sequnces from clusters"),
                 ui.row(
                     ui.column(
                         6,
@@ -1039,7 +982,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         6,
                         ui.input_selectize(
                             "sample_from",
-                            "Sample from Cluster",
+                            "Clusters of interest",
                             sample_from,
                             multiple=True,
                         ),
@@ -1057,6 +1000,126 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
             )
+
+    ### CLUSTERIN SEARCH UI ###
+    @output
+    @render.ui
+    def clustering_search_ui(alt=None):
+        model = DISCOVERY_MODEL()
+        if model is not None and INV_MODEL_DICT[model.model_type] in CLUSTERING_ALG:
+            clusters = [
+                str(i) for i in set([prot.y_pred for prot in model.library.proteins])
+            ]
+            sample_from = clusters
+            model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
+
+            return ui.TagList(
+                ui.h5("Sample sequnces from clusters"),
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "discovery_search_criteria",
+                            "Search heuristic",
+                            SEARCH_HEURISTICS,
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "discovery_search_model", "Model", [model_type]
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_selectize(
+                            "sample_from",
+                            "Clusters of interest",
+                            sample_from,
+                            multiple=True,
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_numeric(
+                            "n_samples", "Number of sequences", value=10, min=2
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_task_button("discovery_search", "Search"),
+                        style="padding:25px;",
+                    ),
+                ),
+            )
+
+    #######################
+    ### Reactive Values ###
+    #######################
+
+    # DUMMY DATA
+    dummy = pd.DataFrame(
+        {
+            "Sequence": [
+                "MGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "AGVARGTV...G",
+                "...",
+                "MGVARGTV...V",
+            ],
+            "Description": ["wt", "M1A", "D147I", "A176L", "...", "G142V"],
+            "Class": ["A", None, "B", "A", "...", "A"],
+            "Activity": ["0.0", "0.32", "0.67", "1.2", "...", "-0.21"],
+        }
+    )
+
+    # INPUT
+    MODE = reactive.Value("start")
+    DATASET = reactive.Value(dummy)
+    DATASET_PATH = reactive.Value(str)
+    LIBRARY = reactive.Value(None)
+    REP_PATH = reactive.Value(None)
+    REPS_AVAIL = reactive.Value(REP_TYPES)
+    PROTEIN = reactive.Value(None)
+    ZS_RESULTS = reactive.Value([])
+    CHAINS = reactive.Value(None)
+    Y_TYPE = reactive.Value(None)
+    _MODEL_TYPES = reactive.Value(MODEL_TYPES.copy())
+
+    # DESIGN
+    PROT_INTERFACE = reactive.Value(None)
+    LIG_INTERFACE = reactive.Value(None)
+    DESIGN_OUTPUT = reactive.Value("start")
+    FIXED_RES = reactive.Value(None)
+    DESIGN_LIB = reactive.Value(None)
+    # FOLD_LIB = reactive.Value(None)
+
+    # ZER0-SHOT
+    ZS_SCORES = reactive.Value(pd.DataFrame())
+    COMP_ZS_SCORES = reactive.Value([])
+
+    # REPRESENTATIONS
+    TSNE_DF = reactive.Value(None)
+    LIBRARY_PLOT = reactive.Value(None)
+
+    # MLDE
+    MODEL = reactive.Value(None)
+    DISCOVERY_MODEL = reactive.Value(None)
+    VAL_DF = reactive.Value(
+        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
+    )
+    DISCOVERY_VAL_DF = reactive.Value(
+        pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
+    )
+    DISCOVERY_LIB = reactive.Value(None)
+    MLDE_SEARCH_DF = reactive.Value(None)
+
+    # Discovery
+    DISCOVERY_SEARCH = reactive.Value(None)
+    DISCOVERY_DF = reactive.Value(None)
+    DISCOVERY_MODEL_PLOT = reactive.Value(None)
+    DISCOVERY_SEARCH_PLOT = reactive.Value(None)
 
     ###############
     ### BACKEND ###
@@ -1082,15 +1145,46 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### READING DATASET ###
     @reactive.Effect
-    @reactive.event(input.dataset_file)
+    @reactive.event(input.library_file)
     def _():
         df = DATASET()
-        f: list[FileInfo] = input.dataset_file()
+        f: list[FileInfo] = input.library_file()
         df = pd.read_csv(f[0]["datapath"])
 
         # set reactive variables
         DATASET.set(df)
         DATASET_PATH.set(f[0]["datapath"])
+
+    ### READ MLDE DEMO ###
+    def read_MLDE_demo():
+        data_path = os.path.join(
+            app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase.csv"
+        )
+        df = pd.read_csv(data_path)
+        y_col = "Data"
+        seqs_col = "Sequence"
+        names_col = "Description"
+        DATASET.set(df)
+        DATASET_PATH.set(data_path)
+        return seqs_col, names_col, y_col
+
+    ### READ DISCOVERY DEMO ###
+    def read_discovery_demo():
+        data_path = os.path.join(app_path, "../demo/demo_data/methyltransfereases.csv")
+        df = pd.read_csv(data_path)
+        y_col = "coverage_5"
+        seqs_col = "sequence"
+        names_col = "uid"
+        DATASET.set(df)
+        DATASET_PATH.set(data_path)
+        return seqs_col, names_col, y_col
+
+    ### READ DEMO LIBRARY
+    def demo_library():
+        if input.library_demo_data() == "MLDE":
+            seqs_col, names_col, y_col = read_MLDE_demo()
+        elif input.library_demo_data() == "Discovery":
+            seqs_col, names_col, y_col = read_discovery_demo()
 
     ### RENDER DATASET TABLE ###
     @output
@@ -1099,39 +1193,59 @@ def server(input: Inputs, output: Outputs, session: Session):
         df = render.DataTable(DATASET(), summary=True)
         return df
 
-    ### EXTRACT DATASET COLUMNS ###
-    @reactive.Effect()
+    ### UPDATE DATASET
+    @reactive.Effect
+    @reactive.event(input.library_demo_data)
     def _():
+        if input.demo_library_check():
+            demo_library()
+
+    ### UPDATE DATASET
+    @reactive.Effect
+    @reactive.event(input.demo_library_check)
+    def _():
+        if input.demo_library_check():
+            demo_library()
+
+    ### UPDATE COL SELECTION
+    def update_col_selection(
+        seq_col="Sequences", description_col="Descriptions", y_col="Y-values"
+    ):
         cols = list(DATASET().columns)
 
         # set reactive variables
         ui.update_select(
             "seq_col",
-            label="Sequences",
+            label=seq_col,
             choices=cols,
             selected=cols[0],
         )
 
         ui.update_select(
             "description_col",
-            label="Descriptions",
+            label=description_col,
             choices=cols,
             selected=cols[1],
         )
 
         ui.update_select(
             "y_col",
-            label="Y-values",
+            label=y_col,
             choices=cols,
             selected=cols[-1],
         )
 
-    ### CONFIRM DATASET ###
+    ### EXTRACT DATASET COLUMNS ###
+    @reactive.Effect()
+    def _():
+        update_col_selection()
+
+    ### CONFIRM LIBRARY ###
     @reactive.Effect
-    @reactive.event(input.confirm_dataset)
+    @reactive.event(input.confirm_library)
     async def _():
         df = DATASET()
-        if input.dataset_file() is None and not input.demo_library_check():
+        if input.library_file() is None and not input.demo_library_check():
             with ui.Progress(min=1, max=15) as p:
                 p.set(
                     message="No data uploaded",
@@ -1141,28 +1255,26 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             if input.demo_library_check():
-                data_path = os.path.join(
-                    app_path, "../demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"
-                )
-                df = pd.read_csv(data_path)
+                data_path = DATASET_PATH()
                 file_name = data_path.split("/")[-1]
-                y_col = "Data"
-                ys = df[y_col]
-                seqs_col = "Sequence"
-                names_col = "Description"
-                DATASET.set(df)
 
             else:
-                f: list[FileInfo] = input.dataset_file()
+                f: list[FileInfo] = input.library_file()
                 file_name = f[0]["name"]
-                ys = df[input.y_col()].to_list()
                 data_path = f[0]["datapath"]
-                seqs_col = input.seq_col()
-                y_col = input.y_col()
-                names_col = input.description_col()
+
+            ys = df[input.y_col()].to_list()
+            seqs_col = input.seq_col()
+            y_col = input.y_col()
+            names_col = input.description_col()
 
             # Determine if the data is numerical or categorical
-            if is_numerical(ys):
+            if all(pd.isna(ys)):  # Check if all values are NaN
+                y_type = "class"
+                choice = "Classification"
+                _y_type = "Categorical"
+                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+            elif is_numerical(ys):
                 y_type = "num"
                 choice = "Regression"
                 _y_type = "Numeric"
@@ -1173,47 +1285,56 @@ def server(input: Inputs, output: Outputs, session: Session):
                 _y_type = "Categorical"
                 _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
 
-            lib = pai.Library(
-                user=input.USER().lower(),
-                source=data_path,
-                seqs_col=seqs_col,
-                y_col=y_col,
-                y_type=y_type,
-                names_col=names_col,
-                fname=file_name,
-            )
+            try:
+                lib = pai.Library(
+                    user=input.USER().lower(),
+                    source=data_path,
+                    seqs_col=seqs_col,
+                    y_col=y_col,
+                    y_type=y_type,
+                    names_col=names_col,
+                    fname=file_name,
+                )
 
-            # set reactive variables
-            LIBRARY.set(lib)
-            ui.update_select(
-                "model_rep_type", choices=[INVERTED_REPS[i] for i in lib.reps]
-            )
+                # set reactive variables
+                LIBRARY.set(lib)
+                ui.update_select(
+                    "model_rep_type", choices=[INVERTED_REPS[i] for i in lib.reps]
+                )
 
-            Y_TYPE.set(y_type)
+                Y_TYPE.set(y_type)
 
-            reps = [INVERTED_REPS[i] for i in lib.reps]
+                reps = [INVERTED_REPS[i] for i in lib.reps]
 
-            for rep in IN_MEMORY:
-                if rep not in reps:
-                    reps.append(rep)
+                for rep in IN_MEMORY:
+                    if rep not in reps:
+                        reps.append(rep)
 
-            REPS_AVAIL.set(reps)
+                REPS_AVAIL.set(reps)
 
-            ui.update_select("model_task", choices=[choice])
+                ui.update_select("model_task", choices=[choice])
 
-            ui.update_select("model_type", choices=_MODEL_TYPES())
+                ui.update_select("model_type", choices=_MODEL_TYPES())
 
-            ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
+                ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
 
-            ui.update_select("y_type", choices=[_y_type])
+                ui.update_select("y_type", choices=[_y_type])
 
-            PROTEIN.set(None)
+                PROTEIN.set(None)
 
-            REP_PATH.set(None)  # used in train
+                REP_PATH.set(None)  # used in train
 
-            MODE.set("dataset")
+                MODE.set("dataset")
 
-            LIBRARY_PLOT.set(None)
+                LIBRARY_PLOT.set(None)
+
+            except Exception:
+                with ui.Progress(min=1, max=15) as p:
+                    p.set(
+                        message="Problem with input file",
+                        detail="Please check if there are any problems with the input file.",
+                    )
+                    time.sleep(2.5)
 
     ### READING PROTEIN FILE ###
     @reactive.Effect
@@ -1229,7 +1350,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### CONFIRM PROTEIN ###
     @reactive.Effect
-    @reactive.event(input.confirm_protein)
+    @reactive.event(input.confirm_sequence)
     async def _():
         if input.protein_file() is None and not input.demo_sequence_check():
             with ui.Progress(min=1, max=15) as p:
@@ -1292,11 +1413,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
                         df_path = os.path.join(
                             prot.user,
-                            f"{prot.name}/zero_shot/{REP_DICT[model]}/zs_scores.csv",
+                            f"{prot.name}/zero_shot/results/{REP_DICT[model]}/zs_scores.csv",
                         )
 
                         if os.path.exists(df_path):
                             df = pd.read_csv(df_path)  # noqa: F841
+
                             p.set(
                                 message="Loading data...",
                                 detail="This may take a while...",
@@ -1484,16 +1606,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
 
         highlights = list(set(input.design_res().strip().split(",")))  # + sidechains))
+        print(highlights)
 
         if PROT_INTERFACE():
-            highlights = highlights + PROT_INTERFACE()
+            highlights = highlights + [str(i) for i in PROT_INTERFACE()]
+            print(highlights)
 
         if LIG_INTERFACE():
-            highlights = highlights + LIG_INTERFACE()
-
-        highlights = [i for i in set(highlights) if not isinstance(i, str)]
+            highlights = highlights + [str(i) for i in LIG_INTERFACE()]
+            print(highlights)
 
         highlights_dict = {input.mutlichain_chain(): highlights}
+        print(highlights_dict)
 
         view = PROTEIN().view_struc(
             color="white", highlight=highlights_dict
@@ -1507,7 +1631,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         if input.design_protein_interface():
             prot_contacts = prot.get_contacts(
-                chain=input.mutlichain_chain(),
+                source_chain=input.mutlichain_chain(),
                 dist=input.design_protein_interface_distance(),
                 target="protein",
             )
@@ -1524,7 +1648,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         if input.design_ligand_interface():
             prot_contacts = prot.get_contacts(
-                chain=input.mutlichain_chain(),
+                source_chain=input.mutlichain_chain(),
                 dist=input.design_protein_interface_distance(),
                 target="ligand",
             )
@@ -1661,41 +1785,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         if not isinstance(out, str):
             msg = "Residues that were fixed during design: \n" + ", ".join(FIXED_RES())
             return msg
-
-    ### FOLDING BUTTON ###
-    # @reactive.Effect
-    # @reactive.event(input.folding_button)
-    # def _():
-    #    """
-    #    Fold selected proteins
-    #    """
-    #    lib = DESIGN_LIB()
-    #    out = DESIGN_OUTPUT()
-    #    prot = PROTEIN()
-    #    selection = input.fold_these()
-    #    with ui.Progress(min=1, max=len(selection)) as p:
-    #        p.set(message="Initiating folding", detail=f"Computing {len(selection)} structures...")
-    #        model = MODEL_DICT[input.folding_model()]
-    #        num_recycles = input.num_recycles()
-    #        to_fold = out[out[lib.names_col].isin(selection)][lib.names_col].to_list()
-    #        out = lib.fold(names=to_fold, model=model, num_recycles=num_recycles, relax=input.energy_minimization() ,pbar=p)
-    #        fold_lib = pai.Library(user=prot.user, source=out)
-    #        FOLD_LIB.set(fold_lib)
-
-    ### ANALYZE DESIGNS ###
-    # @reactive.Effect
-    # @reactive.event(input.analyze_designs)
-    # def _():
-    #    if input.design_sidechains() == None:
-    #        sidechains = []
-    #    else:
-    #        sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
-    #
-    #    lib = FOLD_LIB()
-    #    prot = PROTEIN()
-    #
-    #    sidechains_dict = {input.mutlichain_chain():sidechains}
-    #    lib.struc_geom(ref=prot, residues=sidechains_dict)
 
     ###############
     ## ZERO-SHOT ##
@@ -1842,6 +1931,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "entropy": "Entropy",
             }
         )
+        ZS_SCORES.set(df)
         return df
 
     ### DOWNLOAD ZS RESULTS ###
@@ -1888,7 +1978,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.output_data_frame("zs_df"),
-                ui.download_button("download_zs_df", "Download discovery results"),
+                ui.download_button("download_zs_df", "Download Zero-Shot results"),
             )
 
     ### DOWNLOAD LOGIC FOR ZS RESULTS ###
@@ -1896,6 +1986,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         filename=lambda: f"{PROTEIN().name}_{input.zs_model()}_zs_predictions.csv"
     )
     def download_zs_df():
+        print(ZS_SCORES())
         yield ZS_SCORES().to_csv(index=False)
 
     ### OUTPUT PROTEIN MODE ###
@@ -2235,7 +2326,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             if MODE() == "structure":
                 f: list[FileInfo] = input.structure_file()  # noqa: F841
             else:
-                f: list[FileInfo] = input.dataset_file()  # noqa: F841
+                f: list[FileInfo] = input.library_file()  # noqa: F841
 
             lib = LIBRARY()
 
@@ -2250,12 +2341,17 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
                 lib = pai.Library(user=prot.user, source=data)
 
-            split = (input.n_train(), input.n_test(), input.n_val())
+            smart_split = input.smart_split()
+            if smart_split:
+                split = "smart"
+            else:
+                split = (input.n_train(), input.n_test(), input.n_val())
+
             k_folds = input.k_folds()
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(
+            model = pai.Model(
                 model_type=MODEL_DICT[input.model_type()],
                 library=lib,
                 x=rep_type,
@@ -2266,30 +2362,30 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             try:
                 loop = asyncio.get_running_loop()
-                await loop.run_in_executor(executor, m.train)
+                await loop.run_in_executor(executor, model.train)
                 print("done")
                 val_df = pd.DataFrame(
                     {
-                        "names": m.val_names,
-                        "y_true": m.y_val,
-                        "y_pred": m.y_val_pred,
-                        "y_sigma": m.y_val_sigma,
+                        "names": model.val_names,
+                        "y_true": model.y_val,
+                        "y_pred": model.y_val_pred,
+                        "y_sigma": model.y_val_sigma,
                     }
                 )
 
                 search_dest = os.path.join(
-                    f"{m.library.rep_path}",
-                    f"../models/{m.model_type}/{m.x}/predictions",
+                    f"{model.library.rep_path}",
+                    f"../models/{model.model_type}/{model.x}/predictions",
                 )
                 search_file = os.path.join(
-                    search_dest, f"{m.model_type}_{m.x}_predictions.csv"
+                    search_dest, f"{model.model_type}_{model.x}_predictions.csv"
                 )
 
                 if os.path.exists(search_file):
                     MLDE_SEARCH_DF.set(pd.read_csv(search_file))
 
                 # set reactive variables
-                MODEL.set(m)
+                MODEL.set(model)
                 VAL_DF.set(val_df)
 
             except Exception as e:
@@ -2335,7 +2431,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             p = None
         return p
 
-    ### RENDER DISCOVERY TABLE ###
+    ### RENDER MLDE TABLE ###
     @output
     @render.data_frame
     def mlde_model_table(alt=None):
@@ -2365,7 +2461,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             try:
                 loop = asyncio.get_running_loop()
-                #  N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'
                 out = await loop.run_in_executor(
                     executor,
                     model.search,
@@ -2422,9 +2517,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if out is not None:
             return ui.TagList(
                 ui.output_data_frame("mlde_search_table"),
-                ui.download_button(
-                    "download_mlde_search", "Download discovery results"
-                ),
+                ui.download_button("download_mlde_search", "Download MLDE results"),
             )
 
     ### DOWNLOAD LOGIC FOR MLDE RESULTS ###
@@ -2462,9 +2555,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         ui.update_numeric("n_val", max=n_val_max, value=n_val_max)
 
-    ################
-    ##  DISCOVERY ##
-    ################
+    ###############
+    ## DISCOVERY ##
+    ###############
 
     ### TRAIN DISCOVERY MODEL ###
     IS_DISCOVERY_TRAIN_RUNNING = reactive.Value(False)
@@ -2487,7 +2580,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
-            m = pai.Model(
+            model = pai.Model(
                 model_type=MODEL_DICT[input.discovery_model_type()],
                 library=lib,
                 x=rep_type,
@@ -2496,42 +2589,38 @@ def server(input: Inputs, output: Outputs, session: Session):
                 k_folds=k_folds,
             )
             try:
+                # train model
                 loop = asyncio.get_running_loop()
                 out = await loop.run_in_executor(
                     executor,
-                    m.train,
+                    model.train,
                 )
+
                 model_lib = pai.Library(user=lib.user, source=out)
                 val_df = pd.DataFrame(
                     {
-                        "names": m.val_names,
-                        "y_true": m.y_val,
-                        "y_pred": m.y_val_pred,
-                        "y_sigma": m.y_val_sigma,
+                        "names": model.val_names,
+                        "y_true": model.y_val,
+                        "y_pred": model.y_val_pred,
+                        "y_sigma": model.y_val_sigma,
                     }
                 )
 
                 # Visualize results
-                vis_method = input.discovery_vis_method()
                 p.set(message="Visualizing results", detail="This may take a while...")
 
-                # Update to pass the new parameters
-                if vis_method == "t-SNE":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
-                    )
-                elif vis_method == "UMAP":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
-                    )
-                elif vis_method == "PCA":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor, model_lib.plot_tsne, m.x, None, None, model_lib.names
-                    )
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model_lib.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model_lib.names,
+                )
 
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
-                DISCOVERY_MODEL.set(m)
+                DISCOVERY_MODEL.set(model)
                 DISCOVERY_VAL_DF.set(val_df)
                 DISCOVERY_MODEL_PLOT.set((fig, ax))
 
@@ -2554,6 +2643,88 @@ def server(input: Inputs, output: Outputs, session: Session):
         # Launch the expensive computation asynchronously
         asyncio.create_task(discovery_train())
 
+    IS_CLUSTERING_RUNNING = reactive.Value(False)
+
+    ### CLUSTERING DISCOVERY ###
+    async def clustering():
+        IS_CLUSTERING_RUNNING.set(True)
+
+        with ui.Progress(min=1, max=15) as p:
+            p.set(message="Clustering data", detail="This may take a while...")
+
+            rep_type = REP_DICT[input.clustering_rep()]
+            lib = LIBRARY()
+
+            # hdbscan_n_neighbors, hdbscan_min_cluster_size, hdbscan_min_samples
+            n_neighbors = input.hdbscan_n_neighbors()
+            min_cluster_size = input.hdbscan_min_cluster_size()
+            min_samples = input.hdbscan_min_samples()
+
+            model = pai.Model(
+                model_type=MODEL_DICT[input.clustering_alg()],  #
+                library=lib,
+                x=rep_type,
+                seed=None,
+                min_cluster_size=min_cluster_size,
+                min_samples=min_samples,
+            )
+
+            try:
+                loop = asyncio.get_running_loop()
+
+                out = await loop.run_in_executor(executor, model.train, n_neighbors)
+
+                model_lib = pai.Library(user=lib.user, source=out)
+
+                # Visualize results
+                p.set(message="Visualizing results", detail="This may take a while...")
+
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model_lib.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model_lib.names,
+                    None,
+                    None,
+                    True,
+                )
+
+                out_df = pd.DataFrame(
+                    {
+                        "names": out["df"][out["names_col"]],
+                        "y_true": out["df"][out["y_col"]],
+                        "y_pred": out["df"][out["y_pred_col"]],
+                        "y_sigma": out["df"][out["y_sigma_col"]],
+                    }
+                )
+
+                # set reactive variables
+                DISCOVERY_LIB.set(model_lib)
+                DISCOVERY_MODEL.set(model)
+                DISCOVERY_VAL_DF.set(out_df)
+                DISCOVERY_MODEL_PLOT.set((fig, ax))
+
+            except Exception as e:
+                print(f"An error occurred in training the Discovery model: {e}")
+
+            finally:
+                # Reset the task running state in the session
+                IS_CLUSTERING_RUNNING.set(False)
+
+    # Button click event
+    @reactive.effect
+    @reactive.event(input.clustering_button)
+    async def clustering_btn_click():
+        # Prevent multiple invocations of the task within the same session
+        if IS_CLUSTERING_RUNNING():
+            print("Discovery train is already in progress for this session.")
+            return
+
+        # Launch the expensive computation asynchronously
+        asyncio.create_task(clustering())
+
     ### RENDER DISCOVERY PLOT ###
     @output
     @render.plot
@@ -2573,7 +2744,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = DISCOVERY_MODEL()
             class_dict = model.library.class_dict
             df["y_true"] = [class_dict[i] for i in df["y_true"]]
-            df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+            try:
+                df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+            except Exception:
+                pass
             return df
 
     ### DISCOVERY SEARCH ###
@@ -2586,7 +2760,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             labels = input.sample_from()
             if labels == ():
-                labels = ["all"]
+                labels = []
             if isinstance(labels, str):
                 labels = [labels]
 
@@ -2608,37 +2782,20 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
 
                 # Visualize results
-                vis_method = input.discovery_vis_method()
                 p.set(message="Visualizing results", detail="This may take a while...")
 
-                # Update to pass the new parameters
-                if vis_method == "t-SNE":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
-                elif vis_method == "UMAP":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
-                elif vis_method == "PCA":
-                    fig, ax, df = await loop.run_in_executor(
-                        executor,
-                        model.library.plot_tsne,
-                        model.x,
-                        None,
-                        None,
-                        model.library.names,
-                    )
+                print("We start here")
+                fig, ax, df = await loop.run_in_executor(
+                    executor,
+                    model.library.plot_umap,
+                    model.x,
+                    None,
+                    None,
+                    model.library.names,
+                    search_results,
+                    None,
+                    True,
+                )
 
                 DISCOVERY_SEARCH_PLOT.set((fig, ax))
 
@@ -2683,8 +2840,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         seq_col = model.library.seq_col
         df = df.drop(seq_col, axis=1)
         class_dict = model.library.class_dict
-        df["y_true"] = [class_dict[i] for i in df["y_true"]]
-        df["y_pred"] = [class_dict[int(i)] for i in df["y_pred"]]
+        try:
+            df["y_true"] = [class_dict[i] for i in df["y_true"]]
+            df["y_predicted"] = [class_dict[int(i)] for i in df["y_predicted"]]
+        except Exception:
+            pass
         return df
 
     ### DOWNLOAD DISCOVERY RESULTS ###

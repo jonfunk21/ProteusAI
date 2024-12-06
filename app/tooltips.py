@@ -25,7 +25,8 @@ been shown that these vector representations often cluster based on function. Th
 clusters sequences using these representations and offers algorithms to sample diverse candidates
 from different clusters. These clusters can either be generated through unsupervised machine learning,
 when no prior annotations are present, or from partially annotated datasets, where some protein
-functions are known.
+functions are known. Clustering should be used if all or very few sequences have annotations.
+Classification should be used if some or all all sequences are annotated.
 """
 
 mlde_tooltips = """

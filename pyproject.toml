@@ -34,6 +34,7 @@ dependencies = [
   "gpytorch",
   "openmm",
   "umap-learn",
+  "hdbscan",
   "proteusAI",
   #"pdbfixer @ git+https://github.com/openmm/pdbfixer@1.9"
 ]

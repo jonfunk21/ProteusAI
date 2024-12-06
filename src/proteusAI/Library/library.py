@@ -6,15 +6,17 @@ __author__ = "Jonathan Funk"
 
 import os
 import sys
+from typing import Optional, Union
+
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+import proteusAI.io_tools as io_tools
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools
-import proteusAI.io_tools as io_tools
-import proteusAI.visual_tools as vis
 import proteusAI.struc as pai_struc
-import pandas as pd
+import proteusAI.visual_tools as vis
 from proteusAI.Protein.protein import Protein
-from typing import Union, Optional
-from sklearn.preprocessing import LabelEncoder
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -865,6 +867,7 @@ class Library:
         names=None,
         highlight_mask=None,
         highlight_label=None,
+        use_y_pred=False,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -879,9 +882,10 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
 
         fig, ax, df = vis.plot_tsne(
@@ -907,6 +911,7 @@ class Library:
         names=None,
         highlight_mask=None,
         highlight_label=None,
+        use_y_pred=False,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -919,11 +924,11 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
         """
-
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
 
         fig, ax, df = vis.plot_umap(
@@ -938,6 +943,7 @@ class Library:
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
+        print("done plotting")
 
         return fig, ax, df
 
@@ -949,6 +955,7 @@ class Library:
         names=None,
         highlight_mask=None,
         highlight_label=None,
+        use_y_pred=False,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -963,9 +970,10 @@ class Library:
         """
 
         x = self.load_representations(rep)
-        y = self.y
 
-        if self.y_type == "class":
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+
+        if not use_y_pred and self.y_type == "class":
             y = [self.class_dict[i] for i in y]
 
         fig, ax, df = vis.plot_pca(

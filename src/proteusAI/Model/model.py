@@ -4,26 +4,30 @@
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import os
-import sys
-import proteusAI.visual_tools as vis
-import proteusAI.ml_tools.bo_tools as BO
-import random
-import json
 import csv
-import torch
-import pandas as pd
-import gpytorch
-import numpy as np
-from joblib import dump
+import json
+import os
+import random
+import sys
 from typing import Union
-from proteusAI.Library import Library
-from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
-from sklearn.linear_model import Ridge, RidgeClassifier
+
+import gpytorch
+import hdbscan
+import numpy as np
+import pandas as pd
+import torch
+import umap
+from joblib import dump
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.model_selection import KFold
+from sklearn.linear_model import Ridge, RidgeClassifier
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
+
+import proteusAI.ml_tools.bo_tools as BO
+import proteusAI.visual_tools as vis
+from proteusAI.Library import Library
+from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -56,9 +60,30 @@ class Model:
         val_r2 (float): R-squared value of the model on the validation dataset.
     """
 
+    _clustering_algs = ["hdbscan"]
     _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge"]
     _pt_models = ["gp"]
     _in_memory_representations = ["ohe", "blosum50", "blosum62"]
+    defaults = {
+        "library": None,
+        "model_type": "rf",
+        "x": "ohe",
+        "rep_path": None,
+        "split": (80, 10, 10),
+        "k_folds": None,
+        "grid_search": False,
+        "custom_params": None,
+        "custom_model": None,
+        "optim": "adam",
+        "lr": 10e-4,
+        "seed": None,
+        "dest": None,
+        "pbar": None,
+        "min_cluster_size": 30,
+        "min_samples": 50,
+        "metric": "euclidean",
+        "cluster_selection_epsilon": 0.1,
+    }
 
     def __init__(self, **kwargs):
         """
@@ -82,12 +107,16 @@ class Model:
         self.train_data = []
         self.test_data = []
         self.val_data = []
+        self.unlabelled_data = []
         self.test_true = []
         self.test_predictions = []
         self.val_true = []
         self.val_predictions = []
         self.test_r2 = []
         self.val_r2 = []
+        self.y_unlabelled_pred = []
+        self.y_unlabelled_sigma = []
+        self.y_unlabelled = []
         self.rep_path = None
         self.dest = None
         self.y_best = None
@@ -102,22 +131,7 @@ class Model:
 
     ### args
     def _set_attributes(self, **kwargs):
-        defaults = {
-            "library": None,
-            "model_type": "rf",
-            "x": "ohe",
-            "rep_path": None,
-            "split": (80, 10, 10),
-            "k_folds": None,
-            "grid_search": False,
-            "custom_params": None,
-            "custom_model": None,
-            "optim": "adam",
-            "lr": 10e-4,
-            "seed": None,
-            "dest": None,
-            "pbar": None,
-        }
+        defaults = self.defaults
 
         # Update defaults with provided keyword arguments
         defaults.update(kwargs)
@@ -126,22 +140,7 @@ class Model:
             setattr(self, key, value)
 
     def _update_attributes(self, **kwargs):
-        defaults = {
-            "library": None,
-            "model_type": "rf",
-            "x": "ohe",
-            "rep_path": None,
-            "split": (80, 10, 10),
-            "k_folds": None,
-            "grid_search": False,
-            "custom_params": None,
-            "custom_model": None,
-            "optim": "adam",
-            "lr": 10e-4,
-            "seed": None,
-            "dest": None,
-            "pbar": None,
-        }
+        defaults = self.defaults
 
         # Update defaults with provided keyword arguments
         defaults.update(kwargs)
@@ -149,40 +148,32 @@ class Model:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def train(self):
+    def train(self, n_neighbors=70, pbar=None):
         """
         Train the model.
 
         Args:
-            library (proteusAI.Library): Data for training.
-            model_type (str): choose the model type ['rf', 'svm', 'knn', 'ffnn'],
-            x (str): choose the representation type ['esm2', 'esm1v', 'ohe', 'blosum50', 'blosum62'].
-            rep_path (str): Path to representations. Default None - will extract from library object.
-            split (tuple or dict): Choose the split ratio of training, testing and validation data as a tuple. Default (80,10,10).
-                                   Alternatively, provide a dictionary of proteins, with the keys 'train', 'test', and 'val', with
-                                   list of proteins as values for custom data splitting.
-            k_folds (int): Number of folds for cross validation.
-            grid_search: Enable grid search.
-            custom_params: None. Not implemented yet.
-            custom_model: None. Not implemented yet.
-            optim (str): Choose optimizer for feed forward neural network. e.g. 'adam'.
-            lr (float): Choose a learning rate for feed forward neural networks. e.g. 10e-4.
-            seed (int): Choose a random seed. e.g. 42
-            pbar: Progress bar for shiny app.
+            pbar: Shiny progress bar
         """
         # Update attributes if new values are provided
         # self._update_attributes(**kwargs)
 
         # split data
-        self.train_data, self.test_data, self.val_data = self.split_data()
+        self.train_data, self.test_data, self.val_data, self.unlabelled_data = (
+            self.split_data()
+        )
 
         # load model
-        self._model = self.model()
+        self._model = self.model(**self.defaults)
 
         # train
         out = None
         if self.model_type in self._sklearn_models:
             out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
+        elif self.model_type in self._clustering_algs:
+            out = self.cluster(
+                rep_path=self.rep_path, n_neighbors=n_neighbors, pbar=self.pbar
+            )
         elif self.model_type in self._pt_models:
             out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
         else:
@@ -202,12 +193,24 @@ class Model:
                 such that the same site cannot be found
                 in the training, testing and validation set
             3. 'custom': Splits the data according to a custom pattern
+            4. 'smart': Stratified split for both classification and regression
 
         Returns:
-            tuple: returns three lists of train, test and validation proteins.
+            tuple: returns three lists of train, test, and validation proteins.
         """
 
         proteins = self.library.proteins
+
+        if self.y_type == "class":
+            unlabelled_data = [
+                prot for prot in proteins if self.library.class_dict[prot.y] == "nan"
+            ]
+            labelled_data = [
+                prot for prot in proteins if self.library.class_dict[prot.y] != "nan"
+            ]
+        else:
+            labelled_data = proteins
+            unlabelled_data = []
 
         if self.seed:
             random.seed(self.seed)
@@ -218,15 +221,15 @@ class Model:
             train_ratio, test_ratio, val_ratio = tuple(
                 value / sum(self.split) for value in self.split
             )
-            train_size = int(train_ratio * len(proteins))
-            test_size = int(test_ratio * len(proteins))
+            train_size = int(train_ratio * len(labelled_data))
+            test_size = int(test_ratio * len(labelled_data))
 
-            random.shuffle(proteins)
+            random.shuffle(labelled_data)
 
             # Split the data
-            train_data = proteins[:train_size]
-            test_data = proteins[train_size : train_size + test_size]
-            val_data = proteins[train_size + test_size :]
+            train_data = labelled_data[:train_size]
+            test_data = labelled_data[train_size : train_size + test_size]
+            val_data = labelled_data[train_size + test_size :]
 
         # custom datasplit
         elif isinstance(self.split, dict):
@@ -234,11 +237,90 @@ class Model:
             test_data = self.split["test"]
             val_data = self.split["val"]
 
-        # TODO: implement other splitting methods
+        # use stratified split that works for both regression and classification
+        elif self.split == "smart":
+            if self.y_type == "class":
+                # get the unique classes
+                classes = list(set([prot.y for prot in labelled_data]))
+
+                # split the data into classes
+                class_data = {
+                    c: [prot for prot in labelled_data if prot.y == c] for c in classes
+                }
+
+                # split the data into train, test, val
+                for c in classes:
+                    class_size = len(class_data[c])
+                    train_size = int(0.8 * class_size)
+                    test_size = int(0.1 * class_size)
+
+                    random.shuffle(class_data[c])
+
+                    train_data += class_data[c][:train_size]
+                    test_data += class_data[c][train_size : train_size + test_size]
+                    val_data += class_data[c][train_size + test_size :]
+            else:
+                # Bin continuous y values into categories
+                y_values = np.array([prot.y for prot in labelled_data])
+
+                # Dynamically adjust the number of bins based on dataset size
+                n_bins = min(
+                    10, max(2, len(labelled_data) // 5)
+                )  # At least 2 bins, at most 10
+                bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
+                y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
+
+                # Merge rare bins
+                class_counts = np.bincount(y_binned)
+
+                # Ensure bins are not too small
+                while np.any(class_counts < 2):
+                    if n_bins <= 2:
+                        break  # Exit when bins reach minimum allowed size
+                    n_bins = max(2, n_bins - 1)
+                    bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
+                    y_binned = np.digitize(y_values, bins) - 1
+                    class_counts = np.bincount(y_binned)
+
+                # Split data into train/test, then test/val
+                try:
+                    train_data_idx, temp_data_idx = train_test_split(
+                        range(len(labelled_data)),
+                        test_size=0.2,
+                        stratify=y_binned,
+                        random_state=self.seed,
+                    )
+                    temp_y_binned = y_binned[temp_data_idx]
+
+                    test_data_idx, val_data_idx = train_test_split(
+                        temp_data_idx,
+                        test_size=0.5,
+                        stratify=temp_y_binned,
+                        random_state=self.seed,
+                    )
+                except ValueError:
+                    # Fallback to random split if stratification fails
+                    train_data_idx, temp_data_idx = train_test_split(
+                        range(len(labelled_data)),
+                        test_size=0.2,
+                        random_state=self.seed,
+                    )
+                    test_data_idx, val_data_idx = train_test_split(
+                        temp_data_idx,
+                        test_size=0.5,
+                        random_state=self.seed,
+                    )
+
+                # Map indices back to the data
+                train_data = [labelled_data[i] for i in train_data_idx]
+                test_data = [labelled_data[i] for i in test_data_idx]
+                val_data = [labelled_data[i] for i in val_data_idx]
+                print(len(train_data), len(test_data), len(val_data))
+
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
 
-        return train_data, test_data, val_data
+        return train_data, test_data, val_data, unlabelled_data
 
     def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
@@ -287,27 +369,35 @@ class Model:
                 json.dump(kwargs, f)
 
         if model_type in self._sklearn_models:
-            model_params = kwargs.copy()
+            # model_params = kwargs.copy() # optional to add custom parameters
 
             if self.y_type == "class":
                 if model_type == "rf":
-                    model = RandomForestClassifier(**model_params)
+                    model = RandomForestClassifier()
                 elif model_type == "svm":
-                    model = SVC(**model_params)
+                    model = SVC()
                 elif model_type == "knn":
-                    model = KNeighborsClassifier(**model_params)
+                    model = KNeighborsClassifier()
                 elif model_type == "ridge":  # Added support for Ridge Classification
-                    model = RidgeClassifier(**model_params)
+                    model = RidgeClassifier()
             elif self.y_type == "num":
                 if model_type == "rf":
-                    model = RandomForestRegressor(**model_params)
+                    model = RandomForestRegressor()
                 elif model_type == "svm":
-                    model = SVR(**model_params)
+                    model = SVR()
                 elif model_type == "knn":
-                    model = KNeighborsRegressor(**model_params)
+                    model = KNeighborsRegressor()
                 elif model_type == "ridge":  # Added support for Ridge Regression
-                    model = Ridge(**model_params)
+                    model = Ridge()
 
+            return model
+
+        elif model_type == "hdbscan":
+            model_params = kwargs.copy()
+            model = hdbscan.HDBSCAN(
+                min_samples=model_params["min_samples"],
+                min_cluster_size=model_params["min_cluster_size"],
+            )
             return model
 
         elif model_type in self._pt_models:
@@ -488,6 +578,18 @@ class Model:
             self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
                 self.predict(self.train_data)
             )
+
+            # Prediction unlabelled data if exists
+            if len(self.unlabelled_data) > 0:
+                (
+                    self.unlabelled_data,
+                    self.y_unlabelled_pred,
+                    self.y_unlabelled_sigma,
+                    self.y_unlabelled,
+                    _,
+                ) = self.predict(self.unlabelled_data)
+
+            # Compute R-squared on validataion dataset
             self.val_r2 = self.score(self.val_data)
 
             # Save the model
@@ -526,6 +628,16 @@ class Model:
                 f"{csv_dest}/val_data.csv",
             )
 
+            # save unlabelled data if exists
+            if len(self.unlabelled_data) > 0:
+                unlabelled_df = self.save_to_csv(
+                    self.unlabelled_data,
+                    self.y_unlabelled,
+                    self.y_unlabelled_pred,
+                    self.y_unlabelled_sigma,
+                    f"{csv_dest}/unlabelled_data.csv",
+                )
+
             # Save results to a JSON file
             results = {
                 "k_fold_test_r2": fold_results,
@@ -538,21 +650,17 @@ class Model:
             # add split information to df
             train_df["split"] = "train"
             val_df["split"] = "val"
+            if len(self.unlabelled_data) > 0:
+                unlabelled_df["split"] = "unlabelled"
+                comb_df = [train_df, val_df, unlabelled_df]
+            else:
+                comb_df = [train_df, val_df]
 
             # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, val_df], axis=0).reset_index(drop=True)
+            self.out_df = pd.concat(comb_df, axis=0).reset_index(drop=True)
 
+            # TODO: that depends on minimization or maximization goal
             self.y_best = max((max(self.y_train), max(self.y_val)))
-
-        # Add predictions to proteins
-        for i in range(len(train)):
-            self.train_data[i].y_pred = self.y_train_pred[i]
-            self.train_data[i].y_sigma = self.y_train_sigma[i]
-
-        # Add predictions to test proteins
-        for i in range(len(val)):
-            self.val_data[i].y_pred = self.y_val_pred[i]
-            self.val_data[i].y_sigma = self.y_val_sigma[i]
 
         out = {
             "df": self.out_df,
@@ -654,16 +762,11 @@ class Model:
             device=self.device
         )
         self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
-        # fix_mean = True
 
         optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
 
-        # for param in self._model.named_parameters():
-        #    print(param)
-
-        # model.mean_module.constant.data.fill_(1)  # FIX mean to 1
         self._model.train()
         self.likelihood.train()
         prev_loss = float("inf")
@@ -1044,6 +1147,87 @@ class Model:
 
         return fig, ax
 
+    def cluster(self, rep_path, n_neighbors=70, pbar=None):
+        """
+        Clustering algorithm using UMAP.
+
+        Args:
+            rep_path (str): representation path.
+            n_neighbors (int): number of neighbors. Default 70.
+            pbar: Progress bar for shiny app.
+        """
+        assert self._model is not None
+
+        if pbar:
+            pbar.set(message="Loading representations", detail="...")
+
+        reps = self.load_representations(self.library.proteins, rep_path=rep_path)
+
+        # handle representations that are not esm
+        if len(reps[0].shape) == 2:
+            reps = [x.view(-1) for x in reps]
+
+        x_reps = torch.stack(reps).cpu().numpy()
+
+        # do UMAP
+        clusterable_embedding = umap.UMAP(
+            n_neighbors=70,
+            min_dist=0.0,
+            n_components=2,
+            random_state=42,
+        ).fit_transform(x_reps)
+
+        # perform clustering
+        if self._model_type == "hdbscan":
+            labels = self._model.fit_predict(clusterable_embedding)
+
+        elif self._model_type in self._sklearn_models:
+            self._model.fit(clusterable_embedding)
+            labels = self._model.labels_
+
+        # store prediction results in protein
+        y_trues = []
+        for i, prot in enumerate(self.library.proteins):
+            self.library.proteins[i].y_pred = labels[i]
+            y_true = prot.y
+            y_trues.append(y_true)
+
+        self.library.y_pred = labels
+
+        if self.dest is not None:
+            csv_dest = f"{self.dest}"
+        else:
+            csv_dest = os.path.join(
+                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+            )
+
+        # create out dataframe
+        out_df = self.save_to_csv(
+            self.library.proteins,
+            y_trues,
+            labels,
+            [None] * len(self.library.proteins),
+            f"{csv_dest}/clustering.csv",
+        )
+
+        self.out_df = out_df
+
+        out = {
+            "df": self.out_df,
+            "rep_path": self.library.rep_path,
+            "struc_path": self.library.struc_path,
+            "y_type": self.library.y_type,
+            "y_col": "y_true",
+            "y_pred_col": "y_predicted",
+            "y_sigma_col": "y_sigma",
+            "seqs_col": "sequence",
+            "names_col": "name",
+            "reps": self.library.reps,
+            "class_dict": self.library.class_dict,
+        }
+
+        return out
+
     def search(
         self,
         N=10,
@@ -1079,7 +1263,7 @@ class Model:
         self,
         N=10,
         optim_problem="max",
-        labels=["all"],
+        labels=[],
         method="ga",
         max_eval=10000,
         pbar=None,
@@ -1090,7 +1274,7 @@ class Model:
         Args:
             N (int): Number of sequences to be returned.
             optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
-            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            labels (list): list of labels to sample from. Default [] will sample from all labels.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
             max_eval (int): Maximum number of evaluations. Default 1000.
             pbar: Progress bar for ProteusAI app.
@@ -1099,8 +1283,12 @@ class Model:
         class_dict = self.library.class_dict
         full_proteins = self.library.proteins  # Full list of proteins
 
-        if "all" in labels or len(labels) < 1:
-            labels = list(class_dict.keys())
+        if len(labels) < 1:
+            if self.model_type in self._clustering_algs:
+                labels = list(set([prot.y_pred for prot in full_proteins]))
+            else:
+                labels = list(class_dict.keys())
+                labels = [class_dict[label] for label in labels]
             proteins = full_proteins
             full_indices = list(range(len(full_proteins)))  # Indices for all proteins
         else:
@@ -1109,7 +1297,7 @@ class Model:
                 *[
                     (prot, idx)
                     for idx, prot in enumerate(full_proteins)
-                    if class_dict[prot.y] in labels
+                    if prot.y_pred in labels
                 ]
             )
             proteins = list(proteins)
