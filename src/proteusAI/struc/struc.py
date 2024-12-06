@@ -227,16 +227,8 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     """
     Detect contact residues between specified targets.
     """
-    print(f"DEBUG: Initial structure shape: {structure.shape}")
-    print(f"DEBUG: Unique chain IDs: {np.unique(structure.chain_id)}")
-    print(f"DEBUG: Hetero atom mask: {np.unique(structure.hetero)}")
-
-    inversion_dict = {k: i for i, k in enumerate(structure.res_id)}
-    print("DEBUG: inversion dict:", inversion_dict)
-
     # Try different atom selection strategies
     non_hetero_atoms = structure[~structure.hetero]
-    print(f"DEBUG: Non-hetero atoms shape: {non_hetero_atoms.shape}")
 
     # If no non-hetero atoms, use all atoms
     if len(non_hetero_atoms) == 0:
@@ -245,6 +237,7 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     # Handle chain selection
     if source_chain is None:
         source_chain = np.unique(non_hetero_atoms.chain_id)
+
     elif isinstance(source_chain, str):
         source_chain = [source_chain]
 
@@ -258,11 +251,11 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     else:
         raise ValueError("Target must be 'protein' or 'ligand'")
 
-    print(f"DEBUG: Target atoms shape: {target_atoms.shape}")
-
     # Chain atoms selection
     chain_atoms = non_hetero_atoms[np.isin(non_hetero_atoms.chain_id, source_chain)]
-    print(f"DEBUG: Chain atoms shape: {chain_atoms.shape}")
+
+    # to map res_ids to start from 1 if needed
+    normalization_dict = {k: i + 1 for i, k in enumerate(np.unique(chain_atoms.res_id))}
 
     # Contact detection
     contact_sets = {}
@@ -283,8 +276,7 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     else:
         result = []
 
-    result = [inversion_dict[i] for i in result]
-    print(f"DEBUG: Final contact residues: {result}")
+    result = [normalization_dict[i] for i in result]
     return result
 
 

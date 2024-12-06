@@ -256,7 +256,7 @@ class Protein:
 
         if filter_solvent:
             non_solvent_mask = biotite.structure.filter_solvent(prot)
-            prot = prot[non_solvent_mask]
+            prot = prot[~non_solvent_mask]
 
         seqs = struc.get_sequences(prot_f)
         chains = struc.chain_parser(prot_f)
