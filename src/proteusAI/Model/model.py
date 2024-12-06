@@ -4,30 +4,30 @@
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import os
-import sys
-import proteusAI.visual_tools as vis
-import proteusAI.ml_tools.bo_tools as BO
-import random
-import json
 import csv
-import torch
-import pandas as pd
-import gpytorch
-import numpy as np
-from joblib import dump
+import json
+import os
+import random
+import sys
 from typing import Union
-from proteusAI.Library import Library
-from proteusAI.ml_tools.torch_tools import GP, predict_gp, computeR2
-from sklearn.linear_model import Ridge, RidgeClassifier
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.cluster import KMeans
-from sklearn.model_selection import train_test_split
+
+import gpytorch
 import hdbscan
+import numpy as np
+import pandas as pd
+import torch
 import umap
+from joblib import dump
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import Ridge, RidgeClassifier
+from sklearn.model_selection import KFold, train_test_split
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
+
+import proteusAI.ml_tools.bo_tools as BO
+import proteusAI.visual_tools as vis
+from proteusAI.Library import Library
+from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -253,7 +253,6 @@ class Model:
                     class_size = len(class_data[c])
                     train_size = int(0.8 * class_size)
                     test_size = int(0.1 * class_size)
-                    val_size = class_size - train_size - test_size
 
                     random.shuffle(class_data[c])
 
@@ -299,7 +298,7 @@ class Model:
                         stratify=temp_y_binned,
                         random_state=self.seed,
                     )
-                except ValueError as e:
+                except ValueError:
                     # Fallback to random split if stratification fails
                     train_data_idx, temp_data_idx = train_test_split(
                         range(len(labelled_data)),
