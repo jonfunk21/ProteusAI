@@ -113,15 +113,15 @@ app_ui = ui.page_fluid(
                                 value="Guest",
                             ),
                         ),
-                        ui.column(
-                            6,
-                            ui.input_action_button("login", "Login"),
-                            style="padding:50px;",
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_action_button("sign_up", "Create account"),
-                        ),
+                        # ui.column(
+                        #    6,
+                        #    ui.input_action_button("login", "Login"),
+                        #    style="padding:50px;",
+                        # ),
+                        # ui.column(
+                        #    6,
+                        #    ui.input_action_button("sign_up", "Create account"),
+                        # ),
                     ),
                     ### NAVSET ###
                     ui.navset_tab(
