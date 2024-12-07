@@ -31,7 +31,6 @@ model_dict = {
     "knn": "KNN",
     "svm": "SVM",
     "vae": "VAE",
-    "esm2": "ESM-2 (650M)",
     "esm2_650M": "ESM-2 (650M)",
     "esm2_150M": "ESM-2 (150M)",
     "esm2_35M": "ESM-2 (35M)",
@@ -285,7 +284,7 @@ class Protein:
 
     ### Zero-shot prediction ###
     def zs_prediction(
-        self, model="esm2", batch_size=100, pbar=None, device=None, chain=None
+        self, model="esm1v", batch_size=100, pbar=None, device=None, chain=None
     ):
         """
         Compute zero-shot scores
@@ -295,7 +294,7 @@ class Protein:
             batch_size (int): Batch size used to compute ZS-Scores
             pbar: App progress bar
             device (str): Choose hardware for computation. Default 'None' for autoselection
-                        other options are 'cpu' and 'cuda'.
+                other options are 'cpu' and 'cuda'.
         """
 
         # Set a default chain if none is provided and there are chains available
@@ -365,7 +364,7 @@ class Protein:
 
         return out
 
-    def zs_library(self, model="esm2", chain=None):
+    def zs_library(self, model="esm1v", chain=None):
         """
         Generate zero-shot library.
         """
@@ -578,7 +577,7 @@ class Protein:
 
     # Plot
     # Plot zero-shot entropy
-    def plot_entropy(self, model="esm2", title=None, section=None, chain=None):
+    def plot_entropy(self, model="esm1v", title=None, section=None, chain=None):
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
@@ -638,7 +637,7 @@ class Protein:
 
     def plot_scores(
         self,
-        model="esm2",
+        model="esm1v",
         section=None,
         color_scheme=None,
         title=None,
@@ -649,8 +648,8 @@ class Protein:
         Plot the zero-shot prediction scores for a given model and sequence.
 
         Args:
-            model (str): The name of the model to use for plotting (default: 'esm2_650M').
-            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed. 
+            model (str): The name of the model to use for plotting (default: 'esm1v_650M').
+            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed.
                 Show entire sequence if None (default: None).
             color_scheme (str): Color scheme for the heatmap ('rwb' for red-white-blue, 'r' for reds, 'b' for blues) (default: None).
             title (str): Title of the plot (default: None).

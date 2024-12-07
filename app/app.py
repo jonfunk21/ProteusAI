@@ -86,7 +86,7 @@ BATCH_SIZE_DICT = {
     "esm2_8M": 10,
     "esm1v": 200,
 }
-ZS_MODELS = ["ESM-1v", "ESM-2"]
+ZS_MODELS = ["ESM-1v", "ESM-2 (650M)", "ESM-2 (150M)", "ESM-2 (35M)", "ESM-2 (8M)"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
 CLUSTERING_ALG = ["HDBSCAN"]
@@ -624,9 +624,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     ui.column(6, ui.output_ui("mlde_chain_ui")),
                     ui.column(6, ui.output_ui("mlde_dynamic_ui")),
-                ),
-                ui.input_checkbox(
-                    "customize_model_params", "Customize model parameters", value=False
                 ),
                 ui.row(
                     ui.column(
@@ -1231,7 +1228,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     names_col=names_col,
                     fname=file_name,
                 )
-
                 # set reactive variables
                 LIBRARY.set(lib)
                 ui.update_select(
@@ -1255,7 +1251,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
 
                 ui.update_select("y_type", choices=[_y_type])
-
+                print("Library loaded successfully")
                 PROTEIN.set(None)
 
                 REP_PATH.set(None)  # used in train
@@ -2037,7 +2033,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if mode in ["zero-shot", "structure"]:
             data = prot.zs_library(model=method, chain=chain)
             lib = pai.Library(user=prot.user, source=data)
-            
+
             pbar_max = len(lib)
         else:
             pbar_max = len(lib)
@@ -2045,14 +2041,16 @@ def server(input: Inputs, output: Outputs, session: Session):
         try:
             with ui.Progress(min=1, max=pbar_max) as p:
                 print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
-                p.set(message="Computation in progress", detail=f"Computing representations: {REP_DICT[input.dat_rep_type()]}")
+                p.set(
+                    message="Computation in progress",
+                    detail=f"Computing representations: {REP_DICT[input.dat_rep_type()]}",
+                )
                 batch_size = BATCH_SIZE_DICT[method]
+
                 loop = asyncio.get_running_loop()
-                lib.compute(method, batch_size, batch_size)
-                print('asdf')
-                #data = await loop.run_in_executor(
-                #    executor, lib.compute, method, batch_size
-                #)
+                data = await loop.run_in_executor(
+                    executor, lib.compute, method, batch_size
+                )
 
                 LIBRARY.set(lib)
 
