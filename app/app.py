@@ -31,7 +31,10 @@ VERSION = (
     "Version " + "0.5 (Beta Version: please contact jonfu@dtu.dk in case of bugs). "
 )
 REP_TYPES = [
-    "ESM-2",
+    "ESM-2 (650M)",
+    "ESM-2 (150M)",
+    "ESM-2 (35M)",
+    "ESM-2 (8M)",
     "ESM-1v",
     "One-hot",
     "BLOSUM50",
@@ -45,7 +48,10 @@ MODEL_DICT = {
     "KNN": "knn",
     "SVM": "svm",
     "VAE": "vae",
-    "ESM-2": "esm2",
+    "ESM-2 (650M)": "esm2_650M",
+    "ESM-2 (150M)": "esm2_150M",
+    "ESM-2 (35M)": "esm2_35M",
+    "ESM-2 (8M)": "esm2_8M",
     "ESM-1v": "esm1v",
     "Gaussian Process": "gp",
     "ESM-Fold": "esm_fold",
@@ -58,7 +64,10 @@ REP_DICT = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
     "BLOSUM62": "blosum62",
-    "ESM-2": "esm2",
+    "ESM-2 (650M)": "esm2_650M",
+    "ESM-2 (150M)": "esm2_150M",
+    "ESM-2 (35M)": "esm2_35M",
+    "ESM-2 (8M)": "esm2_8M",
     "ESM-1v": "esm1v",
     "VAE": "vae",
 }
@@ -67,7 +76,16 @@ DESIGN_MODELS = {"ESM-IF": "esm_if"}
 REP_VISUAL = ["UMAP", "t-SNE", "PCA"]
 FAST_INTERACT_INTERVAL = 60  # in milliseconds
 SIDEBAR_WIDTH = 450
-BATCH_SIZE = 1
+BATCH_SIZE_DICT = {
+    "ohe": 10000,
+    "blosum62": 10000,
+    "blosum50": 10000,
+    "esm2_650M": 1,
+    "esm2_150M": 1,
+    "esm2_35M": 10,
+    "esm2_8M": 10,
+    "esm1v": 200,
+}
 ZS_MODELS = ["ESM-1v", "ESM-2"]
 FOLDING_MODELS = ["ESM-Fold"]
 ACQUISITION_FNS = ["Expected Improvement", "Upper Confidence Bound", "Greedy"]
@@ -84,7 +102,10 @@ MAX_EVAL_DICT = {
     "ohe": 10000,
     "blosum62": 10000,
     "blosum50": 10000,
-    "esm2": 200,
+    "esm2_650M": 200,
+    "esm2_150M": 200,
+    "esm2_35M": 500,
+    "esm2_8M": 1000,
     "esm1v": 200,
 }
 
@@ -1732,12 +1753,14 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
                 loop = asyncio.get_running_loop()
-                prot.zs_prediction(model, BATCH_SIZE, None, None, chain)
+                batch_size = BATCH_SIZE_DICT[model]
+
+                prot.zs_prediction(model, batch_size, None, None, chain)
                 data = await loop.run_in_executor(
                     executor,
                     prot.zs_prediction,
                     model,
-                    BATCH_SIZE,
+                    batch_size,
                     None,
                     None,  # device
                     chain,
@@ -2014,23 +2037,22 @@ def server(input: Inputs, output: Outputs, session: Session):
         if mode in ["zero-shot", "structure"]:
             data = prot.zs_library(model=method, chain=chain)
             lib = pai.Library(user=prot.user, source=data)
-            # dest = os.path.join(prot.rep_path, method)
+            
             pbar_max = len(lib)
         else:
             pbar_max = len(lib)
 
-        with ui.Progress(min=1, max=pbar_max) as p:
-
-            p.set(message="Computation in progress", detail="Initializing...")
-
-            print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
-
-            try:
-                # method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None, device=None, proteins=None
+        try:
+            with ui.Progress(min=1, max=pbar_max) as p:
+                print(f"Computing library: {REP_DICT[input.dat_rep_type()]}")
+                p.set(message="Computation in progress", detail=f"Computing representations: {REP_DICT[input.dat_rep_type()]}")
+                batch_size = BATCH_SIZE_DICT[method]
                 loop = asyncio.get_running_loop()
-                data = await loop.run_in_executor(
-                    executor, lib.compute, method, BATCH_SIZE
-                )
+                lib.compute(method, batch_size, batch_size)
+                print('asdf')
+                #data = await loop.run_in_executor(
+                #    executor, lib.compute, method, batch_size
+                #)
 
                 LIBRARY.set(lib)
 
@@ -2045,12 +2067,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                         reps.append(rep)
                 REPS_AVAIL.set(reps)
 
-            except Exception as e:
-                print(f"An error occurred when computing reps: {e}")
+        except Exception as e:
+            print(f"An error occurred when computing reps: {e}")
 
-            finally:
-                # Reset the task running state in the session
-                IS_REP_COMP_RUNNING.set(False)
+        finally:
+            # Reset the task running state in the session
+            IS_REP_COMP_RUNNING.set(False)
 
     # Button click event
     @reactive.effect
@@ -2076,8 +2098,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.plot_rep_type():
             IS_REP_PLOT_RUNNING.set(True)
             with ui.Progress(min=1, max=15) as p:
-
-                # if MODE() == "dataset":
                 p.set(message="Plotting", detail="This may take a while...")
 
                 lib = LIBRARY()
@@ -2090,8 +2110,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     lib = pai.Library(user=prot.user, source=data)
 
                 names = lib.names
-                # y_upper = input.y_upper()
-                # y_lower = input.y_lower()
                 rep = REP_DICT[input.plot_rep_type()]
 
                 # Update to pass the new parameters
@@ -2357,6 +2375,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             optim_problem = OPTIM_DICT[input.optim_problem()]
             max_eval = MAX_EVAL_DICT[model.x]
             acq_fn = ACQ_DICT[input.acquisition_fn()]
+            batch_size = BATCH_SIZE_DICT[model.x]
 
             try:
                 loop = asyncio.get_running_loop()
@@ -2369,7 +2388,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "ga",
                     max_eval,
                     mlde_explore,
-                    BATCH_SIZE,
+                    batch_size,
                     None,
                     acq_fn,
                 )
@@ -2657,6 +2676,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             model = DISCOVERY_MODEL()
             try:
+                batch_size = BATCH_SIZE_DICT[model.x]
                 loop = asyncio.get_running_loop()
                 out, search_results = await loop.run_in_executor(
                     executor,
@@ -2667,7 +2687,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "ga",
                     None,
                     None,
-                    BATCH_SIZE,
+                    batch_size,
                     None,
                     None,
                 )
