@@ -13,6 +13,8 @@ ProteusAI is primarily powered by [PyTorch](https://pytorch.org/get-started/loca
 [scikit-learn](https://scikit-learn.org/stable/), 
 and [ESM](https://github.com/facebookresearch/esm) protein language models. 
 
+Cite our preprint [here](https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1). 
+
 ## Getting started
 
 ----
@@ -20,23 +22,37 @@ The commands used below are tested on Ubuntu 20.04 and IOS. Some tweaks may be n
 We recommend using conda environments to install ProteusAI.
 
 
-Clone the repository and cd to ProteusAI, then:
-
+Clone the repository and cd to ProteusAI:
 ```bash
-# git clone https://github.com/jonfunk21/ProteusAI.git
-# cd ProteusAI 
-conda env create -n proteusAI # this install the latest version of proteusAI in a new environment
+git clone https://github.com/jonfunk21/ProteusAI.git
+cd ProteusAI 
+```
+
+Install the latest version of proteusAI in a new environment
+```bash
+conda env create -n proteusAI
 conda activate proteusAI
 ```
 
 This uses the `environment.yml` file to install the dependencies.
+
+## GPU support
+By default proteus will install torch-scatter using cpu compatible binaries.
+If you want to take full advantage of GPUs for the Design module consider
+uninstalling the default `torch-scatter`, and replace it with the CUDA 
+compatible version:
+
+```bash
+pip uninstall torch-scatter
+pip install torch-scatter -f https://data.pyg.org/whl/torch-${TORCH_VERSION}+cuda.html
+```
 
 ### Install using pip locally for developement
 
 Install a local version which picks up the latest changes using an editable install:
 
 ```bash
-# conda env create -n proteusAI 
+# conda env create -n proteusAI python=3.8
 # conda activate proteusAI
 pip install -e . --find-links https://data.pyg.org/whl/torch-2.4.1+cpu.html
 ```
