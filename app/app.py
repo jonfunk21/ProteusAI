@@ -148,8 +148,7 @@ app_ui = ui.page_fluid(
                             "Data Selection",
                             ui.row(
                                 ui.column(
-                                    6,
-                                    ui.input_select("seq_col", "Sequence column", []),
+                                    6, ui.input_select("seq_col", "Sequence column", [])
                                 ),
                                 ui.column(
                                     6,
@@ -157,10 +156,7 @@ app_ui = ui.page_fluid(
                                         "description_col", "Description column", []
                                     ),
                                 ),
-                                ui.column(
-                                    6,
-                                    ui.input_select("y_col", "Y-values", []),
-                                ),
+                                ui.column(6, ui.input_select("y_col", "Y-values", [])),
                                 ui.column(
                                     6,
                                     ui.input_select(
@@ -205,10 +201,7 @@ app_ui = ui.page_fluid(
                 ),
                 ### MAIN PANEL ###
                 ui.input_switch("data_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.data_switch",
-                    tooltips.data_tooltips,
-                ),
+                ui.panel_conditional("input.data_switch", tooltips.data_tooltips),
                 ui.panel_conditional(
                     "typeof output.protein_fasta !== 'string'",
                     "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
@@ -228,10 +221,7 @@ app_ui = ui.page_fluid(
                 ui.sidebar(ui.output_ui("design_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
                 ui.input_switch("design_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.design_switch",
-                    tooltips.design_tooltips,
-                ),
+                ui.panel_conditional("input.design_switch", tooltips.design_tooltips),
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
@@ -249,10 +239,7 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("zero_shot_ui"), width=SIDEBAR_WIDTH),
                 ui.input_switch("zs_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.zs_switch",
-                    tooltips.zs_tooltips,
-                ),
+                ui.panel_conditional("input.zs_switch", tooltips.zs_tooltips),
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
                     ui.output_ui("zs_download_ui"),
@@ -266,19 +253,14 @@ app_ui = ui.page_fluid(
             "Representations",
             ### SIDEBAR ###
             ui.layout_sidebar(
-                ui.sidebar(
-                    ui.output_ui("representations_ui"),
-                    width=SIDEBAR_WIDTH,
-                ),
+                ui.sidebar(ui.output_ui("representations_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
                 ui.input_switch("rep_switch", "Show more information", False),
                 ui.panel_conditional(
-                    "input.rep_switch",
-                    tooltips.representations_tooltips,
+                    "input.rep_switch", tooltips.representations_tooltips
                 ),
                 ui.panel_conditional(
-                    "typeof output.protein_struc === 'string'",
-                    ui.output_ui("struc3D"),
+                    "typeof output.protein_struc === 'string'", ui.output_ui("struc3D")
                 ),
                 ui.output_plot("tsne_plot"),
             ),
@@ -297,10 +279,7 @@ app_ui = ui.page_fluid(
                 ),
                 ### MAIN PANEL ###
                 ui.input_switch("mlde_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.mlde_switch",
-                    tooltips.mlde_tooltips,
-                ),
+                ui.panel_conditional("input.mlde_switch", tooltips.mlde_tooltips),
                 ui.navset_tab(
                     ui.nav_panel(
                         "Model Diagnostics",
@@ -331,8 +310,7 @@ app_ui = ui.page_fluid(
                 ),
                 ui.input_switch("discovery_switch", "Show more information", False),
                 ui.panel_conditional(
-                    "input.discovery_switch",
-                    tooltips.discovery_tooltips,
+                    "input.discovery_switch", tooltips.discovery_tooltips
                 ),
                 ### MAIN PANEL ###
                 ui.navset_tab(
@@ -377,10 +355,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                                 list(DESIGN_MODELS.keys()),
                             ),
                         ),
-                        ui.column(
-                            6,
-                            ui.output_ui("design_chains"),
-                        ),
+                        ui.column(6, ui.output_ui("design_chains")),
                         ui.column(
                             6,
                             ui.input_numeric(
@@ -436,10 +411,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ),
                         ),
                     ),
-                    ui.column(
-                        4,
-                        ui.input_task_button("desgin_button", "Design"),
-                    ),
+                    ui.column(4, ui.input_task_button("desgin_button", "Design")),
                 ),
                 # DISABLED FOLDING
                 # ui.output_ui(
@@ -474,10 +446,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         style="padding:25px;",
                     ),
                 ),
-                ui.column(
-                    6,
-                    ui.output_ui("rep_chain_ui"),
-                ),
+                ui.column(6, ui.output_ui("rep_chain_ui")),
                 ui.h4("Visualization"),
                 ui.panel_conditional(
                     "input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
@@ -491,20 +460,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select("vis_method", "Visualization Method", REP_VISUAL),
                 ui.row(
                     ui.column(12, "Visualize representations"),
-                    ui.column(
-                        7,
-                        ui.input_select("plot_rep_type", "", REPS_AVAIL()),
-                    ),
-                    ui.column(
-                        5,
-                        ui.input_task_button("update_plot", "Update plot"),
-                    ),
+                    ui.column(7, ui.input_select("plot_rep_type", "", REPS_AVAIL())),
+                    ui.column(5, ui.input_task_button("update_plot", "Update plot")),
                 ),
             )
 
         else:
             return ui.TagList(
-                "Upload a library in the 'Data' tab or compute a library in the 'Zero-shot' tab to proceed with the Representations module.",
+                "Upload a library in the 'Data' tab or compute a library in the 'Zero-shot' tab to proceed with the Representations module."
             )
 
     #####################
@@ -519,18 +482,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.row(
                     ui.h5("Compute a zero-shot Library"),
                     ui.column(
-                        7,
-                        ui.input_select("zs_model", "Choose a model", ZS_MODELS),
+                        7, ui.input_select("zs_model", "Choose a model", ZS_MODELS)
                     ),
                     ui.column(
                         5,
                         ui.input_task_button("compute_zs", "Compute"),
                         style="padding:25px;",
                     ),
-                    ui.column(
-                        6,
-                        ui.output_ui("zs_chain_ui"),
-                    ),
+                    ui.column(6, ui.output_ui("zs_chain_ui")),
                     ui.h4("Visualize"),
                     ui.row(
                         ui.column(
@@ -540,12 +499,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                                 "Computed Zero-shot scores",
                                 COMP_ZS_SCORES(),
                             ),
-                        ),
+                        )
                     ),
                     ui.row(
                         ui.column(
-                            6,
-                            ui.input_action_button("plot_entropy", "Plot Entropy"),
+                            6, ui.input_action_button("plot_entropy", "Plot Entropy")
                         ),
                         ui.column(
                             6,
@@ -578,8 +536,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     ui.row(
                         ui.column(
-                            6,
-                            ui.input_action_button("plot_scores", "Plot Scores"),
+                            6, ui.input_action_button("plot_scores", "Plot Scores")
                         ),
                         ui.column(
                             6,
@@ -607,10 +564,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                                 ),
                             ),
                         ),
-                        ui.column(
-                            6,
-                            ui.input_action_button("zs_table", "Table view"),
-                        ),
+                        ui.column(6, ui.input_action_button("zs_table", "Table view")),
                     ),
                 ),
             )
@@ -647,14 +601,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                             "model_rep_type", "Representation type", REPS_AVAIL()
                         ),
                     ),
-                    ui.column(
-                        6,
-                        ui.output_ui("mlde_chain_ui"),
-                    ),
-                    ui.column(
-                        6,
-                        ui.output_ui("mlde_dynamic_ui"),
-                    ),
+                    ui.column(6, ui.output_ui("mlde_chain_ui")),
+                    ui.column(6, ui.output_ui("mlde_dynamic_ui")),
                 ),
                 ui.input_checkbox(
                     "customize_model_params", "Customize model parameters", value=False
@@ -679,10 +627,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ),
                         ),
                     ),
-                    ui.column(
-                        12,
-                        "Cross-validation split:",
-                    ),
+                    ui.column(12, "Cross-validation split:"),
                 ),
                 ui.input_checkbox("smart_split", "Use smart data split", True),
                 ui.panel_conditional(
@@ -709,10 +654,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.row(
-                    ui.column(
-                        6,
-                        ui.input_task_button("mlde_train_button", "Train"),
-                    ),
+                    ui.column(6, ui.input_task_button("mlde_train_button", "Train"))
                 ),
             )
 
@@ -735,8 +677,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     ui.column(
-                        6,
-                        ui.input_select("search_model", "Model", [model_type]),
+                        6, ui.input_select("search_model", "Model", [model_type])
                     ),
                     ui.column(
                         6,
@@ -757,10 +698,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         max=1,
                     ),
                 ),
-                ui.column(
-                    6,
-                    ui.input_task_button("mlde_search_btn", "Search"),
-                ),
+                ui.column(6, ui.input_task_button("mlde_search_btn", "Search")),
             )
 
     ###################
@@ -810,10 +748,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.column(
                                 6,
                                 ui.input_numeric(
-                                    "hdbscan_n_neighbors",
-                                    "Cluster Density",
-                                    70,
-                                    min=1,
+                                    "hdbscan_n_neighbors", "Cluster Density", 70, min=1
                                 ),  # n_neighbors UMAP
                             ),
                             ui.column(
@@ -882,10 +817,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ),
                         ),
                     ),
-                    ui.column(
-                        6,
-                        ui.output_ui("discovery_dynamic_ui"),
-                    ),
+                    ui.column(6, ui.output_ui("discovery_dynamic_ui")),
                 ),
                 ui.input_checkbox(
                     "discovery_model_params", "Customize model parameters", value=False
@@ -909,10 +841,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                             choices=REP_VISUAL,
                         ),
                     ),
-                    ui.column(
-                        12,
-                        "Cross-validation split:",
-                    ),
+                    ui.column(12, "Cross-validation split:"),
                     ui.column(
                         4,
                         ui.input_numeric(
@@ -940,8 +869,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     ui.column(
-                        4,
-                        ui.input_task_button("discovery_train_button", "Train"),
+                        4, ui.input_task_button("discovery_train_button", "Train")
                     ),
                 ),
             )
@@ -1214,26 +1142,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         cols = list(DATASET().columns)
 
         # set reactive variables
-        ui.update_select(
-            "seq_col",
-            label=seq_col,
-            choices=cols,
-            selected=cols[0],
-        )
+        ui.update_select("seq_col", label=seq_col, choices=cols, selected=cols[0])
 
         ui.update_select(
-            "description_col",
-            label=description_col,
-            choices=cols,
-            selected=cols[1],
+            "description_col", label=description_col, choices=cols, selected=cols[1]
         )
 
-        ui.update_select(
-            "y_col",
-            label=y_col,
-            choices=cols,
-            selected=cols[-1],
-        )
+        ui.update_select("y_col", label=y_col, choices=cols, selected=cols[-1])
 
     ### EXTRACT DATASET COLUMNS ###
     @reactive.Effect()
@@ -1606,18 +1521,14 @@ def server(input: Inputs, output: Outputs, session: Session):
         #    sidechains = [int(''.join([char for char in item if char.isdigit()])) for item in input.design_sidechains()]
 
         highlights = list(set(input.design_res().strip().split(",")))  # + sidechains))
-        print(highlights)
 
         if PROT_INTERFACE():
             highlights = highlights + [str(i) for i in PROT_INTERFACE()]
-            print(highlights)
 
         if LIG_INTERFACE():
             highlights = highlights + [str(i) for i in LIG_INTERFACE()]
-            print(highlights)
 
         highlights_dict = {input.mutlichain_chain(): highlights}
-        print(highlights_dict)
 
         view = PROTEIN().view_struc(
             color="white", highlight=highlights_dict
@@ -1884,7 +1795,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zs_chain_ui(alt=None):
         if MODE() == "structure":
             return ui.TagList(
-                ui.input_select("zs_chain", "Select Protein Chain", choices=CHAINS()),
+                ui.input_select("zs_chain", "Select Protein Chain", choices=CHAINS())
             )
 
     @reactive.Effect
@@ -1948,20 +1859,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.row(
                     ui.column(3, ui.h5("Mutation:")),
                     ui.column(9, ui.h6("Sequence change from wild-type descriptor")),
-                    ui.column(
-                        3,
-                        ui.h5("Mutation Probability: "),
-                    ),
+                    ui.column(3, ui.h5("Mutation Probability: ")),
                     ui.column(
                         9,
                         ui.h6(
                             "Predicted probability of the new amino acid at the position"
                         ),
                     ),
-                    ui.column(
-                        3,
-                        ui.h5("Zero-Shot Score:"),
-                    ),
+                    ui.column(3, ui.h5("Zero-Shot Score:")),
                     ui.column(
                         9,
                         ui.h6(
@@ -2078,7 +1983,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def rep_chain_ui(alt=None):
         if MODE() == "structure":
             return ui.TagList(
-                ui.input_select("rep_chain", "Select Protein Chain", choices=CHAINS()),
+                ui.input_select("rep_chain", "Select Protein Chain", choices=CHAINS())
             )
 
     ### COMPUTE REPRESENTATIONS ###
@@ -2124,10 +2029,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # method: str, batch_size: int = 100, dest: Union[str, None] = None, pbar=None, device=None, proteins=None
                 loop = asyncio.get_running_loop()
                 data = await loop.run_in_executor(
-                    executor,
-                    lib.compute,
-                    method,
-                    BATCH_SIZE,
+                    executor, lib.compute, method, BATCH_SIZE
                 )
 
                 LIBRARY.set(lib)
@@ -2253,7 +2155,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def mlde_chain_ui(alt=None):
         if MODE() == "structure":
             return ui.TagList(
-                ui.input_select("mlde_chain", "Select Protein Chain", choices=CHAINS()),
+                ui.input_select("mlde_chain", "Select Protein Chain", choices=CHAINS())
             )
 
     ### MLDE TAB OUTPUT CONTROL ###
@@ -2413,10 +2315,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         hover_opts_kwargs["delay"] = FAST_INTERACT_INTERVAL
         hover_opts_kwargs["delay_type"] = "throttle"
 
-        return ui.output_plot(
-            "pred_vs_true",
-            hover=ui.hover_opts(**hover_opts_kwargs),
-        )
+        return ui.output_plot("pred_vs_true", hover=ui.hover_opts(**hover_opts_kwargs))
 
     ### RENDER PREDICTED VERSUS TRUE DATAFRAME ###
     @output
@@ -2591,10 +2490,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             try:
                 # train model
                 loop = asyncio.get_running_loop()
-                out = await loop.run_in_executor(
-                    executor,
-                    model.train,
-                )
+                out = await loop.run_in_executor(executor, model.train)
 
                 model_lib = pai.Library(user=lib.user, source=out)
                 val_df = pd.DataFrame(
@@ -2610,12 +2506,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 p.set(message="Visualizing results", detail="This may take a while...")
 
                 fig, ax, df = await loop.run_in_executor(
-                    executor,
-                    model_lib.plot_umap,
-                    model.x,
-                    None,
-                    None,
-                    model_lib.names,
+                    executor, model_lib.plot_umap, model.x, None, None, model_lib.names
                 )
 
                 # set reactive variables
