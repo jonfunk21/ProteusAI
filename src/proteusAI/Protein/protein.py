@@ -21,8 +21,10 @@ import proteusAI.struc as struc
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
-folder_path = os.path.dirname(os.path.realpath(__file__))
-USR_PATH = os.path.join(folder_path, "../../../usrs")
+home_dir = os.path.expanduser("~")
+USR_PATH = os.path.join(home_dir, "ProteusAI/usrs")
+os.makedirs(USR_PATH, exist_ok=True)
+
 
 model_dict = {
     "rf": "Random Forrest",
@@ -481,8 +483,8 @@ class Protein:
             # get ptsm and plddts from loaded files
         else:
             os.makedirs(dest, exist_ok=True)
-            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = (
-                esm_tools.structure_prediction(seqs=[self.seq], names=[self.name])
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(
+                seqs=[self.seq], names=[self.name]
             )
             pdb = all_pdbs[0]
             pdb.write(pdb_file)

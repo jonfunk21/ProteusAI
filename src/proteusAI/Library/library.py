@@ -21,8 +21,10 @@ from proteusAI.Protein.protein import Protein
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
-folder_path = os.path.dirname(os.path.realpath(__file__))
-USR_PATH = os.path.join(folder_path, "../../../usrs")
+home_dir = os.path.expanduser("~")
+USR_PATH = os.path.join(home_dir, "ProteusAI/usrs")
+os.makedirs(USR_PATH, exist_ok=True)
+print(USR_PATH)
 
 
 class Library:
@@ -47,6 +49,7 @@ class Library:
     def __init__(
         self,
         user: str = "guest",
+        user_root: str = USR_PATH,
         source: Union[str, dict, None] = None,
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
@@ -60,6 +63,7 @@ class Library:
 
         Args:
             user (str): User name.
+            user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
             source (str, or dict): Source of data, either a file or a data package created from a diversification step.
             seqs_col (str): Column name for the sequences, if the source is a '.csv' or Excel file.
             names_col (str): Column name for the names (sequence descriptions), if the source is a '.csv' or Excel file.
@@ -80,7 +84,7 @@ class Library:
             pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
         """
         # Arguments
-        self.user = os.path.join(USR_PATH, user)
+        self.user = os.path.join(user_root, user)
         self.source = source
         self.seq_col = seqs_col
         self.names_col = names_col
@@ -742,10 +746,8 @@ class Library:
 
         seqs = self.data[self.data[self.names_col].isin(names)][self.seq_col].to_list()
         if len(seqs) > 0:
-            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = (
-                esm_tools.structure_prediction(
-                    names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar
-                )
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(
+                names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar
             )
 
             if not os.path.exists(self.struc_path):
