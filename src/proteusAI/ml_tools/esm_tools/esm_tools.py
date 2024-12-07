@@ -711,9 +711,7 @@ def esm_design(
     # Autoregressive decoding loop for each position of the target chain
     for i in range(1, target_chain_length + 1):
         logits, _ = model.decoder(
-            sampled_tokens[:, :i],
-            encoder_out,
-            incremental_state=incremental_state,
+            sampled_tokens[:, :i], encoder_out, incremental_state=incremental_state
         )
         logits = logits[0].transpose(0, 1)
         logits /= temperature

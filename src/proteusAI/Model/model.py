@@ -301,14 +301,10 @@ class Model:
                 except ValueError:
                     # Fallback to random split if stratification fails
                     train_data_idx, temp_data_idx = train_test_split(
-                        range(len(labelled_data)),
-                        test_size=0.2,
-                        random_state=self.seed,
+                        range(len(labelled_data)), test_size=0.2, random_state=self.seed
                     )
                     test_data_idx, val_data_idx = train_test_split(
-                        temp_data_idx,
-                        test_size=0.5,
-                        random_state=self.seed,
+                        temp_data_idx, test_size=0.5, random_state=self.seed
                     )
 
                 # Map indices back to the data
@@ -572,11 +568,11 @@ class Model:
             self._model = ensemble
 
             # Prediction on validation set
-            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = (
-                self.predict(self.val_data)
+            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = self.predict(
+                self.val_data
             )
-            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
-                self.predict(self.train_data)
+            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = self.predict(
+                self.train_data
             )
 
             # Prediction unlabelled data if exists
@@ -880,10 +876,7 @@ class Model:
         )
 
         # Save results to a JSON file
-        results = {
-            "test_r2": self.test_r2,
-            "val_r2": self.val_r2,
-        }
+        results = {"test_r2": self.test_r2, "val_r2": self.val_r2}
 
         with open(f"{csv_dest}/results.json", "w") as f:
             json.dump(results, f)
@@ -1171,10 +1164,7 @@ class Model:
 
         # do UMAP
         clusterable_embedding = umap.UMAP(
-            n_neighbors=70,
-            min_dist=0.0,
-            n_components=2,
-            random_state=42,
+            n_neighbors=70, min_dist=0.0, n_components=2, random_state=42
         ).fit_transform(x_reps)
 
         # perform clustering

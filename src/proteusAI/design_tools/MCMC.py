@@ -285,8 +285,8 @@ class ProteinDesign:
         if self.pred_struc:
             # structure prediction
             names = [f"sequence_{j}_cycle_{i}" for j in range(len(seqs))]
-            headers, sequences, pdbs, pTMs, mean_pLDDTs = (
-                Constraints.structure_prediction(seqs, names)
+            headers, sequences, pdbs, pTMs, mean_pLDDTs = Constraints.structure_prediction(
+                seqs, names
             )
             pTMs = [1 - val for val in pTMs]
             mean_pLDDTs = [1 - val / 100 for val in mean_pLDDTs]
