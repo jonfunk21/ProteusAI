@@ -21,15 +21,20 @@ import proteusAI.struc as struc
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
-folder_path = os.path.dirname(os.path.realpath(__file__))
-USR_PATH = os.path.join(folder_path, "../../../usrs")
+home_dir = os.path.expanduser("~")
+USR_PATH = os.path.join(home_dir, "ProteusAI/usrs")
+os.makedirs(USR_PATH, exist_ok=True)
+
 
 model_dict = {
     "rf": "Random Forrest",
     "knn": "KNN",
     "svm": "SVM",
     "vae": "VAE",
-    "esm2": "ESM-2",
+    "esm2_650M": "ESM-2 (650M)",
+    "esm2_150M": "ESM-2 (150M)",
+    "esm2_35M": "ESM-2 (35M)",
+    "esm2_8M": "ESM-2 (8M)",
     "esm1v": "ESM-1v",
 }
 
@@ -54,6 +59,7 @@ class Protein:
         struc: Union[str, biotite.structure.AtomArray, None] = None,
         reps: Union[list, tuple] = [],
         user: Union[str, None] = "guest",
+        user_root: Union[str, None] = USR_PATH,
         y=None,
         y_pred=None,
         y_sigma=None,
@@ -70,6 +76,7 @@ class Protein:
             struc (AtomArray): Protein structure.
             reps (list): List of available representations.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
+            user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
             y (float, int, str): Label for the protein.
             y_pred (float, int, str): Predicted y_value.
             y_sigma (float, int, str): Predicted y_value.
@@ -92,7 +99,7 @@ class Protein:
         self.y_sigma = y_sigma
         self.acq_score = acq_score
         self.fname = fname
-        self.user = os.path.join(USR_PATH, user)
+        self.user = os.path.join(user_root, user)
 
         # Parameters
         self.pdb_file = None
@@ -117,8 +124,6 @@ class Protein:
             self.init_from_inheritance()
 
     def __str__(self):
-        if self.struc is not None:
-            struc_loaded = "loaded"  # noqa: F841
         return f"proteusAI.Protein():\n____________________\nname\t: {self.name}\nseq\t: {self.seq}\nrep\t: {self.reps}\ny:\t{self.y}\ny_pred:\t{self.y_pred}\ny_sig:\t{self.y_sigma}\nstruc:\t{self.pdb_file}\n"
 
     __repr__ = __str__
@@ -132,11 +137,9 @@ class Protein:
         # handle app case
         if self.fname:
             fname = self.fname.split(".")[0]
-            file_extension = self.fname.split(".")[-1]  # noqa: F841
         else:
             f = self.source.split("/")[-1]
             fname = f.split(".")[0]
-            file_extension = f.split(".")[-1]  # noqa: F841
 
         # set paths
         self.source_path = os.path.join(USR_PATH, self.user, fname)
@@ -281,7 +284,7 @@ class Protein:
 
     ### Zero-shot prediction ###
     def zs_prediction(
-        self, model="esm2", batch_size=100, pbar=None, device=None, chain=None
+        self, model="esm1v", batch_size=100, pbar=None, device=None, chain=None
     ):
         """
         Compute zero-shot scores
@@ -291,7 +294,7 @@ class Protein:
             batch_size (int): Batch size used to compute ZS-Scores
             pbar: App progress bar
             device (str): Choose hardware for computation. Default 'None' for autoselection
-                        other options are 'cpu' and 'cuda'.
+                other options are 'cpu' and 'cuda'.
         """
 
         # Set a default chain if none is provided and there are chains available
@@ -346,9 +349,6 @@ class Protein:
                 seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv")
             )
 
-            # no true y_values
-            ys = [None] * len(mmp)  # noqa: F841
-
         out = {
             "df": df,
             "rep_path": self.rep_path,
@@ -364,7 +364,7 @@ class Protein:
 
         return out
 
-    def zs_library(self, model="esm2", chain=None):
+    def zs_library(self, model="esm1v", chain=None):
         """
         Generate zero-shot library.
         """
@@ -577,7 +577,7 @@ class Protein:
 
     # Plot
     # Plot zero-shot entropy
-    def plot_entropy(self, model="esm2", title=None, section=None, chain=None):
+    def plot_entropy(self, model="esm1v", title=None, section=None, chain=None):
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
@@ -637,7 +637,7 @@ class Protein:
 
     def plot_scores(
         self,
-        model="esm2",
+        model="esm1v",
         section=None,
         color_scheme=None,
         title=None,
@@ -648,8 +648,9 @@ class Protein:
         Plot the zero-shot prediction scores for a given model and sequence.
 
         Args:
-            model (str): The name of the model to use for plotting (default: 'esm2').
-            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed. Show entire sequence if None (default: None).
+            model (str): The name of the model to use for plotting (default: 'esm1v_650M').
+            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed.
+                Show entire sequence if None (default: None).
             color_scheme (str): Color scheme for the heatmap ('rwb' for red-white-blue, 'r' for reds, 'b' for blues) (default: None).
             title (str): Title of the plot (default: None).
             highlight_positions (dict): Dictionary specifying positions to highlight with the format {position: residue} (default: None).

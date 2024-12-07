@@ -39,6 +39,14 @@ from matplotlib.colors import LinearSegmentedColormap
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
+esm_layer_dict = {
+    "esm2": 33,
+    "esm2_650M": 33,
+    "esm2_150M": 30,
+    "esm2_35M": 12,
+    "esm2_8M": 6,
+}
+
 
 def esm_compute(
     seqs: list,
@@ -54,7 +62,8 @@ def esm_compute(
         seqs (list): protein sequences either as str or biotite.sequence.ProteinSequence.
         names (list, default None): list of names/labels for protein sequences.
             If None sequences will be named seq1, seq2, ...
-        model (str, torch.nn.Module): choose either esm2, esm1v or a pretrained model object.
+        model (str, torch.nn.Module): choose either esm2_[650M, 150M, 35M, 8M], esm1v or a pretrained model object.
+            If just esm2 is provided, esm2_t33_650M_UR50D will be used.
         rep_layer (int): choose representation layer. Default 33.
         device (str): Choose hardware for computation. Default 'None' for autoselection
                           other options are 'cpu' and 'cuda'.
@@ -71,13 +80,21 @@ def esm_compute(
     else:
         device = torch.device(device)
 
-    # on M1 if mps available
-    # if device == torch.device(type='cpu'):
-    #    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+    # check if rep_layer is higher than the model's layer
+    if rep_layer > esm_layer_dict[model]:
+        rep_layer = esm_layer_dict[model]
 
     # load model
     if isinstance(model, str):
         if model == "esm2":
+            model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+        elif model == "esm2_8M":
+            model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+        elif model == "esm2_35M":
+            model, alphabet = esm.pretrained.esm2_t12_35M_UR50D()
+        elif model == "esm2_150M":
+            model, alphabet = esm.pretrained.esm2_t30_150M_UR50D()
+        elif model == "esm2_650M":
             model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
         elif model == "esm1v":
             model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
@@ -108,18 +125,17 @@ def esm_compute(
 
     # Extract per-residue representations (on CPU)
     with torch.no_grad():
-        results = model(
-            batch_tokens.to(device), repr_layers=[rep_layer], return_contacts=True
-        )
+        results = model(batch_tokens.to(device), repr_layers=[rep_layer])
 
     return results, batch_lens, batch_labels, alphabet
 
 
-def get_seq_rep(results, batch_lens):
+def get_seq_rep(results, batch_lens, layer=33):
     """
     Get sequence representations from esm_compute
     """
-    token_representations = results["representations"][33]
+
+    token_representations = results["representations"][layer]
 
     # Generate per-sequence representations via averaging
     sequence_representations = []
@@ -187,7 +203,8 @@ def batch_compute(
         names (list, default None): list of names/labels for protein sequences
         fasta_path (str): path to fasta file.
         dest (str): destination where embeddings are saved. Default None (won't save if dest is None).
-        model (str): choose either esm2 or esm1v
+        model (str, torch.nn.Module): choose either esm2_[650M, 150M, 35M, 8M], esm1v or a pretrained model object.
+            If just esm2 is provided, esm2_t33_650M_UR50D will be used.
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
         pbar: Progress bar for shiny app
@@ -209,6 +226,9 @@ def batch_compute(
 
     if fasta_path is None and seqs is None:
         raise "Either fasta_path or seqs must not be None"
+
+    if rep_layer > esm_layer_dict[model]:
+        rep_layer = esm_layer_dict[model]
 
     counter = 0
     for i in range(0, len(seqs), batch_size):
@@ -237,7 +257,10 @@ def batch_compute(
                 rep_layer=rep_layer,
                 device=device,
             )
-        sequence_representations = get_seq_rep(results, batch_lens)
+
+        sequence_representations = get_seq_rep(
+            results, batch_lens, layer=esm_layer_dict[model]
+        )
         if dest is not None:
             for j in range(len(sequence_representations)):
                 _dest = os.path.join(dest, names[i : i + batch_size][j])
@@ -293,7 +316,8 @@ def get_mutant_logits(
 
     Args:
         seq (str): native protein sequence
-        model (str): choose either esm2 or esm1v
+        model (str, torch.nn.Module): choose either esm2_[650M, 150M, 35M, 8M], esm1v or a pretrained model object.
+            If just esm2 is provided, esm2_t33_650M_UR50D will be used.
         batch_size (int): batch size. Default 10
         rep_layer (int): choose representation layer. Default 33.
         pbar: ProteusAI progress bar.
@@ -318,6 +342,10 @@ def get_mutant_logits(
 
     # Initialize an empty tensor of the desired shape
     logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
+
+    # take final representation layer if rep_layer is higher than the model's layer
+    if rep_layer > esm_layer_dict[model]:
+        rep_layer = esm_layer_dict[model]
 
     counter = 0
     for i in range(0, len(masked_seqs), batch_size):
@@ -711,9 +739,7 @@ def esm_design(
     # Autoregressive decoding loop for each position of the target chain
     for i in range(1, target_chain_length + 1):
         logits, _ = model.decoder(
-            sampled_tokens[:, :i],
-            encoder_out,
-            incremental_state=incremental_state,
+            sampled_tokens[:, :i], encoder_out, incremental_state=incremental_state
         )
         logits = logits[0].transpose(0, 1)
         logits /= temperature

@@ -21,8 +21,9 @@ from proteusAI.Protein.protein import Protein
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
 sys.path.append(root_path)
-folder_path = os.path.dirname(os.path.realpath(__file__))
-USR_PATH = os.path.join(folder_path, "../../../usrs")
+home_dir = os.path.expanduser("~")
+USR_PATH = os.path.join(home_dir, "ProteusAI/usrs")
+os.makedirs(USR_PATH, exist_ok=True)
 
 
 class Library:
@@ -40,13 +41,26 @@ class Library:
 
     # TODO: add VAEs too
 
-    representation_types = ["esm1v", "esm2", "ohe", "blosum62", "blosum50", "vae"]
+    representation_types = [
+        "esm1v",
+        "esm2",
+        "esm2_650M",
+        "esm2_150M",
+        "esm2_35M",
+        "esm2_8M",
+        "ohe",
+        "blosum62",
+        "blosum50",
+        "vae",
+    ]
+    _esm_models = ["esm1v", "esm2", "esm2_650M", "esm2_150M", "esm2_35M", "esm2_8M"]
     _allowed_y_types = ["class", "num"]
     in_memory = ["ohe", "blosum62", "blosum50"]
 
     def __init__(
         self,
         user: str = "guest",
+        user_root: str = USR_PATH,
         source: Union[str, dict, None] = None,
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
@@ -60,6 +74,7 @@ class Library:
 
         Args:
             user (str): User name.
+            user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
             source (str, or dict): Source of data, either a file or a data package created from a diversification step.
             seqs_col (str): Column name for the sequences, if the source is a '.csv' or Excel file.
             names_col (str): Column name for the names (sequence descriptions), if the source is a '.csv' or Excel file.
@@ -80,7 +95,7 @@ class Library:
             pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
         """
         # Arguments
-        self.user = os.path.join(USR_PATH, user)
+        self.user = os.path.join(user_root, user)
         self.source = source
         self.seq_col = seqs_col
         self.names_col = names_col
@@ -562,7 +577,7 @@ class Library:
         assert method in supported_methods, f"'{method}' is not a supported method"
         assert isinstance(batch_size, (int, type(None)))
 
-        if method in ["esm2", "esm1v"]:
+        if method in self._esm_models:
             self.esm_builder(
                 model=method, batch_size=batch_size, dest=dest, pbar=pbar, device=device
             )
@@ -594,7 +609,6 @@ class Library:
             device (str): Choose hardware for computation. Default 'None' for autoselection
                           other options are 'cpu' and 'cuda'.
         """
-
         dest = os.path.join(self.rep_path, model)
 
         if not os.path.exists(dest):

@@ -258,15 +258,19 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     normalization_dict = {k: i + 1 for i, k in enumerate(np.unique(chain_atoms.res_id))}
 
     # Contact detection
-    contact_sets = {}
-    for chain in source_chain:
-        current_chain_atoms = chain_atoms[chain_atoms.chain_id == chain]
+    try:
+        contact_sets = {}
+        for chain in source_chain:
+            current_chain_atoms = chain_atoms[chain_atoms.chain_id == chain]
 
-        cell_list = struc.CellList(target_atoms, cell_size=dist)
-        contacts = cell_list.get_atoms(current_chain_atoms.coord, radius=dist)
+            cell_list = struc.CellList(target_atoms, cell_size=dist)
+            contacts = cell_list.get_atoms(current_chain_atoms.coord, radius=dist)
 
-        contact_indices = np.where((contacts != -1).any(axis=1))[0]
-        contact_sets[chain] = set(current_chain_atoms.res_id[contact_indices])
+            contact_indices = np.where((contacts != -1).any(axis=1))[0]
+            contact_sets[chain] = set(current_chain_atoms.res_id[contact_indices])
+    except Exception as e:
+        print(f"Error in contact detection: {e}: returning empy list")
+        return []
 
     # Result processing
     if len(contact_sets) > 1:
