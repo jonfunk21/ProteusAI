@@ -475,9 +475,10 @@ def show_pdb(
         for chain, residues in highlight.items():
             for resi in residues:
                 highlight_style = {
-                    "stick"
-                    if resi in (sticks or [])
-                    else "cartoon": {"colorscheme": "blueCarbon", "radius": 0.3}
+                    "stick" if resi in (sticks or []) else "cartoon": {
+                        "colorscheme": "blueCarbon",
+                        "radius": 0.3,
+                    }
                 }
                 view.addStyle({"chain": chain, "resi": str(resi)}, highlight_style)
 

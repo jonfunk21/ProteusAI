@@ -568,11 +568,11 @@ class Model:
             self._model = ensemble
 
             # Prediction on validation set
-            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = self.predict(
-                self.val_data
+            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = (
+                self.predict(self.val_data)
             )
-            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = self.predict(
-                self.train_data
+            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
+                self.predict(self.train_data)
             )
 
             # Prediction unlabelled data if exists

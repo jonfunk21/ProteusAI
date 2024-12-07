@@ -45,9 +45,7 @@ def get_uniprot_id(sequence: str) -> str:
         str: The UniProt ID of the protein, if it exists in UniProt. None otherwise.
     """
     h = md5(sequence.encode()).digest().hex()
-    requestURL = (
-        f"https://www.ebi.ac.uk/proteins/api/proteins?offset=0&size=100&md5={h}"
-    )  # 5e2c446cc1c54ee4406b9f6683b7f98d
+    requestURL = f"https://www.ebi.ac.uk/proteins/api/proteins?offset=0&size=100&md5={h}"  # 5e2c446cc1c54ee4406b9f6683b7f98d
     r = requests.get(requestURL, headers={"Accept": "application/json"})
 
     if not r.ok:

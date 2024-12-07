@@ -25,6 +25,7 @@ home_dir = os.path.expanduser("~")
 USR_PATH = os.path.join(home_dir, "ProteusAI/usrs")
 os.makedirs(USR_PATH, exist_ok=True)
 
+
 class Library:
     """
     The Library object holds information about proteins, labels and representations.
@@ -41,16 +42,17 @@ class Library:
     # TODO: add VAEs too
 
     representation_types = [
-        "esm1v", 
-        "esm2", 
-        "esm2_650M", 
+        "esm1v",
+        "esm2",
+        "esm2_650M",
         "esm2_150M",
         "esm2_35M",
         "esm2_8M",
-        "ohe", 
-        "blosum62", 
-        "blosum50", 
-        "vae"]
+        "ohe",
+        "blosum62",
+        "blosum50",
+        "vae",
+    ]
     _esm_models = ["esm1v", "esm2", "esm2_650M", "esm2_150M", "esm2_35M", "esm2_8M"]
     _allowed_y_types = ["class", "num"]
     in_memory = ["ohe", "blosum62", "blosum50"]
@@ -754,8 +756,10 @@ class Library:
 
         seqs = self.data[self.data[self.names_col].isin(names)][self.seq_col].to_list()
         if len(seqs) > 0:
-            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = esm_tools.structure_prediction(
-                names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar
+            all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = (
+                esm_tools.structure_prediction(
+                    names=names, seqs=seqs, num_recycles=num_recycles, pbar=pbar
+                )
             )
 
             if not os.path.exists(self.struc_path):

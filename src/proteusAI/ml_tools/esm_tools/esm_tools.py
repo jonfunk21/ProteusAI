@@ -39,13 +39,14 @@ from matplotlib.colors import LinearSegmentedColormap
 
 alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
 
-esm_layer_dict={
+esm_layer_dict = {
     "esm2": 33,
     "esm2_650M": 33,
     "esm2_150M": 30,
     "esm2_35M": 12,
     "esm2_8M": 6,
 }
+
 
 def esm_compute(
     seqs: list,
@@ -124,9 +125,7 @@ def esm_compute(
 
     # Extract per-residue representations (on CPU)
     with torch.no_grad():
-        results = model(
-            batch_tokens.to(device), repr_layers=[rep_layer]
-        )
+        results = model(batch_tokens.to(device), repr_layers=[rep_layer])
 
     return results, batch_lens, batch_labels, alphabet
 
@@ -227,7 +226,7 @@ def batch_compute(
 
     if fasta_path is None and seqs is None:
         raise "Either fasta_path or seqs must not be None"
-    
+
     if rep_layer > esm_layer_dict[model]:
         rep_layer = esm_layer_dict[model]
 
@@ -259,7 +258,9 @@ def batch_compute(
                 device=device,
             )
 
-        sequence_representations = get_seq_rep(results, batch_lens, layer=esm_layer_dict[model])
+        sequence_representations = get_seq_rep(
+            results, batch_lens, layer=esm_layer_dict[model]
+        )
         if dest is not None:
             for j in range(len(sequence_representations)):
                 _dest = os.path.join(dest, names[i : i + batch_size][j])
