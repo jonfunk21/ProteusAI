@@ -47,6 +47,11 @@ pip uninstall torch-scatter
 pip install torch-scatter -f https://data.pyg.org/whl/torch-${TORCH_VERSION}+cuda.html
 ```
 
+If you have acces to GPUs you can run ESM-Fold. Unfortunately the installation of 
+openfold can be unstable for some people. Please follow installation instructions
+on of the [ESM repository](https://github.com/facebookresearch/esm) and use 
+the discussions in the issues section for help.
+
 ### Install using pip locally for developement
 
 Install a local version which picks up the latest changes using an editable install:

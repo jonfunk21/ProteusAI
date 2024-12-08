@@ -737,7 +737,7 @@ class Library:
     ### Folding ###
     def fold(
         self,
-        names,
+        names: list = [],
         model: str = "esm_fold",
         num_recycles: int = 0,
         pbar=None,
@@ -751,8 +751,13 @@ class Library:
             model (str): model used for folding, currently only esm_fold
             num_recycles (int): number of recycling steps, default 0
             pbar: progress bar for app
+        Returns:
+            dict: dictionary containing the results of the folding or False if no sequences are found.
         """
         out = False
+
+        if names == []:
+            names = self.names
 
         seqs = self.data[self.data[self.names_col].isin(names)][self.seq_col].to_list()
         if len(seqs) > 0:
