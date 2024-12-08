@@ -20,7 +20,6 @@ import openmm as mm
 import py3Dmol
 from openmm import app, unit
 from openmm.app import PDBFile
-from openmm.unit import *  # noqa: F403
 
 alphabet_list = list(ascii_uppercase + ascii_lowercase)
 pymol_color_list = [
@@ -527,7 +526,7 @@ def show_pdb(
     return view
 
 
-def relax_pdb(file, dest="outputs/struc/relaxed"):
+def relax_pdb(file, dest=None):
     """
     Processes and minimizes a protein structure file using molecular dynamics.
 
@@ -564,6 +563,10 @@ def relax_pdb(file, dest="outputs/struc/relaxed"):
         )
 
     name = file.split("/")[-1].split(".")[0]
+
+    # if dest is none, save at same location as input file
+    if dest is None:
+        dest = os.path.dirname(file)
 
     fixer = PDBFixer(filename=file)
     fixer.findMissingResidues()

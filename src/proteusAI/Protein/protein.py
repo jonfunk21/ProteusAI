@@ -16,7 +16,7 @@ import pandas as pd
 import torch
 
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
-import proteusAI.struc as struc
+import proteusAI.struc as pai_struc
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -228,19 +228,12 @@ class Protein:
                 "The provided FASTA file contains multiple entries. Using only the first entry."
             )
 
-        # Set the header as self.name
-        name = headers[0].strip()  # remove potential leading spaces
-
         # Store the first sequence in self.seq
         seq = sequences[0]
 
-        # Create and return a new Protein instance
-        if self.fname:
-            fname = self.fname.split(".")[0]
-            self.name = fname
-        else:
-            self.name = name
-
+        # Set the name and sequence
+        fname = file.split("/")[-1].split(".")[0]
+        self.name = fname
         self.seq = seq
 
     def load_structure(self, prot_f, name=None, filter_solvent=True):
@@ -255,14 +248,14 @@ class Protein:
         if name is None and isinstance(prot_f, str):
             name = prot_f.split("/")[-1].split(".")[0]
 
-        prot = struc.load_struc(prot_f)
+        prot = pai_struc.load_struc(prot_f)
 
         if filter_solvent:
             non_solvent_mask = biotite.structure.filter_solvent(prot)
             prot = prot[~non_solvent_mask]
 
-        seqs = struc.get_sequences(prot_f)
-        chains = struc.chain_parser(prot_f)
+        seqs = pai_struc.get_sequences(prot_f)
+        chains = pai_struc.chain_parser(prot_f)
 
         self.pdb_file = prot_f
         self.seq = seqs
@@ -277,7 +270,7 @@ class Protein:
         Args:
             color (str): Choose different coloration options
         """
-        view = struc.show_pdb(
+        view = pai_struc.show_pdb(
             self.pdb_file, color=color, highlight=highlight, sticks=sticks
         )
         return view
@@ -449,40 +442,55 @@ class Protein:
 
     ### Structure prediction ###
     def esm_fold(
-        self, batch_size=100, chain=None, dest=None, pbar=None
+        self,
+        chain=None,
+        dest=None,
+        pbar=None,
+        relax=True,
     ):  # If structure prediction will become available for libraries, set dest in library, create a protein dir under the file name
         """
         Compute zero-shot scores
 
         Args:
-            batch_size (int): Batch size used to compute ZS-Scores
+            chain (str): Chain for which to compute the structure.
             dest (str): custom destination for file
+            relax (bool): Perform energy minimization on the structure.
             pbar: App progress bar
-
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
-        if chain is None:
+
+        # Set a default chain if none is provided and there are chains available
+        if chain is None and isinstance(self.seq, dict) >= 1:
             chain = self.chains[0]
+            seq = self.seq[chain]
+            name = self.name + f"_{chain}"
+        elif isinstance(self.seq, dict):
+            seq = self.seq[chain]
+            name = self.name + f"_{chain}"
+        else:
+            seq = self.seq
+            name = self.name
 
         # check scores for this protein and model have already been computed
-
         user_path = self.user
 
-        if self.name and not dest:
-            dest = os.path.join(user_path, "protein/")
-            pdb_file = os.path.join(dest, {self.name})
+        if name and not dest:
+            dest = os.path.join(user_path, f"{name}/struc")
+            pdb_file = os.path.join(dest, f"{name}.pdb")
         elif dest:
-            pdb_file = os.path.join(dest, f"{self.name}.pdb")
+            pdb_file = os.path.join(dest, f"{name}.pdb")
 
         # Check if structure already exist
         if os.path.exists(pdb_file):
             self.pdb_file = pdb_file
             self.struc = strucio.load_structure(pdb_file)
-            self.chains = struc.chain_parser(self.struc)
+            self.chains = pai_struc.chain_parser(pdb_file)
             # get ptsm and plddts from loaded files
         else:
             os.makedirs(dest, exist_ok=True)
             all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = (
-                esm_tools.structure_prediction(seqs=[self.seq], names=[self.name])
+                esm_tools.structure_prediction(seqs=[seq], names=[name])
             )
             pdb = all_pdbs[0]
             pdb.write(pdb_file)
@@ -491,9 +499,40 @@ class Protein:
             self.struc = all_pdbs[0]
             self.pTMs = pTMs[0]
             self.pLDDT = mean_pLDDTs[0]
-            self.chains = struc.chain_parser(self.struc)
+            self.chains = pai_struc.chain_parser(pdb_file)
 
-        return self.struc
+        if relax:
+            self.relax_struc(name, dest)
+
+        out = {
+            "df": None,
+            "rep_path": None,
+            "struc_path": dest,
+            "y_type": "num",
+            "y_col": None,
+            "seqs_col": None,
+            "names_col": None,
+            "reps": [],
+            "class_dict": self.class_dict,
+        }
+
+        return out
+
+    ### Structure ###
+    def relax_struc(self, name: str, dest=None):
+        """
+        Perform energy minimization on a protein structure.
+        """
+        user_path = self.user
+
+        if name and not dest:
+            dest = os.path.join(user_path, f"{name}/struc")
+            pdb_file = os.path.join(dest, f"{name}.pdb")
+        elif dest:
+            pdb_file = os.path.join(dest, f"{name}.pdb")
+
+        pai_struc.relax_pdb(pdb_file)
+        self.struc = strucio.load_structure(pdb_file)
 
     ### Inverse Folding ###
     def esm_if(
@@ -732,7 +771,7 @@ class Protein:
             chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
             target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
         """
-        return struc.get_contacts(self.struc, source_chain, target, dist)
+        return pai_struc.get_contacts(self.struc, source_chain, target, dist)
 
     ### getters and setters ###
     @property

@@ -80,10 +80,10 @@ BATCH_SIZE_DICT = {
     "ohe": 10000,
     "blosum62": 10000,
     "blosum50": 10000,
-    "esm2_650M": 1,
-    "esm2_150M": 1,
-    "esm2_35M": 10,
-    "esm2_8M": 10,
+    "esm2_650M": 100,
+    "esm2_150M": 100,
+    "esm2_35M": 100,
+    "esm2_8M": 100,
     "esm1v": 200,
 }
 ZS_MODELS = ["ESM-1v", "ESM-2 (650M)", "ESM-2 (150M)", "ESM-2 (35M)", "ESM-2 (8M)"]
