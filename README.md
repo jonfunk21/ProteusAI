@@ -1,5 +1,5 @@
 
-![proteusAI](https://github.com/jonfunk21/ProteusAI/assets/74795032/14f3b29e-deb5-4357-af2e-e19618f7e363)
+![App_Overview](https://github.com/user-attachments/assets/6a11e863-a45e-47d3-903d-8fb5bc260cd2)
 
 
 
