@@ -1,5 +1,5 @@
 
-![proteusAI](https://github.com/jonfunk21/ProteusAI/assets/74795032/14f3b29e-deb5-4357-af2e-e19618f7e363)
+![App_Overview](https://github.com/user-attachments/assets/6a11e863-a45e-47d3-903d-8fb5bc260cd2)
 
 
 
@@ -14,6 +14,8 @@ ProteusAI is primarily powered by [PyTorch](https://pytorch.org/get-started/loca
 and [ESM](https://github.com/facebookresearch/esm) protein language models. 
 
 Cite our preprint [here](https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1). 
+
+Test out the ProteusAI web app [proteusai.bio](http://proteusai.bio/)
 
 ## Getting started
 
