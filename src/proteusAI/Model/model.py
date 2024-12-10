@@ -117,6 +117,7 @@ class Model:
         self.y_unlabelled_pred = []
         self.y_unlabelled_sigma = []
         self.y_unlabelled = []
+        self.calibration = None
         self.rep_path = None
         self.dest = None
         self.y_best = None
@@ -260,26 +261,30 @@ class Model:
                     test_data += class_data[c][train_size : train_size + test_size]
                     val_data += class_data[c][train_size + test_size :]
             else:
-                # Bin continuous y values into categories
                 y_values = np.array([prot.y for prot in labelled_data])
 
                 # Dynamically adjust the number of bins based on dataset size
-                n_bins = min(
-                    10, max(2, len(labelled_data) // 5)
-                )  # At least 2 bins, at most 10
+                n_bins = min(10, max(2, len(labelled_data) // 5))  # At least 2 bins, at most 10
                 bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
                 y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
 
-                # Merge rare bins
+                # Merge rare bins by combining the smallest bins first
                 class_counts = np.bincount(y_binned)
-
-                # Ensure bins are not too small
                 while np.any(class_counts < 2):
                     if n_bins <= 2:
-                        break  # Exit when bins reach minimum allowed size
-                    n_bins = max(2, n_bins - 1)
-                    bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
-                    y_binned = np.digitize(y_values, bins) - 1
+                        break  # Exit when bins reach the minimum allowed size
+
+                    # Identify the two smallest bins to merge
+                    smallest_bins = np.argsort(class_counts)
+                    bin_to_merge_1 = smallest_bins[0]
+                    bin_to_merge_2 = smallest_bins[1]
+
+                    # Merge the smaller bin into the larger bin
+                    y_binned[y_binned == bin_to_merge_2] = bin_to_merge_1
+
+                    # Recompute bin counts
+                    unique_bins, y_binned = np.unique(y_binned, return_inverse=True)
+                    n_bins = len(unique_bins)
                     class_counts = np.bincount(y_binned)
 
                 # Split data into train/test, then test/val
@@ -311,7 +316,6 @@ class Model:
                 train_data = [labelled_data[i] for i in train_data_idx]
                 test_data = [labelled_data[i] for i in test_data_idx]
                 val_data = [labelled_data[i] for i in val_data_idx]
-                print(len(train_data), len(test_data), len(val_data))
 
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
@@ -457,7 +461,7 @@ class Model:
             # train model
             self._model.fit(x_train, self.y_train)
 
-            # prediction on test set
+            # make predictions
             self.test_r2 = self._model.score(x_test, self.y_test)
             self.y_test_pred = self._model.predict(x_test)
             self.y_train_pred = self._model.predict(x_train)
@@ -465,9 +469,16 @@ class Model:
             # prediction on validation set
             self.val_r2 = self._model.score(x_val, self.y_val)
             self.y_val_pred = self._model.predict(x_val)
+
             self.y_train_sigma = [None] * len(self.y_train)
             self.y_val_sigma = [None] * len(self.y_val)
             self.y_test_sigma = [None] * len(self.y_test)
+
+            # conformal prediction
+            self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+            self.calibration_ratio, within_calibration = self._within_calibration(
+                self.y_val_pred, self.y_val
+            )
 
             # Save the model
             if self.dest is not None:
@@ -532,15 +543,10 @@ class Model:
 
         # handle ensembles
         else:
-            # combine train and test
-            self.train_data = self.train_data + self.test_data
-            x_train = np.concatenate([x_train, x_test])
-
             kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
-            self.y_train = self.y_train + self.y_test
             fold_results = []
             ensemble = []
-
+            calibrations = []
             for i, data in enumerate(kf.split(x_train)):
                 train_index, test_index = data
 
@@ -561,8 +567,13 @@ class Model:
                 test_r2 = self._model.score(x_test_fold, y_test_fold)
                 fold_results.append(test_r2)
                 ensemble.append(self._model)
-
+                
+                # conformal prediction
+                calibration = self.calibrate(y_test_fold, self._model.predict(x_test_fold), confidence=0.90)
+                calibrations.append(calibration)
+            
             avg_test_r2 = np.mean(fold_results)
+            avg_calibration_ratio = np.mean([c[0] for c in calibrations])
 
             # Store model ensemble as model
             self._model = ensemble
@@ -573,6 +584,15 @@ class Model:
             )
             self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
                 self.predict(self.train_data)
+            )
+            self.test_data, self.y_test_pred, self.y_test_sigma, self.y_test, _ = (
+                self.predict(self.test_data)
+            )
+
+            # conformal prediction
+            self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+            self.calibration_ratio, within_calibration = self._within_calibration(
+                self.y_val_pred, self.y_val
             )
 
             # Prediction unlabelled data if exists
@@ -818,6 +838,12 @@ class Model:
         self.y_val = y_val.cpu().numpy()
         self.y_test = self.y_test.cpu().numpy()
 
+        # conformal prediction
+        self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+        self.calibration_ratio, within_calibration = self._within_calibration(
+            self.y_val_pred, self.y_val
+        )
+
         self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
 
         # Add predictions to proteins
@@ -906,6 +932,47 @@ class Model:
         }
 
         return out
+    
+    # calibration for conformal predictions
+    def calibrate(self, y_cal, y_cal_pred, confidence=0.90):
+        """
+        Calibrate the model using conformal predictions.
+
+        Args:
+            y_cal (list): List of true y-values.
+            y_cal_pred (list): List of predicted y-values.
+            confidence (float): Confidence level for the prediction interval.
+
+        Returns:
+            width: The width of the prediction interval.
+        """
+        residuals = y_cal - y_cal_pred
+        conformity_scores = np.sort(np.abs(residuals))[::-1]
+        quantile_index = int((1 - confidence) * (len(conformity_scores) + 1)) - 1
+        width = conformity_scores[quantile_index]
+        return width
+
+    def _within_calibration(self, y_pred=None, y_true=None):
+        """
+        Compute ratio and determin points within calibration
+
+        Args:
+            y_pred (list): List of predicted y-values.
+            y_true (list): List of true y-values.
+        Returns:
+            tuple: Tuple of ratio and points within calibration
+        """
+        if y_pred is None:
+            y_pred = self.y_test_pred
+        if y_true is None:
+            y_true = self.y_test
+
+        residuals = np.abs(y_pred - y_true)
+        within_cal = np.where(residuals <= self.calibration, 1, 0)
+        ratio = np.sum(within_cal) / len(y_true)
+
+        return ratio, within_cal
+
 
     # Save the sequences, y-values, and predicted y-values to CSV
     def save_to_csv(
