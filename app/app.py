@@ -305,6 +305,7 @@ app_ui = ui.page_fluid(
                     ui.nav_panel(
                         "Model Diagnostics",
                         ui.output_ui("pred_vs_true_ui"),
+                        ui.output_table("mlde_statistics"),
                         ui.output_data_frame("mlde_model_table"),
                     ),
                     ui.nav_panel("Search Results", ui.output_ui("mlde_download_ui")),
@@ -717,6 +718,44 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ),
                 ui.column(6, ui.input_task_button("mlde_search_btn", "Search")),
             )
+    
+    @render.table
+    def mlde_statistics(alt=None):
+        model = MODEL()
+        if model is not None:
+            calibration = round(model.calibration, 2)
+            val_r2 = round(model.val_r2, 2)
+            val_pearson = round(model.val_pearson[0], 2)
+            # Add significance stars
+            pearson_p = model.val_pearson[1]
+            pearson_p_str = f"{pearson_p:.2e}"  # Format p-value in scientific notation
+
+
+            val_ken_tau = round(
+                model.val_ken_tau.statistic, 
+                2,
+            )
+            val_ken_tau_p = model.val_ken_tau.pvalue
+            kendall_p_str = f"{val_ken_tau_p:.2e}"  # Format p-value in scientific notation
+
+            
+            # Create DataFrame
+            df = pd.DataFrame({
+                "Metric": [
+                    "Calibration error",
+                    "Validation R-squared value",
+                    "Validation Pearson correlation",
+                    "Kendall Tau correlation",
+                ],
+                "Value": [
+                    f"+/- {calibration}",
+                    val_r2,
+                    f"{val_pearson} (p-value: {pearson_p_str})",
+                    f"{val_ken_tau} (p-value: {kendall_p_str})",
+                ]
+            })
+
+            return df
 
     ###################
     ## DISCOVERY TAB ##
