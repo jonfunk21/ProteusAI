@@ -639,9 +639,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_numeric(
                                 "k_folds",
                                 "K-Fold cross validation",
-                                value=5,
+                                value=1,
                                 min=1,
-                                max=10,
                             ),
                         ),
                     ),
