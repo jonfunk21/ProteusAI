@@ -254,7 +254,7 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     chain_atoms = non_hetero_atoms[np.isin(non_hetero_atoms.chain_id, source_chain)]
 
     # to map res_ids to start from 1 if needed
-    #normalization_dict = {k: i + 1 for i, k in enumerate(np.unique(chain_atoms.res_id))}
+    # normalization_dict = {k: i + 1 for i, k in enumerate(np.unique(chain_atoms.res_id))}
 
     # Contact detection
     try:
@@ -279,7 +279,7 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     else:
         result = []
 
-    #result = [normalization_dict[i] for i in result]
+    # result = [normalization_dict[i] for i in result]
     return result
 
 
