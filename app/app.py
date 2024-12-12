@@ -592,7 +592,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             return ui.TagList(
-                "Upload a protein sequence or protein structure in the 'Data' tab to proceed with the Zero Shot Module."
+                tooltips.zs_file_type,
             )
 
     ################
@@ -676,7 +676,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList("Upload data in the 'Data' tab to proceed.")
+            return ui.TagList(tooltips.mlde_file_type)
 
     ### MLDE SEARCH UI ###
     @output
@@ -793,7 +793,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
             )
 
-        elif MODE() != "start":
+        elif MODE() == "dataset":
             return ui.TagList(
                 ui.row(
                     ui.h5("Protein Discovery and Annotation"),
@@ -855,9 +855,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList(
-                "Upload a library in the 'Data' tab to proceed with the Discovery module."
-            )
+            return ui.TagList(tooltips.discovery_file_type)
 
     @output
     @render.ui
@@ -867,7 +865,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
             )
 
-        elif MODE() != "start":
+        elif MODE() == "dataset":
             return ui.TagList(
                 ui.row(
                     ui.h5("Protein Discovery and Annotation"),
@@ -956,9 +954,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList(
-                "Upload a library in the 'Data' tab to proceed with the Discovery module."
-            )
+            return ui.TagList(tooltips.discovery_file_type)
 
     ### DISCOVERY SEARCH UI ###
     @output
@@ -1512,7 +1508,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 prot = PROTEIN()
 
                 if input.demo_structure_check():
-                    data_path = os.path.join(app_path, "../demo/demo_data/GB1.pdb")
+                    data_path = os.path.join(app_path, "../demo/demo_data/1zb6.pdb")
                     file_name = data_path.split("/")[-1]
                 else:
                     f: list[FileInfo] = input.structure_file()
