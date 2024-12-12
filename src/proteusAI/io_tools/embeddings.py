@@ -32,11 +32,11 @@ def load_embeddings(
         files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pt")]
         names = [f[:-3] for f in os.listdir(path) if f.endswith(".pt")]
         for f in files:
-            t = torch.load(f, map_location=map_location)
+            t = torch.load(f, map_location=map_location, weights_only=False)
             tensors.append(t)
     else:
         for name in names:
-            t = torch.load(os.path.join(path, name), map_location=map_location)
+            t = torch.load(os.path.join(path, name), map_location=map_location, weights_only=False)
             tensors.append(t)
 
     return names, tensors

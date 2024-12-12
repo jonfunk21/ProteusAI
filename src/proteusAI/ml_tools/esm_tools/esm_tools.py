@@ -37,7 +37,7 @@ from esm.inverse_folding.multichain_util import (
 from esm.inverse_folding.util import CoordBatchConverter
 from matplotlib.colors import LinearSegmentedColormap
 
-alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
+alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False)
 
 esm_layer_dict = {
     "esm2": 33,
@@ -101,7 +101,7 @@ def esm_compute(
         else:
             raise ValueError(f"{model} is not a valid model")
     elif isinstance(model, torch.nn.Module):
-        alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"))
+        alphabet = torch.load(os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False)
     else:
         raise TypeError("Model should be either a string or a torch.nn.Module object")
 
