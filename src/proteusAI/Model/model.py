@@ -267,7 +267,9 @@ class Model:
                 y_values = np.array([prot.y for prot in labelled_data])
 
                 # Dynamically adjust the number of bins based on dataset size
-                n_bins = min(10, max(2, len(labelled_data) // 5))  # At least 2 bins, at most 10
+                n_bins = min(
+                    10, max(2, len(labelled_data) // 5)
+                )  # At least 2 bins, at most 10
                 bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
                 y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
 
@@ -445,7 +447,6 @@ class Model:
         x_test = torch.stack(test).cpu().numpy()
         x_val = torch.stack(val).cpu().numpy()
 
-        # TODO: For representations that are stored in memory the computation happens here:
         if self.library.pred_data:
             self.y_train = [protein.y_pred for protein in self.train_data]
             self.y_test = [protein.y_pred for protein in self.test_data]
@@ -478,7 +479,9 @@ class Model:
             self.y_test_sigma = [None] * len(self.y_test)
 
             # conformal prediction and statistics
-            self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+            self.calibration = self.calibrate(
+                self.y_test, self.y_test_pred, confidence=0.90
+            )
             self.calibration_ratio, within_calibration = self._within_calibration(
                 self.y_val_pred, self.y_val
             )
@@ -532,7 +535,11 @@ class Model:
             )
 
             # Save results to a JSON file
-            results = {"test_r2": self.test_r2, "val_r2": self.val_r2, "val_pearson": self.val_pearson}
+            results = {
+                "test_r2": self.test_r2,
+                "val_r2": self.val_r2,
+                "val_pearson": self.val_pearson,
+            }
             with open(f"{csv_dest}/results.json", "w") as f:
                 json.dump(results, f)
 
@@ -574,13 +581,15 @@ class Model:
                 test_r2 = self._model.score(x_test_fold, y_test_fold)
                 fold_results.append(test_r2)
                 ensemble.append(self._model)
-                
+
                 # conformal prediction
-                calibration = self.calibrate(y_test_fold, self._model.predict(x_test_fold), confidence=0.90)
+                calibration = self.calibrate(
+                    y_test_fold, self._model.predict(x_test_fold), confidence=0.90
+                )
                 calibrations.append(calibration)
-            
+
             avg_test_r2 = np.mean(fold_results)
-            avg_calibration_ratio = np.mean([c[0] for c in calibrations])
+            avg_calibration_ratio = np.mean([c for c in calibrations])
 
             # Store model ensemble as model
             self._model = ensemble
@@ -596,8 +605,6 @@ class Model:
                 self.predict(self.test_data)
             )
 
-            
-
             # Prediction unlabelled data if exists
             if len(self.unlabelled_data) > 0:
                 (
@@ -612,7 +619,9 @@ class Model:
             self.val_r2 = self.score(self.val_data)
 
             # conformal prediction and statistics
-            self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+            self.calibration = self.calibrate(
+                self.y_test, self.y_test_pred, confidence=0.90
+            )
             self.calibration_ratio, within_calibration = self._within_calibration(
                 self.y_val_pred, self.y_val
             )
@@ -706,7 +715,9 @@ class Model:
             "class_dict": self.library.class_dict,
         }
 
-        print(f"Training completed:\nval_r2:\t{self.val_r2}\nval_pearson:\t{self.val_pearson}")
+        print(
+            f"Training completed:\nval_r2:\t{self.val_r2}\nval_pearson:\t{self.val_pearson}"
+        )
 
         return out
 
@@ -855,7 +866,9 @@ class Model:
         self.y_test = self.y_test.cpu().numpy()
 
         # conformal prediction
-        self.calibration = self.calibrate(self.y_test, self.y_test_pred, confidence=0.90)
+        self.calibration = self.calibrate(
+            self.y_test, self.y_test_pred, confidence=0.90
+        )
         self.calibration_ratio, within_calibration = self._within_calibration(
             self.y_val_pred, self.y_val
         )
@@ -922,7 +935,11 @@ class Model:
         )
 
         # Save results to a JSON file
-        results = {"test_r2": self.test_r2, "val_r2": self.val_r2, "val_pearson": self.val_pearson}
+        results = {
+            "test_r2": self.test_r2,
+            "val_r2": self.val_r2,
+            "val_pearson": self.val_pearson,
+        }
 
         with open(f"{csv_dest}/results.json", "w") as f:
             json.dump(results, f)
@@ -952,7 +969,7 @@ class Model:
         }
 
         return out
-    
+
     # calibration for conformal predictions
     def calibrate(self, y_cal, y_cal_pred, confidence=0.90):
         """
@@ -992,7 +1009,6 @@ class Model:
         ratio = np.sum(within_cal) / len(y_true)
 
         return ratio, within_cal
-
 
     # Save the sequences, y-values, and predicted y-values to CSV
     def save_to_csv(
@@ -1222,7 +1238,15 @@ class Model:
             os.makedirs(dest)
 
         fig, ax = vis.plot_predictions_vs_groundtruth(
-            y_true, y_pred, title, x_label, y_label, plot_grid, file, show_plot
+            y_true,
+            y_pred,
+            title,
+            x_label,
+            y_label,
+            plot_grid,
+            file,
+            show_plot,
+            self.calibration,
         )
 
         return fig, ax

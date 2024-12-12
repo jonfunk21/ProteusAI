@@ -25,6 +25,7 @@ def plot_predictions_vs_groundtruth(
     plot_grid: bool = True,
     file: Union[str, None] = None,
     show_plot: bool = True,
+    width: Union[float, None] = None,
 ):
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -41,13 +42,62 @@ def plot_predictions_vs_groundtruth(
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
+
+    # Add the diagonal line
+    min_val = min(min(y_true) * 1.05, min(y_pred) * 1.05)
+    max_val = max(max(y_true) * 1.05, max(y_pred) * 1.05)
     ax.plot(
-        [min(y_true), max(y_true)],
-        [min(y_true), max(y_true)],
+        [min_val, max_val],
+        [min_val, max_val],
         color="grey",
         linestyle="dotted",
         linewidth=2,
-    )  # diagonal line
+    )
+
+    # Add vertical error bars and confidence region if width is specified
+    if width is not None:
+        # Add error bars with T-shape
+        for true, pred in zip(y_true, y_pred):
+            ax.plot(
+                [true, true], [pred - width, pred + width], color="darkgrey", alpha=0.8
+            )
+            ax.plot(
+                [
+                    true - 0.005 * (max_val - min_val),
+                    true + 0.005 * (max_val - min_val),
+                ],
+                [pred - width, pred - width],
+                color="darkgrey",
+                alpha=0.8,
+            )
+            ax.plot(
+                [
+                    true - 0.005 * (max_val - min_val),
+                    true + 0.005 * (max_val - min_val),
+                ],
+                [pred + width, pred + width],
+                color="darkgrey",
+                alpha=0.8,
+            )
+
+        # Add confidence region
+        x_range = np.linspace(min_val, max_val, 100)
+        upper_conf = x_range + width
+        lower_conf = x_range - width
+        ax.fill_between(
+            x_range,
+            lower_conf,
+            upper_conf,
+            color="blue",
+            alpha=0.08,
+            label="Confidence Region",
+        )
+
+    # Adjust layout to remove extra whitespace
+    fig.tight_layout()
+
+    # Add grid if specified
+    ax.set_xlim(min_val, max_val)
     ax.grid(plot_grid)
 
     # Save the plot to a file
