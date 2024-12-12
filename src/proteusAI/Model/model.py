@@ -589,7 +589,7 @@ class Model:
                 calibrations.append(calibration)
 
             avg_test_r2 = np.mean(fold_results)
-            avg_calibration_ratio = np.mean([c for c in calibrations])
+            # avg_calibration_ratio = np.mean([c for c in calibrations])
 
             # Store model ensemble as model
             self._model = ensemble
