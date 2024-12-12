@@ -36,7 +36,9 @@ def load_embeddings(
             tensors.append(t)
     else:
         for name in names:
-            t = torch.load(os.path.join(path, name), map_location=map_location, weights_only=False)
+            t = torch.load(
+                os.path.join(path, name), map_location=map_location, weights_only=False
+            )
             tensors.append(t)
 
     return names, tensors
