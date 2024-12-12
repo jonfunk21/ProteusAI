@@ -115,7 +115,7 @@ app_ui = ui.page_fluid(
     ui.output_image("image", inline=True),
     VERSION,
     ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
-    ui.output_text("current_time", inline=True),  # for debugging
+    # ui.output_text("current_time", inline=True),  # for debugging
     ###############
     ## DATA PAGE ##
     ###############
@@ -304,7 +304,7 @@ app_ui = ui.page_fluid(
                 ui.navset_tab(
                     ui.nav_panel(
                         "Model Diagnostics",
-                        ui.output_ui("pred_vs_true_ui"),
+                        ui.output_ui("mlde_results_ui"),
                         ui.output_data_frame("mlde_model_table"),
                     ),
                     ui.nav_panel("Search Results", ui.output_ui("mlde_download_ui")),
@@ -592,7 +592,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         else:
             return ui.TagList(
-                "Upload a protein sequence or protein structure in the 'Data' tab to proceed with the Zero Shot Module."
+                tooltips.zs_file_type,
             )
 
     ################
@@ -639,9 +639,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                             ui.input_numeric(
                                 "k_folds",
                                 "K-Fold cross validation",
-                                value=5,
+                                value=1,
                                 min=1,
-                                max=10,
                             ),
                         ),
                     ),
@@ -677,7 +676,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList("Upload data in the 'Data' tab to proceed.")
+            return ui.TagList(tooltips.mlde_file_type)
 
     ### MLDE SEARCH UI ###
     @output
@@ -719,18 +718,82 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.column(6, ui.input_task_button("mlde_search_btn", "Search")),
             )
 
+    @output
+    @render.ui
+    def mlde_results_ui(alt=None):
+        if MODEL() is not None:
+            return ui.TagList(
+                ui.h5("Predictions vs. True values of the validation data"),
+                ui.output_ui("pred_vs_true_ui"),
+                ui.row(
+                    ui.h5("Model statistics"),
+                    ui.column(
+                        12,
+                        ui.output_data_frame("mlde_statistics"),
+                        style="padding:25px;",
+                    ),
+                ),
+                ui.h5("Validation data"),
+            )
+
+    @render.data_frame
+    def mlde_statistics(alt=None):
+        model = MODEL()
+        if model is not None:
+            calibration = round(model.calibration, 2)
+            val_r2 = round(model.val_r2, 2)
+            val_pearson = round(model.val_pearson[0], 2)
+            # Add significance stars
+            pearson_p = model.val_pearson[1]
+            pearson_p_str = f"{pearson_p:.2e}"  # Format p-value in scientific notation
+
+            val_ken_tau = round(
+                model.val_ken_tau.statistic,
+                2,
+            )
+            val_ken_tau_p = model.val_ken_tau.pvalue
+            kendall_p_str = (
+                f"{val_ken_tau_p:.2e}"  # Format p-value in scientific notation
+            )
+
+            # Create DataFrame
+            df = pd.DataFrame(
+                {
+                    "Metric": [
+                        "Calibration error (90% confidence)",
+                        "Validation R-squared value",
+                        "Validation Pearson correlation",
+                        "Kendall Tau correlation",
+                    ],
+                    "Value": [
+                        f"+/- {calibration}",
+                        val_r2,
+                        f"{val_pearson} (p-value: {pearson_p_str})",
+                        f"{val_ken_tau} (p-value: {kendall_p_str})",
+                    ],
+                    "Description": [
+                        "The calibration error is a measure of model and experimental noise. A value of 0 indicates a perfect model and no experimental noise.",
+                        "The R-squared value is a measure of how well the model fits the data. A value of 1 indicates a perfect fit.",
+                        "The Pearson correlation measures the strength and direction of the predictions and actual values. A value of 1 indicates a perfect correlation.",
+                        "The Kendall Tau correlation is a measure of how well the model ranks the data. A value of 1 indicates a perfect ranking.",
+                    ],
+                }
+            )
+
+            return df
+
     ###################
     ## DISCOVERY TAB ##
     ###################
     @output
     @render.ui
     def discovery_ui_clu(alt=None):
-        if Y_TYPE == "num":
+        if Y_TYPE() != "class":
             return ui.TagList(
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
             )
 
-        elif MODE() != "start":
+        elif MODE() == "dataset":
             return ui.TagList(
                 ui.row(
                     ui.h5("Protein Discovery and Annotation"),
@@ -792,19 +855,17 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList(
-                "Upload a library in the 'Data' tab to proceed with the Discovery module."
-            )
+            return ui.TagList(tooltips.discovery_file_type)
 
     @output
     @render.ui
     def discovery_ui_class(alt=None):
-        if Y_TYPE == "num":
+        if Y_TYPE() != "class":
             return ui.TagList(
                 "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
             )
 
-        elif MODE() != "start":
+        elif MODE() == "dataset":
             return ui.TagList(
                 ui.row(
                     ui.h5("Protein Discovery and Annotation"),
@@ -893,9 +954,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         else:
-            return ui.TagList(
-                "Upload a library in the 'Data' tab to proceed with the Discovery module."
-            )
+            return ui.TagList(tooltips.discovery_file_type)
 
     ### DISCOVERY SEARCH UI ###
     @output
@@ -1251,7 +1310,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.update_select("discovery_model_type", choices=_MODEL_TYPES())
 
                 ui.update_select("y_type", choices=[_y_type])
-                print("Library loaded successfully")
+
                 PROTEIN.set(None)
 
                 REP_PATH.set(None)  # used in train
@@ -1260,13 +1319,19 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 LIBRARY_PLOT.set(None)
 
+                with ui.Progress(min=1, max=15) as p:
+                    p.set(
+                        message="Data loaded",
+                    )
+                    await asyncio.sleep(0.5)
+
             except Exception:
                 with ui.Progress(min=1, max=15) as p:
                     p.set(
                         message="Problem with input file",
                         detail="Please check if there are any problems with the input file.",
                     )
-                    time.sleep(2.5)
+                    await asyncio.sleep(2.5)
 
     ### READING PROTEIN FILE ###
     @reactive.Effect
@@ -1443,7 +1508,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 prot = PROTEIN()
 
                 if input.demo_structure_check():
-                    data_path = os.path.join(app_path, "../demo/demo_data/GB1.pdb")
+                    data_path = os.path.join(app_path, "../demo/demo_data/1zb6.pdb")
                     file_name = data_path.split("/")[-1]
                 else:
                     f: list[FileInfo] = input.structure_file()
@@ -2312,6 +2377,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             finally:
                 # Reset the task running state in the session
                 IS_MLDE_TRAINING_RUNNING.set(False)
+                with ui.Progress(min=1, max=15) as p:
+                    p.set(message="Done...", detail="")
 
     @reactive.effect
     @reactive.event(input.mlde_train_button)
@@ -2353,6 +2420,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         model = MODEL()
         if model is not None:
             table = VAL_DF()
+            if "y_sigma" in table.columns:
+                # if y_sigma column is empty, drop it
+                if table["y_sigma"].isnull().all():
+                    table = table.drop(["y_sigma"], axis=1)
             return table
 
     #################
@@ -2422,6 +2493,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         table = table.drop(["sequence"], axis=1)
         if "y_true" in table.columns:
             table = table.drop(["y_true"], axis=1)
+        if "y_sigma" in table.columns:
+            # if y_sigma column is empty, drop it
+            if table["y_sigma"].isnull().all():
+                table = table.drop(["y_sigma"], axis=1)
 
         return table
 
