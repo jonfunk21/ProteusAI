@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 import numpy as np
 import umap
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 representation_dict = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
