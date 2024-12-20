@@ -526,7 +526,7 @@ def show_pdb(
     return view
 
 
-def relax_pdb(file, dest=None):
+def relax_pdb(file, num_steps=200, dest=None):
     """
     Processes and minimizes a protein structure file using molecular dynamics.
 
@@ -537,6 +537,7 @@ def relax_pdb(file, dest=None):
 
     Parameters:
         file (str): The path to the PDB file to be processed.
+        num_steps (int, optional): The number of steps to run the simulation for. Default is 200.
         dest (str, optional): The directory where the relaxed PDB file will be saved.
                               Default is 'outputs/struc/relaxed'.
 
@@ -616,6 +617,9 @@ def relax_pdb(file, dest=None):
 
     # Minimize the energy
     simulation.minimizeEnergy()
+
+    # Run the simulation
+    simulation.step(num_steps)
 
     # Get the final positions after minimization
     positions = simulation.context.getState(getPositions=True).getPositions()
