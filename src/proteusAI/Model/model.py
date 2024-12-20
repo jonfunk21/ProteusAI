@@ -1480,11 +1480,11 @@ class Model:
         # Sort proteins based on the optimization problem
         if optim_problem == "max":
             proteins = sorted(
-                self.library.proteins, key=lambda prot: prot.y_pred, reverse=True
+                self.library.proteins, key=lambda prot: prot.y, reverse=True
             )
         elif optim_problem == "min":
             proteins = sorted(
-                self.library.proteins, key=lambda prot: prot.y_pred, reverse=False
+                self.library.proteins, key=lambda prot: prot.y, reverse=False
             )
         else:
             raise ValueError(f"'{optim_problem}' is an invalid optimization problem")

@@ -1,3 +1,4 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Union, List
@@ -7,6 +8,7 @@ from sklearn.decomposition import PCA
 import numpy as np
 import umap
 
+matplotlib.use('Agg')
 representation_dict = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
