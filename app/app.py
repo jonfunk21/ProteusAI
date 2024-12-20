@@ -29,8 +29,8 @@ google_analytics_string = ""
 try:
     with open(google_analytics, "r") as f:
         google_analytics_string = f.read()
-except:
-    pass
+except Exception as e:
+    print(f"No google analytics file found:{e}")
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
