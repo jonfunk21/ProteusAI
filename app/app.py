@@ -23,6 +23,14 @@ from shiny.types import FileInfo, ImgData
 import proteusAI as pai
 
 app_path = os.path.dirname(os.path.realpath(__file__))
+google_analytics = os.path.join(app_path, "google_analytics.html")
+google_analytics_string = ""
+
+try:
+    with open(google_analytics, "r") as f:
+        google_analytics_string = f.read()
+except:
+    pass
 
 is_zs_running = False
 executor = ThreadPoolExecutor()
@@ -112,6 +120,7 @@ MAX_EVAL_DICT = {
 PAPER_URL = "https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1"
 
 app_ui = ui.page_fluid(
+    ui.tags.head(ui.HTML(google_analytics_string)),
     ui.output_image("image", inline=True),
     VERSION,
     ui.HTML(f'<a href="{PAPER_URL}" target="_blank">Please cite our paper.</a>'),
