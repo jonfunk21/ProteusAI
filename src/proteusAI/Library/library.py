@@ -878,6 +878,67 @@ class Library:
 
         return df
 
+    def plot(
+        self,
+        rep: str,
+        method: str = "umap",
+        y_upper=None,
+        y_lower=None,
+        names=None,
+        highlight_mask=None,
+        highlight_label=None,
+        use_y_pred=False,
+    ):
+        """
+        Plot library data using specific representations.
+
+        Args:
+            rep (str): Representation type to plot.
+            method (str): Method for plotting. (umap, tsne, pca)
+            y_upper (float, optional): Upper threshold for special coloring.
+            y_lower (float, optional): Lower threshold for special coloring.
+            names (List[str], optional): List of names for each point.
+            highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
+            highlight_label (str): Text for the legend entry of highlighted points.
+        """
+
+        if method == "umap":
+            fig, ax, df = self.plot_umap(
+                rep,
+                y_upper=y_upper,
+                y_lower=y_lower,
+                names=names,
+                highlight_mask=highlight_mask,
+                highlight_label=highlight_label,
+                use_y_pred=use_y_pred,
+            )
+        elif method == "tsne":
+            fig, ax, df = self.plot_tsne(
+                rep,
+                y_upper=y_upper,
+                y_lower=y_lower,
+                names=names,
+                highlight_mask=highlight_mask,
+                highlight_label=highlight_label,
+                use_y_pred=use_y_pred,
+            )
+        elif method == "pca":
+            fig, ax, df = self.plot_pca(
+                rep,
+                y_upper=y_upper,
+                y_lower=y_lower,
+                names=names,
+                highlight_mask=highlight_mask,
+                highlight_label=highlight_label,
+                use_y_pred=use_y_pred,
+            )
+        
+        else:
+            raise ValueError(f"Unsupported method: {method}")
+
+        return fig, ax, df
+
+
     def plot_tsne(
         self,
         rep: str,
