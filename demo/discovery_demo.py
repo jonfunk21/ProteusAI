@@ -44,5 +44,7 @@ out["df"].to_csv("demo/demo_data/out/discovery_search_results.csv")
 model_lib = pai.Library(source=out)
 
 # plot results
-fig, ax, plot_df = model.library.plot(rep="esm2_8M", use_y_pred=True, highlight_mask=search_mask)
+fig, ax, plot_df = model.library.plot(
+    rep="esm2_8M", use_y_pred=True, highlight_mask=search_mask
+)
 plt.savefig("demo/demo_data/out/search_results.png")

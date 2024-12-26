@@ -2607,7 +2607,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                 p.set(message="Visualizing results", detail="This may take a while...")
 
                 fig, ax, df = await loop.run_in_executor(
-                    executor, model_lib.plot, "umap", model.rep, None, None, model_lib.names
+                    executor,
+                    model_lib.plot,
+                    "umap",
+                    model.rep,
+                    None,
+                    None,
+                    model_lib.names,
                 )
 
                 # set reactive variables

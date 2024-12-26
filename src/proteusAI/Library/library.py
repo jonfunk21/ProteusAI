@@ -932,12 +932,11 @@ class Library:
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
             )
-        
+
         else:
             raise ValueError(f"Unsupported method: {method}")
 
         return fig, ax, df
-
 
     def plot_tsne(
         self,

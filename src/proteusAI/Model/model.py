@@ -69,7 +69,7 @@ class Model:
         "library": None,
         "model_type": "rf",
         "x": "ohe",
-        "rep":"ohe",
+        "rep": "ohe",
         "rep_path": None,
         "split": (80, 10, 10),
         "k_folds": None,
@@ -484,7 +484,8 @@ class Model:
                     f"../models/{self.model_type}/{self.rep}/model.joblib",
                 )
                 csv_dest = os.path.join(
-                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
+                    f"{self.library.rep_path}",
+                    f"../models/{self.model_type}/{self.rep}",
                 )
 
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
@@ -610,7 +611,8 @@ class Model:
                 csv_dest = f"{self.dest}"
             else:
                 csv_dest = os.path.join(
-                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
+                    f"{self.library.rep_path}",
+                    f"../models/{self.model_type}/{self.rep}",
                 )
 
             for i, model in enumerate(ensemble):
@@ -1479,7 +1481,9 @@ class Model:
             )
             os.makedirs(csv_dest, exist_ok=True)
 
-        csv_file = os.path.join(csv_dest, f"{self.model_type}_{self.rep}_predictions.csv")
+        csv_file = os.path.join(
+            csv_dest, f"{self.model_type}_{self.rep}_predictions.csv"
+        )
         if os.path.exists(csv_file):
             self.search_df = pd.read_csv(csv_file)
 
@@ -1711,19 +1715,21 @@ class Model:
     @property
     def x(self):
         import warnings
+
         warnings.warn(
             "'x' is deprecated and will be removed in a future version. Please use 'rep' instead.",
             FutureWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return self.rep  # Return the value of `rep` for compatibility
 
     @x.setter
     def x(self, value):
         import warnings
+
         warnings.warn(
             "'x' is deprecated and will be removed in a future version. Please use 'rep' instead.",
             FutureWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.rep = value  # Automatically set `rep` to the provided value
