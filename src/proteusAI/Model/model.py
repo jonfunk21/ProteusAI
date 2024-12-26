@@ -564,7 +564,7 @@ class Model:
                 )
                 calibrations.append(calibration)
 
-            avg_test_r2 = np.mean(fold_results)
+            # avg_test_r2 = np.mean(fold_results)
             # avg_calibration_ratio = np.mean([c for c in calibrations])
 
             # Store model ensemble as model
@@ -864,6 +864,14 @@ class Model:
             self.val_data[i].y_pred = self.y_val_sigma[i].item()
 
         # save dataframes
+        if self.dest is not None:
+            csv_dest = f"{self.dest}"
+        else:
+            csv_dest = os.path.join(
+                f"{self.library.rep_path}",
+                f"../models/{self.model_type}/{self.rep}",
+            )
+
         train_df = self.save_to_csv(
             self.train_data,
             self.y_train,
