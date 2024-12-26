@@ -2367,10 +2367,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 search_dest = os.path.join(
                     f"{model.library.rep_path}",
-                    f"../models/{model.model_type}/{model.x}/predictions",
+                    f"../models/{model.model_type}/{model.rep}/predictions",
                 )
                 search_file = os.path.join(
-                    search_dest, f"{model.model_type}_{model.x}_predictions.csv"
+                    search_dest, f"{model.model_type}_{model.rep}_predictions.csv"
                 )
 
                 if os.path.exists(search_file):
@@ -2451,9 +2451,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = MODEL()
             mlde_explore = input.mlde_explore()
             optim_problem = OPTIM_DICT[input.optim_problem()]
-            max_eval = MAX_EVAL_DICT[model.x]
+            max_eval = MAX_EVAL_DICT[model.rep]
             acq_fn = ACQ_DICT[input.acquisition_fn()]
-            batch_size = BATCH_SIZE_DICT[model.x]
+            batch_size = BATCH_SIZE_DICT[model.rep]
 
             try:
                 loop = asyncio.get_running_loop()
@@ -2607,7 +2607,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 p.set(message="Visualizing results", detail="This may take a while...")
 
                 fig, ax, df = await loop.run_in_executor(
-                    executor, model_lib.plot_umap, model.x, None, None, model_lib.names
+                    executor, model_lib.plot, "umap", model.rep, None, None, model_lib.names
                 )
 
                 # set reactive variables
@@ -2673,8 +2673,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 fig, ax, df = await loop.run_in_executor(
                     executor,
-                    model_lib.plot_umap,
-                    model.x,
+                    model_lib.plot,
+                    "umap",
+                    model.rep,
                     None,
                     None,
                     model_lib.names,
@@ -2758,7 +2759,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             model = DISCOVERY_MODEL()
             try:
-                batch_size = BATCH_SIZE_DICT[model.x]
+                batch_size = BATCH_SIZE_DICT[model.rep]
                 loop = asyncio.get_running_loop()
                 out, search_results = await loop.run_in_executor(
                     executor,
@@ -2780,8 +2781,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                 print("We start here")
                 fig, ax, df = await loop.run_in_executor(
                     executor,
-                    model.library.plot_umap,
-                    model.x,
+                    model.library.plot,
+                    "umap",
+                    model.rep,
                     None,
                     None,
                     model.library.names,
