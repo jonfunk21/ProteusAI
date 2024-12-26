@@ -5,7 +5,6 @@ __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
 import csv
-import json
 import os
 import random
 import sys
@@ -44,7 +43,8 @@ class Model:
         model: Class variable holding the model.
         library (proteusAI.Library): Library object to train a model. Default None.
         model (str): Type of model to create. Default random forrest ('rf').
-        x (str): Choose vector representation for 'x'. Default 'ohe'.
+        rep (str): Choose protein representation. Default 'ohe'.
+        x (str): Future warining: please use rep instead
         split (str): Choose data split. Default random split.
         k_folds (int): Choose k for k-fold cross validation. Default None.
         grid_search (bool): Performe a grid search. Default 'False'.
@@ -69,6 +69,7 @@ class Model:
         "library": None,
         "model_type": "rf",
         "x": "ohe",
+        "rep":"ohe",
         "rep_path": None,
         "split": (80, 10, 10),
         "k_folds": None,
@@ -94,7 +95,6 @@ class Model:
             model: Contains the trained model.
             library (proteusAI.Library): Library object to train a model. Default None.
             model_type (str): Type of model to create. Default random forrest ('rf').
-            x (str): Choose vector representation for 'x'. Default 'ohe'.
             split (str): Choose data split. Default random split.
             k_folds (int): Choose k for k-fold cross validation. Default None.
             grid_search (bool): Performe a grid search. Default 'False'.
@@ -343,7 +343,7 @@ class Model:
             torch.manual_seed(self.seed)
             torch.cuda.manual_seed_all(self.seed)
 
-        reps = self.library.load_representations(rep=self.x, proteins=proteins)
+        reps = self.library.load_representations(rep=self.rep, proteins=proteins)
 
         return reps
 
@@ -356,22 +356,6 @@ class Model:
 
         model_type = self.model_type
         model = None
-
-        # Define the path for the params.json and model
-        if self.dest is not None:
-            params_path = f"{self.dest}/params.json"
-        else:
-            params_path = os.path.join(
-                f"{self.library.rep_path}",
-                f"../models/{self.model_type}/{self.x}/params.json",
-            )
-            # Save destination for search_results
-
-        # Check if params.json exists
-        if not os.path.exists(params_path):
-            os.makedirs(os.path.dirname(params_path), exist_ok=True)
-            with open(params_path, "w") as f:
-                json.dump(kwargs, f)
 
         if model_type in self._sklearn_models:
             # model_params = kwargs.copy() # optional to add custom parameters
@@ -497,10 +481,10 @@ class Model:
             else:
                 model_save_path = os.path.join(
                     f"{self.library.rep_path}",
-                    f"../models/{self.model_type}/{self.x}/model.joblib",
+                    f"../models/{self.model_type}/{self.rep}/model.joblib",
                 )
                 csv_dest = os.path.join(
-                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
                 )
 
             os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
@@ -533,15 +517,6 @@ class Model:
                 self.y_val_sigma,
                 f"{csv_dest}/val_data.csv",
             )
-
-            # Save results to a JSON file
-            results = {
-                "test_r2": self.test_r2,
-                "val_r2": self.val_r2,
-                "val_pearson": self.val_pearson,
-            }
-            with open(f"{csv_dest}/results.json", "w") as f:
-                json.dump(results, f)
 
             # add split information to df
             train_df["split"] = "train"
@@ -635,7 +610,7 @@ class Model:
                 csv_dest = f"{self.dest}"
             else:
                 csv_dest = os.path.join(
-                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+                    f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
                 )
 
             for i, model in enumerate(ensemble):
@@ -644,7 +619,7 @@ class Model:
                 else:
                     model_save_path = os.path.join(
                         f"{self.library.rep_path}",
-                        f"../models/{self.model_type}/{self.x}/model_{i}.joblib",
+                        f"../models/{self.model_type}/{self.rep}/model_{i}.joblib",
                     )
 
                 os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
@@ -676,16 +651,6 @@ class Model:
                     f"{csv_dest}/unlabelled_data.csv",
                 )
 
-            # Save results to a JSON file
-            results = {
-                "k_fold_test_r2": fold_results,
-                "avg_test_r2": avg_test_r2,
-                "val_r2": self.val_r2,
-                "val_pearson": self.val_pearson,
-            }
-            with open(f"{csv_dest}/results.json", "w") as f:
-                json.dump(results, f)
-
             # add split information to df
             train_df["split"] = "train"
             val_df["split"] = "val"
@@ -700,6 +665,7 @@ class Model:
 
             # TODO: that depends on minimization or maximization goal
             self.y_best = max((max(self.y_train), max(self.y_val)))
+            self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
 
         out = {
             "df": self.out_df,
@@ -878,6 +844,7 @@ class Model:
         self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
 
         self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+        self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
 
         # Add predictions to proteins
         for i in range(len(train)):
@@ -893,23 +860,6 @@ class Model:
         for i in range(len(val)):
             self.val_data[i].y_pred = self.y_val_pred[i].item()
             self.val_data[i].y_pred = self.y_val_sigma[i].item()
-
-        # Save the model
-        if self.dest is not None:
-            model_save_path = f"{self.dest}/model.pt"
-            csv_dest = self.dest
-        else:
-            model_save_path = os.path.join(
-                f"{self.library.rep_path}",
-                f"../models/{self.model_type}/{self.x}/model.pt",
-            )
-            csv_dest = os.path.join(
-                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
-            )
-
-        # Save the model
-        os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-        torch.save(self._model.state_dict(), model_save_path)
 
         # save dataframes
         train_df = self.save_to_csv(
@@ -933,16 +883,6 @@ class Model:
             self.y_val_sigma,
             f"{csv_dest}/val_data.csv",
         )
-
-        # Save results to a JSON file
-        results = {
-            "test_r2": self.test_r2,
-            "val_r2": self.val_r2,
-            "val_pearson": self.val_pearson,
-        }
-
-        with open(f"{csv_dest}/results.json", "w") as f:
-            json.dump(results, f)
 
         # add split information to df
         train_df["split"] = "train"
@@ -1232,7 +1172,7 @@ class Model:
             dest = os.path.join(self.dest, "plots")
         else:
             dest = os.path.join(
-                self.library.rep_path, f"../models/{self.model_type}/{self.x}/plots"
+                self.library.rep_path, f"../models/{self.model_type}/{self.rep}/plots"
             )
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -1299,7 +1239,7 @@ class Model:
             csv_dest = f"{self.dest}"
         else:
             csv_dest = os.path.join(
-                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
             )
 
         # create out dataframe
@@ -1332,7 +1272,7 @@ class Model:
     def search(
         self,
         N=10,
-        labels=["all"],
+        labels=[],
         optim_problem="max",
         method="ga",
         max_eval=10000,
@@ -1384,7 +1324,7 @@ class Model:
         class_dict = self.library.class_dict
         full_proteins = self.library.proteins  # Full list of proteins
 
-        if len(labels) < 1:
+        if len(labels) < 1 or labels == ["all"]:
             if self.model_type in self._clustering_algs:
                 labels = list(set([prot.y_pred for prot in full_proteins]))
             else:
@@ -1398,7 +1338,7 @@ class Model:
                 *[
                     (prot, idx)
                     for idx, prot in enumerate(full_proteins)
-                    if prot.y_pred in labels
+                    if int(prot.y_pred) in labels
                 ]
             )
             proteins = list(proteins)
@@ -1431,7 +1371,7 @@ class Model:
             csv_dest = self.dest
         else:
             csv_dest = os.path.join(
-                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.x}"
+                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
             )
 
         self.search_df = self.save_to_csv(
@@ -1535,16 +1475,16 @@ class Model:
         else:
             csv_dest = os.path.join(
                 f"{self.library.rep_path}",
-                f"../models/{self.model_type}/{self.x}/predictions",
+                f"../models/{self.model_type}/{self.rep}/predictions",
             )
             os.makedirs(csv_dest, exist_ok=True)
 
-        csv_file = os.path.join(csv_dest, f"{self.model_type}_{self.x}_predictions.csv")
+        csv_file = os.path.join(csv_dest, f"{self.model_type}_{self.rep}_predictions.csv")
         if os.path.exists(csv_file):
             self.search_df = pd.read_csv(csv_file)
 
         # results file name
-        fname = f"{csv_dest}/{self.model_type}_{self.x}.csv"
+        fname = f"{csv_dest}/{self.model_type}_{self.rep}.csv"
 
         if os.path.exists(os.path.join(csv_dest, fname)):
             self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
@@ -1570,8 +1510,8 @@ class Model:
 
         library = Library(user=self.library.user, source=out)
 
-        if self.x not in self._in_memory_representations:
-            library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
+        if self.rep not in self._in_memory_representations:
+            library.compute(method=self.rep, pbar=pbar, batch_size=batch_size)
 
         val_data, y_pred, y_sigma, y_val, acq_score = self.predict(
             library.proteins, acq_fn=acq_fn
@@ -1766,3 +1706,24 @@ class Model:
     @seed.setter
     def seed(self, seed):
         self._seed = seed
+
+    ### Future warnings ###
+    @property
+    def x(self):
+        import warnings
+        warnings.warn(
+            "'x' is deprecated and will be removed in a future version. Please use 'rep' instead.",
+            FutureWarning,
+            stacklevel=2
+        )
+        return self.rep  # Return the value of `rep` for compatibility
+
+    @x.setter
+    def x(self, value):
+        import warnings
+        warnings.warn(
+            "'x' is deprecated and will be removed in a future version. Please use 'rep' instead.",
+            FutureWarning,
+            stacklevel=2
+        )
+        self.rep = value  # Automatically set `rep` to the provided value
