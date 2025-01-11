@@ -554,7 +554,7 @@ class Library:
         self,
         method: str,
         batch_size: int = 100,
-        dest: Union[str, None] = None,
+        dest: str = None,
         pbar=None,
         device=None,
         proteins=None,
@@ -565,13 +565,13 @@ class Library:
         Args:
             method (str): Method for computing representation
             batch_size (int, optional): Batch size for representation computation.
-            dest (str): destination of representations
-            pbar: Progress bar for shiny app.
-            device (str): Choose hardware for computation. Default 'None' for autoselection
-                          other options are 'cpu' and 'cuda'.
-            proteins (list): list of specific proteins. Optional
+            dest (str): Destination of representations (optional).
+            pbar: Progress bar for shiny app (optional).
+            device (str): Choose hardware for computation. Default 'None' for autoselection.
+                        Other options are 'cpu' and 'cuda'.
+            proteins (list): List of specific proteins (optional).
         """
-        simple_rep_types = ["ohe", "blosum62", "blosum50"]
+        simple_rep_types = ["ohe", "blosum62", "blosum50", "vhse"]
         supported_methods = self.representation_types + simple_rep_types
 
         assert method in supported_methods, f"'{method}' is not a supported method"
@@ -588,6 +588,9 @@ class Library:
             reps = self.blosum_builder(
                 matrix_type=method.upper(), dest=dest, pbar=pbar, proteins=proteins
             )
+            return reps
+        elif method == "vhse":
+            reps = self.vhse_builder(dest=dest, pbar=pbar, proteins=proteins)
             return reps
 
     def esm_builder(
@@ -673,6 +676,33 @@ class Library:
         )
 
         return ohe_representations
+
+    def vhse_builder(self, dest: str = None, pbar=None, proteins=None):
+        """
+        Computes VHSE representations for proteins using the vhse_encoder method.
+        Assumes all data fits in memory.
+
+        Args:
+            dest (str): Destination of representations (optional).
+            pbar: Progress bar for tracking (optional).
+            proteins (list or None): List of protein objects with a 'seq' attribute. If None, uses self.seqs.
+
+        Returns:
+            torch.Tensor: VHSE encoded representations.
+        """
+        # Extract sequences from proteins or use self.seqs
+        if proteins:
+            seqs = [prot.seq for prot in proteins]
+        else:
+            seqs = self.seqs
+
+        # Determine the maximum sequence length for padding
+        max_sequence_length = max(len(seq) for seq in seqs)
+
+        # Compute the VHSE encoding with the calculated padding
+        vhse_representations = vhse_encoder(seqs, padding=max_sequence_length, pbar=pbar)
+
+        return vhse_representations
 
     def blosum_builder(
         self,
