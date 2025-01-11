@@ -65,7 +65,7 @@ class Library:
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
         y_col: Union[str, None] = None,
-        y_type: str = 'num',
+        y_type: str = "num",
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
     ):
