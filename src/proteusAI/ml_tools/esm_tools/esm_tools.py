@@ -47,6 +47,7 @@ esm_layer_dict = {
     "esm2_150M": 30,
     "esm2_35M": 12,
     "esm2_8M": 6,
+    "esm1v": 33,
 }
 
 
