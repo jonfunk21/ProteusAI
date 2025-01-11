@@ -64,7 +64,7 @@ class Model:
     _clustering_algs = ["hdbscan"]
     _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge"]
     _pt_models = ["gp"]
-    _in_memory_representations = ["ohe", "blosum50", "blosum62"]
+    _in_memory_representations = ["ohe", "blosum50", "blosum62", "vhse"]
     defaults = {
         "library": None,
         "model_type": "rf",
