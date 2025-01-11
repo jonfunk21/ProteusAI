@@ -28,9 +28,9 @@ library.compute(method="esm2_8M", batch_size=10)
 
 # define a model
 model = pai.Model(
-    library=library, 
-    k_folds=5, 
-    model_type="hdbscan", 
+    library=library,
+    k_folds=5,
+    model_type="hdbscan",
     rep="esm2_8M",
     min_cluster_size=30,
     min_samples=50,
