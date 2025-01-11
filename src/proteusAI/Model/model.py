@@ -1180,8 +1180,8 @@ class Model:
 
     def true_vs_predicted(
         self,
-        y_true: list,
-        y_pred: list,
+        y_true: Union[list, None] = None,
+        y_pred: Union[list, None] = None,
         title: Union[str, None] = None,
         x_label: Union[str, None] = None,
         y_label: Union[str, None] = None,
@@ -1202,6 +1202,11 @@ class Model:
             file (str): Choose a file name.
             show_plot (bool): Choose to show the plot.
         """
+
+        if y_true is None:
+            y_true = self.y_test
+        if y_pred is None:
+            y_pred = self.y_test_pred
 
         if self.dest:
             dest = os.path.join(self.dest, "plots")
@@ -1225,6 +1230,33 @@ class Model:
         )
 
         return fig, ax
+
+    def predicted_vs_true(
+        self,
+        y_true: Union[list, None] = None,
+        y_pred: Union[list, None] = None,
+        title: Union[str, None] = None,
+        x_label: Union[str, None] = None,
+        y_label: Union[str, None] = None,
+        plot_grid: bool = True,
+        file: Union[str, None] = None,
+        show_plot: bool = False,
+    ):
+        """
+        Calls true_vs_predicted method to plot true vs predicted values. (I often get confused with the names)
+        """
+        out = self.true_vs_predicted(
+            y_true=y_true,
+            y_pred=y_pred,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+            plot_grid=plot_grid,
+            file=file,
+            show_plot=show_plot,
+        )
+
+        return out
 
     def cluster(self, rep_path, n_neighbors=70, pbar=None):
         """
