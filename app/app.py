@@ -48,7 +48,7 @@ REP_TYPES = [
     "BLOSUM50",
     "BLOSUM62",
 ]  # Add VAE and MSA-Transformer later
-IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot"]
+IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot", "VHSE"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
 MODEL_TYPES = ["KNN", "Random Forrest", "Ridge", "SVM", "Gaussian Process"]
 MODEL_DICT = {
@@ -56,6 +56,7 @@ MODEL_DICT = {
     "KNN": "knn",
     "SVM": "svm",
     "VAE": "vae",
+    "VHSE": "vhse",
     "ESM-2 (650M)": "esm2_650M",
     "ESM-2 (150M)": "esm2_150M",
     "ESM-2 (35M)": "esm2_35M",
@@ -72,6 +73,7 @@ REP_DICT = {
     "One-hot": "ohe",
     "BLOSUM50": "blosum50",
     "BLOSUM62": "blosum62",
+    "VHSE": "vhse",
     "ESM-2 (650M)": "esm2_650M",
     "ESM-2 (150M)": "esm2_150M",
     "ESM-2 (35M)": "esm2_35M",
