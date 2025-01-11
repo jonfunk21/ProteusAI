@@ -700,7 +700,9 @@ class Library:
         max_sequence_length = max(len(seq) for seq in seqs)
 
         # Compute the VHSE encoding with the calculated padding
-        vhse_representations = vhse_encoder(seqs, padding=max_sequence_length, pbar=pbar)
+        vhse_representations = torch_tools.vhse_encoder(
+            seqs, padding=max_sequence_length, pbar=pbar
+        )
 
         return vhse_representations
 

@@ -175,6 +175,7 @@ def blosum_encoding(
 
     return tensor
 
+
 # Define the VHSE dictionary
 vhse_dict = {
     "A": [0.15, -1.11, -1.35, -0.92, 0.02, -0.91, 0.36, -0.48],
@@ -196,8 +197,9 @@ vhse_dict = {
     "T": [-0.34, -0.51, -0.55, -1.06, -0.06, -0.01, -0.79, 0.39],
     "W": [1.50, 2.06, 1.79, 0.75, 0.75, -0.13, -1.01, -0.85],
     "Y": [0.61, 1.60, 1.17, 0.73, 0.53, 0.25, -0.96, -0.52],
-    "V": [0.76, -0.92, -0.17, -1.91, 0.22, -1.40, -0.24, -0.03]
+    "V": [0.76, -0.92, -0.17, -1.91, 0.22, -1.40, -0.24, -0.03],
 }
+
 
 def vhse_encoder(sequences, padding=None, pbar=None):
     """
@@ -237,14 +239,15 @@ def vhse_encoder(sequences, padding=None, pbar=None):
         for j, aa in enumerate(sequence):
             if j >= padded_length:
                 break
-            tensor[i, j] = torch.tensor(vhse_dict.get(aa, [0.5] * vhse_size))  # Default for unknown AAs
+            tensor[i, j] = torch.tensor(
+                vhse_dict.get(aa, [0.5] * vhse_size)
+            )  # Default for unknown AAs
 
     # Squeeze output for single sequence input
     if singular:
         tensor = tensor.squeeze(0)
 
     return tensor
-
 
 
 def plot_attention(attention: list, layer: int, head: int, seq: Union[str, list]):
