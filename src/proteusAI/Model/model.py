@@ -461,14 +461,12 @@ class Model:
 
             self.y_train_sigma = [None] * len(self.y_train)
             self.y_test_sigma = [None] * len(self.y_test)
-            
 
             # conformal prediction and statistics
             self.calibration = self.calibrate(
                 self.y_test, self.y_test_pred, confidence=0.90
             )
 
-            
             self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
             self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
 
@@ -524,17 +522,19 @@ class Model:
                 val_df["split"] = "val"
 
                 # Concatenate the DataFrames
-                self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(
-                    drop=True
-                )
+                self.out_df = pd.concat(
+                    [train_df, test_df, val_df], axis=0
+                ).reset_index(drop=True)
 
-                self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+                self.y_best = max(
+                    (max(self.y_train), max(self.y_test), max(self.y_val))
+                )
             else:
                 # Concatenate the DataFrames
                 self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(
                     drop=True
                 )
-                self.y_best = max((max(self.y_train), max(self.y_test)))            
+                self.y_best = max((max(self.y_train), max(self.y_test)))
 
         # handle ensembles
         else:
@@ -650,7 +650,7 @@ class Model:
                     self.predict(self.val_data)
                 )
                 # Compute R-squared on validataion dataset
-                self.val_r2 = self.score(self.val_data)            
+                self.val_r2 = self.score(self.val_data)
                 self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
                 self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
                 val_df = self.save_to_csv(
@@ -668,7 +668,9 @@ class Model:
                     comb_df = [train_df, test_df, unlabelled_df]
                 else:
                     comb_df = [train_df, test_df, val_df]
-                self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+                self.y_best = max(
+                    (max(self.y_train), max(self.y_test), max(self.y_val))
+                )
             else:
                 # add split information to df
                 train_df["split"] = "train"
@@ -680,10 +682,10 @@ class Model:
                     comb_df = [train_df, test_df]
                 # TODO: that depends on minimization or maximization goal
                 self.y_best = max((max(self.y_train), max(self.y_test)))
-            
+
             # Concatenate the DataFrames
             self.out_df = pd.concat(comb_df, axis=0).reset_index(drop=True)
-           
+
             self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
 
         out = {
@@ -879,11 +881,10 @@ class Model:
             f"{csv_dest}/test_data.csv",
         )
 
-
         # add split information to df
         train_df["split"] = "train"
         test_df["split"] = "test"
-        
+
         if self.grid_search:
             # prediction on validation set
             y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
@@ -911,7 +912,7 @@ class Model:
             for i in range(len(val)):
                 self.val_data[i].y_pred = self.y_val_pred[i].item()
                 self.val_data[i].y_pred = self.y_val_sigma[i].item()
-            
+
             val_df = self.save_to_csv(
                 self.val_data,
                 self.y_val,
@@ -926,9 +927,7 @@ class Model:
             )
         else:
             # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(
-                drop=True
-            )
+            self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(drop=True)
 
         out = {
             "df": self.out_df,
@@ -1280,7 +1279,7 @@ class Model:
 
         if not os.path.exists(csv_dest):
             os.makedirs(csv_dest, exist_ok=True)
-        
+
         # create out dataframe
         out_df = self.save_to_csv(
             self.library.proteins,
