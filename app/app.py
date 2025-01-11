@@ -752,19 +752,19 @@ def server(input: Inputs, output: Outputs, session: Session):
         model = MODEL()
         if model is not None:
             calibration = round(model.calibration, 2)
-            val_r2 = round(model.val_r2, 2)
-            val_pearson = round(model.val_pearson[0], 2)
+            test_r2 = round(model.test_r2, 2)
+            test_pearson = round(model.test_pearson[0], 2)
             # Add significance stars
-            pearson_p = model.val_pearson[1]
+            pearson_p = model.test_pearson[1]
             pearson_p_str = f"{pearson_p:.2e}"  # Format p-value in scientific notation
 
-            val_ken_tau = round(
-                model.val_ken_tau.statistic,
+            test_ken_tau = round(
+                model.test_ken_tau.statistic,
                 2,
             )
-            val_ken_tau_p = model.val_ken_tau.pvalue
+            test_ken_tau_p = model.test_ken_tau.pvalue
             kendall_p_str = (
-                f"{val_ken_tau_p:.2e}"  # Format p-value in scientific notation
+                f"{test_ken_tau_p:.2e}"  # Format p-value in scientific notation
             )
 
             # Create DataFrame
@@ -778,9 +778,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ],
                     "Value": [
                         f"+/- {calibration}",
-                        val_r2,
-                        f"{val_pearson} (p-value: {pearson_p_str})",
-                        f"{val_ken_tau} (p-value: {kendall_p_str})",
+                        test_r2,
+                        f"{test_pearson} (p-value: {pearson_p_str})",
+                        f"{test_ken_tau} (p-value: {kendall_p_str})",
                     ],
                     "Description": [
                         "The calibration error is a measure of model and experimental noise. A value of 0 indicates a perfect model and no experimental noise.",
@@ -1122,10 +1122,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     # MLDE
     MODEL = reactive.Value(None)
     DISCOVERY_MODEL = reactive.Value(None)
-    VAL_DF = reactive.Value(
+    TEST_DF = reactive.Value(
         pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
     )
-    DISCOVERY_VAL_DF = reactive.Value(
+    DISCOVERY_TEST_DF = reactive.Value(
         pd.DataFrame({"names": [], "y_true": [], "y_pred": [], "y_sigma": []})
     )
     DISCOVERY_LIB = reactive.Value(None)
@@ -2304,7 +2304,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         n_val_max = 100 - n_train - n_test
         ui.update_numeric("n_val", max=n_val_max, value=n_val_max)
 
-    ### TRAIN MODEL ###
+    ### MLDE TRAIN ###
     IS_MLDE_TRAINING_RUNNING = reactive.Value(False)
 
     async def train_mlde_model():
@@ -2348,7 +2348,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = pai.Model(
                 model_type=MODEL_DICT[input.model_type()],
                 library=lib,
-                x=rep_type,
+                rep=rep_type,
                 split=split,
                 seed=input.random_seed(),
                 k_folds=k_folds,
@@ -2358,12 +2358,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 loop = asyncio.get_running_loop()
                 await loop.run_in_executor(executor, model.train)
                 print("done")
-                val_df = pd.DataFrame(
+                test_df = pd.DataFrame(
                     {
-                        "names": model.val_names,
-                        "y_true": model.y_val,
-                        "y_pred": model.y_val_pred,
-                        "y_sigma": model.y_val_sigma,
+                        "names": model.test_names,
+                        "y_true": model.y_test,
+                        "y_pred": model.y_test_pred,
+                        "y_sigma": model.y_test_sigma,
                     }
                 )
 
@@ -2380,7 +2380,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 # set reactive variables
                 MODEL.set(model)
-                VAL_DF.set(val_df)
+                TEST_DF.set(test_df)
 
             except Exception as e:
                 print(f"An error occurred in training MLDE model: {e}")
@@ -2415,7 +2415,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.plot
     def pred_vs_true(alt=None):
-        df = VAL_DF()
+        df = TEST_DF()
         if MODEL() is not None:
             p = MODEL().true_vs_predicted(
                 y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list()
@@ -2430,7 +2430,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def mlde_model_table(alt=None):
         model = MODEL()
         if model is not None:
-            table = VAL_DF()
+            table = TEST_DF()
             if "y_sigma" in table.columns:
                 # if y_sigma column is empty, drop it
                 if table["y_sigma"].isnull().all():
@@ -2585,7 +2585,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = pai.Model(
                 model_type=MODEL_DICT[input.discovery_model_type()],
                 library=lib,
-                x=rep_type,
+                rep=rep_type,
                 split=split,
                 seed=input.discovery_random_seed(),
                 k_folds=k_folds,
@@ -2596,12 +2596,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                 out = await loop.run_in_executor(executor, model.train)
 
                 model_lib = pai.Library(user=lib.user, source=out)
-                val_df = pd.DataFrame(
+                test_df = pd.DataFrame(
                     {
-                        "names": model.val_names,
-                        "y_true": model.y_val,
-                        "y_pred": model.y_val_pred,
-                        "y_sigma": model.y_val_sigma,
+                        "names": model.test_names,
+                        "y_true": model.y_test,
+                        "y_pred": model.y_test_pred,
+                        "y_sigma": model.y_test_sigma,
                     }
                 )
 
@@ -2621,7 +2621,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
                 DISCOVERY_MODEL.set(model)
-                DISCOVERY_VAL_DF.set(val_df)
+                DISCOVERY_TEST_DF.set(test_df)
                 DISCOVERY_MODEL_PLOT.set((fig, ax))
 
             except Exception as e:
@@ -2663,7 +2663,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model = pai.Model(
                 model_type=MODEL_DICT[input.clustering_alg()],  #
                 library=lib,
-                x=rep_type,
+                rep=rep_type,
                 seed=None,
                 min_cluster_size=min_cluster_size,
                 min_samples=min_samples,
@@ -2682,8 +2682,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model_lib.plot,
-                    "umap",
                     model.rep,
+                    "umap",
                     None,
                     None,
                     model_lib.names,
@@ -2704,7 +2704,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 # set reactive variables
                 DISCOVERY_LIB.set(model_lib)
                 DISCOVERY_MODEL.set(model)
-                DISCOVERY_VAL_DF.set(out_df)
+                DISCOVERY_TEST_DF.set(out_df)
                 DISCOVERY_MODEL_PLOT.set((fig, ax))
 
             except Exception as e:
@@ -2738,7 +2738,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.data_frame
     def discovery_table(alt=None):
-        df = DISCOVERY_VAL_DF()
+        df = DISCOVERY_TEST_DF()
         if DISCOVERY_MODEL() is None:
             return None
         else:
@@ -2790,8 +2790,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model.library.plot,
-                    "umap",
                     model.rep,
+                    "umap",
                     None,
                     None,
                     model.library.names,

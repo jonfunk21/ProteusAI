@@ -55,7 +55,7 @@ class Library:
     ]
     _esm_models = ["esm1v", "esm2", "esm2_650M", "esm2_150M", "esm2_35M", "esm2_8M"]
     _allowed_y_types = ["class", "num"]
-    in_memory = ["ohe", "blosum62", "blosum50"]
+    in_memory = ["ohe", "blosum62", "blosum50", "vhse"]
 
     def __init__(
         self,
@@ -65,7 +65,7 @@ class Library:
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
         y_col: Union[str, None] = None,
-        y_type: Union[str, None] = None,
+        y_type: str = 'num',
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
     ):
@@ -88,7 +88,7 @@ class Library:
             seqs (list): list of sequence.
             y (list): list of y values.
             y_pred (list): list of predicted y values.
-            y_type (str): Type of y values ('class' or 'num').
+            y_type (str): Type of y values ('class' or 'num'). Default 'num'.
             names (list): names of sequences.
             reps (list): list of computed representations.
             proteins (list): list of protein objects.
