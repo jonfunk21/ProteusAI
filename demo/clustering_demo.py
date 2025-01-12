@@ -26,6 +26,12 @@ library = pai.Library(
 # compute and save ESM-2 representations at example_lib/representations/esm2
 library.compute(method="esm2_8M", batch_size=10)
 
+# dimensionality reduction
+dr_type = "tsne"
+
+# random seed
+seed = 42
+
 # define a model
 model = pai.Model(
     library=library,
@@ -34,6 +40,8 @@ model = pai.Model(
     rep="esm2_8M",
     min_cluster_size=30,
     min_samples=50,
+    dr_type=dr_type,
+    seed=seed,
 )
 
 # train model
@@ -52,6 +60,6 @@ model_lib = pai.Library(source=out)
 
 # plot results
 fig, ax, plot_df = model.library.plot(
-    rep="esm2_8M", use_y_pred=True, highlight_mask=search_mask
+    rep="esm2_8M", method=dr_type, use_y_pred=True, highlight_mask=search_mask, seed=seed
 )
-plt.savefig("demo/demo_data/out/clustering_results.png")
+plt.savefig(f"demo/demo_data/out/clustering_results_{dr_type}.png")
