@@ -1956,14 +1956,23 @@ def server(input: Inputs, output: Outputs, session: Session):
             path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
         df = df.drop("sequence", axis=1)
-        df = df.rename(
+        try:
+            df = df.rename(
+                columns={
+                    "name": "Mutation",
+                    "p": "Mutation Probability",
+                    "mmp": "Zero-Shot Score",
+                    "entropy": "Entropy",
+                }
+            )
+        except Exception:
+            # Legacy, will be phased out
             columns={
                 "mutant": "Mutation",
                 "p": "Mutation Probability",
                 "mmp": "Zero-Shot Score",
                 "entropy": "Entropy",
             }
-        )
         ZS_SCORES.set(df)
         return df
 
