@@ -68,6 +68,7 @@ class Library:
         y_type: str = "num",
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
+        seed: int = 42,
     ):
         """
         Initialize a new library.
@@ -82,6 +83,7 @@ class Library:
             y_type (str): Specify the data type of y-values, either categorical or numerical. Will parse automatically if none is provided.
             sheet (str): Specify the excel sheet name, if the source is an Excel file.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
+            seed (int): random seed. Default 42.
 
         Parameters:
             data (df): dataframe of uploaded data (raw data).
@@ -117,6 +119,7 @@ class Library:
         self.struc_path = None
         self.class_dict = None
         self.pred_data = False
+        self.seed = seed
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -920,6 +923,7 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
     ):
         """
         Plot library data using specific representations.
@@ -932,8 +936,13 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
         """
-
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
+        
         if method == "umap":
             fig, ax, df = self.plot_umap(
                 rep,
@@ -979,6 +988,7 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -990,7 +1000,12 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
 
         x = self.load_representations(rep)
 
@@ -1007,7 +1022,7 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
@@ -1023,6 +1038,7 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1034,7 +1050,13 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
+
         x = self.load_representations(rep)
 
         y = [str(i) for i in self.y_pred] if use_y_pred else self.y
@@ -1050,7 +1072,7 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
@@ -1067,6 +1089,7 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1078,7 +1101,12 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
 
         x = self.load_representations(rep)
 
@@ -1095,7 +1123,7 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
