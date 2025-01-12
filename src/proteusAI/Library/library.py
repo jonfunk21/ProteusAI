@@ -942,7 +942,7 @@ class Library:
             self.seed = seed
         else:
             self.seed = seed
-        
+
         if method == "umap":
             fig, ax, df = self.plot_umap(
                 rep,
