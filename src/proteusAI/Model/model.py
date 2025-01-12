@@ -1486,7 +1486,7 @@ class Model:
                 batch_size=batch_size,
                 pbar=pbar,
                 acq_fn=acq_fn,
-                overwrite=overwrite, 
+                overwrite=overwrite,
             )
 
         return out
@@ -1682,7 +1682,6 @@ class Model:
 
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.rep}.csv"
-
 
         if os.path.exists(os.path.join(csv_dest, fname)) and not overwrite:
             self.search_df = pd.read_csv(os.path.join(csv_dest, fname))

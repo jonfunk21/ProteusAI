@@ -2498,7 +2498,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     batch_size,
                     None,
                     acq_fn,
-                    False # accumulate previous results
+                    False,  # accumulate previous results
                 )
 
                 MLDE_SEARCH_DF.set(out)
