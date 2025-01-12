@@ -1967,12 +1967,14 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         except Exception:
             # Legacy, will be phased out
-            columns={
-                "mutant": "Mutation",
-                "p": "Mutation Probability",
-                "mmp": "Zero-Shot Score",
-                "entropy": "Entropy",
-            }
+            df = df.rename(
+                columns = {
+                    "mutant": "Mutation",
+                    "p": "Mutation Probability",
+                    "mmp": "Zero-Shot Score",
+                    "entropy": "Entropy",
+                }
+            )
         ZS_SCORES.set(df)
         return df
 
