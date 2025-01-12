@@ -687,10 +687,10 @@ class Protein:
                 )
 
         # Load required data
-        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
-        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
-        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
-        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+        self.p = torch.load(os.path.join(dest, "prob_dist.pt"), weights_only=False)
+        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"), weights_only=False)
+        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"), weights_only=False)
+        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"), weights_only=False)
 
         # Section handling
         seq_len = len(seq)
