@@ -1968,7 +1968,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         except Exception:
             # Legacy, will be phased out
             df = df.rename(
-                columns = {
+                columns={
                     "mutant": "Mutation",
                     "p": "Mutation Probability",
                     "mmp": "Zero-Shot Score",
