@@ -85,7 +85,7 @@ class Model:
         "min_samples": 50,
         "metric": "euclidean",
         "cluster_selection_epsilon": 0.1,
-        "dr_type": "umap",
+        "dr_method": "umap",
     }
 
     def __init__(self, **kwargs):
@@ -702,6 +702,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         print(
@@ -943,6 +944,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         return out
@@ -1283,16 +1285,22 @@ class Model:
         x_reps = torch.stack(reps).cpu().numpy()
 
         # do UMAP
-        if self.dr_type == "umap":
+        if self.dr_method == "umap":
             clusterable_embedding = umap.UMAP(
                 n_neighbors=70, min_dist=0.0, n_components=2, random_state=self.seed
             ).fit_transform(x_reps)
-        elif self.dr_type == "pca":
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
+        elif self.dr_method == "pca":
             pca = PCA(n_components=2)
             clusterable_embedding = pca.fit_transform(x_reps)
-        elif self.dr_type == "tsne":
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
+        elif self.dr_method == "tsne":
             tsne = TSNE(n_components=2, verbose=6, random_state=self.seed)
             clusterable_embedding = tsne.fit_transform(x_reps)
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
 
         # perform clustering
         if self._model_type == "hdbscan":
@@ -1344,6 +1352,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": dr_df,
         }
 
         return out
@@ -1351,7 +1360,7 @@ class Model:
     def search(
         self,
         N=10,
-        labels=[],
+        labels=[],<
         optim_problem="max",
         method="ga",
         max_eval=10000,
@@ -1363,10 +1372,9 @@ class Model:
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == "class":
-            out, mask = self._class_search(
+            out = self._class_search(
                 N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar
             )
-            return out, mask
         elif self.y_type == "num":
             out = self._num_search(
                 method=method,
@@ -1377,7 +1385,8 @@ class Model:
                 pbar=pbar,
                 acq_fn=acq_fn,
             )
-            return out
+
+        return out
 
     def _class_search(
         self,
@@ -1469,9 +1478,11 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "mask": mask,
+            "dr_df": None,
         }
 
-        return out, mask
+        return out
 
     def _num_search(
         self,
@@ -1587,6 +1598,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         library = Library(user=self.library.user, source=out)

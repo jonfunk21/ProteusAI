@@ -95,6 +95,11 @@ class Library:
             reps (list): list of computed representations.
             proteins (list): list of protein objects.
             pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
+            source_path (str): Path to the source data.
+            rep_path (str): Path to the representations.
+            struc_path (str): Path to the structures.
+            class_dict (dict): Dictionary mapping class labels to numerical values.
+            out_df (df): Output dataframe.
         """
         # Arguments
         self.user = os.path.join(user_root, user)
@@ -120,6 +125,7 @@ class Library:
         self.class_dict = None
         self.pred_data = False
         self.seed = seed
+        self.out_df = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -825,7 +831,7 @@ class Library:
                         )
                     self.relax_struc(name)
 
-            df = pd.DataFrame(
+            self.out_df = pd.DataFrame(
                 {
                     "name": all_headers,
                     "sequence": all_sequences,
@@ -834,7 +840,7 @@ class Library:
                 }
             )
             out = {
-                "df": df,
+                "df": self.out_df,
                 "rep_path": self.rep_path,
                 "struc_path": self.struc_path,
                 "y_type": "num",
@@ -843,6 +849,7 @@ class Library:
                 "names_col": "name",
                 "reps": self.reps,
                 "class_dict": self.class_dict,
+                "pred_data": True,
             }
 
         return out
@@ -924,6 +931,7 @@ class Library:
         highlight_label=None,
         use_y_pred=False,
         seed=None,
+        df=None,
     ):
         """
         Plot library data using specific representations.
@@ -937,6 +945,7 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
         if self.seed is None:
             self.seed = seed
@@ -952,6 +961,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
         elif method == "tsne":
             fig, ax, df = self.plot_tsne(
@@ -962,6 +972,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
         elif method == "pca":
             fig, ax, df = self.plot_pca(
@@ -972,6 +983,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
 
         else:
@@ -989,6 +1001,7 @@ class Library:
         highlight_label=None,
         use_y_pred=False,
         seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1001,6 +1014,7 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
         if self.seed is None:
             self.seed = seed
@@ -1039,6 +1053,7 @@ class Library:
         highlight_label=None,
         use_y_pred=False,
         seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1051,6 +1066,7 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
         if self.seed is None:
             self.seed = seed
@@ -1075,6 +1091,7 @@ class Library:
             random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
+            df = df
         )
         print("done plotting")
 
@@ -1090,6 +1107,7 @@ class Library:
         highlight_label=None,
         use_y_pred=False,
         seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.

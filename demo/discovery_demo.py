@@ -33,7 +33,8 @@ model = pai.Model(library=library, k_folds=5, model_type="rf", rep="esm2_8M")
 model.train()
 
 # search predict the classes of unknown sequences
-out, search_mask = model.search()
+out = model.search()
+search_mask = out["mask"]
 
 # save results
 if not os.path.exists("demo/demo_data/out/"):

@@ -27,7 +27,7 @@ library = pai.Library(
 library.compute(method="esm2_8M", batch_size=10)
 
 # dimensionality reduction
-dr_type = "tsne"
+dr_method = "tsne"
 
 # random seed
 seed = 42
@@ -40,7 +40,7 @@ model = pai.Model(
     rep="esm2_8M",
     min_cluster_size=30,
     min_samples=50,
-    dr_type=dr_type,
+    dr_method=dr_type,
     seed=seed,
 )
 
@@ -48,7 +48,8 @@ model = pai.Model(
 model.train()
 
 # search predict the classes of unknown sequences
-out, search_mask = model.search()
+out = model.search()
+search_mask = out["mask"]
 
 # save results
 if not os.path.exists("demo/demo_data/out/"):
@@ -61,7 +62,7 @@ model_lib = pai.Library(source=out)
 # plot results
 fig, ax, plot_df = model.library.plot(
     rep="esm2_8M",
-    method=dr_type,
+    method=dr_method,
     use_y_pred=True,
     highlight_mask=search_mask,
     seed=seed,

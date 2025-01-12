@@ -84,6 +84,11 @@ REP_DICT = {
 INVERTED_REPS = {v: k for k, v in REP_DICT.items()}
 DESIGN_MODELS = {"ESM-IF": "esm_if"}
 REP_VISUAL = ["UMAP", "t-SNE", "PCA"]
+REP_VISUAL_DICT = {
+    "UMAP": "umap",
+    "t-SNE": "tsne",
+    "PCA": "pca",
+}
 FAST_INTERACT_INTERVAL = 60  # in milliseconds
 SIDEBAR_WIDTH = 450
 BATCH_SIZE_DICT = {
@@ -839,6 +844,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ui.row(
                             ui.column(
                                 6,
+                                ui.input_select(
+                                    "hdbscan_dr", "Dimensionality Reduction", REP_VISUAL
+                                ),
+                            ),
+                            ui.column(
+                                6,
                                 ui.input_numeric(
                                     "hdbscan_n_neighbors", "Cluster Density", 70, min=1
                                 ),  # n_neighbors UMAP
@@ -971,51 +982,57 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def discovery_search_ui(alt=None):
-        model = DISCOVERY_MODEL()
-        if model is not None and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG:
-            clusters = list(model.library.class_dict.values())
-            sample_from = clusters
-            model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
-
+        if Y_TYPE() != "class":
             return ui.TagList(
-                ui.h5("Sample sequnces from clusters"),
-                ui.row(
-                    ui.column(
-                        6,
-                        ui.input_select(
-                            "discovery_search_criteria",
-                            "Search heuristic",
-                            SEARCH_HEURISTICS,
-                        ),
-                    ),
-                    ui.column(
-                        6,
-                        ui.input_select(
-                            "discovery_search_model", "Model", [model_type]
-                        ),
-                    ),
-                    ui.column(
-                        6,
-                        ui.input_selectize(
-                            "sample_from",
-                            "Clusters of interest",
-                            sample_from,
-                            multiple=True,
-                        ),
-                    ),
-                    ui.column(
-                        6,
-                        ui.input_numeric(
-                            "n_samples", "Number of sequences", value=10, min=2
-                        ),
-                    ),
-                    ui.column(
-                        6,
-                        ui.input_task_button("discovery_search", "Search"),
-                        style="padding:25px;",
-                    ),
-                ),
+                "The Discovery workflow is only available for categorical Y-Values. Please use the MLDE workflow for numerical Y-values"
             )
+
+        elif MODE() == "dataset":
+            model = DISCOVERY_MODEL()
+            if model is not None and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG:
+                clusters = list(model.library.class_dict.values())
+                sample_from = clusters
+                model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
+
+                return ui.TagList(
+                    ui.h5("Sample sequnces from clusters"),
+                    ui.row(
+                        ui.column(
+                            6,
+                            ui.input_select(
+                                "discovery_search_criteria",
+                                "Search heuristic",
+                                SEARCH_HEURISTICS,
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_select(
+                                "discovery_search_model", "Model", [model_type]
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_selectize(
+                                "sample_from",
+                                "Clusters of interest",
+                                sample_from,
+                                multiple=True,
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_numeric(
+                                "n_samples", "Number of sequences", value=10, min=2
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_task_button("discovery_search", "Search"),
+                            style="padding:25px;",
+                        ),
+                    ),
+                )
 
     ### CLUSTERIN SEARCH UI ###
     @output
@@ -1136,6 +1153,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     DISCOVERY_DF = reactive.Value(None)
     DISCOVERY_MODEL_PLOT = reactive.Value(None)
     DISCOVERY_SEARCH_PLOT = reactive.Value(None)
+    DISCOVERY_DR_DF = reactive.Value(None)
 
     ###############
     ### BACKEND ###
@@ -1247,48 +1265,49 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.confirm_library)
     async def _():
-        df = DATASET()
-        if input.library_file() is None and not input.demo_library_check():
-            with ui.Progress(min=1, max=15) as p:
-                p.set(
-                    message="No data uploaded",
-                    detail="Upload a library in the 'Data' tab to proceed with the MLDE module.",
-                )
-                time.sleep(2.5)
-
-        else:
-            if input.demo_library_check():
-                data_path = DATASET_PATH()
-                file_name = data_path.split("/")[-1]
+        try:
+            df = DATASET()
+            if input.library_file() is None and not input.demo_library_check():
+                with ui.Progress(min=1, max=15) as p:
+                    p.set(
+                        message="No data uploaded",
+                        detail="Upload a library in the 'Data' tab to proceed with the MLDE module.",
+                    )
+                    time.sleep(2.5)
 
             else:
-                f: list[FileInfo] = input.library_file()
-                file_name = f[0]["name"]
-                data_path = f[0]["datapath"]
+                if input.demo_library_check():
+                    data_path = DATASET_PATH()
+                    file_name = data_path.split("/")[-1]
 
-            ys = df[input.y_col()].to_list()
-            seqs_col = input.seq_col()
-            y_col = input.y_col()
-            names_col = input.description_col()
+                else:
+                    f: list[FileInfo] = input.library_file()
+                    file_name = f[0]["name"]
+                    data_path = f[0]["datapath"]
 
-            # Determine if the data is numerical or categorical
-            if all(pd.isna(ys)):  # Check if all values are NaN
-                y_type = "class"
-                choice = "Classification"
-                _y_type = "Categorical"
-                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
-            elif is_numerical(ys):
-                y_type = "num"
-                choice = "Regression"
-                _y_type = "Numeric"
-                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "KNN"])
-            else:
-                y_type = "class"
-                choice = "Classification"
-                _y_type = "Categorical"
-                _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+                ys = df[input.y_col()].to_list()
+                seqs_col = input.seq_col()
+                y_col = input.y_col()
+                names_col = input.description_col()
 
-            try:
+                # Determine if the data is numerical or categorical
+                if all(pd.isna(ys)):  # Check if all values are NaN
+                    y_type = "class"
+                    choice = "Classification"
+                    _y_type = "Categorical"
+                    _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+                elif is_numerical(ys):
+                    y_type = "num"
+                    choice = "Regression"
+                    _y_type = "Numeric"
+                    _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "KNN"])
+                else:
+                    y_type = "class"
+                    choice = "Classification"
+                    _y_type = "Categorical"
+                    _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+
+                
                 lib = pai.Library(
                     user=input.USER().lower(),
                     source=data_path,
@@ -1336,13 +1355,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                     )
                     await asyncio.sleep(0.5)
 
-            except Exception:
-                with ui.Progress(min=1, max=15) as p:
-                    p.set(
-                        message="Problem with input file",
-                        detail="Please check if there are any problems with the input file.",
-                    )
-                    await asyncio.sleep(2.5)
+        except Exception:
+            with ui.Progress(min=1, max=15) as p:
+                p.set(
+                    message="Problem with input file",
+                    detail="Please check if there are any problems with the input file.",
+                )
+                await asyncio.sleep(2.5)
 
     ### READING PROTEIN FILE ###
     @reactive.Effect
@@ -2582,6 +2601,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             if k_folds <= 1:
                 k_folds = None
 
+            vis_method = REP_VISUAL_DICT[input.discovery_vis_method()]
+
             model = pai.Model(
                 model_type=MODEL_DICT[input.discovery_model_type()],
                 library=lib,
@@ -2605,17 +2626,21 @@ def server(input: Inputs, output: Outputs, session: Session):
                     }
                 )
 
+                # Dimensionality reduction df avoids recomputing the DR
+                dr_df = out["dr_df"]
+
                 # Visualize results
                 p.set(message="Visualizing results", detail="This may take a while...")
 
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model_lib.plot,
-                    "umap",
                     model.rep,
+                    vis_method,
                     None,
                     None,
                     model_lib.names,
+                    dr_df,
                 )
 
                 # set reactive variables
@@ -2659,6 +2684,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             n_neighbors = input.hdbscan_n_neighbors()
             min_cluster_size = input.hdbscan_min_cluster_size()
             min_samples = input.hdbscan_min_samples()
+            dr_method = REP_VISUAL_DICT[input.hdbscan_dr()]
 
             model = pai.Model(
                 model_type=MODEL_DICT[input.clustering_alg()],  #
@@ -2667,6 +2693,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 seed=None,
                 min_cluster_size=min_cluster_size,
                 min_samples=min_samples,
+                dr_method=dr_method,
             )
 
             try:
@@ -2676,6 +2703,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 model_lib = pai.Library(user=lib.user, source=out)
 
+                # Dimensionality reduction df avoids recomputing the DR
+                dr_df = out["dr_df"]
+
                 # Visualize results
                 p.set(message="Visualizing results", detail="This may take a while...")
 
@@ -2683,13 +2713,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                     executor,
                     model_lib.plot,
                     model.rep,
-                    "umap",
+                    dr_method,
                     None,
                     None,
                     model_lib.names,
                     None,
                     None,
                     True,
+                    dr_df,
                 )
 
                 out_df = pd.DataFrame(
@@ -2706,6 +2737,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 DISCOVERY_MODEL.set(model)
                 DISCOVERY_TEST_DF.set(out_df)
                 DISCOVERY_MODEL_PLOT.set((fig, ax))
+                DISCOVERY_DR_DF.set(dr_df)
 
             except Exception as e:
                 print(f"An error occurred in training the Discovery model: {e}")
@@ -2769,7 +2801,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             try:
                 batch_size = BATCH_SIZE_DICT[model.rep]
                 loop = asyncio.get_running_loop()
-                out, search_results = await loop.run_in_executor(
+                out = await loop.run_in_executor(
                     executor,
                     model.search,
                     input.n_samples(),
@@ -2783,8 +2815,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                     None,
                 )
 
+                search_results = out["mask"]
+
                 # Visualize results
                 p.set(message="Visualizing results", detail="This may take a while...")
+
+                df = DISCOVERY_DR_DF()
 
                 print("We start here")
                 fig, ax, df = await loop.run_in_executor(
@@ -2798,6 +2834,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     search_results,
                     None,
                     True,
+                    df,
                 )
 
                 DISCOVERY_SEARCH_PLOT.set((fig, ax))
