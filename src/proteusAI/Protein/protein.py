@@ -58,6 +58,7 @@ class Protein:
         seq: Union[str, None] = None,
         struc: Union[str, biotite.structure.AtomArray, None] = None,
         reps: Union[list, tuple] = [],
+        rep_path: Union[str, None] = None,
         user: Union[str, None] = "guest",
         user_root: Union[str, None] = USR_PATH,
         y=None,
@@ -75,6 +76,7 @@ class Protein:
             seq (str): Protein sequence.
             struc (AtomArray): Protein structure.
             reps (list): List of available representations.
+            rep_path (str): Path to representations directory.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
             y (float, int, str): Label for the protein.
@@ -100,13 +102,13 @@ class Protein:
         self.acq_score = acq_score
         self.fname = fname
         self.user = os.path.join(user_root, user)
+        self.rep_path = rep_path
 
         # Parameters
         self.pdb_file = None
         self.fasta_file = None
         self.reps = []
         self.source_path = None
-        self.rep_path = None
         self.struc_path = None
         self.design = None
         self.chains = []
@@ -183,7 +185,13 @@ class Protein:
             self.struc_path = struc_path
             self.name = fname
         else:
-            rep_path = "/".join(self.rep_path.split("/")[:-1])
+            rep_path = rep_path
+            zs_path = os.path.join(rep_path, "../zero_shot")
+            struc_path = os.path.join(zs_path, "../struc")
+            self.zs_path = zs_path
+            self.rep_path = rep_path
+            self.struc_path = struc_path
+            self.name = fname
 
         # If file is not None, then initialize load fasta
         if self.source.endswith(".fasta"):
@@ -269,6 +277,9 @@ class Protein:
 
         Args:
             color (str): Choose different coloration options
+
+        Returns:
+            view (NGLWidget): NGLWidget object for visualization.
         """
         view = pai_struc.show_pdb(
             self.pdb_file, color=color, highlight=highlight, sticks=sticks
@@ -288,6 +299,10 @@ class Protein:
             pbar: App progress bar
             device (str): Choose hardware for computation. Default 'None' for autoselection
                 other options are 'cpu' and 'cuda'.
+            chain (str): Chain for which to compute the zero-shot scores.
+
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
 
         # Set a default chain if none is provided and there are chains available
@@ -349,7 +364,7 @@ class Protein:
             "y_type": "num",
             "y_pred_col": "mmp",
             "seqs_col": "sequence",
-            "names_col": "mutant",
+            "names_col": "name",
             "reps": self.reps,
             "class_dict": self.class_dict,
             "pred_data": True,
@@ -360,6 +375,13 @@ class Protein:
     def zs_library(self, model="esm1v", chain=None):
         """
         Generate zero-shot library.
+
+        Args:
+            model (str): Model used to compute ZS scores
+            chain (str): Chain for which to compute the zero-shot scores.
+
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
 
         if chain is None and len(self.chains) >= 1:
@@ -522,6 +544,13 @@ class Protein:
     def relax_struc(self, name: str, dest=None):
         """
         Perform energy minimization on a protein structure.
+
+        Args:
+            name (str): Name of the protein.
+            dest (str): Custom save destination.
+
+        Returns:
+            struc (AtomArray): Relaxed protein structure.
         """
         user_path = self.user
 
@@ -533,6 +562,8 @@ class Protein:
 
         pai_struc.relax_pdb(pdb_file)
         self.struc = strucio.load_structure(pdb_file)
+
+        return self.struc
 
     ### Inverse Folding ###
     def esm_if(
@@ -560,6 +591,9 @@ class Protein:
             pbar: Progress bar used by shiny app.
             dest (str): Custom save destination.
             noise (float): Noise added to backbone structure.
+
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
         user_path = self.user
 
@@ -617,6 +651,19 @@ class Protein:
     # Plot
     # Plot zero-shot entropy
     def plot_entropy(self, model="esm1v", title=None, section=None, chain=None):
+        """
+        Plot the per-position entropy for a given model and sequence.
+
+        Args:
+            model (str): The name of the model to use for plotting (default: 'esm1v_650M').
+            title (str): Title of the plot (default: None).
+            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed.
+                Show entire sequence if None (default: None).
+            chain (str): Chain for which to compute the zero-shot scores.
+
+        Returns:
+            fig (matplotlib.figure.Figure): The created matplotlib figure.
+        """
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
@@ -640,10 +687,16 @@ class Protein:
                 )
 
         # Load required data
-        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
-        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
-        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
-        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+        self.p = torch.load(os.path.join(dest, "prob_dist.pt"), weights_only=False)
+        self.mmp = torch.load(
+            os.path.join(dest, "masked_marginal_probability.pt"), weights_only=False
+        )
+        self.entropy = torch.load(
+            os.path.join(dest, "per_position_entropy.pt"), weights_only=False
+        )
+        self.logits = torch.load(
+            os.path.join(dest, "masked_logits.pt"), weights_only=False
+        )
 
         # Section handling
         seq_len = len(seq)
@@ -770,6 +823,9 @@ class Protein:
         Args:
             chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
             target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
+
+        Returns:
+            contacts (list): List of contacts in the protein.
         """
         return pai_struc.get_contacts(self.struc, source_chain, target, dist)
 

@@ -55,7 +55,7 @@ class Library:
     ]
     _esm_models = ["esm1v", "esm2", "esm2_650M", "esm2_150M", "esm2_35M", "esm2_8M"]
     _allowed_y_types = ["class", "num"]
-    in_memory = ["ohe", "blosum62", "blosum50"]
+    in_memory = ["ohe", "blosum62", "blosum50", "vhse"]
 
     def __init__(
         self,
@@ -65,9 +65,10 @@ class Library:
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
         y_col: Union[str, None] = None,
-        y_type: Union[str, None] = None,
+        y_type: str = "num",
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
+        seed: int = 42,
     ):
         """
         Initialize a new library.
@@ -82,17 +83,23 @@ class Library:
             y_type (str): Specify the data type of y-values, either categorical or numerical. Will parse automatically if none is provided.
             sheet (str): Specify the excel sheet name, if the source is an Excel file.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
+            seed (int): random seed. Default 42.
 
         Parameters:
             data (df): dataframe of uploaded data (raw data).
             seqs (list): list of sequence.
             y (list): list of y values.
             y_pred (list): list of predicted y values.
-            y_type (str): Type of y values ('class' or 'num').
+            y_type (str): Type of y values ('class' or 'num'). Default 'num'.
             names (list): names of sequences.
             reps (list): list of computed representations.
             proteins (list): list of protein objects.
             pred_data (bool): Using predicted data, e.g. predicted ZS y-values with no real y-values
+            source_path (str): Path to the source data.
+            rep_path (str): Path to the representations.
+            struc_path (str): Path to the structures.
+            class_dict (dict): Dictionary mapping class labels to numerical values.
+            out_df (df): Output dataframe.
         """
         # Arguments
         self.user = os.path.join(user_root, user)
@@ -117,6 +124,8 @@ class Library:
         self.struc_path = None
         self.class_dict = None
         self.pred_data = False
+        self.seed = seed
+        self.out_df = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -763,7 +772,11 @@ class Library:
         if rep in self.in_memory:
             reps = self.compute(method=rep, proteins=proteins)
         else:
-            _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+            # try to load representations if not compute them
+            try:
+                _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+            except FileNotFoundError:
+                reps = self.compute(method=rep, proteins=proteins)
         return reps
 
     ### Folding ###
@@ -822,7 +835,7 @@ class Library:
                         )
                     self.relax_struc(name)
 
-            df = pd.DataFrame(
+            self.out_df = pd.DataFrame(
                 {
                     "name": all_headers,
                     "sequence": all_sequences,
@@ -831,7 +844,7 @@ class Library:
                 }
             )
             out = {
-                "df": df,
+                "df": self.out_df,
                 "rep_path": self.rep_path,
                 "struc_path": self.struc_path,
                 "y_type": "num",
@@ -840,6 +853,7 @@ class Library:
                 "names_col": "name",
                 "reps": self.reps,
                 "class_dict": self.class_dict,
+                "pred_data": True,
             }
 
         return out
@@ -920,6 +934,8 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
+        df=None,
     ):
         """
         Plot library data using specific representations.
@@ -932,7 +948,13 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
 
         if method == "umap":
             fig, ax, df = self.plot_umap(
@@ -943,6 +965,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
         elif method == "tsne":
             fig, ax, df = self.plot_tsne(
@@ -953,6 +976,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
         elif method == "pca":
             fig, ax, df = self.plot_pca(
@@ -963,6 +987,7 @@ class Library:
                 highlight_mask=highlight_mask,
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
+                df=df,
             )
 
         else:
@@ -979,6 +1004,8 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -990,7 +1017,13 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
 
         x = self.load_representations(rep)
 
@@ -1007,7 +1040,7 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )
@@ -1023,6 +1056,8 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1034,7 +1069,14 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
+
         x = self.load_representations(rep)
 
         y = [str(i) for i in self.y_pred] if use_y_pred else self.y
@@ -1050,9 +1092,10 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
+            df=df,
         )
         print("done plotting")
 
@@ -1067,6 +1110,8 @@ class Library:
         highlight_mask=None,
         highlight_label=None,
         use_y_pred=False,
+        seed=None,
+        df=None,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1078,7 +1123,12 @@ class Library:
             names (List[str], optional): List of names for each point.
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
+            seed (int): random seed. Default None.
         """
+        if self.seed is None:
+            self.seed = seed
+        else:
+            self.seed = seed
 
         x = self.load_representations(rep)
 
@@ -1095,7 +1145,7 @@ class Library:
             names=names,
             rep_type=rep,
             y_type=self.y_type,
-            random_state=42,
+            random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
         )

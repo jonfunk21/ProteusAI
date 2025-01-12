@@ -125,6 +125,7 @@ def plot_tsne(
     rep_type: Union[str, None] = None,
     highlight_mask: Union[List[Union[int, float]], None] = None,
     highlight_label: str = "Highlighted",
+    df: Union[pd.DataFrame, None] = None,
 ):
     """
     Create a t-SNE plot and optionally color by y values, with special coloring for points outside given thresholds.
@@ -142,6 +143,7 @@ def plot_tsne(
         rep_type (str): Representation type used for plotting.
         highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
         highlight_label (str): Text for the legend entry of highlighted points.
+        df (pd.DataFrame): DataFrame containing the data to plot.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -150,15 +152,16 @@ def plot_tsne(
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
 
-    tsne = TSNE(n_components=2, verbose=1, random_state=random_state)
-    z = tsne.fit_transform(x)
+    if df is None:
+        tsne = TSNE(n_components=2, verbose=1, random_state=random_state)
+        z = tsne.fit_transform(x)
 
-    df = pd.DataFrame(z, columns=["z1", "z2"])
-    df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
-    if names and len(names) == len(y):
-        df["names"] = names
-    else:
-        df["names"] = [None] * len(y)
+        df = pd.DataFrame(z, columns=["z1", "z2"])
+        df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
+        if names and len(names) == len(y):
+            df["names"] = names
+        else:
+            df["names"] = [None] * len(y)
 
     # Handle the palette based on whether y is numerical or categorical
     if isinstance(y[0], (int, float)):  # If y is numerical
@@ -226,6 +229,7 @@ def plot_umap(
     rep_type: Union[str, None] = None,
     highlight_mask: Union[List[Union[int, float]], None] = None,
     highlight_label: str = "Highlighted",
+    df: Union[pd.DataFrame, None] = None,
 ):
     """
     Create a UMAP plot and optionally color by y values, with special coloring for points outside given thresholds.
@@ -243,6 +247,7 @@ def plot_umap(
         rep_type (str): Representation type used for plotting.
         highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
         highlight_label (str): Text for the legend entry of highlighted points.
+        df (pd.DataFrame): DataFrame containing the data to plot.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -251,18 +256,18 @@ def plot_umap(
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
 
-    umap_model = umap.UMAP(
-        n_neighbors=70, min_dist=0.0, n_components=2, random_state=random_state
-    )
+    if df is None:
+        umap_model = umap.UMAP(
+            n_neighbors=70, min_dist=0.0, n_components=2, random_state=random_state
+        )
 
-    z = umap_model.fit_transform(x)
-
-    df = pd.DataFrame(z, columns=["z1", "z2"])
-    df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
-    if names and len(names) is not None and len(names) == len(y):
-        df["names"] = names
-    else:
-        df["names"] = [None] * len(y)
+        z = umap_model.fit_transform(x)
+        df = pd.DataFrame(z, columns=["z1", "z2"])
+        df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
+        if names and len(names) is not None and len(names) == len(y):
+            df["names"] = names
+        else:
+            df["names"] = [None] * len(y)
 
     # Handle the palette based on whether y is numerical or categorical
     if isinstance(y[0], (int, float)):  # If y is numerical
@@ -330,6 +335,7 @@ def plot_pca(
     rep_type: Union[str, None] = None,
     highlight_mask: Union[List[Union[int, float]], None] = None,
     highlight_label: str = "Highlighted",
+    df: Union[pd.DataFrame, None] = None,
 ):
     """
     Create a PCA plot and optionally color by y values, with special coloring for points outside given thresholds.
@@ -347,6 +353,7 @@ def plot_pca(
         rep_type (str): Representation type used for plotting.
         highlight_mask (List[Union[int, float]]): List of mask values, non-zero points will be highlighted.
         highlight_label (str): Text for the legend entry of highlighted points.
+        df (pd.DataFrame): DataFrame containing the data to plot.
     """
     fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -355,15 +362,15 @@ def plot_pca(
     if len(x.shape) == 3:  # Flatten if necessary
         x = x.reshape(x.shape[0], -1)
 
-    pca = PCA(n_components=2, random_state=random_state)
-    z = pca.fit_transform(x)
-
-    df = pd.DataFrame(z, columns=["z1", "z2"])
-    df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
-    if names and len(names) == len(y):
-        df["names"] = names
-    else:
-        df["names"] = [None] * len(y)
+    if df is None:
+        pca = PCA(n_components=2, random_state=random_state)
+        z = pca.fit_transform(x)
+        df = pd.DataFrame(z, columns=["z1", "z2"])
+        df["y"] = y if y is not None and any(y) else None  # Use y if it's informative
+        if names and len(names) == len(y):
+            df["names"] = names
+        else:
+            df["names"] = [None] * len(y)
 
     # Handle the palette based on whether y is numerical or categorical
     if isinstance(y[0], (int, float)):  # If y is numerical

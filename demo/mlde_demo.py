@@ -20,10 +20,10 @@ library = pai.Library(
 )
 
 # compute and save ESM-2 representations at example_lib/representations/esm2
-library.compute(method="esm2", batch_size=10)
+library.compute(method="esm2_8M", batch_size=10)
 
 # define a model
-model = pai.Model(library=library, k_folds=5, model_type="rf", x="blosum62")
+model = pai.Model(library=library, k_folds=5, model_type="rf", x="vhse")
 
 # train model
 model.train()

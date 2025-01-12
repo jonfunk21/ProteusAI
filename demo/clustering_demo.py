@@ -10,7 +10,7 @@ sys.path.append("src/")
 
 # will initiate storage space - else in memory
 dataset = "demo/demo_data/methyltransfereases.csv"
-y_column = "coverage_5"
+y_column = "class"
 
 results_dictionary = {}
 
@@ -26,8 +26,23 @@ library = pai.Library(
 # compute and save ESM-2 representations at example_lib/representations/esm2
 library.compute(method="esm2_8M", batch_size=10)
 
+# dimensionality reduction
+dr_method = "tsne"
+
+# random seed
+seed = 42
+
 # define a model
-model = pai.Model(library=library, k_folds=5, model_type="rf", rep="esm2_8M")
+model = pai.Model(
+    library=library,
+    k_folds=5,
+    model_type="hdbscan",
+    rep="esm2_8M",
+    min_cluster_size=30,
+    min_samples=50,
+    dr_method=dr_method,
+    seed=seed,
+)
 
 # train model
 model.train()
@@ -40,12 +55,16 @@ search_mask = out["mask"]
 if not os.path.exists("demo/demo_data/out/"):
     os.makedirs("demo/demo_data/out/", exist_ok=True)
 
-out["df"].to_csv("demo/demo_data/out/discovery_search_results.csv")
+out["df"].to_csv("demo/demo_data/out/clustering_search_results.csv")
 
 model_lib = pai.Library(source=out)
 
 # plot results
 fig, ax, plot_df = model.library.plot(
-    rep="esm2_8M", use_y_pred=True, highlight_mask=search_mask
+    rep="esm2_8M",
+    method=dr_method,
+    use_y_pred=True,
+    highlight_mask=search_mask,
+    seed=seed,
 )
-plt.savefig("demo/demo_data/out/search_results.png")
+plt.savefig(f"demo/demo_data/out/clustering_results_{dr_method}.png")

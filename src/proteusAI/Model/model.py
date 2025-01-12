@@ -9,6 +9,7 @@ import os
 import random
 import sys
 from typing import Union
+import hashlib
 
 import gpytorch
 import hdbscan
@@ -16,7 +17,8 @@ import numpy as np
 import pandas as pd
 import torch
 import umap
-from joblib import dump
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Ridge, RidgeClassifier
 from sklearn.model_selection import KFold, train_test_split
@@ -27,6 +29,7 @@ from scipy.stats import pearsonr, kendalltau
 import proteusAI.ml_tools.bo_tools as BO
 import proteusAI.visual_tools as vis
 from proteusAI.Library import Library
+from proteusAI.Protein import Protein
 from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -52,7 +55,7 @@ class Model:
         custom_model (torch.nn.Module): Provide a custom PyTorch model.
         optim (str): Optimizer for training PyTorch models. Default 'adam'.
         lr (float): Learning rate for training PyTorch models. Default 10e-4.
-        seed (int): random seed. Default 21.
+        seed (int): random seed. Default 42.
         test_true (list): List of true values of the test dataset.
         test_predictions (list): Predicted values of the test dataset.
         test_r2 (float): R-squared value of the model on the test set.
@@ -68,23 +71,23 @@ class Model:
     defaults = {
         "library": None,
         "model_type": "rf",
-        "x": "ohe",
         "rep": "ohe",
         "rep_path": None,
-        "split": (80, 10, 10),
+        "split": "smart",
         "k_folds": None,
         "grid_search": False,
         "custom_params": None,
         "custom_model": None,
         "optim": "adam",
         "lr": 10e-4,
-        "seed": None,
+        "seed": 42,
         "dest": None,
         "pbar": None,
         "min_cluster_size": 30,
         "min_samples": 50,
         "metric": "euclidean",
         "cluster_selection_epsilon": 0.1,
+        "dr_method": "umap",
     }
 
     def __init__(self, **kwargs):
@@ -228,7 +231,7 @@ class Model:
             train_size = int(train_ratio * len(labelled_data))
             test_size = int(test_ratio * len(labelled_data))
 
-            random.shuffle(labelled_data)
+            random.Random(self.seed).shuffle(labelled_data)
 
             # Split the data
             train_data = labelled_data[:train_size]
@@ -440,7 +443,13 @@ class Model:
             self.y_test = [protein.y for protein in self.test_data]
             self.y_val = [protein.y for protein in self.val_data]
 
-        self.val_names = [protein.name for protein in self.val_data]
+        self.test_names = [protein.name for protein in self.test_data]
+
+        # combine train and val if no hyperparameter tuning
+        if not self.grid_search:
+            x_train = np.concatenate((x_train, x_val), axis=0)
+            self.y_train = np.concatenate((self.y_train, self.y_val))
+            self.val_names = [protein.name for protein in self.val_data]
 
         if self.k_folds is None:
             if pbar:
@@ -454,42 +463,16 @@ class Model:
             self.y_test_pred = self._model.predict(x_test)
             self.y_train_pred = self._model.predict(x_train)
 
-            # prediction on validation set
-            self.val_r2 = self._model.score(x_val, self.y_val)
-            self.y_val_pred = self._model.predict(x_val)
-
             self.y_train_sigma = [None] * len(self.y_train)
-            self.y_val_sigma = [None] * len(self.y_val)
             self.y_test_sigma = [None] * len(self.y_test)
 
             # conformal prediction and statistics
             self.calibration = self.calibrate(
                 self.y_test, self.y_test_pred, confidence=0.90
             )
-            self.calibration_ratio, within_calibration = self._within_calibration(
-                self.y_val_pred, self.y_val
-            )
-            self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
-            self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
+
             self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
             self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
-
-            # Save the model
-            if self.dest is not None:
-                model_save_path = f"{self.dest}/model.joblib"
-                csv_dest = f"{self.dest}"
-            else:
-                model_save_path = os.path.join(
-                    f"{self.library.rep_path}",
-                    f"../models/{self.model_type}/{self.rep}/model.joblib",
-                )
-                csv_dest = os.path.join(
-                    f"{self.library.rep_path}",
-                    f"../models/{self.model_type}/{self.rep}",
-                )
-
-            os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-            dump(self._model, model_save_path)
 
             # Add predictions to test proteins
             for i in range(len(test)):
@@ -497,6 +480,17 @@ class Model:
                 self.test_data[i].y_sigma = self.y_test_sigma[i]
 
             # Save dataframes
+            if self.dest is not None:
+                csv_dest = f"{self.dest}"
+            else:
+                csv_dest = os.path.join(
+                    f"{self.library.rep_path}",
+                    f"../models/{self.model_type}/{self.rep}",
+                )
+
+            if not os.path.exists(csv_dest):
+                os.makedirs(csv_dest, exist_ok=True)
+
             train_df = self.save_to_csv(
                 self.train_data,
                 self.y_train,
@@ -504,6 +498,7 @@ class Model:
                 self.y_train_sigma,
                 f"{csv_dest}/train_data.csv",
             )
+
             test_df = self.save_to_csv(
                 self.test_data,
                 self.y_test,
@@ -511,25 +506,43 @@ class Model:
                 self.y_test_sigma,
                 f"{csv_dest}/test_data.csv",
             )
-            val_df = self.save_to_csv(
-                self.val_data,
-                self.y_val,
-                self.y_val_pred,
-                self.y_val_sigma,
-                f"{csv_dest}/val_data.csv",
-            )
 
             # add split information to df
             train_df["split"] = "train"
             test_df["split"] = "test"
-            val_df["split"] = "val"
 
-            # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(
-                drop=True
-            )
+            if self.grid_search:
+                self.val_r2 = self._model.score(x_val, self.y_val)
+                self.y_val_pred = self._model.predict(x_val)
+                self.y_val_sigma = [None] * len(self.y_val)
+                self.calibration_ratio, within_calibration = self._within_calibration(
+                    self.y_val_pred, self.y_val
+                )
+                self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
+                self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
+                val_df = self.save_to_csv(
+                    self.val_data,
+                    self.y_val,
+                    self.y_val_pred,
+                    self.y_val_sigma,
+                    f"{csv_dest}/val_data.csv",
+                )
+                val_df["split"] = "val"
 
-            self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+                # Concatenate the DataFrames
+                self.out_df = pd.concat(
+                    [train_df, test_df, val_df], axis=0
+                ).reset_index(drop=True)
+
+                self.y_best = max(
+                    (max(self.y_train), max(self.y_test), max(self.y_val))
+                )
+            else:
+                # Concatenate the DataFrames
+                self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(
+                    drop=True
+                )
+                self.y_best = max((max(self.y_train), max(self.y_test)))
 
         # handle ensembles
         else:
@@ -538,7 +551,7 @@ class Model:
             ensemble = []
             calibrations = []
             for i, data in enumerate(kf.split(x_train)):
-                train_index, test_index = data
+                train_index, val_index = data
 
                 if pbar:
                     pbar.set(
@@ -546,21 +559,21 @@ class Model:
                         detail="...",
                     )
 
-                x_train_fold, x_test_fold = x_train[train_index], x_train[test_index]
-                y_train_fold, y_test_fold = (
+                x_train_fold, x_val_fold = x_train[train_index], x_train[val_index]
+                y_train_fold, y_val_fold = (
                     np.array(self.y_train)[train_index],
-                    np.array(self.y_train)[test_index],
+                    np.array(self.y_train)[val_index],
                 )
 
                 self._model = self.model()
                 self._model.fit(x_train_fold, y_train_fold)
-                test_r2 = self._model.score(x_test_fold, y_test_fold)
-                fold_results.append(test_r2)
+                val_r2 = self._model.score(x_val_fold, y_val_fold)
+                fold_results.append(val_r2)
                 ensemble.append(self._model)
 
                 # conformal prediction
                 calibration = self.calibrate(
-                    y_test_fold, self._model.predict(x_test_fold), confidence=0.90
+                    y_val_fold, self._model.predict(x_val_fold), confidence=0.90
                 )
                 calibrations.append(calibration)
 
@@ -571,38 +584,37 @@ class Model:
             self._model = ensemble
 
             # Prediction on validation set
-            self.val_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = (
-                self.predict(self.val_data)
-            )
-            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
-                self.predict(self.train_data)
-            )
-            self.test_data, self.y_test_pred, self.y_test_sigma, self.y_test, _ = (
-                self.predict(self.test_data)
-            )
+            predictions = self.predict(self.train_data)
+            self.train_data = predictions["pred_proteins"]
+            self.y_train_pred = predictions["y_pred"]
+            self.y_train_sigma = predictions["y_sigma"]
+            self.y_train = predictions["y_true"]
 
-            # Prediction unlabelled data if exists
-            if len(self.unlabelled_data) > 0:
-                (
-                    self.unlabelled_data,
-                    self.y_unlabelled_pred,
-                    self.y_unlabelled_sigma,
-                    self.y_unlabelled,
-                    _,
-                ) = self.predict(self.unlabelled_data)
+            # Prediction on test set
+            predictions = self.predict(self.test_data)
+            self.test_data = predictions["pred_proteins"]
+            self.y_test_pred = predictions["y_pred"]
+            self.y_test_sigma = predictions["y_sigma"]
+            self.y_test = predictions["y_true"]
 
-            # Compute R-squared on validataion dataset
-            self.val_r2 = self.score(self.val_data)
+            # Compute R-squared on test dataset
+            self.test_r2 = self.score(self.test_data)
 
             # conformal prediction and statistics
             self.calibration = self.calibrate(
                 self.y_test, self.y_test_pred, confidence=0.90
             )
             self.calibration_ratio, within_calibration = self._within_calibration(
-                self.y_val_pred, self.y_val
+                self.y_test_pred, self.y_test
             )
-            self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
-            self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
+
+            # Prediction unlabelled data if exists
+            if len(self.unlabelled_data) > 0:
+                predictions = self.predict(self.unlabelled_data)
+                self.y_unlabelled_pred = predictions["y_pred"]
+                self.y_unlabelled_sigma = predictions["y_sigma"]
+                self.y_unlabelled = predictions["y_true"]
+
             self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
             self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
 
@@ -615,17 +627,8 @@ class Model:
                     f"../models/{self.model_type}/{self.rep}",
                 )
 
-            for i, model in enumerate(ensemble):
-                if self.dest is not None:
-                    model_save_path = f"{self.dest}/model_{i}.joblib"
-                else:
-                    model_save_path = os.path.join(
-                        f"{self.library.rep_path}",
-                        f"../models/{self.model_type}/{self.rep}/model_{i}.joblib",
-                    )
-
-                os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-                dump(model, model_save_path)
+            if not os.path.exists(csv_dest):
+                os.makedirs(csv_dest, exist_ok=True)
 
             # Save the sequences, y-values, and predicted y-values to CSV
             train_df = self.save_to_csv(
@@ -635,12 +638,13 @@ class Model:
                 self.y_train_sigma,
                 f"{csv_dest}/train_data.csv",
             )
-            val_df = self.save_to_csv(
-                self.val_data,
-                self.y_val,
-                self.y_val_pred,
-                self.y_val_sigma,
-                f"{csv_dest}/val_data.csv",
+            # Save the sequences, y-values, and predicted y-values to CSV
+            test_df = self.save_to_csv(
+                self.test_data,
+                self.y_test,
+                self.y_test_pred,
+                self.y_test_sigma,
+                f"{csv_dest}/test_data.csv",
             )
 
             # save unlabelled data if exists
@@ -653,20 +657,49 @@ class Model:
                     f"{csv_dest}/unlabelled_data.csv",
                 )
 
-            # add split information to df
-            train_df["split"] = "train"
-            val_df["split"] = "val"
-            if len(self.unlabelled_data) > 0:
-                unlabelled_df["split"] = "unlabelled"
-                comb_df = [train_df, val_df, unlabelled_df]
+            if self.grid_search:
+                predictions = self.predict(self.val_data)
+                self.test_data = predictions["pred_proteins"]
+                self.y_val_pred = predictions["y_pred"]
+                self.y_val_sigma = predictions["y_sigma"]
+                self.y_val = predictions["y_true"]
+                # Compute R-squared on validataion dataset
+                self.val_r2 = self.score(self.val_data)
+                self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
+                self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
+                val_df = self.save_to_csv(
+                    self.val_data,
+                    self.y_val,
+                    self.y_val_pred,
+                    self.y_val_sigma,
+                    f"{csv_dest}/val_data.csv",
+                )
+                train_df["split"] = "train"
+                test_df["split"] = "test"
+                val_df["split"] = "val"
+                if len(self.unlabelled_data) > 0:
+                    unlabelled_df["split"] = "unlabelled"
+                    comb_df = [train_df, test_df, unlabelled_df]
+                else:
+                    comb_df = [train_df, test_df, val_df]
+                self.y_best = max(
+                    (max(self.y_train), max(self.y_test), max(self.y_val))
+                )
             else:
-                comb_df = [train_df, val_df]
+                # add split information to df
+                train_df["split"] = "train"
+                test_df["split"] = "test"
+                if len(self.unlabelled_data) > 0:
+                    unlabelled_df["split"] = "unlabelled"
+                    comb_df = [train_df, test_df, unlabelled_df]
+                else:
+                    comb_df = [train_df, test_df]
+                # TODO: that depends on minimization or maximization goal
+                self.y_best = max((max(self.y_train), max(self.y_test)))
 
             # Concatenate the DataFrames
             self.out_df = pd.concat(comb_df, axis=0).reset_index(drop=True)
 
-            # TODO: that depends on minimization or maximization goal
-            self.y_best = max((max(self.y_train), max(self.y_val)))
             self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
 
         out = {
@@ -681,10 +714,11 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         print(
-            f"Training completed:\nval_r2:\t{self.val_r2}\nval_pearson:\t{self.val_pearson}"
+            f"Training completed:\ntest_r2:\t{self.test_r2}\ntest_pearson:\t{self.test_pearson}"
         )
 
         return out
@@ -765,7 +799,12 @@ class Model:
                 .to(device=self.device)
             )
 
-        self.val_names = [protein.name for protein in self.val_data]
+        self.test_names = [protein.name for protein in self.test_data]
+
+        if self.grid_search:
+            x_train = torch.cat((x_train, x_val), dim=0)
+            self.y_train = torch.cat((self.y_train, y_val))
+            self.val_names = [protein.name for protein in self.val_data]
 
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
             device=self.device
@@ -814,39 +853,16 @@ class Model:
             y_test_pred.cpu().numpy(),
             y_test_sigma.cpu().numpy(),
         )
-
-        # prediction on validation set
-        y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
-        self.val_r2 = computeR2(y_val, y_val_pred)
-        self.val_pearson = pearsonr(y_val, y_val_pred)
-        self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
         self.y_train = self.y_train.cpu().numpy()
-        self.y_test_pred, self.y_test_sigma = (
-            y_test_pred.cpu().numpy(),
-            y_test_sigma.cpu().numpy(),
-        )
-        self.y_val_pred, self.y_val_sigma = (
-            y_val_pred.cpu().numpy(),
-            y_val_sigma.cpu().numpy(),
-        )
-
-        self.y_val = y_val.cpu().numpy()
         self.y_test = self.y_test.cpu().numpy()
+        self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
+        self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
+        self.y_best = max((max(self.y_train), max(self.y_test)))
 
-        # conformal prediction
+        # conformal prediction and statistics
         self.calibration = self.calibrate(
             self.y_test, self.y_test_pred, confidence=0.90
         )
-        self.calibration_ratio, within_calibration = self._within_calibration(
-            self.y_val_pred, self.y_val
-        )
-        self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
-        self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
-        self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
-        self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
-
-        self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
-        self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
 
         # Add predictions to proteins
         for i in range(len(train)):
@@ -858,11 +874,6 @@ class Model:
             self.test_data[i].y_pred = self.y_test_pred[i].item()
             self.test_data[i].y_sigma = self.y_test_sigma[i].item()
 
-        # Add predictions to test proteins
-        for i in range(len(val)):
-            self.val_data[i].y_pred = self.y_val_pred[i].item()
-            self.val_data[i].y_pred = self.y_val_sigma[i].item()
-
         # save dataframes
         if self.dest is not None:
             csv_dest = f"{self.dest}"
@@ -871,6 +882,9 @@ class Model:
                 f"{self.library.rep_path}",
                 f"../models/{self.model_type}/{self.rep}",
             )
+
+        if not os.path.exists(csv_dest):
+            os.makedirs(csv_dest, exist_ok=True)
 
         train_df = self.save_to_csv(
             self.train_data,
@@ -886,23 +900,54 @@ class Model:
             self.y_test_sigma,
             f"{csv_dest}/test_data.csv",
         )
-        val_df = self.save_to_csv(
-            self.val_data,
-            self.y_val,
-            self.y_val_pred,
-            self.y_val_sigma,
-            f"{csv_dest}/val_data.csv",
-        )
 
         # add split information to df
         train_df["split"] = "train"
         test_df["split"] = "test"
-        val_df["split"] = "val"
 
-        # Concatenate the DataFrames
-        self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(
-            drop=True
-        )
+        if self.grid_search:
+            # prediction on validation set
+            y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
+            self.val_r2 = computeR2(y_val, y_val_pred)
+            self.y_train = self.y_train.cpu().numpy()
+
+            self.y_val_pred, self.y_val_sigma = (
+                y_val_pred.cpu().numpy(),
+                y_val_sigma.cpu().numpy(),
+            )
+
+            self.y_val = y_val.cpu().numpy()
+            self.y_test = self.y_test.cpu().numpy()
+
+            self.calibration_ratio, within_calibration = self._within_calibration(
+                self.y_val_pred, self.y_val
+            )
+            self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
+            self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
+
+            self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
+            self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
+
+            # Add predictions to val proteins
+            for i in range(len(val)):
+                self.val_data[i].y_pred = self.y_val_pred[i].item()
+                self.val_data[i].y_pred = self.y_val_sigma[i].item()
+
+            val_df = self.save_to_csv(
+                self.val_data,
+                self.y_val,
+                self.y_val_pred,
+                self.y_val_sigma,
+                f"{csv_dest}/val_data.csv",
+            )
+            val_df["split"] = "val"
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(
+                drop=True
+            )
+        else:
+            # Concatenate the DataFrames
+            self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(drop=True)
 
         out = {
             "df": self.out_df,
@@ -916,6 +961,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         return out
@@ -1026,12 +1072,12 @@ class Model:
 
         return df
 
-    def predict(self, proteins: list, rep_path=None, acq_fn="greedy", batch_size=10000):
+    def predict(self, proteins, rep_path=None, acq_fn="greedy", batch_size=10000):
         """
-        Scores the R-squared value for a list of proteins.
+        Makes predictions using the trained model, either for a list of proteins, sequence(s), or a Library object.
 
         Args:
-            proteins (list): List of proteins to make predictions.
+            proteins (list): List of proteins, sequence(s), or a Library object.
             rep_path (str): Path to representations for proteins in the list.
                 If None, the library project path and representation type for training
                 will be assumed
@@ -1054,6 +1100,56 @@ class Model:
         all_y_pred = []
         all_sigma_pred = []
         all_acq_scores = []
+
+        # pred_dest
+        # save dataframes
+        if self.dest is not None:
+            pred_dest = f"{self.dest}"
+        else:
+            pred_dest = os.path.join(
+                f"{self.library.rep_path}",
+                f"../models/{self.model_type}/{self.rep}/predictions",
+            )
+
+        pred_rep_path = os.path.join(pred_dest, "rep")
+
+        if not os.path.exists(pred_dest):
+            os.makedirs(pred_dest, exist_ok=True)
+
+        if not os.path.exists(pred_rep_path):
+            os.makedirs(pred_rep_path, exist_ok=True)
+
+        # if proteins is a sequence string
+        if isinstance(proteins, str):
+            proteins = [proteins]
+
+        # if proteins is a single Protein object
+        if isinstance(proteins, Protein):
+            proteins = [proteins]
+
+        # if proteins is a list of strings
+        if isinstance(proteins[0], str):
+            proteins = [
+                Protein(
+                    hashlib.sha256(seq.encode()).hexdigest()[:16],
+                    seq,
+                    y=None,
+                    y_pred=None,
+                    y_sigma=None,
+                    acq_score=None,
+                    user=self.library.user,
+                    rep_path=pred_rep_path,
+                )
+                for seq in proteins
+            ]
+
+        # if proteins is a list of Protein objects
+        elif isinstance(proteins[0], Protein):
+            proteins = [prot for prot in proteins]
+
+        # if proteins is a Library object
+        elif isinstance(proteins, Library):
+            proteins = proteins.proteins
 
         for i in range(0, len(proteins), batch_size):
             batch_proteins = proteins[i : i + batch_size]
@@ -1103,17 +1199,51 @@ class Model:
         sorted_indices = np.argsort(all_acq_scores)[::-1]
 
         # Sort all lists/arrays by the sorted indices
-        val_data = [proteins[i] for i in sorted_indices]
-        y_val = [prot.y for prot in val_data]
+        pred_proteins = [proteins[i] for i in sorted_indices]
+        y_val = [prot.y for prot in pred_proteins]
         y_val_pred = all_y_pred[sorted_indices]
         y_val_sigma = all_sigma_pred[sorted_indices]
         sorted_acq_score = all_acq_scores[sorted_indices]
 
-        for i, prot in enumerate(val_data):
+        for i, prot in enumerate(pred_proteins):
             prot.y_pred = y_val_pred[i]
             prot.y_sigma = y_val_sigma[i]
 
-        return val_data, y_val_pred, y_val_sigma, y_val, sorted_acq_score
+        # Prediction dataframe
+        pred_df = pd.DataFrame(
+            {
+                "name": [prot.name for prot in pred_proteins],
+                "sequence": [prot.seq for prot in pred_proteins],
+                "y_true": y_val,
+                "y_predicted": y_val_pred,
+                "y_sigma": y_val_sigma,
+                "acq_score": sorted_acq_score,
+            }
+        )
+        # Save dataframes
+
+        out = {
+            "df": pred_df,
+            "rep_path": pred_rep_path,
+            "struc_path": self.library.struc_path,
+            "y_type": self.library.y_type,
+            "y_col": "y_true",
+            "y_pred_col": "y_predicted",
+            "y_sigma_col": "y_sigma",
+            "seqs_col": "sequence",
+            "acq_col": "acq_score",
+            "names_col": "name",
+            "reps": self.library.reps,
+            "class_dict": self.library.class_dict,
+            "dr_df": None,
+            "pred_proteins": pred_proteins,
+            "y_pred": y_val_pred,
+            "y_sigma": y_val_sigma,
+            "y_true": y_val,
+            "acq_score": sorted_acq_score,
+        }
+
+        return out
 
     def score(self, proteins: list, rep_path=None):
         """
@@ -1155,8 +1285,8 @@ class Model:
 
     def true_vs_predicted(
         self,
-        y_true: list,
-        y_pred: list,
+        y_true: Union[list, None] = None,
+        y_pred: Union[list, None] = None,
         title: Union[str, None] = None,
         x_label: Union[str, None] = None,
         y_label: Union[str, None] = None,
@@ -1177,6 +1307,11 @@ class Model:
             file (str): Choose a file name.
             show_plot (bool): Choose to show the plot.
         """
+
+        if y_true is None:
+            y_true = self.y_test
+        if y_pred is None:
+            y_pred = self.y_test_pred
 
         if self.dest:
             dest = os.path.join(self.dest, "plots")
@@ -1201,6 +1336,33 @@ class Model:
 
         return fig, ax
 
+    def predicted_vs_true(
+        self,
+        y_true: Union[list, None] = None,
+        y_pred: Union[list, None] = None,
+        title: Union[str, None] = None,
+        x_label: Union[str, None] = None,
+        y_label: Union[str, None] = None,
+        plot_grid: bool = True,
+        file: Union[str, None] = None,
+        show_plot: bool = False,
+    ):
+        """
+        Calls true_vs_predicted method to plot true vs predicted values. (I often get confused with the names)
+        """
+        out = self.true_vs_predicted(
+            y_true=y_true,
+            y_pred=y_pred,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+            plot_grid=plot_grid,
+            file=file,
+            show_plot=show_plot,
+        )
+
+        return out
+
     def cluster(self, rep_path, n_neighbors=70, pbar=None):
         """
         Clustering algorithm using UMAP.
@@ -1224,9 +1386,22 @@ class Model:
         x_reps = torch.stack(reps).cpu().numpy()
 
         # do UMAP
-        clusterable_embedding = umap.UMAP(
-            n_neighbors=70, min_dist=0.0, n_components=2, random_state=42
-        ).fit_transform(x_reps)
+        if self.dr_method == "umap":
+            clusterable_embedding = umap.UMAP(
+                n_neighbors=70, min_dist=0.0, n_components=2, random_state=self.seed
+            ).fit_transform(x_reps)
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
+        elif self.dr_method == "pca":
+            pca = PCA(n_components=2)
+            clusterable_embedding = pca.fit_transform(x_reps)
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
+        elif self.dr_method == "tsne":
+            tsne = TSNE(n_components=2, verbose=6, random_state=self.seed)
+            clusterable_embedding = tsne.fit_transform(x_reps)
+            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
+            dr_df["names"] = [protein.name for protein in self.library.proteins]
 
         # perform clustering
         if self._model_type == "hdbscan":
@@ -1252,6 +1427,9 @@ class Model:
                 f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
             )
 
+        if not os.path.exists(csv_dest):
+            os.makedirs(csv_dest, exist_ok=True)
+
         # create out dataframe
         out_df = self.save_to_csv(
             self.library.proteins,
@@ -1275,6 +1453,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": dr_df,
         }
 
         return out
@@ -1290,14 +1469,14 @@ class Model:
         batch_size=100,
         pbar=None,
         acq_fn="ei",
+        overwrite=True,
     ):
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == "class":
-            out, mask = self._class_search(
+            out = self._class_search(
                 N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar
             )
-            return out, mask
         elif self.y_type == "num":
             out = self._num_search(
                 method=method,
@@ -1307,8 +1486,10 @@ class Model:
                 batch_size=batch_size,
                 pbar=pbar,
                 acq_fn=acq_fn,
+                overwrite=overwrite,
             )
-            return out
+
+        return out
 
     def _class_search(
         self,
@@ -1400,9 +1581,11 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "mask": mask,
+            "dr_df": None,
         }
 
-        return out, mask
+        return out
 
     def _num_search(
         self,
@@ -1411,17 +1594,21 @@ class Model:
         max_eval=10000,
         explore=0.1,
         batch_size=100,
-        pbar=None,
         acq_fn="ei",
+        overwrite=True,
+        pbar=None,
     ):
         """
         Search for improved mutants.
 
         Args:
-            N (int): Number of sequences to be returned.
-            optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
-            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            optim_problem (str): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
+            max_eval (int): Maximum number of evaluations. Default 1000.
+            explore (float): Exploration ratio, float between 0 and 1 to control the exploratory tendency of the sampling algorithm.
+            batch_size (int): Batch size for loading representations. Default 100.
+            acq_fn (str): Acquisition function. Default 'ei' - Expected Improvement.
+            overwrite (bool): Overwrite existing search results. Default True.
             pbar: Progress bar for ProteusAI app.
         """
         if pbar:
@@ -1492,14 +1679,14 @@ class Model:
         csv_file = os.path.join(
             csv_dest, f"{self.model_type}_{self.rep}_predictions.csv"
         )
-        if os.path.exists(csv_file):
-            self.search_df = pd.read_csv(csv_file)
 
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.rep}.csv"
 
-        if os.path.exists(os.path.join(csv_dest, fname)):
+        if os.path.exists(os.path.join(csv_dest, fname)) and not overwrite:
             self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
+        else:
+            self.search_df = None
 
         mutant_df = self._mutate(
             proteins, mutations, explore=explore, max_eval=max_eval
@@ -1518,6 +1705,7 @@ class Model:
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
+            "dr_df": None,
         }
 
         library = Library(user=self.library.user, source=out)
@@ -1525,9 +1713,12 @@ class Model:
         if self.rep not in self._in_memory_representations:
             library.compute(method=self.rep, pbar=pbar, batch_size=batch_size)
 
-        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(
-            library.proteins, acq_fn=acq_fn
-        )
+        predictions = self.predict(library.proteins, rep_path=library.rep_path)
+        val_data = predictions["pred_proteins"]
+        y_pred = predictions["y_pred"]
+        y_sigma = predictions["y_sigma"]
+        y_val = predictions["y_true"]
+        acq_score = predictions["acq_score"]
 
         self.search_df = self.save_to_csv(
             val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score
