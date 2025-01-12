@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import torch
 import umap
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from joblib import dump
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Ridge, RidgeClassifier
@@ -52,7 +54,7 @@ class Model:
         custom_model (torch.nn.Module): Provide a custom PyTorch model.
         optim (str): Optimizer for training PyTorch models. Default 'adam'.
         lr (float): Learning rate for training PyTorch models. Default 10e-4.
-        seed (int): random seed. Default 21.
+        seed (int): random seed. Default 42.
         test_true (list): List of true values of the test dataset.
         test_predictions (list): Predicted values of the test dataset.
         test_r2 (float): R-squared value of the model on the test set.
@@ -77,13 +79,14 @@ class Model:
         "custom_model": None,
         "optim": "adam",
         "lr": 10e-4,
-        "seed": None,
+        "seed": 42,
         "dest": None,
         "pbar": None,
         "min_cluster_size": 30,
         "min_samples": 50,
         "metric": "euclidean",
         "cluster_selection_epsilon": 0.1,
+        "dr_type": "umap",
     }
 
     def __init__(self, **kwargs):
@@ -227,7 +230,7 @@ class Model:
             train_size = int(train_ratio * len(labelled_data))
             test_size = int(test_ratio * len(labelled_data))
 
-            random.shuffle(labelled_data)
+            random.Random(self.seed).shuffle(labelled_data)
 
             # Split the data
             train_data = labelled_data[:train_size]
@@ -1281,9 +1284,16 @@ class Model:
         x_reps = torch.stack(reps).cpu().numpy()
 
         # do UMAP
-        clusterable_embedding = umap.UMAP(
-            n_neighbors=70, min_dist=0.0, n_components=2, random_state=42
-        ).fit_transform(x_reps)
+        if self.dr_type == "umap":
+            clusterable_embedding = umap.UMAP(
+                n_neighbors=70, min_dist=0.0, n_components=2, random_state=self.seed
+            ).fit_transform(x_reps)
+        elif self.dr_type == "pca":
+            pca = PCA(n_components=2)
+            clusterable_embedding = pca.fit_transform(x_reps)
+        elif self.dr_type == "tsne":
+            tsne = TSNE(n_components=2, verbose=6, random_state=self.seed)
+            clusterable_embedding = tsne.fit_transform(x_reps)
 
         # perform clustering
         if self._model_type == "hdbscan":
