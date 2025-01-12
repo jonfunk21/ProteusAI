@@ -9,6 +9,7 @@ import os
 import random
 import sys
 from typing import Union
+import hashlib
 
 import gpytorch
 import hdbscan
@@ -28,6 +29,7 @@ from scipy.stats import pearsonr, kendalltau
 import proteusAI.ml_tools.bo_tools as BO
 import proteusAI.visual_tools as vis
 from proteusAI.Library import Library
+from proteusAI.Protein import Protein
 from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -485,6 +487,10 @@ class Model:
                     f"{self.library.rep_path}",
                     f"../models/{self.model_type}/{self.rep}",
                 )
+
+            if not os.path.exists(csv_dest):
+                os.makedirs(csv_dest, exist_ok=True)
+
             train_df = self.save_to_csv(
                 self.train_data,
                 self.y_train,
@@ -578,12 +584,19 @@ class Model:
             self._model = ensemble
 
             # Prediction on validation set
-            self.train_data, self.y_train_pred, self.y_train_sigma, self.y_train, _ = (
-                self.predict(self.train_data)
-            )
-            self.test_data, self.y_test_pred, self.y_test_sigma, self.y_test, _ = (
-                self.predict(self.test_data)
-            )
+            predictions = self.predict(self.train_data)
+            self.train_data = predictions["pred_proteins"]
+            self.y_train_pred = predictions["y_pred"]
+            self.y_train_sigma = predictions["y_sigma"]
+            self.y_train = predictions["y_true"]
+
+            # Prediction on test set
+            predictions = self.predict(self.test_data)
+            self.test_data = predictions["pred_proteins"]
+            self.y_test_pred = predictions["y_pred"]
+            self.y_test_sigma = predictions["y_sigma"]
+            self.y_test = predictions["y_true"]
+
             # Compute R-squared on test dataset
             self.test_r2 = self.score(self.test_data)
 
@@ -597,13 +610,10 @@ class Model:
 
             # Prediction unlabelled data if exists
             if len(self.unlabelled_data) > 0:
-                (
-                    self.unlabelled_data,
-                    self.y_unlabelled_pred,
-                    self.y_unlabelled_sigma,
-                    self.y_unlabelled,
-                    _,
-                ) = self.predict(self.unlabelled_data)
+                predictions = self.predict(self.unlabelled_data)
+                self.y_unlabelled_pred = predictions["y_pred"]
+                self.y_unlabelled_sigma = predictions["y_sigma"]
+                self.y_unlabelled = predictions["y_true"]
 
             self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
             self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
@@ -648,9 +658,11 @@ class Model:
                 )
 
             if self.grid_search:
-                self.test_data, self.y_val_pred, self.y_val_sigma, self.y_val, _ = (
-                    self.predict(self.val_data)
-                )
+                predictions = self.predict(self.val_data)
+                self.test_data = predictions["pred_proteins"]
+                self.y_val_pred = predictions["y_pred"]
+                self.y_val_sigma = predictions["y_sigma"]
+                self.y_val = predictions["y_true"]
                 # Compute R-squared on validataion dataset
                 self.val_r2 = self.score(self.val_data)
                 self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
@@ -790,8 +802,8 @@ class Model:
         self.test_names = [protein.name for protein in self.test_data]
 
         if self.grid_search:
-            x_train = np.concatenate((x_train, x_val), axis=0)
-            self.y_train = np.concatenate((self.y_train, self.y_val))
+            x_train = torch.cat((x_train, x_val), dim=0)
+            self.y_train = torch.cat((self.y_train, y_val))
             self.val_names = [protein.name for protein in self.val_data]
 
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
@@ -841,11 +853,13 @@ class Model:
             y_test_pred.cpu().numpy(),
             y_test_sigma.cpu().numpy(),
         )
+        self.y_train = self.y_train.cpu().numpy()
+        self.y_test = self.y_test.cpu().numpy()
         self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
         self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
         self.y_best = max((max(self.y_train), max(self.y_test)))
 
-        # conformal prediction
+        # conformal prediction and statistics
         self.calibration = self.calibrate(
             self.y_test, self.y_test_pred, confidence=0.90
         )
@@ -868,6 +882,9 @@ class Model:
                 f"{self.library.rep_path}",
                 f"../models/{self.model_type}/{self.rep}",
             )
+
+        if not os.path.exists(csv_dest):
+            os.makedirs(csv_dest, exist_ok=True)
 
         train_df = self.save_to_csv(
             self.train_data,
@@ -1055,12 +1072,12 @@ class Model:
 
         return df
 
-    def predict(self, proteins: list, rep_path=None, acq_fn="greedy", batch_size=10000):
+    def predict(self, proteins, rep_path=None, acq_fn="greedy", batch_size=10000):
         """
-        Scores the R-squared value for a list of proteins.
+        Makes predictions using the trained model, either for a list of proteins, sequence(s), or a Library object.
 
         Args:
-            proteins (list): List of proteins to make predictions.
+            proteins (list): List of proteins, sequence(s), or a Library object.
             rep_path (str): Path to representations for proteins in the list.
                 If None, the library project path and representation type for training
                 will be assumed
@@ -1083,6 +1100,56 @@ class Model:
         all_y_pred = []
         all_sigma_pred = []
         all_acq_scores = []
+
+        # pred_dest
+        # save dataframes
+        if self.dest is not None:
+            pred_dest = f"{self.dest}"
+        else:
+            pred_dest = os.path.join(
+                f"{self.library.rep_path}",
+                f"../models/{self.model_type}/{self.rep}/predictions",
+            )
+
+        pred_rep_path = os.path.join(pred_dest, "rep")
+
+        if not os.path.exists(pred_dest):
+            os.makedirs(pred_dest, exist_ok=True)
+
+        if not os.path.exists(pred_rep_path):
+            os.makedirs(pred_rep_path, exist_ok=True)
+
+        # if proteins is a sequence string
+        if isinstance(proteins, str):
+            proteins = [proteins]
+
+        # if proteins is a single Protein object
+        if isinstance(proteins, Protein):
+            proteins = [proteins]
+
+        # if proteins is a list of strings
+        if isinstance(proteins[0], str):
+            proteins = [
+                Protein(
+                    hashlib.sha256(seq.encode()).hexdigest()[:16],
+                    seq,
+                    y=None,
+                    y_pred=None,
+                    y_sigma=None,
+                    acq_score=None,
+                    user=self.library.user,
+                    rep_path=pred_rep_path,
+                )
+                for seq in proteins
+            ]
+
+        # if proteins is a list of Protein objects
+        elif isinstance(proteins[0], Protein):
+            proteins = [prot for prot in proteins]
+
+        # if proteins is a Library object
+        elif isinstance(proteins, Library):
+            proteins = proteins.proteins
 
         for i in range(0, len(proteins), batch_size):
             batch_proteins = proteins[i : i + batch_size]
@@ -1132,17 +1199,51 @@ class Model:
         sorted_indices = np.argsort(all_acq_scores)[::-1]
 
         # Sort all lists/arrays by the sorted indices
-        val_data = [proteins[i] for i in sorted_indices]
-        y_val = [prot.y for prot in val_data]
+        pred_proteins = [proteins[i] for i in sorted_indices]
+        y_val = [prot.y for prot in pred_proteins]
         y_val_pred = all_y_pred[sorted_indices]
         y_val_sigma = all_sigma_pred[sorted_indices]
         sorted_acq_score = all_acq_scores[sorted_indices]
 
-        for i, prot in enumerate(val_data):
+        for i, prot in enumerate(pred_proteins):
             prot.y_pred = y_val_pred[i]
             prot.y_sigma = y_val_sigma[i]
 
-        return val_data, y_val_pred, y_val_sigma, y_val, sorted_acq_score
+        # Prediction dataframe
+        pred_df = pd.DataFrame(
+            {
+                "name": [prot.name for prot in pred_proteins],
+                "sequence": [prot.seq for prot in pred_proteins],
+                "y_true": y_val,
+                "y_predicted": y_val_pred,
+                "y_sigma": y_val_sigma,
+                "acq_score": sorted_acq_score,
+            }
+        )
+        # Save dataframes
+
+        out = {
+            "df": pred_df,
+            "rep_path": pred_rep_path,
+            "struc_path": self.library.struc_path,
+            "y_type": self.library.y_type,
+            "y_col": "y_true",
+            "y_pred_col": "y_predicted",
+            "y_sigma_col": "y_sigma",
+            "seqs_col": "sequence",
+            "acq_col": "acq_score",
+            "names_col": "name",
+            "reps": self.library.reps,
+            "class_dict": self.library.class_dict,
+            "dr_df": None,
+            "pred_proteins": pred_proteins,
+            "y_pred": y_val_pred,
+            "y_sigma": y_val_sigma,
+            "y_true": y_val,
+            "acq_score": sorted_acq_score,
+        }
+
+        return out
 
     def score(self, proteins: list, rep_path=None):
         """
@@ -1606,9 +1707,13 @@ class Model:
         if self.rep not in self._in_memory_representations:
             library.compute(method=self.rep, pbar=pbar, batch_size=batch_size)
 
-        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(
-            library.proteins, acq_fn=acq_fn
-        )
+        predictions = self.predict(library.proteins, rep_path=library.rep_path)
+        val_data = predictions["pred_proteins"]
+        y_pred = predictions["y_pred"]
+        y_sigma = predictions["y_sigma"]
+        y_val = predictions["y_true"]
+        print("this is amazing")
+        acq_score = predictions["acq_score"]
 
         self.search_df = self.save_to_csv(
             val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score

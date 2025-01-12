@@ -58,6 +58,7 @@ class Protein:
         seq: Union[str, None] = None,
         struc: Union[str, biotite.structure.AtomArray, None] = None,
         reps: Union[list, tuple] = [],
+        rep_path: Union[str, None] = None,
         user: Union[str, None] = "guest",
         user_root: Union[str, None] = USR_PATH,
         y=None,
@@ -75,6 +76,7 @@ class Protein:
             seq (str): Protein sequence.
             struc (AtomArray): Protein structure.
             reps (list): List of available representations.
+            rep_path (str): Path to representations directory.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
             y (float, int, str): Label for the protein.
@@ -100,13 +102,13 @@ class Protein:
         self.acq_score = acq_score
         self.fname = fname
         self.user = os.path.join(user_root, user)
+        self.rep_path = rep_path
 
         # Parameters
         self.pdb_file = None
         self.fasta_file = None
         self.reps = []
         self.source_path = None
-        self.rep_path = None
         self.struc_path = None
         self.design = None
         self.chains = []
@@ -183,7 +185,13 @@ class Protein:
             self.struc_path = struc_path
             self.name = fname
         else:
-            rep_path = "/".join(self.rep_path.split("/")[:-1])
+            rep_path = rep_path
+            zs_path = os.path.join(rep_path, "../zero_shot")
+            struc_path = os.path.join(zs_path, "../struc")
+            self.zs_path = zs_path
+            self.rep_path = rep_path
+            self.struc_path = struc_path
+            self.name = fname
 
         # If file is not None, then initialize load fasta
         if self.source.endswith(".fasta"):
@@ -269,7 +277,7 @@ class Protein:
 
         Args:
             color (str): Choose different coloration options
-        
+
         Returns:
             view (NGLWidget): NGLWidget object for visualization.
         """
@@ -292,7 +300,7 @@ class Protein:
             device (str): Choose hardware for computation. Default 'None' for autoselection
                 other options are 'cpu' and 'cuda'.
             chain (str): Chain for which to compute the zero-shot scores.
-        
+
         Returns:
             out (dict): Dictionary containing the results of the computation
         """
@@ -371,7 +379,7 @@ class Protein:
         Args:
             model (str): Model used to compute ZS scores
             chain (str): Chain for which to compute the zero-shot scores.
-        
+
         Returns:
             out (dict): Dictionary containing the results of the computation
         """
@@ -540,7 +548,7 @@ class Protein:
         Args:
             name (str): Name of the protein.
             dest (str): Custom save destination.
-        
+
         Returns:
             struc (AtomArray): Relaxed protein structure.
         """
@@ -645,14 +653,14 @@ class Protein:
     def plot_entropy(self, model="esm1v", title=None, section=None, chain=None):
         """
         Plot the per-position entropy for a given model and sequence.
-        
+
         Args:
             model (str): The name of the model to use for plotting (default: 'esm1v_650M').
             title (str): Title of the plot (default: None).
             section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed.
                 Show entire sequence if None (default: None).
             chain (str): Chain for which to compute the zero-shot scores.
-        
+
         Returns:
             fig (matplotlib.figure.Figure): The created matplotlib figure.
         """

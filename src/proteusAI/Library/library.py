@@ -772,7 +772,11 @@ class Library:
         if rep in self.in_memory:
             reps = self.compute(method=rep, proteins=proteins)
         else:
-            _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+            # try to load representations if not compute them
+            try:
+                _, reps = io_tools.load_embeddings(path=rep_path, names=file_names)
+            except FileNotFoundError:
+                reps = self.compute(method=rep, proteins=proteins)
         return reps
 
     ### Folding ###
@@ -1091,7 +1095,7 @@ class Library:
             random_state=seed,
             highlight_mask=highlight_mask,
             highlight_label=highlight_label,
-            df = df
+            df=df,
         )
         print("done plotting")
 

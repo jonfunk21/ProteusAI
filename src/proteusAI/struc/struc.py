@@ -231,7 +231,7 @@ def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
         source_chain: chain identifier (str) or list of chain identifiers.
         target: "protein" or "ligand".
         dist: distance threshold (float) for contact detection.
-    
+
     Returns:
         list of contact residues
     """

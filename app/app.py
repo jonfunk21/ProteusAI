@@ -989,7 +989,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() == "dataset":
             model = DISCOVERY_MODEL()
-            if model is not None and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG:
+            if (
+                model is not None
+                and INV_MODEL_DICT[model.model_type] not in CLUSTERING_ALG
+            ):
                 clusters = list(model.library.class_dict.values())
                 sample_from = clusters
                 model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
@@ -1295,7 +1298,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     y_type = "class"
                     choice = "Classification"
                     _y_type = "Categorical"
-                    _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+                    _MODEL_TYPES.set(
+                        [x for x in MODEL_TYPES if x != "Gaussian Process"]
+                    )
                 elif is_numerical(ys):
                     y_type = "num"
                     choice = "Regression"
@@ -1305,9 +1310,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     y_type = "class"
                     choice = "Classification"
                     _y_type = "Categorical"
-                    _MODEL_TYPES.set([x for x in MODEL_TYPES if x != "Gaussian Process"])
+                    _MODEL_TYPES.set(
+                        [x for x in MODEL_TYPES if x != "Gaussian Process"]
+                    )
 
-                
                 lib = pai.Library(
                     user=input.USER().lower(),
                     source=data_path,

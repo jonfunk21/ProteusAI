@@ -40,7 +40,7 @@ model = pai.Model(
     rep="esm2_8M",
     min_cluster_size=30,
     min_samples=50,
-    dr_method=dr_type,
+    dr_method=dr_method,
     seed=seed,
 )
 
@@ -67,4 +67,4 @@ fig, ax, plot_df = model.library.plot(
     highlight_mask=search_mask,
     seed=seed,
 )
-plt.savefig(f"demo/demo_data/out/clustering_results_{dr_type}.png")
+plt.savefig(f"demo/demo_data/out/clustering_results_{dr_method}.png")
