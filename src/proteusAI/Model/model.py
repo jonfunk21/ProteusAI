@@ -1360,7 +1360,7 @@ class Model:
     def search(
         self,
         N=10,
-        labels=[],<
+        labels=[],
         optim_problem="max",
         method="ga",
         max_eval=10000,
