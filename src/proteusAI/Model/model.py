@@ -1469,6 +1469,7 @@ class Model:
         batch_size=100,
         pbar=None,
         acq_fn="ei",
+        overwrite=True,
     ):
         """Search for new mutants or select variants from a set of sequences"""
 
@@ -1485,6 +1486,7 @@ class Model:
                 batch_size=batch_size,
                 pbar=pbar,
                 acq_fn=acq_fn,
+                overwrite=overwrite, 
             )
 
         return out
@@ -1592,17 +1594,21 @@ class Model:
         max_eval=10000,
         explore=0.1,
         batch_size=100,
-        pbar=None,
         acq_fn="ei",
+        overwrite=True,
+        pbar=None,
     ):
         """
         Search for improved mutants.
 
         Args:
-            N (int): Number of sequences to be returned.
-            optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
-            labels (list): list of labels to sample from. Default ['all'] will sample from all labels.
+            optim_problem (str): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
+            max_eval (int): Maximum number of evaluations. Default 1000.
+            explore (float): Exploration ratio, float between 0 and 1 to control the exploratory tendency of the sampling algorithm.
+            batch_size (int): Batch size for loading representations. Default 100.
+            acq_fn (str): Acquisition function. Default 'ei' - Expected Improvement.
+            overwrite (bool): Overwrite existing search results. Default True.
             pbar: Progress bar for ProteusAI app.
         """
         if pbar:
@@ -1673,14 +1679,15 @@ class Model:
         csv_file = os.path.join(
             csv_dest, f"{self.model_type}_{self.rep}_predictions.csv"
         )
-        if os.path.exists(csv_file):
-            self.search_df = pd.read_csv(csv_file)
 
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.rep}.csv"
 
-        if os.path.exists(os.path.join(csv_dest, fname)):
+
+        if os.path.exists(os.path.join(csv_dest, fname)) and not overwrite:
             self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
+        else:
+            self.search_df = None
 
         mutant_df = self._mutate(
             proteins, mutations, explore=explore, max_eval=max_eval
@@ -1712,7 +1719,6 @@ class Model:
         y_pred = predictions["y_pred"]
         y_sigma = predictions["y_sigma"]
         y_val = predictions["y_true"]
-        print("this is amazing")
         acq_score = predictions["acq_score"]
 
         self.search_df = self.save_to_csv(

@@ -100,6 +100,7 @@ BATCH_SIZE_DICT = {
     "esm2_35M": 100,
     "esm2_8M": 100,
     "esm1v": 200,
+    "vhse": 10000,
 }
 ZS_MODELS = ["ESM-1v", "ESM-2 (650M)", "ESM-2 (150M)", "ESM-2 (35M)", "ESM-2 (8M)"]
 FOLDING_MODELS = ["ESM-Fold"]
@@ -122,6 +123,7 @@ MAX_EVAL_DICT = {
     "esm2_35M": 500,
     "esm2_8M": 1000,
     "esm1v": 200,
+    "vhse": 10000,
 }
 
 PAPER_URL = "https://www.biorxiv.org/content/10.1101/2024.10.01.616114v1"
@@ -2496,6 +2498,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     batch_size,
                     None,
                     acq_fn,
+                    False # accumulate previous results
                 )
 
                 MLDE_SEARCH_DF.set(out)
