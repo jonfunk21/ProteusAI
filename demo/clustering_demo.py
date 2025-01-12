@@ -60,6 +60,10 @@ model_lib = pai.Library(source=out)
 
 # plot results
 fig, ax, plot_df = model.library.plot(
-    rep="esm2_8M", method=dr_type, use_y_pred=True, highlight_mask=search_mask, seed=seed
+    rep="esm2_8M",
+    method=dr_type,
+    use_y_pred=True,
+    highlight_mask=search_mask,
+    seed=seed,
 )
 plt.savefig(f"demo/demo_data/out/clustering_results_{dr_type}.png")
