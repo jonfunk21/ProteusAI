@@ -269,6 +269,9 @@ class Protein:
 
         Args:
             color (str): Choose different coloration options
+        
+        Returns:
+            view (NGLWidget): NGLWidget object for visualization.
         """
         view = pai_struc.show_pdb(
             self.pdb_file, color=color, highlight=highlight, sticks=sticks
@@ -288,6 +291,10 @@ class Protein:
             pbar: App progress bar
             device (str): Choose hardware for computation. Default 'None' for autoselection
                 other options are 'cpu' and 'cuda'.
+            chain (str): Chain for which to compute the zero-shot scores.
+        
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
 
         # Set a default chain if none is provided and there are chains available
@@ -349,7 +356,7 @@ class Protein:
             "y_type": "num",
             "y_pred_col": "mmp",
             "seqs_col": "sequence",
-            "names_col": "mutant",
+            "names_col": "name",
             "reps": self.reps,
             "class_dict": self.class_dict,
             "pred_data": True,
@@ -360,6 +367,13 @@ class Protein:
     def zs_library(self, model="esm1v", chain=None):
         """
         Generate zero-shot library.
+
+        Args:
+            model (str): Model used to compute ZS scores
+            chain (str): Chain for which to compute the zero-shot scores.
+        
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
 
         if chain is None and len(self.chains) >= 1:
@@ -522,6 +536,13 @@ class Protein:
     def relax_struc(self, name: str, dest=None):
         """
         Perform energy minimization on a protein structure.
+
+        Args:
+            name (str): Name of the protein.
+            dest (str): Custom save destination.
+        
+        Returns:
+            struc (AtomArray): Relaxed protein structure.
         """
         user_path = self.user
 
@@ -533,6 +554,8 @@ class Protein:
 
         pai_struc.relax_pdb(pdb_file)
         self.struc = strucio.load_structure(pdb_file)
+
+        return self.struc
 
     ### Inverse Folding ###
     def esm_if(
@@ -560,6 +583,9 @@ class Protein:
             pbar: Progress bar used by shiny app.
             dest (str): Custom save destination.
             noise (float): Noise added to backbone structure.
+
+        Returns:
+            out (dict): Dictionary containing the results of the computation
         """
         user_path = self.user
 
@@ -617,6 +643,19 @@ class Protein:
     # Plot
     # Plot zero-shot entropy
     def plot_entropy(self, model="esm1v", title=None, section=None, chain=None):
+        """
+        Plot the per-position entropy for a given model and sequence.
+        
+        Args:
+            model (str): The name of the model to use for plotting (default: 'esm1v_650M').
+            title (str): Title of the plot (default: None).
+            section (tuple): Section of the sequence to be shown in the plot - low and high end of sequence to be displayed.
+                Show entire sequence if None (default: None).
+            chain (str): Chain for which to compute the zero-shot scores.
+        
+        Returns:
+            fig (matplotlib.figure.Figure): The created matplotlib figure.
+        """
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
@@ -770,6 +809,9 @@ class Protein:
         Args:
             chain (str): specify chain for which to compute the contacts. Default 'None' will take the first chain.
             target (str): Specify protein-'protein' contacts or protein-'ligand' contacts, Default 'protein'
+
+        Returns:
+            contacts (list): List of contacts in the protein.
         """
         return pai_struc.get_contacts(self.struc, source_chain, target, dist)
 

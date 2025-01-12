@@ -225,6 +225,15 @@ def get_sequences(prot_f):
 def get_contacts(structure, source_chain=None, target="protein", dist=7.0):
     """
     Detect contact residues between specified targets.
+
+    Args:
+        structure: biotite.structure.AtomArray or path to pdb (str).
+        source_chain: chain identifier (str) or list of chain identifiers.
+        target: "protein" or "ligand".
+        dist: distance threshold (float) for contact detection.
+    
+    Returns:
+        list of contact residues
     """
     # Try different atom selection strategies
     non_hetero_atoms = structure[~structure.hetero]
