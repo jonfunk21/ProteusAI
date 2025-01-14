@@ -574,7 +574,7 @@ def zs_to_csv(
 
     df = pd.DataFrame(
         {
-            "mutant": mutants,
+            "name": mutants,
             "sequence": sequences,
             "p": p_values,
             "mmp": mmp_values,

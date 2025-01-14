@@ -1262,7 +1262,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         ui.update_select("y_col", label=y_col, choices=cols, selected=cols[-1])
 
     ### EXTRACT DATASET COLUMNS ###
-    @reactive.Effect()
+    @reactive.Effect
     def _():
         update_col_selection()
 
@@ -1854,7 +1854,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 loop = asyncio.get_running_loop()
                 batch_size = BATCH_SIZE_DICT[model]
 
-                prot.zs_prediction(model, batch_size, None, None, chain)
                 data = await loop.run_in_executor(
                     executor,
                     prot.zs_prediction,
@@ -1929,10 +1928,14 @@ def server(input: Inputs, output: Outputs, session: Session):
         prot = PROTEIN()
         name = prot.name
 
-        df_path = os.path.join(
-            prot.user,
-            f"{name}/zero_shot/results/{chain}/{REP_DICT[method]}/zs_scores.csv",
-        )
+        if chain is not None and len(prot.chains) >= 1:
+            chain = input.zs_chain()
+            s = (f"{name}/zero_shot/results/{chain}/{REP_DICT[method]}/zs_scores.csv",)
+        else:
+            chain = None
+            s = (f"{name}/zero_shot/results/{REP_DICT[method]}/zs_scores.csv",)
+
+        df_path = os.path.join(prot.user, s)
         if os.path.exists(df_path):
             COMP_ZS_SCORES.set([method])
         else:
@@ -1955,7 +1958,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         else:
             path = os.path.join(prot.zs_path, "results", method, "zs_scores.csv")
         df = pd.read_csv(path)
-        df = df.drop("sequence", axis=1)
+
         try:
             df = df.rename(
                 columns={
@@ -1975,7 +1978,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "entropy": "Entropy",
                 }
             )
+
         ZS_SCORES.set(df)
+        df = df.drop("sequence", axis=1)
         return df
 
     ### DOWNLOAD ZS RESULTS ###
