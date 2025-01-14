@@ -237,12 +237,7 @@ class Protein:
             )
 
         # Store the first sequence in self.seq
-        seq = sequences[0]
-
-        # Set the name and sequence
-        fname = file.split("/")[-1].split(".")[0]
-        self.name = fname
-        self.seq = seq
+        self.seq = sequences[0]
 
     def load_structure(self, prot_f, name=None, filter_solvent=True):
         """
