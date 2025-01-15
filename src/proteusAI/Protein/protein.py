@@ -238,7 +238,6 @@ class Protein:
 
         # Store the first sequence in self.seq
         self.seq = sequences[0]
-        # self.seq_hash = hash_sequence(self.seq)
 
     def load_structure(self, prot_f, name=None, filter_solvent=True):
         """
