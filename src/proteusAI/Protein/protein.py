@@ -94,6 +94,7 @@ class Protein:
         # Arguments
         self.name = name
         self.seq = seq
+        self.seq_hash = hash_sequence(seq)
         self.reps = list(reps)
         self.struc = struc
         self.source = source
