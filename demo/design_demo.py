@@ -10,7 +10,7 @@ num_samples = 100  # number of samples
 for f in files:
     protein = pai.Protein(source=f)
 
-    fname = f.split("/")[1][:-4]
+    fname = f.split("/")[-1][:-4]
 
     for temp in temps:
         for key, fix in fixed.items():
@@ -23,7 +23,7 @@ for f in files:
                 os.makedirs("demo/demo_data/out/", exist_ok=True)
 
             out["df"].to_csv(
-                f"demo/demo_data/out{fname}_temp_{temp}_{key}_out.csv", index=False
+                f"demo/demo_data/out_{fname}_temp_{temp}_{key}_out.csv", index=False
             )
 
 
