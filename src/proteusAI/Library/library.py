@@ -492,21 +492,10 @@ class Library:
 
     def _check_strucs(self):
         """
-        Check for available representations, store in protein object if representation is found
+        Check for available structures, store in protein object if representation is found
         """
-        strucs = [r for r in os.listdir(self.struc_path) if not r.startswith(".")]
-        if len(strucs) > 0:
-            for struc in strucs:
-                struc_names = [
-                    f
-                    for f in os.path.join(self.struc_path, struc)
-                    if f.endswith(".pdb")
-                ]
-                if len(struc_names) == len(set(self.names)):
-                    self.strucs.append(struc)
-                    for protein in self.proteins:
-                        f_name = protein.name + ".pdb"  # noqa: F841
-                        protein._strucss.append(strucs)
+        # Not implemented yet
+        pass
 
     def _encode_categorical_labels(self, ys):
         """
@@ -586,10 +575,12 @@ class Library:
         assert method in supported_methods, f"'{method}' is not a supported method"
         assert isinstance(batch_size, (int, type(None)))
 
+        # io dependent methods
         if method in self._esm_models:
             self.esm_builder(
                 model=method, batch_size=batch_size, dest=dest, pbar=pbar, device=device
             )
+        # in memory representations
         elif method == "ohe":
             reps = self.ohe_builder(dest=dest, pbar=pbar, proteins=proteins)
             return reps
@@ -630,7 +621,7 @@ class Library:
         proteins_to_compute = [
             protein
             for protein in self.proteins
-            if not os.path.exists(os.path.join(dest, protein.name + ".pt"))
+            if not os.path.exists(os.path.join(dest, protein.seq_hash + ".pt"))
         ]
 
         print(f"computing {len(proteins_to_compute)} proteins")
@@ -642,7 +633,7 @@ class Library:
             )
 
         # get names for and sequences for computation
-        names = [protein.name for protein in proteins_to_compute]
+        names = [protein.seq_hash for protein in proteins_to_compute]
         seqs = [protein.seq for protein in proteins_to_compute]
 
         # compute representations
@@ -765,9 +756,9 @@ class Library:
             rep_path = os.path.join(self.rep_path, rep)
 
         if proteins is None:
-            file_names = [protein.name + ".pt" for protein in self.proteins]
+            file_names = [protein.seq_hash + ".pt" for protein in self.proteins]
         else:
-            file_names = [protein.name + ".pt" for protein in proteins]
+            file_names = [protein.seq_hash + ".pt" for protein in proteins]
 
         if rep in self.in_memory:
             reps = self.compute(method=rep, proteins=proteins)
@@ -815,8 +806,10 @@ class Library:
             if not os.path.exists(self.struc_path):
                 os.makedirs(self.struc_path)
 
-            for i, name in enumerate(names):
-                dest = os.path.join(self.struc_path, name + ".pdb")
+            # save pdbs
+            for i, seq in enumerate(seqs):
+                seq_hash = io_tools.fasta.hash_sequence(seq)
+                dest = os.path.join(self.struc_path, seq_hash + ".pdb")
                 f = all_pdbs[i]
                 f.write(dest)
 
@@ -826,14 +819,15 @@ class Library:
                         message="Initiating energy minimization",
                         detail=f"Minimizing {len(names)} structures...",
                     )
-                for i, name in enumerate(names):
+                for i, seq in enumerate(seqs):
+                    seq_hash = io_tools.fasta.hash_sequence(seq)
                     if pbar:
                         pbar.set(
                             i + 1,
                             message="Minimizing energy",
-                            detail=f"{i+1}/{len(names)} remaining...",
+                            detail=f"{i+1}/{len(seqs)} remaining...",
                         )
-                    self.relax_struc(name)
+                    self.relax_struc(seq_hash)
 
             self.out_df = pd.DataFrame(
                 {
@@ -886,7 +880,7 @@ class Library:
         delta_chis = []
 
         for prot in self.proteins:
-            target_path = os.path.join(self.struc_path, prot.name + ".pdb")
+            target_path = os.path.join(self.struc_path, prot.seq_hash + ".pdb")
             ref_struc, target = pai_struc.align(ref.pdb_file, target_path)
             rmsd = pai_struc.compute_rmsd(ref_struc, target)
             target_chi = pai_struc.compute_chi_angles(target, residues)
@@ -908,7 +902,7 @@ class Library:
             delta_chis.append(delta_chi)
             rmsds.append(rmsd)
 
-        results_path = os.path.join(self.rep_path, f"{prot.name}_analysis.csv")
+        results_path = os.path.join(self.rep_path, f"{prot.seq_hash}_analysis.csv")
 
         if not os.path.exists(self.rep_path):
             os.makedirs(self.rep_path, exist_ok=True)

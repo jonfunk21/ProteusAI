@@ -94,7 +94,6 @@ class Protein:
         # Arguments
         self.name = name
         self.seq = seq
-        self.seq_hash = hash_sequence(seq)
         self.reps = list(reps)
         self.struc = struc
         self.source = source
@@ -116,7 +115,7 @@ class Protein:
         self.chains = []
         self.zs_path = None
         self.class_dict = None
-        self.seq_hash = None
+        self.seq_hash = hash_sequence(seq)
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -262,10 +261,10 @@ class Protein:
         chains = pai_struc.chain_parser(prot_f)
 
         self.pdb_file = prot_f
+        self.chains = chains
         self.seq = seqs
         self.name = name
         self.struc = prot
-        self.chains = chains
 
     def view_struc(self, color=None, highlight=None, sticks=None):
         """
@@ -593,6 +592,7 @@ class Protein:
         pbar=None,
         dest=None,
         noise=0.2,
+        overwrite=True,
     ):
         """
         Perform inverse folding using ESM-IF for multi-chain structures.
@@ -607,6 +607,7 @@ class Protein:
             pbar: Progress bar used by shiny app.
             dest (str): Custom save destination.
             noise (float): Noise added to backbone structure.
+            overwrite (bool): Overwrite existing files.
 
         Returns:
             out (dict): Dictionary containing the results of the computation
@@ -644,7 +645,12 @@ class Protein:
             pbar=pbar,
         )
 
-        df.to_csv(csv_path)
+        if overwrite:
+            df.to_csv(csv_path)
+        else:
+            df1 = pd.read_csv(csv_path)
+            df = pd.concat([df1, df], ignore_index=True)
+            df.to_csv(csv_path)
 
         self.designs = csv_path
 
@@ -881,7 +887,10 @@ class Protein:
                 f"Expected 'seq' to be of type 'str', but got '{type(value).__name__}'"
             )
         self._seq = value
-        self.seq_hash = hash_sequence(value)
+        if isinstance(value, dict):
+            self.seq_hash = hash_sequence(value[list(value.keys())[0]])
+        else:
+            self.seq_hash = hash_sequence(value)
 
     # For rep
     @property
