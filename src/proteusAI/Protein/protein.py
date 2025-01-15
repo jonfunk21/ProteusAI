@@ -17,6 +17,7 @@ import torch
 
 import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.struc as pai_struc
+from proteusAI.io_tools.fasta import hash_sequence
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -114,6 +115,7 @@ class Protein:
         self.chains = []
         self.zs_path = None
         self.class_dict = None
+        self.seq_hash = None
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -163,8 +165,6 @@ class Protein:
 
     def init_from_inheritance(self):
         pass
-
-    # TODO: add protein specific loading functions of previously computed data (currently only handled in app)
 
     def init_from_file(self):
 
@@ -238,6 +238,7 @@ class Protein:
 
         # Store the first sequence in self.seq
         self.seq = sequences[0]
+        # self.seq_hash = hash_sequence(self.seq)
 
     def load_structure(self, prot_f, name=None, filter_solvent=True):
         """
@@ -312,15 +313,23 @@ class Protein:
             seq = self.seq
             dest = os.path.join(self.zs_path, "results", model)
 
+        seq_hash = hash_sequence(seq)
+
         # Check if results already exist
-        if os.path.exists(dest):
-            print(f"Results already computed. Loading from {dest}")
-            p = torch.load(os.path.join(dest, "prob_dist.pt"))
-            mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
-            entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
-            logits = torch.load(os.path.join(dest, "masked_logits.pt"))
-            df = pd.read_csv(os.path.join(dest, "zs_scores.csv"))
-        else:
+        try:
+            p = torch.load(os.path.join(dest, f"{seq_hash}_prob_dist.pt"))
+            mmp = torch.load(
+                os.path.join(dest, f"{seq_hash}_masked_marginal_probability.pt")
+            )
+            entropy = torch.load(
+                os.path.join(dest, f"{seq_hash}_per_position_entropy.pt")
+            )
+            logits = torch.load(os.path.join(dest, f"{seq_hash}_masked_logits.pt"))
+            df = pd.read_csv(os.path.join(dest, f"{seq_hash}_zs_scores.csv"))
+            print(
+                f"Results directory already created, attempting to loaded results from {dest}..."
+            )
+        except FileNotFoundError:
             # Perform computation if results do not exist
             print("Computing logits")
             logits, alphabet = esm_tools.get_mutant_logits(
@@ -338,10 +347,14 @@ class Protein:
                 print(f"Directory created at {dest}")
 
             # Save tensors
-            torch.save(p, os.path.join(dest, "prob_dist.pt"))
-            torch.save(mmp, os.path.join(dest, "masked_marginal_probability.pt"))
-            torch.save(entropy, os.path.join(dest, "per_position_entropy.pt"))
-            torch.save(logits, os.path.join(dest, "masked_logits.pt"))
+            torch.save(p, os.path.join(dest, f"{seq_hash}_prob_dist.pt"))
+            torch.save(
+                mmp, os.path.join(dest, f"{seq_hash}_masked_marginal_probability.pt")
+            )
+            torch.save(
+                entropy, os.path.join(dest, f"{seq_hash}_per_position_entropy.pt")
+            )
+            torch.save(logits, os.path.join(dest, f"{seq_hash}_masked_logits.pt"))
 
             self.p = p
             self.mmp = mmp
@@ -349,7 +362,12 @@ class Protein:
             self.logits = logits
 
             df = esm_tools.zs_to_csv(
-                seq, alphabet, p, mmp, entropy, os.path.join(dest, "zs_scores.csv")
+                seq,
+                alphabet,
+                p,
+                mmp,
+                entropy,
+                os.path.join(dest, f"{seq_hash}_zs_scores.csv"),
             )
 
         out = {
@@ -382,18 +400,19 @@ class Protein:
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             wt_seq = self.seq[chain]
+            wt_seq_hash = hash_sequence(wt_seq)
             zs_results_path = os.path.join(
-                self.zs_path, "results", chain, model, "zs_scores.csv"
+                self.zs_path, "results", chain, model, f"{wt_seq_hash}_zs_scores.csv"
             )
         elif len(self.chains) >= 1:
             wt_seq = self.seq[chain]
             zs_results_path = os.path.join(
-                self.zs_path, "results", chain, model, "zs_scores.csv"
+                self.zs_path, "results", chain, model, f"{wt_seq_hash}_zs_scores.csv"
             )
         else:
             wt_seq = self.seq
             zs_results_path = os.path.join(
-                self.zs_path, "results", model, "zs_scores.csv"
+                self.zs_path, "results", model, f"{wt_seq_hash}_zs_scores.csv"
             )
 
         # load already computed zs scores
@@ -481,13 +500,15 @@ class Protein:
         if chain is None and isinstance(self.seq, dict) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
-            name = self.name + f"_{chain}"
+            seq_hash = hash_sequence(seq)
+            name = seq_hash + f"_{chain}"
         elif isinstance(self.seq, dict):
             seq = self.seq[chain]
-            name = self.name + f"_{chain}"
+            seq_hash = hash_sequence(seq)
+            name = seq_hash + f"_{chain}"
         else:
             seq = self.seq
-            name = self.name
+            name = hash_sequence(seq)
 
         # check scores for this protein and model have already been computed
         user_path = self.user
@@ -590,16 +611,6 @@ class Protein:
         Returns:
             out (dict): Dictionary containing the results of the computation
         """
-        user_path = self.user
-
-        if dest:
-            csv_path = os.path.join(dest, f"{self.name}.csv")
-        else:
-            dest = os.path.join(user_path, f"{self.name}/design/")
-            csv_path = os.path.join(dest, f"{self.name}.csv")
-
-        os.makedirs(dest, exist_ok=True)
-
         # define chains
         if chains is None:
             chains = self.chains
@@ -607,6 +618,17 @@ class Protein:
         if target_chain is None:
             target_chain = chains[0]
             assert target_chain in chains, "Target chain must be in chains."
+
+        seq = self.seq[target_chain]
+        seq_hash = hash_sequence(seq)
+
+        if dest:
+            csv_path = os.path.join(dest, f"{seq_hash}.csv")
+        else:
+            dest = os.path.join(self.user, f"{self.name}/design/")
+            csv_path = os.path.join(dest, f"{seq_hash}.csv")
+
+        os.makedirs(dest, exist_ok=True)
 
         # return dataframe of results
         df = esm_tools.esm_design(
@@ -668,6 +690,7 @@ class Protein:
             seq = self.seq
             chain = None
 
+        seq_hash = hash_sequence(seq)
         if self.name:
             dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
             if chain:
@@ -682,15 +705,19 @@ class Protein:
                 )
 
         # Load required data
-        self.p = torch.load(os.path.join(dest, "prob_dist.pt"), weights_only=False)
+        self.p = torch.load(
+            os.path.join(dest, f"{seq_hash}_prob_dist.pt"), weights_only=False
+        )
         self.mmp = torch.load(
-            os.path.join(dest, "masked_marginal_probability.pt"), weights_only=False
+            os.path.join(dest, f"{seq_hash}_masked_marginal_probability.pt"),
+            weights_only=False,
         )
         self.entropy = torch.load(
-            os.path.join(dest, "per_position_entropy.pt"), weights_only=False
+            os.path.join(dest, f"{seq_hash}_per_position_entropy.pt"),
+            weights_only=False,
         )
         self.logits = torch.load(
-            os.path.join(dest, "masked_logits.pt"), weights_only=False
+            os.path.join(dest, f"{seq_hash}_masked_logits.pt"), weights_only=False
         )
 
         # Section handling
@@ -745,7 +772,7 @@ class Protein:
         Returns:
             fig (matplotlib.figure.Figure): The created matplotlib figure.
         """
-
+        # TODO: compute seqence hash
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             seq = self.seq[chain]
@@ -755,6 +782,7 @@ class Protein:
             seq = self.seq
             chain = None
 
+        seq_hash = hash_sequence(seq)
         if self.name:
             dest = os.path.join(self.user, f"{self.name}/zero_shot/results", model)
             if chain:
@@ -769,10 +797,14 @@ class Protein:
                 )
 
         # Load required data
-        self.p = torch.load(os.path.join(dest, "prob_dist.pt"))
-        self.mmp = torch.load(os.path.join(dest, "masked_marginal_probability.pt"))
-        self.entropy = torch.load(os.path.join(dest, "per_position_entropy.pt"))
-        self.logits = torch.load(os.path.join(dest, "masked_logits.pt"))
+        self.p = torch.load(os.path.join(dest, f"{seq_hash}_prob_dist.pt"))
+        self.mmp = torch.load(
+            os.path.join(dest, f"{seq_hash}_masked_marginal_probability.pt")
+        )
+        self.entropy = torch.load(
+            os.path.join(dest, f"{seq_hash}_per_position_entropy.pt")
+        )
+        self.logits = torch.load(os.path.join(dest, f"{seq_hash}_masked_logits.pt"))
 
         # Section handling
         seq_len = len(seq)
@@ -849,6 +881,7 @@ class Protein:
                 f"Expected 'seq' to be of type 'str', but got '{type(value).__name__}'"
             )
         self._seq = value
+        self.seq_hash = hash_sequence(value)
 
     # For rep
     @property

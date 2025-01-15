@@ -214,6 +214,7 @@ def blosum_encoding(sequence, matrix="BLOSUM62", canonical=True):
 
     return encoding
 
+
 # hash sequences using sha256
 def hash_sequence(sequence: str, length: int = 20) -> str:
     """
