@@ -7,6 +7,7 @@ __author__ = "Jonathan Funk"
 import os
 from biotite.sequence import ProteinSequence
 import numpy as np
+import hashlib
 
 
 def load_all_fastas(
@@ -212,3 +213,21 @@ def blosum_encoding(sequence, matrix="BLOSUM62", canonical=True):
             encoding[i, :] = 0.5
 
     return encoding
+
+# hash sequences using sha256
+def hash_sequence(sequence: str, length: int = 20) -> str:
+    """
+    Hashes a sequence using sha256
+
+    Parameters:
+    -----------
+        sequence (str): Amino acid sequence
+
+    Returns:
+    --------
+        str: Hashed sequence
+    """
+    if sequence is None:
+        pass
+    else:
+        return hashlib.sha256(sequence.encode()).hexdigest()[0:length]
