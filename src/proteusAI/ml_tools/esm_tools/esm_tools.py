@@ -20,12 +20,9 @@ from typing import Union
 import esm
 import esm.inverse_folding
 import esm.inverse_folding.util
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import openmm  # move this and pdb fixer to struc tools
 import pandas as pd
-import seaborn as sns
 import torch
 import torch.nn.functional as F
 from biotite.structure.io.pdb import PDBFile
@@ -35,7 +32,6 @@ from esm.inverse_folding.multichain_util import (
     score_sequence_in_complex,
 )
 from esm.inverse_folding.util import CoordBatchConverter
-from matplotlib.colors import LinearSegmentedColormap
 import plotly.graph_objects as go
 
 alphabet = torch.load(
@@ -1030,9 +1026,6 @@ def plot_heatmap(
 
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
-
-    # adjust keys and values
-    min_val = min(filtered_alphabet.values())
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(

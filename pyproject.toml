@@ -29,6 +29,7 @@ dependencies = [
   "scikit-learn",
   "optuna",
   "seaborn",
+  "plotly",
   "openpyxl",
   "py3Dmol",
   "gpytorch",
