@@ -230,6 +230,7 @@ def plot_umap(
     highlight_mask: Union[List[Union[int, float]], None] = None,
     highlight_label: str = "Highlighted",
     df: Union[pd.DataFrame, None] = None,
+    html: bool = False,
 ):
     """
     Create a UMAP plot and optionally color by y values, with special coloring for points outside given thresholds.

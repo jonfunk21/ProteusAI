@@ -19,8 +19,10 @@ import pandas as pd
 import tooltips
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
+import shinywidgets as widgets
 
 import proteusAI as pai
+
 
 app_path = os.path.dirname(os.path.realpath(__file__))
 google_analytics = os.path.join(app_path, "google_analytics.html")
@@ -1990,8 +1992,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         out = ZS_SCORES()
         if out is not None:
             return ui.TagList(
-                ui.output_plot("entropy_plot"),
-                ui.output_plot("scores_plot"),
+                widgets.output_widget("entropy_plot"),
+                widgets.output_widget("heatmap_plot"),
                 # Descriptors
                 ui.h4("Table Interpretation"),
                 ui.row(
@@ -2034,7 +2036,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### OUTPUT PROTEIN MODE ###
     @output
-    @render.plot
+    @widgets.render_widget
     @reactive.event(input.plot_entropy)
     def entropy_plot(alt=None):
         """
@@ -2068,11 +2070,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### UPDATE SCORES PLOT ###
     @output
-    @render.plot
+    @widgets.render_widget
     @reactive.event(input.plot_scores)
-    def scores_plot(alt=None):
+    def heatmap_plot(alt=None):
         """
-        Create the per position entropy plot
+        Create heatmap of zeroshot scores
         """
         prot = PROTEIN()
 
@@ -2103,6 +2105,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model=MODEL_DICT[input.computed_zs_scores()],
             chain=chain,
         )
+        print(fig)
         return fig
 
     ### STRUCTURE MODE ###
