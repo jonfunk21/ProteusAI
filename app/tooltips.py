@@ -91,3 +91,14 @@ predict protein properties. The module offers several visualization techniques t
 understand the underlying structure of the protein data. Advanced analysis and predictions can be made by using the
 MLDE or Discovery modules in combination with the Representations module.
 """
+
+zs_entropy_tooltips = """
+This plot shows the entropy values across the protein sequence, providing insights into the diversity tolerated at each position.
+The higher the entropy, the great the variety of amino acids tolerated at the position.
+"""
+
+zs_heatmap_tooltips = """
+This heatmap visualizes the computed zero-shot scores for the protein. The scores at each position are normalised to the score 
+of the original amino acid, which is set to zero (white) and highlighted by a black box. A positive score (blue) indicates that mutating the position to that amino acid could
+have beneficial effects, while a negative score (red) indicates the mutation would not be favourable.
+"""
