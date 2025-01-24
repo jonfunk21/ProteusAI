@@ -1019,8 +1019,6 @@ def plot_heatmap(
         columns=[i for i in filtered_alphabet.keys()],
     ).T
 
-    data = df.copy()
-
     # Create the heatmap using Plotly
     fig = go.Figure()
 
@@ -1034,9 +1032,9 @@ def plot_heatmap(
     # Add the main heatmap
     fig.add_trace(
         go.Heatmap(
-            z=data.values,
-            x=data.columns,
-            y=data.index,
+            z=df.values,
+            x=df.columns,
+            y=df.index,
             colorscale=custom_colorscale,
             zmid=0,  # Ensure 0 is centered on the colorscale
             showscale=True,
@@ -1050,9 +1048,9 @@ def plot_heatmap(
     )
 
     # Overlay black boxes for cells with a value of exactly 0
-    for i, amino_acid in enumerate(data.index):
-        for j, position in enumerate(data.columns):
-            if data.at[amino_acid, position] == 0:
+    for i, amino_acid in enumerate(df.index):
+        for j, position in enumerate(df.columns):
+            if df.at[amino_acid, position] == 0:
                 fig.add_shape(
                     type="rect",
                     x0=j - 0.5,
@@ -1063,7 +1061,7 @@ def plot_heatmap(
                 )
 
     # Show fewer x-ticks for longer sequences
-    max_length = len(data.columns)
+    max_length = len(df.columns)
 
     # Determine step size for skipping ticks
     if max_length > 100:  # Arbitrary threshold for long sequences
