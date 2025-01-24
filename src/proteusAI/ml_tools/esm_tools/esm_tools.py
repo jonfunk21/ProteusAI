@@ -943,13 +943,7 @@ def plot_heatmap(
     p,
     alphabet,
     include="canonical",
-    dest=None,
-    title: str = None,
     remove_tokens: bool = False,
-    show: bool = True,
-    color_sheme: str = "b",
-    highlight_positions: dict = None,
-    section=None,
 ):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
@@ -984,14 +978,6 @@ def plot_heatmap(
     # Remove the start and end of sequence tokens
     if remove_tokens:
         probability_distribution_np = probability_distribution_np[1:-1, :]
-
-    # make sure section is in range of sequence
-    if section is not None:
-        assert section[0] < section[1]
-
-        probability_distribution_np = probability_distribution_np[
-            section[0] : section[1], :
-        ]
 
     # If no characters are specified, include only amino acids by default
     if include == "canonical":
@@ -1040,9 +1026,9 @@ def plot_heatmap(
 
     # Create a custom colorscale for the heatmap
     custom_colorscale = [
-        [0.0, "red"],  # Minimum value (deep red)
+        [0.0, "#d64527"],  # Minimum value (deep red)
         [0.5, "white"],  # Zero value (white)
-        [1.0, "blue"],  # Maximum value (deep blue)
+        [1.0, "#00629b"],  # Maximum value (deep blue)
     ]
 
     # Add the main heatmap
@@ -1076,19 +1062,29 @@ def plot_heatmap(
                     line=dict(color="black", width=0.5),
                 )
 
-    # Customize the layout for better interaction
+    # Show fewer x-ticks for longer sequences
+    max_length = len(data.columns)
+
+    # Determine step size for skipping ticks
+    if max_length > 100:  # Arbitrary threshold for long sequences
+        step = max(1, max_length // 50)  # Adjust step size to control tick density
+        tickvals = list(range(0, max_length, step))  # Tick positions
+        ticktext = [x + 1 for x in tickvals]  # Corresponding labels (1-based index)
+    else:
+        tickvals = list(range(max_length))  # All positions
+        ticktext = [x + 1 for x in tickvals]  # All labels
+
+    # Update the layout
     fig.update_layout(
-        title="Zero-Shot Scores",
         xaxis=dict(
             title="Sequence Position",
-            tickmode="array",
-            tickvals=list(range(len(data.columns))),
-            ticktext=[x + 1 for x in data.columns],
+            tickmode="array",  # Use specific tick values
+            tickvals=tickvals,  # Apply calculated tick positions
+            ticktext=ticktext,  # Apply corresponding tick labels
             automargin=True,
         ),
         yaxis=dict(title="Amino Acid Type", automargin=True),
     )
-
     return fig
 
 
@@ -1128,21 +1124,11 @@ def plot_per_position_entropy(
             "The length of per_position_entropy and sequence must be the same."
         )
 
-    # If a section is specified, adjust the per_position_entropy and sequence accordingly
-    if section is not None:
-        if section[0] < 0 or section[1] > len(sequence):
-            raise ValueError("Section indices are out of range.")
-        per_position_entropy_np = per_position_entropy_np[:, section[0] : section[1]]
-        sequence = sequence[section[0] : section[1]]
-
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
 
     # Determine bar colors
-    if highlight_positions is None:
-        colors = ["blue"] * len(positions)
-    else:
-        colors = ["red" if pos in highlight_positions else "blue" for pos in positions]
+    colors = ["#007bc2"] * len(positions)
 
     # Create the interactive bar chart
     fig = go.Figure()
@@ -1157,30 +1143,29 @@ def plot_per_position_entropy(
             ),
         )
     )
+    # Show fewer x-ticks for longer sequences
+    max_length = len(positions)
+
+    # Determine step size for skipping ticks
+    if max_length > 100:  # Arbitrary threshold for long sequences
+        step = max(1, max_length // 50)  # Adjust step size to control tick density
+        tickvals = list(range(0, max_length, step))  # Tick positions
+        ticktext = [x + 1 for x in tickvals]  # Corresponding labels (1-based index)
+    else:
+        tickvals = list(range(max_length))  # All positions
+        ticktext = [x + 1 for x in tickvals]  # All labels
 
     # Customize the layout
     fig.update_layout(
-        title=title or "Per Position Entropy of Sequence",
         xaxis=dict(
-            title="Sequence Position" if use_normal_ticks else "Amino Acid",
             tickmode="array",
-            tickvals=positions,
-            ticktext=(
-                positions + 1 if use_normal_ticks else [sequence[i] for i in positions]
-            ),
+            tickvals=tickvals,  # Apply calculated tick positions
+            ticktext=ticktext,  # Apply corresponding tick labels
         ),
         yaxis=dict(title="Per Position Entropy"),
         bargap=0.1,
         plot_bgcolor="white",  # Set the plot background to white
         paper_bgcolor="white",  # Set the overall figure background to white
     )
-
-    # Save the plot as an HTML file if a destination is provided
-    if dest is not None:
-        fig.write_html(dest)
-
-    # Show the plot
-    if show:
-        fig.show()
 
     return fig
