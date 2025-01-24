@@ -2074,7 +2074,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model=MODEL_DICT[input.computed_zs_scores()],
             chain=chain,
         )
-        print(fig)
+
         return fig
 
     ### STRUCTURE MODE ###
