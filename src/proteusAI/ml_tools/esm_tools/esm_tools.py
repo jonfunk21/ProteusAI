@@ -20,12 +20,9 @@ from typing import Union
 import esm
 import esm.inverse_folding
 import esm.inverse_folding.util
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import openmm  # move this and pdb fixer to struc tools
 import pandas as pd
-import seaborn as sns
 import torch
 import torch.nn.functional as F
 from biotite.structure.io.pdb import PDBFile
@@ -35,7 +32,7 @@ from esm.inverse_folding.multichain_util import (
     score_sequence_in_complex,
 )
 from esm.inverse_folding.util import CoordBatchConverter
-from matplotlib.colors import LinearSegmentedColormap
+import plotly.graph_objects as go
 
 alphabet = torch.load(
     os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False
@@ -946,13 +943,7 @@ def plot_heatmap(
     p,
     alphabet,
     include="canonical",
-    dest=None,
-    title: str = None,
     remove_tokens: bool = False,
-    show: bool = True,
-    color_sheme: str = "b",
-    highlight_positions: dict = None,
-    section=None,
 ):
     """
     Plot a heatmap of the probability distribution for each position in the sequence.
@@ -988,14 +979,6 @@ def plot_heatmap(
     if remove_tokens:
         probability_distribution_np = probability_distribution_np[1:-1, :]
 
-    # make sure section is in range of sequence
-    if section is not None:
-        assert section[0] < section[1]
-
-        probability_distribution_np = probability_distribution_np[
-            section[0] : section[1], :
-        ]
-
     # If no characters are specified, include only amino acids by default
     if include == "canonical":
         include = [
@@ -1030,87 +1013,76 @@ def plot_heatmap(
     # Filter the alphabet dictionary based on the 'include' list
     filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
 
-    # adjust keys and values
-    min_val = min(filtered_alphabet.values())
-
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(
         probability_distribution_np[:, list(filtered_alphabet.values())],
         columns=[i for i in filtered_alphabet.keys()],
+    ).T
+
+    # Create the heatmap using Plotly
+    fig = go.Figure()
+
+    # Create a custom colorscale for the heatmap
+    custom_colorscale = [
+        [0.0, "#d64527"],  # Minimum value (deep red)
+        [0.5, "white"],  # Zero value (white)
+        [1.0, "#00629b"],  # Maximum value (deep blue)
+    ]
+
+    # Add the main heatmap
+    fig.add_trace(
+        go.Heatmap(
+            z=df.values,
+            x=df.columns,
+            y=df.index,
+            colorscale=custom_colorscale,
+            zmid=0,  # Ensure 0 is centered on the colorscale
+            showscale=True,
+            hovertemplate=(
+                "Position: %{x}<br>"
+                + "Amino Acid: %{y}<br>"
+                + "Zero Shot Score: %{z}<br>"
+                + "<extra></extra>"  # Hides the trace name in the hover box
+            ),
+        )
     )
 
-    # Calculate the symmetric vmin and vmax around zero
-    abs_max = max(abs(df.min().min()), abs(df.max().max()))
+    # Overlay black boxes for cells with a value of exactly 0
+    for i, amino_acid in enumerate(df.index):
+        for j, position in enumerate(df.columns):
+            if df.at[amino_acid, position] == 0:
+                fig.add_shape(
+                    type="rect",
+                    x0=j - 0.5,
+                    x1=j + 0.5,
+                    y0=i - 0.5,
+                    y1=i + 0.5,
+                    line=dict(color="black", width=0.5),
+                )
 
-    # colors
-    if color_sheme == "rwb":
-        colors = ["red", "white", "blue"]
-        cmap = LinearSegmentedColormap.from_list("red_white_blue", colors)
-        vmin, vmax = -abs_max, abs_max  # Symmetric range around zero
-    elif color_sheme == "r":
-        cmap = "Reds"
-        vmin, vmax = None, None  # No centering for single color schemes
+    # Show fewer x-ticks for longer sequences
+    max_length = len(df.columns)
+
+    # Determine step size for skipping ticks
+    if max_length > 100:  # Arbitrary threshold for long sequences
+        step = max(1, max_length // 50)  # Adjust step size to control tick density
+        tickvals = list(range(0, max_length, step))  # Tick positions
+        ticktext = [x + 1 for x in tickvals]  # Corresponding labels (1-based index)
     else:
-        cmap = "Blues"
-        vmin, vmax = None, None  # No centering for single color schemes
+        tickvals = list(range(max_length))  # All positions
+        ticktext = [x + 1 for x in tickvals]  # All labels
 
-    # Create a heatmap using seaborn
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    ax = plt.gca()
-    sns.heatmap(
-        df.T,
-        cmap=cmap,
-        linewidths=0.5,
-        annot=False,
-        cbar=True,
-        ax=ax,
-        vmin=vmin,
-        vmax=vmax,
+    # Update the layout
+    fig.update_layout(
+        xaxis=dict(
+            title="Sequence Position",
+            tickmode="array",  # Use specific tick values
+            tickvals=tickvals,  # Apply calculated tick positions
+            ticktext=ticktext,  # Apply corresponding tick labels
+            automargin=True,
+        ),
+        yaxis=dict(title="Amino Acid Type", automargin=True),
     )
-
-    # Adjust x-axis ticks and labels if 'section' is specified
-    if section is not None:
-        ax.set_xticks(
-            np.arange(
-                0, section[1] - section[0] + 1, max(1, (section[1] - section[0]) // 10)
-            )
-        )
-        ax.set_xticklabels(
-            np.arange(
-                section[0], section[1] + 1, max(1, (section[1] - section[0]) // 10)
-            )
-        )
-
-    # Highlight the mutated positions with a green box
-    if highlight_positions is not None:
-        for pos, mutated_residue in highlight_positions.items():
-            residue_index = filtered_alphabet[mutated_residue]
-            rect = patches.Rectangle(
-                (pos, residue_index - min_val),
-                1,
-                1,
-                linewidth=1,
-                edgecolor="lime",
-                facecolor="none",
-            )
-            ax.add_patch(rect)
-
-    plt.xlabel("Sequence Position")
-    plt.ylabel("Residue")
-    if title is None:
-        plt.title("Per-Position Probability Distribution Heatmap")
-    else:
-        plt.title(title)
-
-    # Save the plot to the specified destination, if provided
-    if dest is not None:
-        plt.savefig(dest, dpi=400, bbox_inches="tight")
-
-    # Show the plot, if the 'show' argument is True
-    if show:
-        plt.show()
-
     return fig
 
 
@@ -1125,20 +1097,20 @@ def plot_per_position_entropy(
     use_normal_ticks: bool = True,
 ):
     """
-    Plot the per position entropy for a given sequence.
+    Plot the per position entropy for a given sequence using Plotly.
 
     Args:
         per_position_entropy (torch.Tensor): Tensor of per position entropy values with shape (batch_size, sequence_length).
         sequence (str): Protein sequence.
         highlight_positions (list): List of positions to highlight in red (0-indexed) (default: None).
         show (bool): Display the plot if True (default: False).
-        dest (str): Optional path to save the plot as an image file (default: None).
+        dest (str): Optional path to save the plot as an HTML file (default: None).
         title (str): Title of plot.
         section (tuple): Section of the sequence to plot (default: None). If None, the entire sequence is plotted.
         use_normal_ticks (bool): If True, use normal numerical ticks for x-axis (default: False).
 
     Returns:
-        matplotlib.figure.Figure: The matplotlib figure object for the plot.
+        plotly.graph_objects.Figure: The Plotly figure object for the plot.
     """
 
     # Convert the tensor to a numpy array
@@ -1150,50 +1122,48 @@ def plot_per_position_entropy(
             "The length of per_position_entropy and sequence must be the same."
         )
 
-    # If a section is specified, adjust the per_position_entropy and sequence accordingly
-    if section is not None:
-        if section[0] < 0 or section[1] > len(sequence):
-            raise ValueError("Section indices are out of range.")
-        per_position_entropy_np = per_position_entropy_np[:, section[0] : section[1]]
-        sequence = sequence[section[0] : section[1]]
-
     # Create an array of positions for the x-axis
     positions = np.arange(len(sequence))
 
-    # Dynamic tick interval
-    tick_interval = 1 if len(sequence) <= 30 else int(len(sequence) / 20)
+    # Determine bar colors
+    colors = ["#007bc2"] * len(positions)
 
-    # Create a bar plot of per position entropy
-    fig = plt.figure(figsize=(20, 6))
+    # Create the interactive bar chart
+    fig = go.Figure()
 
-    if highlight_positions is None:
-        plt.bar(positions, per_position_entropy_np.squeeze())
-    else:
-        colors = ["red" if pos in highlight_positions else "blue" for pos in positions]
-        plt.bar(positions, per_position_entropy_np.squeeze(), color=colors)
-
-    # Set the x-axis labels
-    if use_normal_ticks:
-        plt.xticks(positions[::tick_interval])
-    else:
-        plt.xticks(
-            positions[::tick_interval],
-            [sequence[i] for i in positions[::tick_interval]],
+    fig.add_trace(
+        go.Bar(
+            x=positions if use_normal_ticks else [sequence[i] for i in positions],
+            y=per_position_entropy_np.squeeze(),
+            marker_color=colors,
+            hovertemplate=(
+                "Position: %{x}<br>" "Per Position Entropy: %{y}<br>" "<extra></extra>"
+            ),
         )
+    )
+    # Show fewer x-ticks for longer sequences
+    max_length = len(positions)
 
-    # Set the labels and title
-    plt.xlabel("Sequence Position")
-    plt.ylabel("Per Position Entropy")
-    if title is None:
-        plt.title("Per Position Entropy of Sequence")
+    # Determine step size for skipping ticks
+    if max_length > 100:  # Arbitrary threshold for long sequences
+        step = max(1, max_length // 50)  # Adjust step size to control tick density
+        tickvals = list(range(0, max_length, step))  # Tick positions
+        ticktext = [x + 1 for x in tickvals]  # Corresponding labels (1-based index)
     else:
-        plt.title(title)
+        tickvals = list(range(max_length))  # All positions
+        ticktext = [x + 1 for x in tickvals]  # All labels
 
-    if dest is not None:
-        plt.savefig(dest, dpi=300)
-
-    # Show the plot
-    if show:
-        plt.show()
+    # Customize the layout
+    fig.update_layout(
+        xaxis=dict(
+            tickmode="array",
+            tickvals=tickvals,  # Apply calculated tick positions
+            ticktext=ticktext,  # Apply corresponding tick labels
+        ),
+        yaxis=dict(title="Per Position Entropy"),
+        bargap=0.1,
+        plot_bgcolor="white",  # Set the plot background to white
+        paper_bgcolor="white",  # Set the overall figure background to white
+    )
 
     return fig

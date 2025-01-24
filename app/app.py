@@ -19,8 +19,10 @@ import pandas as pd
 import tooltips
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
+import shinywidgets as widgets
 
 import proteusAI as pai
+
 
 app_path = os.path.dirname(os.path.realpath(__file__))
 google_analytics = os.path.join(app_path, "google_analytics.html")
@@ -139,7 +141,7 @@ app_ui = ui.page_fluid(
     ###############
     ui.navset_card_tab(
         ui.nav_panel(
-            "Data",
+            "Upload Data",
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
@@ -254,7 +256,7 @@ app_ui = ui.page_fluid(
         ## DESIGN PAGE ##
         #################
         ui.nav_panel(
-            "Design",
+            "Structure Design",
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("design_ui"), width=SIDEBAR_WIDTH),
@@ -274,11 +276,9 @@ app_ui = ui.page_fluid(
         ## ZERO-SHOT PAGE ##
         ####################
         ui.nav_panel(
-            "Zero-Shot",
+            "Compute Zero-Shots",
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("zero_shot_ui"), width=SIDEBAR_WIDTH),
-                ui.input_switch("zs_switch", "Show more information", False),
-                ui.panel_conditional("input.zs_switch", tooltips.zs_tooltips),
                 ui.panel_conditional(
                     "typeof output.protein_fasta === 'string'",
                     ui.output_ui("zs_download_ui"),
@@ -289,7 +289,7 @@ app_ui = ui.page_fluid(
         ## REPRESENTATIONS PAGE ##
         ##########################
         ui.nav_panel(
-            "Representations",
+            "Compute Representations",
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("representations_ui"), width=SIDEBAR_WIDTH),
@@ -333,7 +333,7 @@ app_ui = ui.page_fluid(
         ## DISCOVERY PAGE ##
         ####################
         ui.nav_panel(
-            "Discovery",
+            "Sequence Discovery",
             ### SIDEBAR ###
             ui.layout_sidebar(
                 ui.sidebar(
@@ -517,94 +517,58 @@ def server(input: Inputs, output: Outputs, session: Session):
     def zero_shot_ui():
         if MODE() == "zero-shot" or MODE() == "structure":
             return ui.TagList(
-                ui.h4("Zero-Shot Inference"),
+                ui.h4("Compute a Zero-Shot Library"),
+                ui.p(
+                    tooltips.zs_tooltips,
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
+                ui.h4("Step 1: Choose a model to calculate Zero-Shot Scores"),
                 ui.row(
-                    ui.h5("Compute a zero-shot Library"),
                     ui.column(
                         7, ui.input_select("zs_model", "Choose a model", ZS_MODELS)
                     ),
                     ui.column(
                         5,
-                        ui.input_task_button("compute_zs", "Compute"),
+                        ui.input_task_button(
+                            "compute_zs",
+                            "Compute",
+                            style="padding:10px; width:150px; height:40px; "
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
                         style="padding:25px;",
                     ),
                     ui.column(6, ui.output_ui("zs_chain_ui")),
-                    ui.h4("Visualize"),
-                    ui.row(
-                        ui.column(
-                            6,
-                            ui.input_select(
-                                "computed_zs_scores",
-                                "Computed Zero-shot scores",
-                                COMP_ZS_SCORES(),
-                            ),
-                        )
-                    ),
-                    ui.row(
-                        ui.column(
-                            6, ui.input_action_button("plot_entropy", "Plot Entropy")
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_checkbox("plot_entropy_section", "Customize plot"),
-                            style="padding:10px;",
-                        ),
-                        ui.panel_conditional(
-                            "input.plot_entropy_section === true",
-                            ui.row(
-                                ui.column(
-                                    6,
-                                    ui.input_slider(
-                                        "entropy_slider",
-                                        "Sliding window",
-                                        min=0,
-                                        max=len(PROTEIN().seq),
-                                        value=0,
-                                    ),
-                                ),
-                                ui.column(
-                                    6,
-                                    ui.input_numeric(
-                                        "entropy_width",
-                                        "Sliding window width",
-                                        value=10,
-                                    ),
-                                ),
-                            ),
+                ),
+                ui.h4("Step 2: Choose a Zero-Shot dataset to plot"),
+                ui.row(
+                    ui.column(
+                        7,
+                        ui.input_select(
+                            "computed_zs_scores",
+                            "Choose Zero-Shot Scores",
+                            COMP_ZS_SCORES(),
                         ),
                     ),
-                    ui.row(
-                        ui.column(
-                            6, ui.input_action_button("plot_scores", "Plot Scores")
+                    ui.column(
+                        5,
+                        ui.input_action_button(
+                            "plot_all",
+                            "Plot",
+                            style="padding:10px; width:150px; height:40px; "
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
                         ),
-                        ui.column(
-                            6,
-                            ui.input_checkbox("plot_scores_section", "Customize plot"),
-                            style="padding:10px;",
-                        ),
-                        ui.panel_conditional(
-                            "input.plot_scores_section === true",
-                            ui.row(
-                                ui.column(
-                                    6,
-                                    ui.input_slider(
-                                        "scores_slider",
-                                        "Sliding window",
-                                        min=0,
-                                        max=len(PROTEIN().seq),
-                                        value=0,
-                                    ),
-                                ),
-                                ui.column(
-                                    6,
-                                    ui.input_numeric(
-                                        "scores_width", "Sliding window width", value=10
-                                    ),
-                                ),
-                            ),
-                        ),
-                        ui.column(6, ui.input_action_button("zs_table", "Table view")),
+                        style="padding:25px;",
                     ),
+                ),
+                ui.h4("Step 3: Download tabulated results"),
+                ui.p(
+                    "Plots can be downloaded by clicking the camera icon at the top right of the plot.",
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
+                ui.download_button(
+                    "download_zs_df",
+                    "Download Zero-Shot results table",
+                    style="padding:10px; background-color:#00629b; color:white; border:none; border-radius:5px;",
                 ),
             )
 
@@ -1930,10 +1894,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if chain is not None and len(prot.chains) >= 1:
             chain = input.zs_chain()
-            s = (f"{name}/zero_shot/results/{chain}/{REP_DICT[method]}/zs_scores.csv",)
+            s = f"{name}/zero_shot/results/{chain}/{REP_DICT[method]}/zs_scores.csv"
         else:
             chain = None
-            s = (f"{name}/zero_shot/results/{REP_DICT[method]}/zs_scores.csv",)
+            s = f"{name}/zero_shot/results/{REP_DICT[method]}/zs_scores.csv"
 
         df_path = os.path.join(prot.user, s)
         if os.path.exists(df_path):
@@ -1947,7 +1911,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     ### RENDER ZS-DATAFRAME ###
     @output
     @render.data_frame
-    @reactive.event(input.zs_table)
+    @reactive.event(input.plot_all)
     def zs_df(alt=None):
         prot = PROTEIN()
         method = REP_DICT[input.computed_zs_scores()]
@@ -1990,14 +1954,30 @@ def server(input: Inputs, output: Outputs, session: Session):
         out = ZS_SCORES()
         if out is not None:
             return ui.TagList(
-                ui.output_plot("entropy_plot"),
-                ui.output_plot("scores_plot"),
+                # Section for Entropy Plot
+                ui.h4("Plot of Entropy Scores for Each Position"),
+                ui.input_switch("entropy_plot_switch", "Show more information", False),
+                ui.panel_conditional(
+                    "input.entropy_plot_switch",
+                    tooltips.zs_entropy_tooltips,
+                    style="text-align: justify; margin-bottom:10px;",
+                ),
+                widgets.output_widget("entropy_plot"),
+                # Section for Heatmap Plot
+                ui.h4("Heatmap of Zero-Shot Scores"),
+                ui.input_switch("heatmap_switch", "Show more information", False),
+                ui.panel_conditional(
+                    "input.heatmap_switch",
+                    tooltips.zs_heatmap_tooltips,
+                    style="text-align: justify; margin-bottom:10px;",
+                ),
+                widgets.output_widget("heatmap_plot"),
                 # Descriptors
-                ui.h4("Table Interpretation"),
+                ui.h4("Table of Zero-Shot Scores"),
                 ui.row(
                     ui.column(3, ui.h5("Mutation:")),
                     ui.column(9, ui.h6("Sequence change from wild-type descriptor")),
-                    ui.column(3, ui.h5("Mutation Probability: ")),
+                    ui.column(3, ui.h5("Mutation Probability:")),
                     ui.column(
                         9,
                         ui.h6(
@@ -2013,15 +1993,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                     ui.column(3, ui.h5("Entropy:")),
                     ui.column(
-                        9, ui.h6("Measure of the diversity tolarated at the position.")
+                        9, ui.h6("Measure of the diversity tolerated at the position.")
                     ),
                     ui.column(
                         12,
-                        ui.h6("Click column headder to sort the table by that column."),
+                        ui.h6("Click column header to sort the table by that column."),
                     ),
                 ),
                 ui.output_data_frame("zs_df"),
-                ui.download_button("download_zs_df", "Download Zero-Shot results"),
             )
 
     ### DOWNLOAD LOGIC FOR ZS RESULTS ###
@@ -2034,8 +2013,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### OUTPUT PROTEIN MODE ###
     @output
-    @render.plot
-    @reactive.event(input.plot_entropy)
+    @widgets.render_widget
+    @reactive.event(input.plot_all)
     def entropy_plot(alt=None):
         """
         Create the per position entropy plot
@@ -2048,12 +2027,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             seq = prot.seq
             chain = None
 
-        if input.plot_entropy_section():
-            start = input.entropy_slider()
-            end = start + input.entropy_width()
-        else:
-            start = 0
-            end = len(seq)
+        start = 0
+        end = len(seq)
 
         section = (start, end)
         if section[1] > len(seq):
@@ -2068,11 +2043,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### UPDATE SCORES PLOT ###
     @output
-    @render.plot
-    @reactive.event(input.plot_scores)
-    def scores_plot(alt=None):
+    @widgets.render_widget
+    @reactive.event(input.plot_all)
+    def heatmap_plot(alt=None):
         """
-        Create the per position entropy plot
+        Create heatmap of zeroshot scores
         """
         prot = PROTEIN()
 
@@ -2083,12 +2058,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             seq = prot.seq
             chain = None
 
-        if input.plot_scores_section():
-            start = input.scores_slider()
-            end = start + input.scores_width()
-        else:
-            start = 0
-            end = len(seq)
+        start = 0
+        end = len(seq)
 
         section = (start, end)
 
@@ -2103,6 +2074,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model=MODEL_DICT[input.computed_zs_scores()],
             chain=chain,
         )
+
         return fig
 
     ### STRUCTURE MODE ###

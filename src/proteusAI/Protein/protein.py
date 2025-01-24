@@ -838,13 +838,7 @@ class Protein:
         fig = esm_tools.plot_heatmap(
             p=self.mmp,
             alphabet=esm_tools.alphabet,
-            dest=None,
-            title=title,
-            show=False,
-            remove_tokens=True,
-            color_sheme=color_scheme,
-            section=section,
-            highlight_positions=highlight_positions,
+            remove_tokens=False,
         )
         return fig
 
