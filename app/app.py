@@ -262,8 +262,6 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("design_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
-                ui.input_switch("design_switch", "Show more information", False),
-                ui.panel_conditional("input.design_switch", tooltips.design_tooltips),
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'",
                     ui.output_ui("struc3D_design"),
@@ -384,80 +382,103 @@ def server(input: Inputs, output: Outputs, session: Session):
     def design_ui():
         if MODE() == "structure":
             return ui.TagList(
+                ui.h4("Structure Based Protein Design"),
+                ui.p(
+                tooltips.design_tooltips,
+                style="font-size:14px; margin-top:10px; text-align: justify;",
+            ),
+                ui.h4("Step 1: Choose a model and the sampling temperature"),
+
                 ui.row(
-                    ui.h5("Structure Based Protein Design"),
-                    ui.row(
-                        ui.column(
-                            6,
-                            ui.input_select(
-                                "design_models",
-                                "Choose model",
-                                list(DESIGN_MODELS.keys()),
-                            ),
-                        ),
-                        ui.column(6, ui.output_ui("design_chains")),
-                        ui.column(
-                            6,
-                            ui.input_numeric(
-                                "n_designs", "Number of samples", min=1, value=20
-                            ),
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_numeric(
-                                "sampling_temp",
-                                "Sampling temperature",
-                                min=10e-9,
-                                value=0.1,
-                            ),
+                    ui.column(
+                        6,
+                        ui.input_select(
+                            "design_models",
+                            "Choose model",
+                            list(DESIGN_MODELS.keys()),
                         ),
                     ),
-                    ui.input_text(
-                        "design_res",
-                        "Select residues by ID that should remain unchanged during redesign','",
-                    ),
-                    ui.input_checkbox("design_interfaces", "Fix interfaces"),
-                    ui.panel_conditional(
-                        "input.design_interfaces === true",
-                        ui.row(
-                            ui.column(
-                                6,
-                                ui.input_checkbox(
-                                    "design_protein_interface",
-                                    "Protein-protein interfaces",
-                                ),
-                            ),
-                            ui.column(
-                                6,
-                                ui.input_numeric(
-                                    "design_protein_interface_distance",
-                                    "Distance cut-off (Angstroms)",
-                                    value=7,
-                                ),
-                            ),
-                            ui.column(
-                                6,
-                                ui.input_checkbox(
-                                    "design_ligand_interface", "Ligand interfaces"
-                                ),
-                            ),
-                            ui.column(
-                                6,
-                                ui.input_numeric(
-                                    "design_ligand_interface_distance",
-                                    "Distance cut-off (Angstroms)",
-                                    value=7,
-                                ),
-                            ),
+                    ui.column(
+                        6,
+                        ui.input_numeric(
+                            "sampling_temp",
+                            "Sampling temperature",
+                            min=10e-9,
+                            value=0.1,
                         ),
                     ),
-                    ui.column(4, ui.input_task_button("desgin_button", "Design")),
+                ),
+                ui.h4("Step 2: Select which chain to redesign and which residues to fix"),
+                ui.p(
+                "Postions to fix must be comma separated, e.g. 1, 2, 3",
+                style="font-size:14px; margin-top:10px; text-align: justify;"),
+                ui.row(
+                    ui.column(6, ui.output_ui("design_chains")),
+                    ui.column(6, ui.input_text("design_res",
+                                               "Positions to fix",
+                                               ),
+                            ),
+                    ),
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_checkbox(
+                            "design_protein_interface",
+                            "Fix residues at protein-protein interfaces",
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_numeric(
+                            "design_protein_interface_distance",
+                            "Distance (Å)",
+                            value=7,
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_checkbox(
+                            "design_ligand_interface", "Fix residues at ligand interfaces"
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_numeric(
+                            "design_ligand_interface_distance",
+                            "Distance (Å)",
+                            value=7,
+                        ),
+                    ),
+                ),
+                ui.h4("Step 3: Design new sequences"),
+                ui.row(
+                    ui.column(
+                        12,
+                        ui.input_numeric(
+                        "n_designs", "Select the desired number of new sequences", min=1, value=20
+                        ),                    
+                    ),
+                ),
+                ui.row(
+                    ui.column(12, ui.input_task_button("desgin_button", "Design",
+                                                      style="padding:10px; width:400px; height:40px; "
+                                                    "background-color:#00629b; color:white; border:none; border-radius:5px;",),
+                              ), 
+                ),
+                ui.h4("Step 4: Download new sequences"),
+                ui.row(
+                    ui.column(12, ui.download_button("download_designs", "Download",
+                                                      style="padding:10px; width:400px; height:40px; "
+                                                    "background-color:#00629b; color:white; border:none; border-radius:5px;",)),
+
+                ),
+
                 ),
                 # DISABLED FOLDING
                 # ui.output_ui(
                 #        "folding",
                 #    ),
-            )
+    
 
         else:
             return ui.TagList(
@@ -1776,15 +1797,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def design_chains():
-        return ui.input_select("mutlichain_chain", "Design chain", choices=CHAINS())
+        return ui.input_select("mutlichain_chain", "Chain to redesign", choices=CHAINS())
 
-    ### DOWNLOAD DESIGN RESULTS
-    @output
-    @render.ui
-    def design_download_ui():
-        out = DESIGN_OUTPUT()
-        if not isinstance(out, str):
-            return ui.download_button("download_designs", "Download design results")
+    # ### DOWNLOAD DESIGN RESULTS # BUTTON MOVED TO SIDE BAR
+    # @output
+    # @render.ui
+    # def design_download_ui():
+    #     out = DESIGN_OUTPUT()
+    #     if not isinstance(out, str):
+    #         return ui.download_button("download_designs", "Download design results")
 
     ### DOWNLOAD LOGIC FOR DESIGN RESULTS ###
     @render.download(filename=lambda: f"{PROTEIN().name}_designs.csv")
