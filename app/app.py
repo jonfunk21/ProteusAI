@@ -408,7 +408,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                 ),
-                ui.h4("Step 2: Select which chain to redesign and which residues to fix"),
+                ui.h4("Step 2: Select which chain to redesign and which positions to fix"),
                 ui.p(
                 "Postions to fix must be comma separated, e.g. 1, 2, 3",
                 style="font-size:14px; margin-top:10px; text-align: justify;"),
@@ -424,7 +424,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         6,
                         ui.input_checkbox(
                             "design_protein_interface",
-                            "Fix residues at protein-protein interfaces",
+                            "Fix positions at protein-protein interfaces",
                         ),
                     ),
                     ui.column(
@@ -438,7 +438,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.column(
                         6,
                         ui.input_checkbox(
-                            "design_ligand_interface", "Fix residues at ligand interfaces"
+                            "design_ligand_interface", "Fix positions at ligand interfaces"
                         ),
                     ),
                     ui.column(
