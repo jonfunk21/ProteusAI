@@ -342,10 +342,6 @@ app_ui = ui.page_fluid(
                     ),
                     width=SIDEBAR_WIDTH,
                 ),
-                ui.input_switch("discovery_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.discovery_switch", tooltips.discovery_tooltips
-                ),
                 ### MAIN PANEL ###
                 ui.navset_tab(
                     ui.nav_panel(
@@ -841,8 +837,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() == "dataset":
             return ui.TagList(
-                ui.row(
                     ui.h5("Protein Discovery and Annotation"),
+                    ui.p(tooltips.discovery_tooltips,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                         ),                
+                    ui.row(
                     ui.column(
                         6,
                         ui.input_select(
