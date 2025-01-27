@@ -293,14 +293,10 @@ app_ui = ui.page_fluid(
             ui.layout_sidebar(
                 ui.sidebar(ui.output_ui("representations_ui"), width=SIDEBAR_WIDTH),
                 ### MAIN PANEL ###
-                ui.input_switch("rep_switch", "Show more information", False),
-                ui.panel_conditional(
-                    "input.rep_switch", tooltips.representations_tooltips
-                ),
                 ui.panel_conditional(
                     "typeof output.protein_struc === 'string'", ui.output_ui("struc3D")
                 ),
-                ui.output_plot("tsne_plot"),
+                widgets.output_widget("tsne_plot"),
             ),
         ),
         ################
@@ -394,7 +390,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         6,
                         ui.input_select(
                             "design_models",
-                            "Choose model",
+                            "Choose a model",
                             list(DESIGN_MODELS.keys()),
                         ),
                     ),
@@ -494,21 +490,29 @@ def server(input: Inputs, output: Outputs, session: Session):
         if MODE() != "start":
             return ui.TagList(
                 ui.h4("Representation Learning"),
+                ui.p(tooltips.representations_tooltips, style="font-size:14px; margin-top:10px; text-align: justify;",),
+                ui.h4("Step 1: Choose a model compute the representations"),
                 ui.row(
                     ui.column(
                         7,
                         ui.input_select(
-                            "dat_rep_type", "Compute representations", REP_TYPES
+                            "dat_rep_type", "Choose model", REP_TYPES
                         ),
                     ),
                     ui.column(
                         5,
-                        ui.input_task_button("dat_compute_reps", "Compute"),
+                        ui.input_task_button("dat_compute_reps", "Compute",
+                                            style="padding:10px; width:150px; height:40px; "
+                                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                                             ),
                         style="padding:25px;",
                     ),
                 ),
                 ui.column(6, ui.output_ui("rep_chain_ui")),
-                ui.h4("Visualization"),
+                ui.h4("Step 2: Choose a method to visualize the representations"),
+                ui.p(
+                    "Plots can be downloaded by clicking the camera icon at the top right of the plot.",
+                    style="font-size:14px; margin-top:10px; text-align: justify;"),
                 ui.panel_conditional(
                     "input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
                     ui.input_file("MSA_vae_training", "Upload MSA file"),
@@ -518,11 +522,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.input_checkbox("custom_vae", "Customize VAE parameters"),
                     ui.input_action_button("train_vae", "Train VAE"),
                 ),
-                ui.input_select("vis_method", "Visualization Method", REP_VISUAL),
+                ui.input_select("vis_method", "Choose a visualization Method", REP_VISUAL),
                 ui.row(
-                    ui.column(12, "Visualize representations"),
-                    ui.column(7, ui.input_select("plot_rep_type", "", REPS_AVAIL())),
-                    ui.column(5, ui.input_task_button("update_plot", "Update plot")),
+                    ui.column(7, ui.input_select("plot_rep_type", "Choose a representation set", REPS_AVAIL())),
+                    ui.column(5, ui.input_task_button("update_plot", "Plot",
+                                                        style="padding:10px; width:150px; height:40px; "
+                                                        "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                                                      ), 
+                              style="padding:25px;",),
                 ),
             )
 
@@ -2269,7 +2276,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                         )
 
                     TSNE_DF.set(df)
-                    LIBRARY_PLOT.set((fig, ax))
+                    LIBRARY_PLOT.set(fig)
 
                 except Exception as e:
                     print(f"An error occurred: {e}")
@@ -2296,11 +2303,12 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### RENDER REPRESENTATIONS PLOT ###
     @output
-    @render.plot
+    @widgets.render_widget
     def tsne_plot(alt=None):
         if LIBRARY_PLOT():
-            fig, ax = LIBRARY_PLOT()
-            return fig, ax
+            fig = LIBRARY_PLOT()
+            print(fig)
+            return fig
 
     ##########
     ## MLDE ##
