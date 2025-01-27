@@ -17,6 +17,8 @@ import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.struc as pai_struc
 import proteusAI.visual_tools as vis
 from proteusAI.Protein.protein import Protein
+import plotly.graph_objects as go
+
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
