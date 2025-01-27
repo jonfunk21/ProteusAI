@@ -377,104 +377,123 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def design_ui():
         if MODE() == "structure":
-            return ui.TagList(
-                ui.h4("Structure Based Protein Design"),
-                ui.p(
-                tooltips.design_tooltips,
-                style="font-size:14px; margin-top:10px; text-align: justify;",
-            ),
-                ui.h4("Step 1: Choose a model and the sampling temperature"),
-
-                ui.row(
-                    ui.column(
-                        6,
-                        ui.input_select(
-                            "design_models",
-                            "Choose a model",
-                            list(DESIGN_MODELS.keys()),
-                        ),
+            return (
+                ui.TagList(
+                    ui.h4("Structure Based Protein Design"),
+                    ui.p(
+                        tooltips.design_tooltips,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
                     ),
-                    ui.column(
-                        6,
-                        ui.input_numeric(
-                            "sampling_temp",
-                            "Sampling temperature",
-                            min=10e-9,
-                            value=0.1,
-                        ),
-                    ),
-                ),
-                ui.h4("Step 2: Select which chain to redesign and which positions to fix"),
-                ui.p(
-                "Postions to fix must be comma separated, e.g. 1, 2, 3",
-                style="font-size:14px; margin-top:10px; text-align: justify;"),
-                ui.row(
-                    ui.column(6, ui.output_ui("design_chains")),
-                    ui.column(6, ui.input_text("design_res",
-                                               "Positions to fix",
-                                               ),
+                    ui.h4("Step 1: Choose a model and the sampling temperature"),
+                    ui.row(
+                        ui.column(
+                            6,
+                            ui.input_select(
+                                "design_models",
+                                "Choose a model",
+                                list(DESIGN_MODELS.keys()),
                             ),
-                    ),
-                ui.row(
-                    ui.column(
-                        6,
-                        ui.input_checkbox(
-                            "design_protein_interface",
-                            "Fix positions at protein-protein interfaces",
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_numeric(
+                                "sampling_temp",
+                                "Sampling temperature",
+                                min=10e-9,
+                                value=0.1,
+                            ),
                         ),
                     ),
-                    ui.column(
-                        6,
-                        ui.input_numeric(
-                            "design_protein_interface_distance",
-                            "Distance (Å)",
-                            value=7,
+                    ui.h4(
+                        "Step 2: Select which chain to redesign and which positions to fix"
+                    ),
+                    ui.p(
+                        "Postions to fix must be comma separated, e.g. 1, 2, 3",
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.row(
+                        ui.column(6, ui.output_ui("design_chains")),
+                        ui.column(
+                            6,
+                            ui.input_text(
+                                "design_res",
+                                "Positions to fix",
+                            ),
                         ),
                     ),
-                    ui.column(
-                        6,
-                        ui.input_checkbox(
-                            "design_ligand_interface", "Fix positions at ligand interfaces"
+                    ui.row(
+                        ui.column(
+                            6,
+                            ui.input_checkbox(
+                                "design_protein_interface",
+                                "Fix positions at protein-protein interfaces",
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_numeric(
+                                "design_protein_interface_distance",
+                                "Distance (Å)",
+                                value=7,
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_checkbox(
+                                "design_ligand_interface",
+                                "Fix positions at ligand interfaces",
+                            ),
+                        ),
+                        ui.column(
+                            6,
+                            ui.input_numeric(
+                                "design_ligand_interface_distance",
+                                "Distance (Å)",
+                                value=7,
+                            ),
                         ),
                     ),
-                    ui.column(
-                        6,
-                        ui.input_numeric(
-                            "design_ligand_interface_distance",
-                            "Distance (Å)",
-                            value=7,
+                    ui.h4("Step 3: Design new sequences"),
+                    ui.row(
+                        ui.column(
+                            12,
+                            ui.input_numeric(
+                                "n_designs",
+                                "Select the desired number of new sequences",
+                                min=1,
+                                value=20,
+                            ),
+                        ),
+                    ),
+                    ui.row(
+                        ui.column(
+                            12,
+                            ui.input_task_button(
+                                "desgin_button",
+                                "Design",
+                                style="padding:10px; width:400px; height:40px; "
+                                "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                            ),
+                        ),
+                    ),
+                    ui.h4("Step 4: Download new sequences"),
+                    ui.row(
+                        ui.column(
+                            12,
+                            ui.download_button(
+                                "download_designs",
+                                "Download",
+                                style="padding:10px; width:400px; height:40px; "
+                                "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                            ),
                         ),
                     ),
                 ),
-                ui.h4("Step 3: Design new sequences"),
-                ui.row(
-                    ui.column(
-                        12,
-                        ui.input_numeric(
-                        "n_designs", "Select the desired number of new sequences", min=1, value=20
-                        ),                    
-                    ),
-                ),
-                ui.row(
-                    ui.column(12, ui.input_task_button("desgin_button", "Design",
-                                                      style="padding:10px; width:400px; height:40px; "
-                                                    "background-color:#00629b; color:white; border:none; border-radius:5px;",),
-                              ), 
-                ),
-                ui.h4("Step 4: Download new sequences"),
-                ui.row(
-                    ui.column(12, ui.download_button("download_designs", "Download",
-                                                      style="padding:10px; width:400px; height:40px; "
-                                                    "background-color:#00629b; color:white; border:none; border-radius:5px;",)),
-
-                ),
-
-                ),
-                # DISABLED FOLDING
-                # ui.output_ui(
-                #        "folding",
-                #    ),
-    
+            )
+            # DISABLED FOLDING
+            # ui.output_ui(
+            #        "folding",
+            #    ),
 
         else:
             return ui.TagList(
@@ -490,21 +509,24 @@ def server(input: Inputs, output: Outputs, session: Session):
         if MODE() != "start":
             return ui.TagList(
                 ui.h4("Representation Learning"),
-                ui.p(tooltips.representations_tooltips, style="font-size:14px; margin-top:10px; text-align: justify;",),
+                ui.p(
+                    tooltips.representations_tooltips,
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
                 ui.h4("Step 1: Choose a model compute the representations"),
                 ui.row(
                     ui.column(
                         7,
-                        ui.input_select(
-                            "dat_rep_type", "Choose model", REP_TYPES
-                        ),
+                        ui.input_select("dat_rep_type", "Choose model", REP_TYPES),
                     ),
                     ui.column(
                         5,
-                        ui.input_task_button("dat_compute_reps", "Compute",
-                                            style="padding:10px; width:150px; height:40px; "
-                                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
-                                             ),
+                        ui.input_task_button(
+                            "dat_compute_reps",
+                            "Compute",
+                            style="padding:10px; width:150px; height:40px; "
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
                         style="padding:25px;",
                     ),
                 ),
@@ -512,7 +534,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.h4("Step 2: Choose a method to visualize the representations"),
                 ui.p(
                     "Plots can be downloaded by clicking the camera icon at the top right of the plot.",
-                    style="font-size:14px; margin-top:10px; text-align: justify;"),
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
                 ui.panel_conditional(
                     "input.dat_rep_type === 'VAE' || input.dat_rep_type === 'MSA-Transformer'",
                     ui.input_file("MSA_vae_training", "Upload MSA file"),
@@ -522,14 +545,26 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.input_checkbox("custom_vae", "Customize VAE parameters"),
                     ui.input_action_button("train_vae", "Train VAE"),
                 ),
-                ui.input_select("vis_method", "Choose a visualization Method", REP_VISUAL),
+                ui.input_select(
+                    "vis_method", "Choose a visualization Method", REP_VISUAL
+                ),
                 ui.row(
-                    ui.column(7, ui.input_select("plot_rep_type", "Choose a representation set", REPS_AVAIL())),
-                    ui.column(5, ui.input_task_button("update_plot", "Plot",
-                                                        style="padding:10px; width:150px; height:40px; "
-                                                        "background-color:#00629b; color:white; border:none; border-radius:5px;",
-                                                      ), 
-                              style="padding:25px;",),
+                    ui.column(
+                        7,
+                        ui.input_select(
+                            "plot_rep_type", "Choose a representation set", REPS_AVAIL()
+                        ),
+                    ),
+                    ui.column(
+                        5,
+                        ui.input_task_button(
+                            "update_plot",
+                            "Plot",
+                            style="padding:10px; width:150px; height:40px; "
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
+                        style="padding:25px;",
+                    ),
                 ),
             )
 
@@ -1804,7 +1839,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def design_chains():
-        return ui.input_select("mutlichain_chain", "Chain to redesign", choices=CHAINS())
+        return ui.input_select(
+            "mutlichain_chain", "Chain to redesign", choices=CHAINS()
+        )
 
     # ### DOWNLOAD DESIGN RESULTS # BUTTON MOVED TO SIDE BAR
     # @output

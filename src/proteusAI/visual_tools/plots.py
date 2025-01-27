@@ -219,6 +219,7 @@ def plot_tsne(
 
     return plot_interactive_scatterplot(df), ax, df
 
+
 def plot_umap(
     x: List[np.ndarray],
     y: Union[List[Union[float, str]], None] = None,
@@ -325,6 +326,7 @@ def plot_umap(
 
     return plot_interactive_scatterplot(df), ax, df
 
+
 def plot_interactive_scatterplot(df):
     """
     A function for plotting an interactive scatterplot of a dataframe containing data with x & y coordinates and
@@ -336,17 +338,17 @@ def plot_interactive_scatterplot(df):
     Returns:
         fig: Plotly Figure object for the interactive plot.
     """
-    if not {'z1', 'z2', 'y', 'names'}.issubset(df.columns):
+    if not {"z1", "z2", "y", "names"}.issubset(df.columns):
         raise ValueError("DataFrame must contain 'z1', 'z2', 'y', and 'names' columns.")
 
     # Normalize 'y' column for color scaling
-    y_min, y_max = df['y'].min(), df['y'].max()
-    df['y_normalized'] = (df['y'] - y_min) / (y_max - y_min)
+    y_min, y_max = df["y"].min(), df["y"].max()
+    df["y_normalized"] = (df["y"] - y_min) / (y_max - y_min)
 
     custom_colorscale = [
         [0.0, "#d64527"],  # Minimum value (deep red)
         [0.5, "white"],  # Zero value (white)
-        [1.0, "#00629b"]  # Maximum value (deep blue)
+        [1.0, "#00629b"],  # Maximum value (deep blue)
     ]
 
     # Create the scatter plot using graph_objects
@@ -354,45 +356,45 @@ def plot_interactive_scatterplot(df):
 
     fig.add_trace(
         go.Scatter(
-            x=df['z1'],
-            y=df['z2'],
-            mode='markers',
+            x=df["z1"],
+            y=df["z2"],
+            mode="markers",
             marker=dict(
                 size=10,  # Increase the size of the points
-                color=df['y_normalized'],  # Color based on normalized 'y'
+                color=df["y_normalized"],  # Color based on normalized 'y'
                 colorscale=custom_colorscale,  # Apply custom color scale
-                line=dict(color='black', width=1),  # Black outline with 1px width
-                colorbar=dict(title="Labels", ticks="outside")  # Add colorbar for reference
+                line=dict(color="black", width=1),  # Black outline with 1px width
+                colorbar=dict(
+                    title="Labels", ticks="outside"
+                ),  # Add colorbar for reference
             ),
-            text=df['names'],  # Hover information
-            hovertemplate=(
-                "<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"
-            )
+            text=df["names"],  # Hover information
+            hovertemplate=("<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"),
         )
     )
 
     # Update layout for cleaner visualization
     fig.update_layout(
         xaxis=dict(
-            title='Dimension 1',
+            title="Dimension 1",
             showgrid=False,
             showticklabels=False,
             showline=True,
             linewidth=2,
-            linecolor='black',
-            zeroline=False  # Disable the x=0 line
+            linecolor="black",
+            zeroline=False,  # Disable the x=0 line
         ),
         yaxis=dict(
-            title='Dimension 2',
+            title="Dimension 2",
             showgrid=False,
             showticklabels=False,
             showline=True,
             linewidth=2,
-            linecolor='black',
-            zeroline=False  # Disable the x=0 line
+            linecolor="black",
+            zeroline=False,  # Disable the x=0 line
         ),
-        template='plotly_white',
-        legend_title="Labels"
+        template="plotly_white",
+        legend_title="Labels",
     )
 
     return fig
