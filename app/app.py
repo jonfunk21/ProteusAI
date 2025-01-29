@@ -21,6 +21,7 @@ from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
 import shinywidgets as widgets
 from proteusAI.io_tools.fasta import hash_sequence
+import proteusAI.visual_tools.plots
 
 import proteusAI as pai
 
@@ -312,16 +313,7 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                ui.input_switch("mlde_switch", "Show more information", False),
-                ui.panel_conditional("input.mlde_switch", tooltips.mlde_tooltips),
-                ui.navset_tab(
-                    ui.nav_panel(
-                        "Model Diagnostics",
-                        ui.output_ui("mlde_results_ui"),
-                        ui.output_data_frame("mlde_model_table"),
-                    ),
-                    ui.nav_panel("Search Results", ui.output_ui("mlde_download_ui")),
-                ),
+                ui.output_ui("mlde_results_ui"),
             ),
         ),
         ####################
@@ -650,8 +642,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() != "start":
             return ui.TagList(
+                ui.h4("Machine Learning Guided Directed Evolution (MLDE)"),
+                ui.p(
+                    tooltips.mlde_tooltips,
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
+                ui.h4("Step 1: Train a model to predict your Y-values"),
                 ui.row(
-                    ui.h5("Machine Learning Guided Directed Evolution (MLDE)"),
                     ui.column(
                         6,
                         ui.input_select(
@@ -713,8 +710,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.row(
-                    ui.column(6, ui.input_task_button("mlde_train_button", "Train"))
+                    ui.column(12, ui.input_task_button("mlde_train_button",
+                                                       "Train",
+                                                       style="padding:10px; width:400px; height:40px; "
+                                                       "background-color:#00629b; color:white; border:none; border-radius:5px;",))
                 ),
+                ui.h4("Step 2: Design new sequences"),
             )
 
         else:
@@ -727,7 +728,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         if MODEL() is not None:
             model_type = INV_MODEL_DICT[MODEL().model_type]
             return ui.TagList(
-                ui.h5("Search new mutants"),
                 ui.row(
                     ui.column(
                         6,
@@ -748,7 +748,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.column(
-                    8,
+                    12,
                     ui.input_slider(
                         "mlde_explore",
                         "Exploration vs. Exploitation",
@@ -757,7 +757,18 @@ def server(input: Inputs, output: Outputs, session: Session):
                         max=1,
                     ),
                 ),
-                ui.column(6, ui.input_task_button("mlde_search_btn", "Search")),
+                ui.column(12, ui.input_task_button("mlde_search_btn",
+                                                   "Design",
+                                                   style="padding:10px; width:400px; height:40px; "
+                                                   "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                                                   ),
+                ),
+                ui.column(12, ui.download_button("download_mlde_search",
+                                                   "Download",
+                                                   style="padding:10px; width:400px; height:40px; "
+                                                   "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                                                   ),
+                ),
             )
 
     @output
@@ -765,18 +776,20 @@ def server(input: Inputs, output: Outputs, session: Session):
     def mlde_results_ui(alt=None):
         if MODEL() is not None:
             return ui.TagList(
-                ui.h5("Predictions vs. True values of the validation data"),
-                ui.output_ui("pred_vs_true_ui"),
-                ui.row(
-                    ui.h5("Model statistics"),
-                    ui.column(
-                        12,
-                        ui.output_data_frame("mlde_statistics"),
-                        style="padding:25px;",
-                    ),
+                ui.h4("Model Diagnostics: Predictions vs. True Values in the Validation Set"),
+                widgets.output_widget("pred_vs_true"),
+                ui.input_switch("validation_data_switch", "Show validation data and model statistics", False),
+                ui.panel_conditional(
+                    "input.validation_data_switch",
+                    ui.h4("Descriptive Statistics for the Trained Model"),
+                    ui.output_data_frame("mlde_statistics"),
+                    ui.h4("Validation Data"),
+                    ui.output_data_frame("mlde_model_table"),
                 ),
-                ui.h5("Validation data"),
-            )
+                ui.h4("Designed Sequences For Testing"),
+                ui.output_ui("mlde_download_ui")
+                ),
+                
 
     @render.data_frame
     def mlde_statistics(alt=None):
@@ -2523,13 +2536,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### RENDER PREDICTED VERSUS TRUE DATAFRAME ###
     @output
-    @render.plot
+    @widgets.render_widget
     def pred_vs_true(alt=None):
         df = TEST_DF()
+        y_true=df.y_true.to_list()
+        y_pred=df.y_pred.to_list()
+        y_names=df.names.to_list()
         if MODEL() is not None:
-            p = MODEL().true_vs_predicted(
-                y_true=df.y_true.to_list(), y_pred=df.y_pred.to_list()
-            )
+             p = MODEL().true_vs_predicted(
+                 y_pred=y_pred,y_true=y_true, y_names=y_names)
+             
+            #p = proteusAI.visual_tools.plots.plot_predictions_vs_groundtruth_interactive(y_pred=y_pred,y_true=y_true, y_names=y_names)
         else:
             p = None
         return p
@@ -2630,7 +2647,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if out is not None:
             return ui.TagList(
                 ui.output_data_frame("mlde_search_table"),
-                ui.download_button("download_mlde_search", "Download MLDE results"),
+                #ui.download_button("download_mlde_search", "Download MLDE results"),
             )
 
     ### DOWNLOAD LOGIC FOR MLDE RESULTS ###
