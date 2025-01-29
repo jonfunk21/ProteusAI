@@ -710,10 +710,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.row(
-                    ui.column(12, ui.input_task_button("mlde_train_button",
-                                                       "Train",
-                                                       style="padding:10px; width:400px; height:40px; "
-                                                       "background-color:#00629b; color:white; border:none; border-radius:5px;",))
+                    ui.column(
+                        12,
+                        ui.input_task_button(
+                            "mlde_train_button",
+                            "Train",
+                            style="padding:10px; width:400px; height:40px; "
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
+                    )
                 ),
                 ui.h4("Step 2: Design new sequences"),
             )
@@ -757,17 +762,23 @@ def server(input: Inputs, output: Outputs, session: Session):
                         max=1,
                     ),
                 ),
-                ui.column(12, ui.input_task_button("mlde_search_btn",
-                                                   "Design",
-                                                   style="padding:10px; width:400px; height:40px; "
-                                                   "background-color:#00629b; color:white; border:none; border-radius:5px;",
-                                                   ),
+                ui.column(
+                    12,
+                    ui.input_task_button(
+                        "mlde_search_btn",
+                        "Design",
+                        style="padding:10px; width:400px; height:40px; "
+                        "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                    ),
                 ),
-                ui.column(12, ui.download_button("download_mlde_search",
-                                                   "Download",
-                                                   style="padding:10px; width:400px; height:40px; "
-                                                   "background-color:#00629b; color:white; border:none; border-radius:5px;",
-                                                   ),
+                ui.column(
+                    12,
+                    ui.download_button(
+                        "download_mlde_search",
+                        "Download",
+                        style="padding:10px; width:400px; height:40px; "
+                        "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                    ),
                 ),
             )
 
@@ -775,21 +786,28 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def mlde_results_ui(alt=None):
         if MODEL() is not None:
-            return ui.TagList(
-                ui.h4("Model Diagnostics: Predictions vs. True Values in the Validation Set"),
-                widgets.output_widget("pred_vs_true"),
-                ui.input_switch("validation_data_switch", "Show validation data and model statistics", False),
-                ui.panel_conditional(
-                    "input.validation_data_switch",
-                    ui.h4("Descriptive Statistics for the Trained Model"),
-                    ui.output_data_frame("mlde_statistics"),
-                    ui.h4("Validation Data"),
-                    ui.output_data_frame("mlde_model_table"),
+            return (
+                ui.TagList(
+                    ui.h4(
+                        "Model Diagnostics: Predictions vs. True Values in the Validation Set"
+                    ),
+                    widgets.output_widget("pred_vs_true"),
+                    ui.input_switch(
+                        "validation_data_switch",
+                        "Show validation data and model statistics",
+                        False,
+                    ),
+                    ui.panel_conditional(
+                        "input.validation_data_switch",
+                        ui.h4("Descriptive Statistics for the Trained Model"),
+                        ui.output_data_frame("mlde_statistics"),
+                        ui.h4("Validation Data"),
+                        ui.output_data_frame("mlde_model_table"),
+                    ),
+                    ui.h4("Designed Sequences For Testing"),
+                    ui.output_ui("mlde_download_ui"),
                 ),
-                ui.h4("Designed Sequences For Testing"),
-                ui.output_ui("mlde_download_ui")
-                ),
-                
+            )
 
     @render.data_frame
     def mlde_statistics(alt=None):
@@ -850,11 +868,12 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() == "dataset":
             return ui.TagList(
-                    ui.h5("Protein Discovery and Annotation"),
-                    ui.p(tooltips.discovery_tooltips,
-                        style="font-size:14px; margin-top:10px; text-align: justify;",
-                         ),                
-                    ui.row(
+                ui.h5("Protein Discovery and Annotation"),
+                ui.p(
+                    tooltips.discovery_tooltips,
+                    style="font-size:14px; margin-top:10px; text-align: justify;",
+                ),
+                ui.row(
                     ui.column(
                         6,
                         ui.input_select(
@@ -2539,14 +2558,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     @widgets.render_widget
     def pred_vs_true(alt=None):
         df = TEST_DF()
-        y_true=df.y_true.to_list()
-        y_pred=df.y_pred.to_list()
-        y_names=df.names.to_list()
+        y_true = df.y_true.to_list()
+        y_pred = df.y_pred.to_list()
+        y_names = df.names.to_list()
         if MODEL() is not None:
-             p = MODEL().true_vs_predicted(
-                 y_pred=y_pred,y_true=y_true, y_names=y_names)
-             
-            #p = proteusAI.visual_tools.plots.plot_predictions_vs_groundtruth_interactive(y_pred=y_pred,y_true=y_true, y_names=y_names)
+            p = MODEL().true_vs_predicted(y_pred=y_pred, y_true=y_true, y_names=y_names)
+
+        # p = proteusAI.visual_tools.plots.plot_predictions_vs_groundtruth_interactive(y_pred=y_pred,y_true=y_true, y_names=y_names)
         else:
             p = None
         return p
@@ -2647,7 +2665,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if out is not None:
             return ui.TagList(
                 ui.output_data_frame("mlde_search_table"),
-                #ui.download_button("download_mlde_search", "Download MLDE results"),
+                # ui.download_button("download_mlde_search", "Download MLDE results"),
             )
 
     ### DOWNLOAD LOGIC FOR MLDE RESULTS ###

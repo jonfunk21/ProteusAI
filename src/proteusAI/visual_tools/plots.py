@@ -19,6 +19,7 @@ representation_dict = {
     "ESM-1v": "esm1v",
 }
 
+
 def plot_predictions_vs_groundtruth_interactive(
     y_true: list,
     y_pred: list,
@@ -147,15 +148,14 @@ def plot_predictions_vs_groundtruth_interactive(
             zerolinewidth=1,
         ),
         template="plotly_white",
-        margin=dict(
-            l=40, r=40, t=40, b=40  # Adjust margins for space around the plot
-        ),
+        margin=dict(l=40, r=40, t=40, b=40),  # Adjust margins for space around the plot
     )
 
     # Create the figure
     fig = go.Figure(data=traces, layout=layout)
 
     return fig
+
 
 def plot_predictions_vs_groundtruth(
     y_true: list,
