@@ -19,6 +19,143 @@ representation_dict = {
     "ESM-1v": "esm1v",
 }
 
+def plot_predictions_vs_groundtruth_interactive(
+    y_true: list,
+    y_pred: list,
+    y_names: list,
+    title: Union[str, None] = None,
+    x_label: Union[str, None] = None,
+    y_label: Union[str, None] = None,
+    plot_grid: bool = True,
+    file: Union[str, None] = None,
+    show_plot: bool = True,
+    width: Union[float, None] = None,
+):
+
+    if y_label is None:
+        y_label = "Predicted Value"
+    if x_label is None:
+        x_label = "True Value"
+
+    # Calculate diagonal line bounds
+    min_val = min(min(y_true) * 1.05, min(y_pred) * 1.05)
+    max_val = max(max(y_true) * 1.05, max(y_pred) * 1.05)
+
+    # Confidence region
+    confidence_traces = []
+    if width is not None:
+        x_range = np.linspace(min_val, max_val, 100)
+        upper_conf = x_range + width
+        lower_conf = x_range - width
+
+        confidence_region = go.Scatter(
+            x=np.concatenate([x_range, x_range[::-1]]),
+            y=np.concatenate([upper_conf, lower_conf[::-1]]),
+            fill="toself",
+            fillcolor="rgba(0, 98, 155, 0.2)",  # Hex #00629b converted to RGBA
+            line=dict(color="rgba(0,0,0,0)"),
+            name="Confidence Region",
+            hoverinfo="skip",  # Disable hover on the confidence region
+            showlegend=False,
+        )
+        confidence_traces.append(confidence_region)
+
+    # Create scatter plot with hover text
+    scatter_trace = go.Scatter(
+        x=y_true,
+        y=y_pred,
+        mode="markers",
+        marker=dict(size=10, opacity=0.8, color="#d64527"),
+        name="Data Points",
+        text=y_names,  # Hover text
+        hoverinfo="text",  # Display only the text on hover
+        showlegend=False,
+    )
+
+    # Add error bars
+    error_bar_traces = []
+    if width is not None:
+        for true, pred in zip(y_true, y_pred):
+            # Add vertical line (error bar)
+            error_bar_traces.append(
+                go.Scatter(
+                    x=[true, true],
+                    y=[pred - width, pred + width],
+                    mode="lines",
+                    line=dict(color="#C0C0C0", width=0.5),
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
+            # Add T-shape at top and bottom
+            error_bar_traces.append(
+                go.Scatter(
+                    x=[
+                        true - 0.005 * (max_val - min_val),
+                        true + 0.005 * (max_val - min_val),
+                    ],
+                    y=[pred - width, pred - width],
+                    mode="lines",
+                    line=dict(color="#C0C0C0", width=0.5),
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
+            error_bar_traces.append(
+                go.Scatter(
+                    x=[
+                        true - 0.005 * (max_val - min_val),
+                        true + 0.005 * (max_val - min_val),
+                    ],
+                    y=[pred + width, pred + width],
+                    mode="lines",
+                    line=dict(color="#C0C0C0", width=0.5),
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
+
+    # Add diagonal line
+    line_trace = go.Scatter(
+        x=[min_val, max_val],
+        y=[min_val, max_val],
+        mode="lines",
+        line=dict(color="#00629b", dash="dot", width=2),
+        name="Diagonal Line",
+        showlegend=False,
+        hoverinfo="skip",
+    )
+
+    # Combine traces, ensuring confidence region and error bars are added first
+    traces = confidence_traces + error_bar_traces + [line_trace, scatter_trace]
+
+    # Create the layout
+    layout = go.Layout(
+        title=title,
+        xaxis=dict(
+            title=x_label,
+            range=[min_val, max_val],
+            showgrid=False,
+            zeroline=True,  # Show x-axis
+            zerolinewidth=1,
+        ),
+        yaxis=dict(
+            title=y_label,
+            range=[min_val, max_val],
+            showgrid=False,
+            zeroline=True,  # Show y-axis
+            zerolinewidth=1,
+        ),
+        template="plotly_white",
+        margin=dict(
+            l=40, r=40, t=40, b=40  # Adjust margins for space around the plot
+        ),
+    )
+
+    # Create the figure
+    fig = go.Figure(data=traces, layout=layout)
+
+    return fig
 
 def plot_predictions_vs_groundtruth(
     y_true: list,
