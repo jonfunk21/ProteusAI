@@ -1287,6 +1287,7 @@ class Model:
         self,
         y_true: Union[list, None] = None,
         y_pred: Union[list, None] = None,
+        y_names: Union[list, None] = None,
         title: Union[str, None] = None,
         x_label: Union[str, None] = None,
         y_label: Union[str, None] = None,
@@ -1312,6 +1313,8 @@ class Model:
             y_true = self.y_test
         if y_pred is None:
             y_pred = self.y_test_pred
+        if y_names is None:
+            y_names = [None for x in self.y_test_pred]
 
         if self.dest:
             dest = os.path.join(self.dest, "plots")
@@ -1322,9 +1325,10 @@ class Model:
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        fig, ax = vis.plot_predictions_vs_groundtruth(
+        fig = vis.plot_predictions_vs_groundtruth_interactive(
             y_true,
             y_pred,
+            y_names,
             title,
             x_label,
             y_label,
@@ -1334,7 +1338,7 @@ class Model:
             self.calibration,
         )
 
-        return fig, ax
+        return fig
 
     def predicted_vs_true(
         self,
