@@ -343,7 +343,7 @@ app_ui = ui.page_fluid(
                     ),
                     ui.nav_panel(
                         "Search Results",
-                        ui.output_plot("discovery_search_plot"),
+                        widgets.output_widget("discovery_search_plot"),
                         ui.output_ui("discovery_download_ui"),
                     ),
                 ),
@@ -868,11 +868,12 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() == "dataset":
             return ui.TagList(
-                ui.h5("Protein Discovery and Annotation"),
+                ui.h4("Protein Discovery and Annotation"),
                 ui.p(
                     tooltips.discovery_tooltips,
                     style="font-size:14px; margin-top:10px; text-align: justify;",
                 ),
+                ui.h4("Step 1: Train a model to cluster the sequences"),
                 ui.row(
                     ui.column(
                         6,
@@ -933,7 +934,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                 ),
-                ui.input_task_button("clustering_button", "Cluster"),
+                ui.row(
+                    ui.input_task_button(
+                        "clustering_button",
+                        "Cluster",
+                        style="padding:10px; width:400px; height:40px;"
+                        "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                    ),
+                    style="padding:25px;",
+                ),
                 ui.output_ui("clustering_search_ui"),
             )
 
@@ -950,8 +959,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif MODE() == "dataset":
             return ui.TagList(
+                ui.h4("Protein Discovery and Annotation"),
                 ui.row(
-                    ui.h5("Protein Discovery and Annotation"),
                     ui.column(
                         6,
                         ui.input_select(
@@ -966,6 +975,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                             REPS_AVAIL(),
                         ),
                     ),
+                ),
+                ui.row(
                     ui.panel_conditional(
                         "input.discovery_model_type !== 'Gaussian Process'",
                         ui.column(
@@ -1003,9 +1014,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                             choices=REP_VISUAL,
                         ),
                     ),
+                ),
+                ui.row(
                     ui.column(12, "Cross-validation split:"),
+                ),
+                ui.row(
                     ui.column(
-                        4,
+                        3,
                         ui.input_numeric(
                             "discovery_n_train",
                             "Training (%)",
@@ -1015,13 +1030,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     ui.column(
-                        4,
+                        3,
                         ui.input_numeric(
                             "discovery_n_test", "Test (%)", value=10, min=0, max=100
                         ),
                     ),
                     ui.column(
-                        4,
+                        3,
                         ui.input_numeric(
                             "discovery_n_val",
                             "Validation (%)",
@@ -1030,8 +1045,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                             max=100,
                         ),
                     ),
+                ),
+                ui.row(
                     ui.column(
-                        4, ui.input_task_button("discovery_train_button", "Train")
+                        4,
+                        ui.input_task_button(
+                            "discovery_train_button",
+                            "Train",
+                            style="padding:10px; width:400px; height:40px;"
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
                     ),
                 ),
             )
@@ -1058,40 +1081,46 @@ def server(input: Inputs, output: Outputs, session: Session):
                 sample_from = clusters
                 model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
-                return ui.TagList(
-                    ui.h5("Sample sequnces from clusters"),
-                    ui.row(
-                        ui.column(
-                            6,
-                            ui.input_select(
-                                "discovery_search_criteria",
-                                "Search heuristic",
-                                SEARCH_HEURISTICS,
+                return (
+                    ui.TagList(
+                        ui.row(
+                            ui.h4("Step 2: Choose sample sequences from clusters"),
+                        ),
+                        ui.row(
+                            ui.column(
+                                6,
+                                ui.input_select(
+                                    "discovery_search_criteria",
+                                    "Search heuristic",
+                                    SEARCH_HEURISTICS,
+                                ),
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_select(
+                                    "discovery_search_model", "Model", [model_type]
+                                ),
+                            ),
+                        ),
+                        ui.row(
+                            ui.column(
+                                6,
+                                ui.input_selectize(
+                                    "sample_from",
+                                    "Clusters of interest",
+                                    sample_from,
+                                    multiple=True,
+                                ),
+                            ),
+                            ui.column(
+                                6,
+                                ui.input_numeric(
+                                    "n_samples", "Number of sequences", value=10, min=2
+                                ),
                             ),
                         ),
                         ui.column(
-                            6,
-                            ui.input_select(
-                                "discovery_search_model", "Model", [model_type]
-                            ),
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_selectize(
-                                "sample_from",
-                                "Clusters of interest",
-                                sample_from,
-                                multiple=True,
-                            ),
-                        ),
-                        ui.column(
-                            6,
-                            ui.input_numeric(
-                                "n_samples", "Number of sequences", value=10, min=2
-                            ),
-                        ),
-                        ui.column(
-                            6,
+                            12,
                             ui.input_task_button("discovery_search", "Search"),
                             style="padding:25px;",
                         ),
@@ -1111,7 +1140,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             model_type = INV_MODEL_DICT[DISCOVERY_MODEL().model_type]
 
             return ui.TagList(
-                ui.h5("Sample sequnces from clusters"),
+                ui.h4("Step 2: Choose sample sequences from clusters"),
                 ui.row(
                     ui.column(
                         6,
@@ -1143,8 +1172,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                         ),
                     ),
                     ui.column(
-                        6,
-                        ui.input_task_button("discovery_search", "Search"),
+                        12,
+                        ui.input_task_button(
+                            "discovery_search",
+                            "Search",
+                            style="padding:10px; width:400px; height:40px;"
+                            "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                        ),
                         style="padding:25px;",
                     ),
                 ),
@@ -2948,7 +2982,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
                 df = DISCOVERY_DR_DF()
 
-                print("We start here")
                 fig, ax, df = await loop.run_in_executor(
                     executor,
                     model.library.plot,
@@ -2963,7 +2996,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                     df,
                 )
 
-                DISCOVERY_SEARCH_PLOT.set((fig, ax))
+                DISCOVERY_SEARCH_PLOT.set(fig)
 
                 DISCOVERY_DF.set(out["df"])
 
@@ -2990,12 +3023,12 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### RENDER SEARCH PLOT ###
     @output
-    @render.plot
+    @widgets.render_widget
     def discovery_search_plot(alt=None):
         highlight_mask = DISCOVERY_SEARCH()
         if highlight_mask is not None:
-            fig, ax = DISCOVERY_SEARCH_PLOT()
-            return fig, ax
+            fig = DISCOVERY_SEARCH_PLOT()
+            return fig
 
     ### RENDER DISCOVERY TABLE ###
     @output
