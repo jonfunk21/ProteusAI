@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 import numpy as np
 import umap
 import plotly.graph_objects as go
+import plotly.express as px
 
 
 matplotlib.use("Agg")
@@ -302,60 +303,59 @@ def plot_tsne(
         else:
             df["names"] = [None] * len(y)
 
-    # Handle the palette based on whether y is numerical or categorical
-    if isinstance(y[0], (int, float)):  # If y is numerical
-        cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
-    else:  # If y is categorical
-        cmap = sns.color_palette("Set2", as_cmap=False)
+    # # Handle the palette based on whether y is numerical or categorical
+    # if isinstance(y[0], (int, float)):  # If y is numerical
+    #     cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
+    # else:  # If y is categorical
+    #     cmap = sns.color_palette("Set2", as_cmap=False)
 
-    hue = (
-        "y" if df["y"].isnull().sum() != len(df["y"]) else None
-    )  # Use hue only if y is informative
-    scatter = sns.scatterplot(
-        x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
-    )
+    # hue = (
+    #     "y" if df["y"].isnull().sum() != len(df["y"]) else None
+    # )  # Use hue only if y is informative
+    # scatter = sns.scatterplot(
+    #     x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
+    # )
 
-    # Apply special coloring only if y values are valid and thresholds are provided
-    if hue and (y_upper is not None or y_lower is not None):
-        outlier_mask = (
-            (df["y"] > y_upper)
-            if y_upper is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        outlier_mask |= (
-            (df["y"] < y_lower)
-            if y_lower is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        scatter.scatter(
-            df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
-        )
+    # # Apply special coloring only if y values are valid and thresholds are provided
+    # if hue and (y_upper is not None or y_lower is not None):
+    #     outlier_mask = (
+    #         (df["y"] > y_upper)
+    #         if y_upper is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     outlier_mask |= (
+    #         (df["y"] < y_lower)
+    #         if y_lower is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     scatter.scatter(
+    #         df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
+    #     )
 
-    # Highlight points based on the highlight_mask
-    if highlight_mask is not None:
-        highlight_mask = np.array(highlight_mask)
-        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
-        scatter.scatter(
-            df["z1"][highlight_points],
-            df["z2"][highlight_points],
-            color="red",
-            marker="x",
-            s=60,
-            alpha=0.7,
-            label=highlight_label,
-        )
+    # # Highlight points based on the highlight_mask
+    # if highlight_mask is not None:
+    #     highlight_mask = np.array(highlight_mask)
+    #     highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+    #     scatter.scatter(
+    #         df["z1"][highlight_points],
+    #         df["z2"][highlight_points],
+    #         color="red",
+    #         marker="x",
+    #         s=60,
+    #         alpha=0.7,
+    #         label=highlight_label,
+    #     )
 
-    scatter.set_title(f"t-SNE projection of {rep_type if rep_type else 'data'}")
+    # scatter.set_title(f"t-SNE projection of {rep_type if rep_type else 'data'}")
 
-    # Add the legend, making sure to include highlighted points
-    handles, labels = scatter.get_legend_handles_labels()
-    if highlight_label in labels:
-        ax.legend(handles, labels, title="Legend")
-    else:
-        ax.legend(title="Legend")
+    # # Add the legend, making sure to include highlighted points
+    # handles, labels = scatter.get_legend_handles_labels()
+    # if highlight_label in labels:
+    #     ax.legend(handles, labels, title="Legend")
+    # else:
+    #     ax.legend(title="Legend")
 
     return plot_interactive_scatterplot(df), ax, df
-
 
 def plot_umap(
     x: List[np.ndarray],
@@ -409,59 +409,88 @@ def plot_umap(
         else:
             df["names"] = [None] * len(y)
 
-    # Handle the palette based on whether y is numerical or categorical
-    if isinstance(y[0], (int, float)):  # If y is numerical
-        cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
-    else:  # If y is categorical
-        cmap = sns.color_palette("Set2", as_cmap=False)
+    # # Handle the palette based on whether y is numerical or categorical
+    # if isinstance(y[0], (int, float)):  # If y is numerical
+    #     cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
+    # else:  # If y is categorical
+    #     cmap = sns.color_palette("Set2", as_cmap=False)
 
-    hue = (
-        "y" if df["y"].isnull().sum() != len(df["y"]) else None
-    )  # Use hue only if y is informative
-    scatter = sns.scatterplot(
-        x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
-    )
+    # hue = (
+    #     "y" if df["y"].isnull().sum() != len(df["y"]) else None
+    # )  # Use hue only if y is informative
+    # scatter = sns.scatterplot(
+    #     x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
+    # )
 
-    # Apply special coloring only if y values are valid and thresholds are provided
-    if hue and (y_upper is not None or y_lower is not None):
-        outlier_mask = (
-            (df["y"] > y_upper)
-            if y_upper is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        outlier_mask |= (
-            (df["y"] < y_lower)
-            if y_lower is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        scatter.scatter(
-            df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
-        )
+    # # Apply special coloring only if y values are valid and thresholds are provided
+    # if hue and (y_upper is not None or y_lower is not None):
+    #     outlier_mask = (
+    #         (df["y"] > y_upper)
+    #         if y_upper is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     outlier_mask |= (
+    #         (df["y"] < y_lower)
+    #         if y_lower is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     scatter.scatter(
+    #         df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
+    #     )
 
     # Highlight points based on the highlight_mask
-    if highlight_mask is not None:
-        highlight_mask = np.array(highlight_mask)
-        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
-        scatter.scatter(
-            df["z1"][highlight_points],
-            df["z2"][highlight_points],
-            color="red",
-            marker="x",
-            s=60,
-            alpha=0.7,
-            label=highlight_label,
-        )
+    # if highlight_mask is not None:
+    #     highlight_mask = np.array(highlight_mask)
+    #     highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+    #     scatter.scatter(
+    #         df["z1"][highlight_points],
+    #         df["z2"][highlight_points],
+    #         color="red",
+    #         marker="x",
+    #         s=60,
+    #         alpha=0.7,
+    #         label=highlight_label,
+    #     )
 
-    scatter.set_title(f"UMAP projection of {rep_type if rep_type else 'data'}")
+    # scatter.set_title(f"UMAP projection of {rep_type if rep_type else 'data'}")
 
-    # Add the legend, making sure to include highlighted points
-    handles, labels = scatter.get_legend_handles_labels()
-    if highlight_label in labels:
-        ax.legend(handles, labels, title="Legend")
-    else:
-        ax.legend(title="Legend")
+    # # Add the legend, making sure to include highlighted points
+    # handles, labels = scatter.get_legend_handles_labels()
+    # if highlight_label in labels:
+    #     ax.legend(handles, labels, title="Legend")
+    # else:
+    #     ax.legend(title="Legend")
 
     return plot_interactive_scatterplot(df), ax, df
+
+def detect_column_type(series, threshold=10):
+    """
+    Detect if a Pandas column contains categorical or continuous data.
+
+    Parameters:
+    - series (pd.Series): The column to analyze.
+    - threshold (int): The number of unique values below which a numeric column is considered categorical.
+
+    Returns:
+    - str: "categorical" or "continuous"
+    """
+    
+    # If the column is of type 'object', 'category', or 'bool', classify as categorical
+    if series.dtype == 'object' or series.dtype.name == 'category' or series.dtype == 'bool':
+        return "categorical"
+    
+    # If the column is numerical, check unique values
+    elif np.issubdtype(series.dtype, np.number):
+        unique_values = series.nunique()
+        total_values = len(series)
+        
+        # If the number of unique values is low, treat it as categorical
+        if unique_values <= threshold or unique_values / total_values < 0.05:  
+            return "categorical"
+        else:
+            return "continuous"
+
+    return "continuous"
 
 
 def plot_interactive_scatterplot(df):
@@ -475,40 +504,71 @@ def plot_interactive_scatterplot(df):
     Returns:
         fig: Plotly Figure object for the interactive plot.
     """
-    if not {"z1", "z2", "y", "names"}.issubset(df.columns):
-        raise ValueError("DataFrame must contain 'z1', 'z2', 'y', and 'names' columns.")
-
-    # Normalize 'y' column for color scaling
-    y_min, y_max = df["y"].min(), df["y"].max()
-    df["y_normalized"] = (df["y"] - y_min) / (y_max - y_min)
-
-    custom_colorscale = [
-        [0.0, "#d64527"],  # Minimum value (deep red)
-        [0.5, "white"],  # Zero value (white)
-        [1.0, "#00629b"],  # Maximum value (deep blue)
-    ]
-
+    if not {"z1", "z2", "names"}.issubset(df.columns):
+        raise ValueError("DataFrame must contain 'z1', 'z2', and 'names' columns.")
+    
+    if "y" not in df.columns:
+        df["y"] = [0]*range(len(df))
+    
     # Create the scatter plot using graph_objects
     fig = go.Figure()
 
-    fig.add_trace(
-        go.Scatter(
-            x=df["z1"],
-            y=df["z2"],
-            mode="markers",
-            marker=dict(
-                size=10,  # Increase the size of the points
-                color=df["y_normalized"],  # Color based on normalized 'y'
-                colorscale=custom_colorscale,  # Apply custom color scale
-                line=dict(color="black", width=1),  # Black outline with 1px width
-                colorbar=dict(
-                    title="Labels", ticks="outside"
-                ),  # Add colorbar for reference
-            ),
-            text=df["names"],  # Hover information
-            hovertemplate=("<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"),
+    if detect_column_type(df["y"]) == "continuous":
+    
+    # 1. PLOTTING FOR CONTINUOUS Y DATA
+    # Normalize 'y' column for color scaling
+        y_min, y_max = df["y"].min(), df["y"].max()
+        df["y_normalized"] = (df["y"] - y_min) / (y_max - y_min)
+
+        custom_colorscale = [
+            [0.0, "#d64527"],  # Minimum value (deep red)
+            [0.5, "white"],  # Zero value (white)
+            [1.0, "#00629b"],  # Maximum value (deep blue)
+        ]
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["z1"],
+                y=df["z2"],
+                mode="markers",
+                marker=dict(
+                    size=10,  # Increase the size of the points
+                    color=df["y_normalized"],  # Color based on normalized 'y'
+                    colorscale=custom_colorscale,  # Apply custom color scale
+                    line=dict(color="black", width=1),  # Black outline with 1px width
+                    colorbar=dict(
+                        title="Labels", ticks="outside"
+                    ),  # Add colorbar for reference
+                ),
+                text=df["names"],  # Hover information
+                hovertemplate=("<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"),
+            )
         )
-    )
+    
+    # PLOTTING FOR CATAGORICAL DATA
+    if detect_column_type(df["y"]) == "categorical":
+
+        # Generate a color mapping for categorical values
+        categories = df["y"].unique()
+        color_map = {category: px.colors.qualitative.Set1[i % len(px.colors.qualitative.Set1)] for i, category in enumerate(categories)}
+
+        # Assign colors to each point
+        df["color"] = df["y"].map(color_map)
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["z1"],
+                y=df["z2"],
+                mode="markers",
+                marker=dict(
+                    size=10,  # Increase the size of the points
+                    color=df["color"],  # Color based on normalized 'y'
+                    line=dict(color="black", width=1),  # Black outline with 1px width
+                ),
+                text=df["names"] + "<br>Group: " + df["y"],  # Combine name and group info
+                hovertemplate="<b>%{text}</b><extra></extra>",  
+            )
+        )
 
     # Update layout for cleaner visualization
     fig.update_layout(
@@ -568,12 +628,12 @@ def plot_pca(
         highlight_label (str): Text for the legend entry of highlighted points.
         df (pd.DataFrame): DataFrame containing the data to plot.
     """
-    fig, ax = plt.subplots(figsize=(10, 5))
+    # fig, ax = plt.subplots(figsize=(10, 5))
 
-    x = np.array([t.numpy() if hasattr(t, "numpy") else t for t in x])
+    # x = np.array([t.numpy() if hasattr(t, "numpy") else t for t in x])
 
-    if len(x.shape) == 3:  # Flatten if necessary
-        x = x.reshape(x.shape[0], -1)
+    # if len(x.shape) == 3:  # Flatten if necessary
+    #     x = x.reshape(x.shape[0], -1)
 
     if df is None:
         pca = PCA(n_components=2, random_state=random_state)
@@ -585,56 +645,56 @@ def plot_pca(
         else:
             df["names"] = [None] * len(y)
 
-    # Handle the palette based on whether y is numerical or categorical
-    if isinstance(y[0], (int, float)):  # If y is numerical
-        cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
-    else:  # If y is categorical
-        cmap = sns.color_palette("Set2", as_cmap=False)
+    # # Handle the palette based on whether y is numerical or categorical
+    # if isinstance(y[0], (int, float)):  # If y is numerical
+    #     cmap = sns.cubehelix_palette(rot=-0.2, as_cmap=True)
+    # else:  # If y is categorical
+    #     cmap = sns.color_palette("Set2", as_cmap=False)
 
-    hue = (
-        "y" if df["y"].isnull().sum() != len(df["y"]) else None
-    )  # Use hue only if y is informative
-    scatter = sns.scatterplot(
-        x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
-    )
+    # hue = (
+    #     "y" if df["y"].isnull().sum() != len(df["y"]) else None
+    # )  # Use hue only if y is informative
+    # scatter = sns.scatterplot(
+    #     x="z1", y="z2", hue=hue, palette=cmap if hue else None, data=df
+    # )
 
-    # Apply special coloring only if y values are valid and thresholds are provided
-    if hue and (y_upper is not None or y_lower is not None):
-        outlier_mask = (
-            (df["y"] > y_upper)
-            if y_upper is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        outlier_mask |= (
-            (df["y"] < y_lower)
-            if y_lower is not None
-            else np.zeros(len(df), dtype=bool)
-        )
-        scatter.scatter(
-            df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
-        )
+    # # Apply special coloring only if y values are valid and thresholds are provided
+    # if hue and (y_upper is not None or y_lower is not None):
+    #     outlier_mask = (
+    #         (df["y"] > y_upper)
+    #         if y_upper is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     outlier_mask |= (
+    #         (df["y"] < y_lower)
+    #         if y_lower is not None
+    #         else np.zeros(len(df), dtype=bool)
+    #     )
+    #     scatter.scatter(
+    #         df["z1"][outlier_mask], df["z2"][outlier_mask], color="lightgrey"
+    #     )
 
-    # Highlight points based on the highlight_mask
-    if highlight_mask is not None:
-        highlight_mask = np.array(highlight_mask)
-        highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
-        scatter.scatter(
-            df["z1"][highlight_points],
-            df["z2"][highlight_points],
-            color="red",
-            marker="x",
-            s=60,
-            alpha=0.7,
-            label=highlight_label,
-        )
+    # # Highlight points based on the highlight_mask
+    # if highlight_mask is not None:
+    #     highlight_mask = np.array(highlight_mask)
+    #     highlight_points = highlight_mask != 0  # Non-zero entries in the highlight_mask
+    #     scatter.scatter(
+    #         df["z1"][highlight_points],
+    #         df["z2"][highlight_points],
+    #         color="red",
+    #         marker="x",
+    #         s=60,
+    #         alpha=0.7,
+    #         label=highlight_label,
+    #     )
 
-    scatter.set_title(f"PCA projection of {rep_type if rep_type else 'data'}")
+    # scatter.set_title(f"PCA projection of {rep_type if rep_type else 'data'}")
 
-    # Add the legend, making sure to include highlighted points
-    handles, labels = scatter.get_legend_handles_labels()
-    if highlight_label in labels:
-        ax.legend(handles, labels, title="Legend")
-    else:
-        ax.legend(title="Legend")
+    # # Add the legend, making sure to include highlighted points
+    # handles, labels = scatter.get_legend_handles_labels()
+    # if highlight_label in labels:
+    #     ax.legend(handles, labels, title="Legend")
+    # else:
+    #     ax.legend(title="Legend")
 
     return plot_interactive_scatterplot(df), ax, df
