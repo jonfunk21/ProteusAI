@@ -338,7 +338,7 @@ app_ui = ui.page_fluid(
                 ui.navset_tab(
                     ui.nav_panel(
                         "Model Diagnostics",
-                        ui.output_plot("discovery_plot"),
+                        widgets.output_widget("discovery_plot"),
                         ui.output_data_frame("discovery_table"),
                     ),
                     ui.nav_panel(
@@ -2375,7 +2375,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     def tsne_plot(alt=None):
         if LIBRARY_PLOT():
             fig = LIBRARY_PLOT()
-            print(fig)
             return fig
 
     ##########
@@ -2774,7 +2773,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 DISCOVERY_LIB.set(model_lib)
                 DISCOVERY_MODEL.set(model)
                 DISCOVERY_TEST_DF.set(test_df)
-                DISCOVERY_MODEL_PLOT.set((fig, ax))
+                DISCOVERY_MODEL_PLOT.set(fig)
 
             except Exception as e:
                 print(f"An error occurred in training the Discovery model: {e}")
@@ -2863,7 +2862,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 DISCOVERY_LIB.set(model_lib)
                 DISCOVERY_MODEL.set(model)
                 DISCOVERY_TEST_DF.set(out_df)
-                DISCOVERY_MODEL_PLOT.set((fig, ax))
+                DISCOVERY_MODEL_PLOT.set(fig)
                 DISCOVERY_DR_DF.set(dr_df)
 
             except Exception as e:
@@ -2887,11 +2886,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     ### RENDER DISCOVERY PLOT ###
     @output
-    @render.plot
+    @widgets.render_widget
     def discovery_plot(alt=None):
         if DISCOVERY_LIB():
-            fig, ax = DISCOVERY_MODEL_PLOT()
-            return fig, ax
+            fig = DISCOVERY_MODEL_PLOT()
+            return fig
 
     ### RENDER PREDICTED VERSUS TURE DATAFRAME ###
     @output
