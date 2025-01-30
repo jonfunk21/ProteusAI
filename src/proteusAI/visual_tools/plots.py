@@ -355,7 +355,8 @@ def plot_tsne(
     # else:
     #     ax.legend(title="Legend")
 
-    return plot_interactive_scatterplot(df), ax, df
+    return plot_interactive_scatterplot(df, highlight_mask), ax, df
+
 
 def plot_umap(
     x: List[np.ndarray],
@@ -461,7 +462,8 @@ def plot_umap(
     # else:
     #     ax.legend(title="Legend")
 
-    return plot_interactive_scatterplot(df), ax, df
+    return plot_interactive_scatterplot(df, highlight_mask), ax, df
+
 
 def detect_column_type(series, threshold=10):
     """
@@ -474,18 +476,22 @@ def detect_column_type(series, threshold=10):
     Returns:
     - str: "categorical" or "continuous"
     """
-    
+
     # If the column is of type 'object', 'category', or 'bool', classify as categorical
-    if series.dtype == 'object' or series.dtype.name == 'category' or series.dtype == 'bool':
+    if (
+        series.dtype == "object"
+        or series.dtype.name == "category"
+        or series.dtype == "bool"
+    ):
         return "categorical"
-    
+
     # If the column is numerical, check unique values
     elif np.issubdtype(series.dtype, np.number):
         unique_values = series.nunique()
         total_values = len(series)
-        
+
         # If the number of unique values is low, treat it as categorical
-        if unique_values <= threshold or unique_values / total_values < 0.05:  
+        if unique_values <= threshold or unique_values / total_values < 0.05:
             return "categorical"
         else:
             return "continuous"
@@ -493,7 +499,7 @@ def detect_column_type(series, threshold=10):
     return "continuous"
 
 
-def plot_interactive_scatterplot(df):
+def plot_interactive_scatterplot(df, highlight_mask):
     """
     A function for plotting an interactive scatterplot of a dataframe containing data with x & y coordinates and
     a 'y' column containing numerical data with which to label and color-code the points.
@@ -506,17 +512,17 @@ def plot_interactive_scatterplot(df):
     """
     if not {"z1", "z2", "names"}.issubset(df.columns):
         raise ValueError("DataFrame must contain 'z1', 'z2', and 'names' columns.")
-    
+
     if "y" not in df.columns:
-        df["y"] = [0]*range(len(df))
-    
+        df["y"] = [0] * range(len(df))
+
     # Create the scatter plot using graph_objects
     fig = go.Figure()
 
     if detect_column_type(df["y"]) == "continuous":
-    
-    # 1. PLOTTING FOR CONTINUOUS Y DATA
-    # Normalize 'y' column for color scaling
+
+        # 1. PLOTTING FOR CONTINUOUS Y DATA
+        # Normalize 'y' column for color scaling
         y_min, y_max = df["y"].min(), df["y"].max()
         df["y_normalized"] = (df["y"] - y_min) / (y_max - y_min)
 
@@ -525,7 +531,6 @@ def plot_interactive_scatterplot(df):
             [0.5, "white"],  # Zero value (white)
             [1.0, "#00629b"],  # Maximum value (deep blue)
         ]
-
         fig.add_trace(
             go.Scatter(
                 x=df["z1"],
@@ -536,22 +541,67 @@ def plot_interactive_scatterplot(df):
                     color=df["y_normalized"],  # Color based on normalized 'y'
                     colorscale=custom_colorscale,  # Apply custom color scale
                     line=dict(color="black", width=1),  # Black outline with 1px width
-                    colorbar=dict(
-                        title="Labels", ticks="outside"
-                    ),  # Add colorbar for reference
                 ),
                 text=df["names"],  # Hover information
-                hovertemplate=("<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"),
+                hovertemplate=(
+                    "<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"
+                ),
+                showlegend=False,  # Hides this trace from the legend
             )
         )
-    
+
+        # grey out datapoints that are in the highlight_mask
+        if highlight_mask is not None:
+            print(highlight_mask)
+            highlight = [x != 0 for x in highlight_mask]
+            mask = [x == 0 for x in highlight_mask]
+            fig.add_trace(
+                go.Scatter(
+                    x=df["z1"][mask],
+                    y=df["z2"][mask],
+                    mode="markers",
+                    marker=dict(
+                        size=10,  # Increase the size of the points
+                        color="white",  # Color based on normalized 'y'
+                    ),
+                    name="Click to highlighted suggested samples",
+                    hoverinfo="skip",
+                )
+            )
+            # Need to replot the highlighted points over the top of the white covers
+            fig.add_trace(
+                go.Scatter(
+                    x=df["z1"][highlight],
+                    y=df["z2"][highlight],
+                    mode="markers",
+                    marker=dict(
+                        size=10,  # Increase the size of the points
+                        color=df["y_normalized"],  # Color based on normalized 'y'
+                        colorscale=custom_colorscale,  # Apply custom color scale
+                        line=dict(
+                            color="black", width=1
+                        ),  # Black outline with 1px width
+                        colorbar=dict(
+                            title="Labels", ticks="outside"
+                        ),  # Add colorbar for reference
+                    ),
+                    text=df["names"],  # Hover information
+                    hovertemplate=(
+                        "<b>%{text}<br>Label: %{marker.color:.2f}<extra></extra>"
+                    ),
+                    showlegend=False,  # Hides this trace from the legend
+                )
+            )
+
     # PLOTTING FOR CATAGORICAL DATA
     if detect_column_type(df["y"]) == "categorical":
 
         # Generate a color mapping for categorical values
         categories = df["y"].unique()
-        color_map = {category: px.colors.qualitative.Set1[i % len(px.colors.qualitative.Set1)] for i, category in enumerate(categories)}
-
+        color_map = {
+            category: px.colors.qualitative.Set1[i % len(px.colors.qualitative.Set1)]
+            for i, category in enumerate(categories)
+        }
         # Assign colors to each point
         df["color"] = df["y"].map(color_map)
 
@@ -565,10 +615,52 @@ def plot_interactive_scatterplot(df):
                     color=df["color"],  # Color based on normalized 'y'
                     line=dict(color="black", width=1),  # Black outline with 1px width
                 ),
-                text=df["names"] + "<br>Group: " + df["y"],  # Combine name and group info
-                hovertemplate="<b>%{text}</b><extra></extra>",  
+                text=df["names"]
+                + "<br>Group: "
+                + df["y"],  # Combine name and group info
+                hovertemplate="<b>%{text}</b><extra></extra>",
+                showlegend=False,  # Hides this trace from the legend
             )
         )
+
+        # grey out datapoints that are in the highlight_mask
+        if highlight_mask is not None:
+            highlight = [x != 0 for x in highlight_mask]
+            mask = [x == 0 for x in highlight_mask]
+            fig.add_trace(
+                go.Scatter(
+                    x=df["z1"][mask],
+                    y=df["z2"][mask],
+                    mode="markers",
+                    marker=dict(
+                        size=10,  # Increase the size of the points
+                        color="white",  # Color based on normalized 'y'
+                    ),
+                    name="Click to highlighted suggested samples",
+                    hoverinfo="skip",
+                )
+            )
+
+            # Need to replot the highlighted points over the top of the white covers
+            fig.add_trace(
+                go.Scatter(
+                    x=df["z1"][highlight],
+                    y=df["z2"][highlight],
+                    mode="markers",
+                    marker=dict(
+                        size=10,  # Increase the size of the points
+                        color=df["color"],  # Color based on normalized 'y'
+                        line=dict(
+                            color="black", width=1
+                        ),  # Black outline with 1px width
+                    ),
+                    text=df["names"]
+                    + "<br>Group: "
+                    + df["y"],  # Combine name and group info
+                    hovertemplate="<b>%{text}</b><extra></extra>",
+                    showlegend=False,  # Hides this trace from the legend
+                )
+            )
 
     # Update layout for cleaner visualization
     fig.update_layout(
@@ -697,4 +789,4 @@ def plot_pca(
     # else:
     #     ax.legend(title="Legend")
 
-    return plot_interactive_scatterplot(df), ax, df
+    return plot_interactive_scatterplot(df, highlight_mask), df
