@@ -157,13 +157,13 @@ app_ui = ui.page_fluid(
                             ),
                         ),
                         ui.column(
-                           6,
-                           ui.input_action_button("login", "Login"),
-                           style="padding:50px;",
+                            6,
+                            ui.input_action_button("login", "Login"),
+                            style="padding:50px;",
                         ),
                         ui.column(
-                           6,
-                           ui.input_action_button("sign_up", "Create account"),
+                            6,
+                            ui.input_action_button("sign_up", "Create account"),
                         ),
                     ),
                     ui.h4("Upload data using one of these tabs"),
@@ -258,12 +258,16 @@ app_ui = ui.page_fluid(
                         tooltips.data_unlabelled_datasets_tooltip,
                         style="font-size:14px; margin-top:10px; text-align: justify;",
                     ),
-                    ui.h5("2. A csv or excel file with sequences and a continuous variable"),
+                    ui.h5(
+                        "2. A csv or excel file with sequences and a continuous variable"
+                    ),
                     ui.p(
                         tooltips.data_continuous_datasets_tooltip,
                         style="font-size:14px; margin-top:10px; text-align: justify;",
                     ),
-                    ui.h5("3. A csv or excel file with sequences that partially or fully labelled with a catagorical variable"),
+                    ui.h5(
+                        "3. A csv or excel file with sequences that partially or fully labelled with a catagorical variable"
+                    ),
                     ui.p(
                         tooltips.data_catagorical_datasets_tooltip,
                         style="font-size:14px; margin-top:10px; text-align: justify;",
@@ -273,12 +277,13 @@ app_ui = ui.page_fluid(
                         tooltips.data_fasta_tooltip,
                         style="font-size:14px; margin-top:10px; text-align: justify;",
                     ),
-                    ui.h5("5. A pdb file containing a protein structure and any associated ligands"),
+                    ui.h5(
+                        "5. A pdb file containing a protein structure and any associated ligands"
+                    ),
                     ui.p(
                         tooltips.data_structure_tooltip,
                         style="font-size:14px; margin-top:10px; text-align: justify;",
                     ),
-
                     ui.p(
                         "Upload experimental data (CSV or Excel file), a single protein (FASTA) or a PDB structure",
                         style="font-size:14px; margin-top:10px; text-align: justify;",
