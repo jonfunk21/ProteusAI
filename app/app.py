@@ -54,9 +54,9 @@ REP_TYPES = [
 ]  # Add VAE and MSA-Transformer later
 IN_MEMORY = ["BLOSUM62", "BLOSUM50", "One-hot", "VHSE"]
 TRAIN_TEST_VAL_SPLITS = ["Random"]
-MODEL_TYPES = ["KNN", "Random Forrest", "Ridge", "SVM", "Gaussian Process"]
+MODEL_TYPES = ["KNN", "Random Forest", "Ridge", "SVM", "Gaussian Process"]
 MODEL_DICT = {
-    "Random Forrest": "rf",
+    "Random Forest": "rf",
     "KNN": "knn",
     "SVM": "svm",
     "VAE": "vae",
@@ -210,7 +210,12 @@ app_ui = ui.page_fluid(
                                     ),
                                 ),
                             ),
-                            ui.input_action_button("confirm_library", "Continue"),
+                            ui.input_action_button(
+                                "confirm_library",
+                                "Upload to continue",
+                                style="padding:10px; width:400px; height:40px;"
+                                "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                            ),
                         ),
                         ui.nav_panel(
                             "Sequence",
@@ -224,7 +229,12 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-                            ui.input_action_button("confirm_sequence", "Continue"),
+                            ui.input_action_button(
+                                "confirm_sequence",
+                                "Upload to continue",
+                                style="padding:10px; width:400px; height:40px;"
+                                "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                            ),
                         ),
                         ui.nav_panel(
                             "Structure",
@@ -238,7 +248,12 @@ app_ui = ui.page_fluid(
                                     placeholder="None",
                                 ),
                             ),
-                            ui.input_action_button("confirm_structure", "Continue"),
+                            ui.input_action_button(
+                                "confirm_structure",
+                                "Upload to continue",
+                                style="padding:10px; width:400px; height:40px;"
+                                "background-color:#00629b; color:white; border:none; border-radius:5px;",
+                            ),
                         ),
                     ),
                     width=SIDEBAR_WIDTH,
