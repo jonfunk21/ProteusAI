@@ -156,16 +156,17 @@ app_ui = ui.page_fluid(
                                 value="Guest",
                             ),
                         ),
-                        # ui.column(
-                        #    6,
-                        #    ui.input_action_button("login", "Login"),
-                        #    style="padding:50px;",
-                        # ),
-                        # ui.column(
-                        #    6,
-                        #    ui.input_action_button("sign_up", "Create account"),
-                        # ),
+                        ui.column(
+                           6,
+                           ui.input_action_button("login", "Login"),
+                           style="padding:50px;",
+                        ),
+                        ui.column(
+                           6,
+                           ui.input_action_button("sign_up", "Create account"),
+                        ),
                     ),
+                    ui.h4("Upload data using one of these tabs"),
                     ### NAVSET ###
                     ui.navset_tab(
                         ui.nav_panel(
@@ -188,7 +189,7 @@ app_ui = ui.page_fluid(
                                     ["MLDE", "Discovery"],
                                 ),
                             ),
-                            "Data Selection",
+                            ui.h6("Select which columns to extract from the dataset"),
                             ui.row(
                                 ui.column(
                                     6, ui.input_select("seq_col", "Sequence column", [])
@@ -243,11 +244,49 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                ui.input_switch("data_switch", "Show more information", False),
-                ui.panel_conditional("input.data_switch", tooltips.data_tooltips),
+                ui.input_switch("tooltips_switch", "Show more information", False),
+                ui.panel_conditional(
+                    "input.tooltips_switch",
+                    ui.h4("What is ProteusAI?"),
+                    ui.p(
+                        tooltips.data_tooltips,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.h4("What kind of data can I analyse using ProteusAI?"),
+                    ui.h5("1. A csv or excel file with unlabelled sequences"),
+                    ui.p(
+                        tooltips.data_unlabelled_datasets_tooltip,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.h5("2. A csv or excel file with sequences and a continuous variable"),
+                    ui.p(
+                        tooltips.data_continuous_datasets_tooltip,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.h5("3. A csv or excel file with sequences that partially or fully labelled with a catagorical variable"),
+                    ui.p(
+                        tooltips.data_catagorical_datasets_tooltip,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.h5("4. A fasta file containing a single protein sequence"),
+                    ui.p(
+                        tooltips.data_fasta_tooltip,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    ui.h5("5. A pdb file containing a protein structure and any associated ligands"),
+                    ui.p(
+                        tooltips.data_structure_tooltip,
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+
+                    ui.p(
+                        "Upload experimental data (CSV or Excel file), a single protein (FASTA) or a PDB structure",
+                        style="font-size:14px; margin-top:10px; text-align: justify;",
+                    ),
+                    style="text-align: justify; margin-bottom:10px;",
+                ),
                 ui.panel_conditional(
                     "typeof output.protein_fasta !== 'string'",
-                    "Upload experimental data (CSV or Excel file) or a single protein (FASTA)",
                     ui.output_data_frame("dataset_table"),
                 ),
                 ui.output_text("protein_fasta"),
