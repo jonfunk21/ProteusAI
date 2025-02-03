@@ -1,3 +1,7 @@
+###############
+# UPLOAD DATA #
+###############
+
 data_tooltips = """
 ProteusAI is an open-source platform that demoncratizes access to advanced ML tools for protein engineering by providing a 
 user-friendly interface. This interface streamlines a variety protein engineering tasks, including
@@ -6,6 +10,41 @@ mutations. These modules can be used together or as standalone tools. Our benchm
 in improving proteins and enzymes within a just few iterations. ProteusAI is freely available for academic and commercial use.
 Get started by uploading a dataset or select the "Use Demo Data" option. Click on the module tabs to learn about their
 functionality and the expected data types.
+"""
+
+data_unlabelled_datasets_tooltip = """
+Upload this file under the "Sequence" tab. These sequences can be visualised on a 2D plot in which more similar sequences 
+appear closer together, allowing you to identify 
+clusters within the sequence set (Compute Representations Module). If you would like to sample the sequences but
+are unsure which subset would be most representative, ProteusAI can also recommend the most representative combination of
+sequences given an input sample size (Discovery Module).
+"""
+
+data_continuous_datasets_tooltip = """
+Upload this file under the 'Library' tab. The continuous variable could be the protein's melting temperature, Kcat or specifity. 
+Make sure to select the 'numeric' data type. This data can be used to train ML models to predict the continuous
+variable and design improved sequences (MLDE Module) or to visualise the continuous variable mapped onto sequence space (Compute
+Representations Module).
+"""
+
+data_catagorical_datasets_tooltip = """
+Upload this file under the 'Library' tab. The catagorical variable could enzyme class, origin species or EC number. Make sure 
+to select the 'Catagorical' data type. This data can be used to train clustering models to labele new sequences in the dataset 
+(Discovery Module), allowing you to predict the class to which new sequences belong. These sequences can be visualised on a 2D 
+plot in which more similar sequences appear closer together, sequences are annotated with the catagorical data, allowing you to
+spot and analyse clusters (Compute Representations Module).
+"""
+
+data_fasta_tooltip = """
+Previously trained large language models can use this sequence to calculate Zero-Shot scores can be calculated for every 
+possible amino acid change in the sequence. Zero-Shot scores allow you to identify beneficial mutantions without any prior data 
+(Compute Zero-Shots Module).
+"""
+
+data_structure_tooltip = """
+This structure can be used to design novel sequences with a high probability of adopting the same fold (Structure Design Module).
+There is the option to fix essential residues to improve the probability of maintaining activity. The sequence is also extracted 
+and can be used in to calculate Zero-Shot scores (Compute Zero-Shot Module).
 """
 
 ###############
