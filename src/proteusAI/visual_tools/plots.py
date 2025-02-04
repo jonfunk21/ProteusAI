@@ -564,7 +564,7 @@ def plot_interactive_scatterplot(df, highlight_mask):
                         size=10,  # Increase the size of the points
                         color="white",  # Color based on normalized 'y'
                     ),
-                    name="Click to highlighted suggested samples",
+                    name="Click to highlight suggested samples",
                     hoverinfo="skip",
                 )
             )
@@ -682,8 +682,15 @@ def plot_interactive_scatterplot(df, highlight_mask):
             linecolor="black",
             zeroline=False,  # Disable the x=0 line
         ),
+        legend=dict(
+            orientation="h",  # Horizontal legend
+            yanchor="bottom",  # Anchor to the bottom of the legend box
+            y=1.1,  # Move the legend slightly above the plot
+            xanchor="center",  # Center the legend horizontally
+            x=0.5,  # Position at the center
+        ),
         template="plotly_white",
-        legend_title="Labels",
+
     )
 
     return fig
