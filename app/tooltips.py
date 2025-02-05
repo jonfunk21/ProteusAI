@@ -119,7 +119,7 @@ fluorescence, etc.).
 mlde_tooltips = """
 The Machine Learning-Guided Directed Evolution (MLDE) module helps you improve your target protein property through 
 iterative mutagenesis. Here, you can use your experimental results train machine learning models to predict your target 
-protein property from a sequence input. Once your model is trained, the "Search" function will generate mutant sequences
+protein property from a sequence input. Once your model is trained, the "Design" function will generate mutant sequences
 predicted to be improved in your property. There is also an option to output sequences that would most improve the model
 if included in the dataset, improving the accuracy of future results.
 """

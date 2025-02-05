@@ -259,7 +259,7 @@ app_ui = ui.page_fluid(
                     width=SIDEBAR_WIDTH,
                 ),
                 ### MAIN PANEL ###
-                ui.input_switch("tooltips_switch", "Show more information", False),
+                ui.input_switch("tooltips_switch", "How to use ProteusAI", False),
                 ui.panel_conditional(
                     "input.tooltips_switch",
                     ui.h4("What is ProteusAI?"),

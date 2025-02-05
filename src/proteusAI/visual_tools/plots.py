@@ -690,7 +690,6 @@ def plot_interactive_scatterplot(df, highlight_mask):
             x=0.5,  # Position at the center
         ),
         template="plotly_white",
-
     )
 
     return fig
