@@ -12,7 +12,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 import proteusAI.io_tools as io_tools
-import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
+import proteusAI.ml_tools.esm_tools as esm_tools
 import proteusAI.ml_tools.torch_tools as torch_tools
 import proteusAI.struc as pai_struc
 import proteusAI.visual_tools as vis

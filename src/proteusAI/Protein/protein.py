@@ -16,7 +16,7 @@ import pandas as pd
 import torch
 
 #import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
-import proteusAI.ml_tools.esm_tools.esm_huggingface as esm_huggingface
+import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
 import proteusAI.struc as pai_struc
 from proteusAI.io_tools.fasta import hash_sequence
 
@@ -317,7 +317,9 @@ class Protein:
 
         # Check if results already exist
         try:
-            p = torch.load(os.path.join(dest, f"{seq_hash}_prob_dist.pt"))
+            if os.path.exists(dest):
+                print(dest)
+            p = torch.load(os.path.join(dest, f"{seq_hash}_prob_dist.pt"), weights_only=False)
             mmp = torch.load(
                 os.path.join(dest, f"{seq_hash}_masked_marginal_probability.pt")
             )
@@ -330,16 +332,18 @@ class Protein:
                 f"Results directory already created, attempting to loaded results from {dest}..."
             )
         except FileNotFoundError:
+            
             # Perform computation if results do not exist
             print("Computing logits")
-            logits, alphabet = esm_huggingface.get_mutant_logits(
+            logits, alphabet = esm_tools.get_mutant_logits(
                 seq, batch_size=batch_size, model=model, pbar=pbar, device=device
             )
 
             # Calculations
-            p = esm_huggingface.get_probability_distribution(logits)
-            mmp = esm_huggingface.masked_marginal_probability(p, seq, alphabet)
-            entropy = esm_huggingface.per_position_entropy(p)
+            p = esm_tools.get_probability_distribution(logits)
+            mmp = esm_tools.masked_marginal_probability(p, seq, alphabet)
+            entropy = esm_tools.per_position_entropy(p)
+            
 
             # Create directory if it doesn't exist
             if not os.path.exists(dest):
@@ -361,7 +365,7 @@ class Protein:
             self.entropy = entropy
             self.logits = logits
 
-            df = esm_huggingface.zs_to_csv(
+            df = esm_tools.zs_to_csv(
                 seq,
                 alphabet,
                 p,
@@ -528,7 +532,7 @@ class Protein:
         else:
             os.makedirs(dest, exist_ok=True)
             all_headers, all_sequences, all_pdbs, pTMs, mean_pLDDTs = (
-                esm_huggingface.structure_prediction(seqs=[seq], names=[name])
+                esm_tools.structure_prediction(seqs=[seq], names=[name])
             )
             pdb = all_pdbs[0]
             pdb.write(pdb_file)
@@ -633,7 +637,7 @@ class Protein:
         os.makedirs(dest, exist_ok=True)
 
         # return dataframe of results
-        df = esm_huggingface.esm_design(
+        df = esm_tools.esm_design(
             self.pdb_file,
             target_chain,
             chains,
@@ -641,7 +645,7 @@ class Protein:
             temperature=temperature,
             num_samples=num_samples,
             model=model,
-            alphabet=esm_huggingface.alphabet,
+            alphabet=esm_tools.alphabet,
             noise=noise,
             pbar=pbar,
         )
@@ -746,7 +750,7 @@ class Protein:
             title = f"{model_dict[model]} per-position entropy"
 
         # Plot entropy
-        fig = esm_huggingface.plot_per_position_entropy(
+        fig = esm_tools.plot_per_position_entropy(
             per_position_entropy=self.entropy,
             sequence=seq,
             highlight_positions=None,
@@ -836,9 +840,9 @@ class Protein:
             title = f"{model_dict[model]} Zero-shot prediction scores"
 
         # Plot heatmap
-        fig = esm_huggingface.plot_heatmap(
+        fig = esm_tools.plot_heatmap(
             p=self.mmp,
-            alphabet=esm_huggingface.alphabet,
+            alphabet=esm_tools.alphabet,
             remove_tokens=False,
         )
         return fig

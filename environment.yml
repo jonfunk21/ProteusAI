@@ -6,13 +6,17 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python=3.8
+  - python=3.12
+  - pandas
+  - numpy
+  - shiny
+  - scikit-learn
   # - pytorch-scatter
-  - pytorch=2.4.1
+  - pytorch=2.5.1
   # - pyg
   # - cpuonly
   - pip
   - sphinx
   - pdbfixer
-  - pip:
-    - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.1+cpu.html
+  #- pip:
+  #  - -e .[docs] -f https://data.pyg.org/whl/torch-2.4.1+cpu.html

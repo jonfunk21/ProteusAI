@@ -20,9 +20,18 @@ import tooltips
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 from shiny.types import FileInfo, ImgData
 import shinywidgets as widgets
+
+import sys
+import os
+
+# adding the proteus source to the syspath
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+import proteusAI as pai
 from proteusAI.io_tools.fasta import hash_sequence
 
-import proteusAI as pai
+
+#from ..src.proteusAI.io_tools.fasta import hash_sequence
+#from ..src import proteusAI as pai
 
 
 app_path = os.path.dirname(os.path.realpath(__file__))
@@ -1420,14 +1429,12 @@ def server(input: Inputs, output: Outputs, session: Session):
                             prot.user, f"{prot.name}/zero_shot/rep/{REP_DICT[model]}"
                         )
                         print(seq_hash)
-                        print(
-                            os.listdir(
-                                os.path.join(
+                        n_model_path = os.path.join(
                                     prot.user,
                                     f"{prot.name}/zero_shot/results/{REP_DICT[model]}/",
                                 )
-                            )
-                        )
+                        if os.path.exists(n_model_path):
+                            print(os.listdir(n_model_path))
                         df_path = os.path.join(
                             prot.user,
                             f"{prot.name}/zero_shot/results/{REP_DICT[model]}/{seq_hash}_zs_scores.csv",
@@ -1846,9 +1853,10 @@ def server(input: Inputs, output: Outputs, session: Session):
                     None,  # device
                     chain,
                 )
-
+                print("\n\nHELLO WORLD")
                 # Create a library based on the prediction data
                 lib = pai.Library(user=prot.user, source=data)
+                print(lib)
 
                 if method not in computed_zs:
                     computed_zs.append(method)

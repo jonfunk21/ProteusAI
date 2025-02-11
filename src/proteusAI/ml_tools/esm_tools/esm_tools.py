@@ -15,28 +15,26 @@ import os
 import shutil
 import tempfile
 import typing as T
-from typing import Union
+from typing import Union, Tuple, List
 
-import esm
-import esm.inverse_folding
-import esm.inverse_folding.util
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 import numpy as np
 import openmm  # move this and pdb fixer to struc tools
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from biotite.structure.io.pdb import PDBFile
-from esm.inverse_folding.multichain_util import (
-    _concatenate_coords,
-    load_complex_coords,
-    score_sequence_in_complex,
-)
-from esm.inverse_folding.util import CoordBatchConverter
+
+
 import plotly.graph_objects as go
 
-alphabet = torch.load(
-    os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False
-)
+
+
+#vocabulary = torch.load(
+#    os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False
+#)
+
+vocabulary = None
 
 esm_layer_dict = {
     "esm2": 33,
@@ -85,29 +83,9 @@ def esm_compute(
         rep_layer = esm_layer_dict[model]
 
     # load model
-    if isinstance(model, str):
-        if model == "esm2":
-            model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-        elif model == "esm2_8M":
-            model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
-        elif model == "esm2_35M":
-            model, alphabet = esm.pretrained.esm2_t12_35M_UR50D()
-        elif model == "esm2_150M":
-            model, alphabet = esm.pretrained.esm2_t30_150M_UR50D()
-        elif model == "esm2_650M":
-            model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
-        elif model == "esm1v":
-            model, alphabet = esm.pretrained.esm1v_t33_650M_UR90S()
-        else:
-            raise ValueError(f"{model} is not a valid model")
-    elif isinstance(model, torch.nn.Module):
-        alphabet = torch.load(
-            os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False
-        )
-    else:
-        raise TypeError("Model should be either a string or a torch.nn.Module object")
+    model, tokenizer = retrieve_model_tokenizer(model)
 
-    batch_converter = alphabet.get_batch_converter()
+    #batch_converter = vocabulary.get_batch_converter()
     model.eval()
     model.to(device)
 
@@ -122,14 +100,57 @@ def esm_compute(
     else:
         data = [(x[0], str(x[1])) for x in data]
 
-    batch_labels, batch_strs, batch_tokens = batch_converter(data)
-    batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
+    batch_labels, batch_strs = zip(*data)
+
+    # Tokenize the sequences using Hugging Face tokenizer
+    batch_tokens = tokenizer(
+        batch_strs,  # List of sequences
+        padding=True,  # Pad sequences to the same length
+        truncation=True,  # Truncate sequences if necessary
+        return_tensors="pt",  # Return PyTorch tensors
+    )
+
+    batch_lens = (batch_tokens["input_ids"] != tokenizer.pad_token_id).sum(1)
 
     # Extract per-residue representations (on CPU)
     with torch.no_grad():
-        results = model(batch_tokens.to(device), repr_layers=[rep_layer])
+        batch_tokens.to(device)
+        results = model(**batch_tokens) #repr_layers=[rep_layer]
 
-    return results, batch_lens, batch_labels, alphabet
+    vocab = tokenizer.get_vocab()
+    return results, batch_lens, batch_labels, vocab
+
+
+def retrieve_model_tokenizer(model: Union[torch.nn.Module, str]) -> Tuple[torch.nn.Module, object]:
+    if isinstance(model, str):
+        if model == "esm2":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+        elif model == "esm2_8M":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t6_8M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t6_8M_UR50D")
+        elif model == "esm2_35M":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
+        elif model == "esm2_150M":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t30_150M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t30_150M_UR50D")
+        elif model == "esm2_650M":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+        elif model == "esm1v":
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm1v_t33_650M_UR90S")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm1v_t33_650M_UR90S")
+        else:
+            raise ValueError(f"{model} is not a valid model")
+
+    #elif isinstance(model, torch.nn.Module):
+    #    vocabulary = torch.load(
+    #        os.path.join(Path(__file__).parent, "vocabulary.pt"), weights_only=False
+    #    )
+    else:
+        raise TypeError("Model should be either a string or a torch.nn.Module object")
+    return model, tokenizer
 
 
 def get_seq_rep(results, batch_lens, layer=33):
@@ -169,7 +190,7 @@ def get_probability_distribution(logits):
     """
     Convert logits to probability distribution for each position in the sequence.
     """
-    # Apply softmax function to the logits along the alphabet dimension (dim=2)
+    # Apply softmax function to the logits along the vocabulary dimension (dim=2)
     probability_distribution = F.softmax(logits, dim=-1)
 
     return probability_distribution
@@ -305,7 +326,7 @@ def get_mutant_logits(
     model: str = "esm1v",
     batch_size: int = 10,
     rep_layer: int = 33,
-    alphabet_size: int = 33,
+    vocabulary_size: int = 33,
     pbar=None,
     device=None,
 ):
@@ -313,7 +334,7 @@ def get_mutant_logits(
     Exhaustively compute the logits for every position in a sequence using esm1v or esm2.
     Every position of a sequence will be masked and the logits for the masked position
     will be calculated. The probabilities for every position will be concatenated in a
-    combined logits tensor, which will be returned together with the alphabet.
+    combined logits tensor, which will be returned together with the vocabulary.
     Keep in mind: the returned logits have start of sequence and end of sequence tokens attached
 
     Args:
@@ -327,7 +348,7 @@ def get_mutant_logits(
                           other options are 'cpu' and 'cuda'.
 
     Returns:
-        tuple: torch.Tensor (1, sequence_length, alphabet_size) and alphabet esm_tools.data_tools.Alphabet
+        tuple: torch.Tensor (1, sequence_length, vocabulary_size) and vocabulary esm_tools.data_tools.vocabulary
 
     Example:
         1.
@@ -343,7 +364,7 @@ def get_mutant_logits(
     sequence_length = len(seq)
 
     # Initialize an empty tensor of the desired shape
-    logits_tensor = torch.zeros(1, sequence_length, alphabet_size)
+    logits_tensor = torch.zeros(1, sequence_length, vocabulary_size)
 
     # take final representation layer if rep_layer is higher than the model's layer
     if rep_layer > esm_layer_dict[model]:
@@ -351,7 +372,7 @@ def get_mutant_logits(
 
     counter = 0
     for i in range(0, len(masked_seqs), batch_size):
-        results, batch_lens, batch_labels, alphabet = esm_compute(
+        results, batch_lens, batch_labels, vocabulary = esm_compute(
             masked_seqs[i : i + batch_size],
             names[i : i + batch_size],
             model=model,
@@ -376,11 +397,11 @@ def get_mutant_logits(
             masked_position = int(masked_seq_name[3:])
             logits_tensor[0, masked_position] = logits[j, masked_position + 1]
 
-    return logits_tensor, alphabet
+    return logits_tensor, vocabulary
 
 
 def masked_marginal_probability(
-    p: torch.Tensor, wt_seq: str, alphabet: esm.data.Alphabet
+    p: torch.Tensor, wt_seq: str, vocabulary
 ):
     """
     Get the masked marginal probabilities for every mutation vs the wildtype.
@@ -388,16 +409,16 @@ def masked_marginal_probability(
     Args:
         p (torch.Tensor): probability distribution.
         wt_seq (str): wildtype sequence
-        alphabet (esm.data.Alphabet): alphabet
+        vocabulary (esm.data.vocabulary): vocabulary
 
     Returns:
         torch.Tensor: masked marginal probability for every position
 
     Examples:
         seq = 'SEQVENCE'
-        logits, alphabet = get_mutant_logits(seq)
+        logits, vocabulary = get_mutant_logits(seq)
         p = get_probability_distribution(logits)
-        mmp = masked_marginal_probability(p, logits, alphabet)
+        mmp = masked_marginal_probability(p, logits, vocabulary)
     """
 
     assert isinstance(wt_seq, str)
@@ -408,20 +429,20 @@ def masked_marginal_probability(
         p = p[:, 1:-1]
         assert p.shape[1] == len(wt_seq)
 
-    if isinstance(alphabet, dict):
+    if isinstance(vocabulary, dict):
         pass
     else:
         try:
-            alphabet = alphabet.to_dict()
+            vocabulary = vocabulary.to_dict()
         except Exception as e:
-            raise ValueError(f"alphabet has an unexpected format. Error {e}")
+            raise ValueError(f"vocabulary has an unexpected format. Error {e}")
 
     # Create tensors for the wildtype sequence and canonical amino acid probabilities
-    wt_tensor = torch.zeros(1, len(wt_seq), len(alphabet))
+    wt_tensor = torch.zeros(1, len(wt_seq), len(vocabulary))
 
     # Populate the tensors with the wildtype logits and canonical probabilities
     for i, aa in enumerate(wt_seq):
-        wt_ind = alphabet[aa]
+        wt_ind = vocabulary[aa]
         wt_tensor[0, i] = p[0, i, wt_ind]
 
     # Compute the masked marginal probabilities
@@ -430,29 +451,30 @@ def masked_marginal_probability(
     return mmp
 
 
-def most_likely_sequence(log_prob_tensor, alphabet):
+def most_likely_sequence(log_prob_tensor, vocabulary):
     """
     Get the most likely amino acid sequence based on log probabilities.
 
     Args:
-        log_prob_tensor (torch.Tensor): Tensor of shape (1, sequence_length, alphabet_size) containing log probabilities
-        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
+        log_prob_tensor (torch.Tensor): Tensor of shape (1, sequence_length, vocabulary_size) containing log probabilities
+        vocabulary (dict or esm.data.vocabulary): Dictionary mapping indices to characters
 
     Returns:
         str: Most likely amino acid sequence
     """
-    if isinstance(alphabet, dict):
+    if isinstance(vocabulary, dict):
         pass
     else:
         try:
-            alphabet = alphabet.to_dict()
+            print(vocabulary, type(vocabulary))
+            vocabulary = vocabulary.to_dict()
         except Exception as e:
-            raise ValueError(f"alphabet has an unexpected format. Error {e}")
+            raise ValueError(f"vocabulary has an unexpected format. Error {e}")
 
-    # Find the indices of the maximum log probabilities along the alphabet dimension
+    # Find the indices of the maximum log probabilities along the vocabulary dimension
     max_indices = torch.argmax(log_prob_tensor, dim=-1).squeeze()
 
-    # Filter the alphabet dictionary to only include canonical AAs
+    # Filter the vocabulary dictionary to only include canonical AAs
     include = [
         "A",
         "R",
@@ -475,14 +497,14 @@ def most_likely_sequence(log_prob_tensor, alphabet):
         "Y",
         "V",
     ]
-    filtered_alphabet = {i: char for char, i in alphabet.items() if char in include}
+    filtered_vocabulary = {i: char for char, i in vocabulary.items() if char in include}
 
-    # Map the indices back to their corresponding amino acids using the filtered_alphabet dictionary
+    # Map the indices back to their corresponding amino acids using the filtered_vocabulary dictionary
     most_likely_seq = "".join(
         [
-            filtered_alphabet[int(idx)]
+            filtered_vocabulary[int(idx)]
             for idx in max_indices
-            if int(idx) in filtered_alphabet
+            if int(idx) in filtered_vocabulary
         ]
     )
 
@@ -516,7 +538,7 @@ def find_mutations(native_seq, predicted_seq):
 
 def zs_to_csv(
     wt_seq: str,
-    alphabet: esm.data.Alphabet,
+    vocabulary, #dont know the type??
     p: torch.Tensor,
     mmp: torch.Tensor,
     entropy: torch.Tensor,
@@ -527,15 +549,16 @@ def zs_to_csv(
 
     Args:
         wt_seq (str): Wildtype sequence.
-        alphabet (esm.data.Alphabet): Alphabet used for the model.
+        vocabulary (esm.data.vocabulary): vocabulary used for the model.
         p (torch.Tensor): Probability distribution tensor.
         mmp (torch.Tensor): Masked marginal probability tensor.
         entropy (torch.Tensor): Per-position entropy tensor.
         dest (str): Destination path for the CSV file.
     """
-    # Convert alphabet to list for indexing
-    alphabet_list = list(alphabet.to_dict().keys())  # noqa: F841
-    alphabet = alphabet.to_dict()
+    # Convert vocabulary to list for indexing
+    #vocabulary_list = list(vocabulary.to_dict().keys())  # noqa: F841
+    if not isinstance(vocabulary, dict): 
+        vocabulary = vocabulary.to_dict()
     canonical_aas = [
         "A",
         "R",
@@ -565,8 +588,8 @@ def zs_to_csv(
             if wt_seq[pos] != aa:
                 mutants.append(wt_seq[pos] + str(pos + 1) + aa)
                 sequences.append(wt_seq[:pos] + aa + wt_seq[pos + 1 :])
-                p_values.append(p[0, pos, alphabet[aa]].item())
-                mmp_values.append(mmp[0, pos, alphabet[aa]].item())
+                p_values.append(p[0, pos, vocabulary[aa]].item())
+                mmp_values.append(mmp[0, pos, vocabulary[aa]].item())
                 entropy_values.append(entropy[0, pos].item())
 
     df = pd.DataFrame(
@@ -661,132 +684,78 @@ def esm_design(
     temperature=1.0,
     num_samples=100,
     model=None,
-    alphabet=None,
+    tokenizer=None,
     noise=0.2,
     pbar=None,
-):  # TODO: change chains to target chain id
+):
     """
-    Perform structure-based protein design for a specific chain within a protein complex using ESM-IF.
+    Perform structure-based protein design for a specific chain within a protein complex using Hugging Face's ESM-IF.
 
     Args:
-        pdbfile (str): Path to pdb file.
+        pdbfile (str): Path to PDB file.
         target_chain (str): The chain to be designed.
         chains (str): All chains to be considered.
         fixed (list): List of residue indices in the target chain that should remain fixed.
         temperature (float): Sampling temperature. Higher temperatures lead to more stochasticity.
         num_samples (int): Number of samples.
-        model (esm.pretrained.esm_if1_gvp4_t16_142M_UR50): If None, model will be loaded.
-        alphabet (esm.data.Alphabet): If None, alphabet will be loaded.
+        model (AutoModelForMaskedLM): If None, model will be loaded.
+        tokenizer (AutoTokenizer): If None, tokenizer will be loaded.
         noise (float): Add Gaussian noise to coordinates. Default is 0.2 angstroms.
         pbar: Progress bar for shiny app.
 
     Returns:
         DataFrame with columns: seqid, recovery, log_likelihood, sequence
     """
+    # Load model and tokenizer if not provided
+    if model is None or tokenizer is None:
+        tokenizer = AutoTokenizer.from_pretrained("facebook/esm_if1_gvp4_t16_142M_UR50")
+        model = AutoModelForMaskedLM.from_pretrained("facebook/esm_if1_gvp4_t16_142M_UR50")
 
-    # Load model and alphabet if not provided
-    if model is None or alphabet is None:
-        model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
-
-    # Clean the PDB file and load coordinates for all chains in the complex
-    cleaned_pdbfile = clean_pdb_with_pdbfixer(pdbfile)
-    coords_dict, seqs_dict = load_complex_coords(cleaned_pdbfile, chains)
+    # Load coordinates and sequences from the PDB file
+    coords_dict, seqs_dict = load_complex_coords(pdbfile, chains)  # Replace with your PDB parsing function
 
     # Add noise to the coordinates if specified
     if noise is not None:
         for chain_id in coords_dict:
-            coord_noise = np.random.normal(
-                0, noise, coords_dict[chain_id].shape
-            ).astype(coords_dict[chain_id].dtype)
+            coord_noise = np.random.normal(0, noise, coords_dict[chain_id].shape).astype(coords_dict[chain_id].dtype)
             coords_dict[chain_id] += coord_noise
 
     # Extract sequence of the target chain
     target_chain_seq = seqs_dict[target_chain]
-    print(
-        f"Native sequence for chain {chains} loaded from structure file:\n{target_chain_seq}"
-    )
+    print(f"Native sequence for chain {target_chain} loaded from structure file:\n{target_chain_seq}")
 
     # Concatenate coordinates with padding
-    all_coords = _concatenate_coords(coords_dict, target_chain)
+    all_coords = concatenate_coords(coords_dict, target_chain)  # Replace with your coordinate concatenation function
     L = all_coords.shape[0]  # Total length after concatenation
-    target_chain_length = len(coords_dict[target_chain])
+    target_chain_length = len(target_chain_seq)
 
-    # Batch converter for converting to model inputs
-    batch_converter = CoordBatchConverter(model.decoder.dictionary)
-    batch_coords, confidence, _, _, padding_mask = batch_converter(
-        [(all_coords, None, None)], device="cpu"
-    )
-
-    # Initialize token array with mask tokens for sampling
-    mask_idx = model.decoder.dictionary.get_idx("<mask>")
-    sampled_tokens = torch.full((1, 1 + L), mask_idx, dtype=int)
-    sampled_tokens[0, 0] = model.decoder.dictionary.get_idx("<cath>")
-
-    # Unmask fixed residues in the target chain
-    if fixed:
-        for i in fixed:
-            res = target_chain_seq[i - 1]  # Adjust to target chain sequence
-            sampled_tokens[0, i] = model.decoder.dictionary.get_idx(res)
-
-    # Encoder run (only once) for efficiency
-    incremental_state = dict()
-    encoder_out = model.encoder(batch_coords, padding_mask, confidence)
+    # Convert coordinates to model inputs
+    inputs = tokenizer(target_chain_seq, return_tensors="pt", padding=True, truncation=True)
 
     # Initialize storage for sampled sequences
     all_seqs = []
-    sampled_tokens_tensor = (
-        sampled_tokens.unsqueeze(-1).expand(-1, -1, num_samples).clone()
-    )
-
-    # Autoregressive decoding loop for each position of the target chain
-    for i in range(1, target_chain_length + 1):
-        logits, _ = model.decoder(
-            sampled_tokens[:, :i], encoder_out, incremental_state=incremental_state
-        )
-        logits = logits[0].transpose(0, 1)
-        logits /= temperature
-        probs = F.softmax(logits, dim=-1)
-        if sampled_tokens[0, i] == mask_idx:
-            sampled_tokens[:, i] = torch.multinomial(probs, 1).squeeze(-1)
-            sampled_tokens_tensor[:, i, :] = torch.multinomial(
-                probs, num_samples, replacement=True
-            ).squeeze(-1)
-
-    # Remove the prepend token and trim to target chain
-    sampled_tokens_tensor = sampled_tokens_tensor[
-        0, 1 : target_chain_length + 1, :
-    ]  # TODO: Ensure the correct tokens are being extracted
-
-    # Collect results
     results = []
+
+    # Autoregressive decoding loop
     for i in range(num_samples):
-        sampled_seq_i = sampled_tokens_tensor[
-            :, i
-        ]  # TODO: Check if those are the correct tokens for the chain
-        sampled_seq = "".join(
-            [model.decoder.dictionary.get_tok(a) for a in sampled_seq_i]
-        )
-        all_seqs.append(sampled_seq)
+        # Generate a new sequence using the model
+        outputs = model.generate(**inputs, max_length=target_chain_length, temperature=temperature)
+        sampled_seq = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # Calculate recovery and log-likelihood for each sampled sequence
+        # Calculate recovery and log-likelihood
         recovery = np.mean([(a == b) for a, b in zip(target_chain_seq, sampled_seq)])
-        ll, _ = score_sequence_in_complex(
-            model, alphabet, coords_dict, target_chain, sampled_seq
-        )  # TODO: Check if scoring is correct
-
-        # Update progress bar if available
-        if pbar:
-            pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
+        logits = model(**inputs).logits
+        log_likelihood = -torch.nn.functional.cross_entropy(logits, outputs).item()
 
         # Append to results
-        results.append(
-            {
-                "names": f"sampled_seq_{i+1}",
-                "recovery": recovery,
-                "log_likelihood": ll,
-                "sequence": sampled_seq,
-            }
-        )
+        results.append({
+            "seqid": f"sampled_seq_{len(results) + 1}",
+            "recovery": recovery,
+            "log_likelihood": log_likelihood,
+            "sequence": sampled_seq,
+        })
+        if pbar:
+            pbar.set(i, message="Computing", detail=f"{i+1}/{num_samples} remaining...")
 
     # Convert results to a DataFrame
     df = pd.DataFrame(results)
@@ -840,7 +809,8 @@ def structure_prediction(
     """
     if pbar:
         pbar.set(message="Loading model weights")
-    model = esm.pretrained.esmfold_v1()
+    tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
+    model = AutoModelForMaskedLM.from_pretrained("facebook/esmfold_v1")
     model = model.eval().cuda()
     model.set_chunk_size(chunk_size)
 
@@ -896,7 +866,7 @@ def format_float(float_value: float, str_len: int = 5, round_val: int = 2):
     return formatted_str
 
 
-def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
+def entropy_to_bfactor(pdb, entropy_values, trim=False, vocabulary_size=33):
     """
     Convert per-position entropy values to b-factors between 0 and 100.
 
@@ -917,7 +887,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
     if trim:
         entropy_values = entropy_values[:, 1:-1]
 
-    scaled_entropy = 100 * (1 - entropy_values / math.log2(alphabet_size))
+    scaled_entropy = 100 * (1 - entropy_values / math.log2(vocabulary_size))
     scaled_entropy_list = scaled_entropy.tolist()
 
     b_factor_strings = [
@@ -941,7 +911,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, alphabet_size=33):
 # Visualization
 def plot_heatmap(
     p,
-    alphabet,
+    vocabulary,
     include="canonical",
     remove_tokens: bool = False,
 ):
@@ -949,8 +919,8 @@ def plot_heatmap(
     Plot a heatmap of the probability distribution for each position in the sequence.
 
     Args:
-        p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, alphabet_size)
-        alphabet (dict or esm.data.Alphabet): Dictionary mapping indices to characters
+        p (torch.Tensor): probability_distribution torch.Tensor with shape (1, sequence_length, vocabulary_size)
+        vocabulary (dict or esm.data.vocabulary): Dictionary mapping indices to characters
         include (str or list): List of characters to include in the heatmap (default: canonical, include only canonical amino acids)
         dest (str): Optional path to save the plot as an image file (default: None)
         title (str): Title of the plot (default: None)
@@ -964,13 +934,14 @@ def plot_heatmap(
         fig (matplotlib.figure.Figure): The created matplotlib figure.
     """
 
-    if isinstance(alphabet, dict):
+    if isinstance(vocabulary, dict):
         pass
     else:
         try:
-            alphabet = alphabet.to_dict()
+            print(vocabulary, type(vocabulary))
+            vocabulary = vocabulary.to_dict()
         except Exception as e:
-            raise ValueError(f"alphabet has an unexpected format. Error {e}")
+            raise ValueError(f"vocabulary has an unexpected format. Error {e}")
 
     # Convert the probability distribution tensor to a numpy array
     probability_distribution_np = p.cpu().numpy().squeeze()
@@ -1004,19 +975,19 @@ def plot_heatmap(
             "V",
         ]
     elif include == "all":
-        include = alphabet.keys()
-    elif isinstance(alphabet, list):
+        include = vocabulary.keys()
+    elif isinstance(vocabulary, list):
         include = include
     else:
         raise "include must either be 'canonical' 'all' or a list of valid elements"
 
-    # Filter the alphabet dictionary based on the 'include' list
-    filtered_alphabet = {char: i for char, i in alphabet.items() if char in include}
+    # Filter the vocabulary dictionary based on the 'include' list
+    filtered_vocabulary = {char: i for char, i in vocabulary.items() if char in include}
 
     # Create a pandas DataFrame with appropriate column and row labels
     df = pd.DataFrame(
-        probability_distribution_np[:, list(filtered_alphabet.values())],
-        columns=[i for i in filtered_alphabet.keys()],
+        probability_distribution_np[:, list(filtered_vocabulary.values())],
+        columns=[i for i in filtered_vocabulary.keys()],
     ).T
 
     # Create the heatmap using Plotly
@@ -1167,3 +1138,142 @@ def plot_per_position_entropy(
     )
 
     return fig
+
+
+### Stolen ESM Stuff
+
+import numpy as np
+import biotite
+from biotite.structure.io import pdbx, pdb
+from biotite.structure.residues import get_residues
+from biotite.structure import filter_peptide_backbone
+from biotite.structure import get_chains
+from biotite.sequence import ProteinSequence
+from typing import List
+
+
+def concatenate_coords(coords, target_chain_id, padding_length=10):
+    """
+    Args:
+        coords: Dictionary mapping chain ids to L x 3 x 3 array for N, CA, C
+            coordinates representing the backbone of each chain
+        target_chain_id: The chain id to sample sequences for
+        padding_length: Length of padding between concatenated chains
+    Returns:
+        Tuple (coords, seq)
+            - coords is an L x 3 x 3 array for N, CA, C coordinates, a
+              concatenation of the chains with padding in between
+            - seq is the extracted sequence, with padding tokens inserted
+              between the concatenated chains
+    """
+    pad_coords = np.full((padding_length, 3, 3), np.nan, dtype=np.float32)
+    # For best performance, put the target chain first in concatenation.
+    coords_list = [coords[target_chain_id]]
+    for chain_id in coords:
+        if chain_id == target_chain_id:
+            continue
+        coords_list.append(pad_coords)
+        coords_list.append(coords[chain_id])
+    coords_concatenated = np.concatenate(coords_list, axis=0)
+    return coords_concatenated
+
+
+
+def load_structure(fpath, chain=None):
+    """
+    Args:
+        fpath: filepath to either pdb or cif file
+        chain: the chain id or list of chain ids to load
+    Returns:
+        biotite.structure.AtomArray
+    """
+    if fpath.endswith('cif'):
+        with open(fpath) as fin:
+            pdbxf = pdbx.PDBxFile.read(fin)
+        structure = pdbx.get_structure(pdbxf, model=1)
+    elif fpath.endswith('pdb'):
+        with open(fpath) as fin:
+            pdbf = pdb.PDBFile.read(fin)
+        structure = pdb.get_structure(pdbf, model=1)
+    bbmask = filter_peptide_backbone(structure)
+    structure = structure[bbmask]
+    all_chains = get_chains(structure)
+    if len(all_chains) == 0:
+        raise ValueError('No chains found in the input file.')
+    if chain is None:
+        chain_ids = all_chains
+    elif isinstance(chain, list):
+        chain_ids = chain
+    else:
+        chain_ids = [chain] 
+    for chain in chain_ids:
+        if chain not in all_chains:
+            raise ValueError(f'Chain {chain} not found in input file')
+    chain_filter = [a.chain_id in chain_ids for a in structure]
+    structure = structure[chain_filter]
+    return structure
+
+def load_complex_coords(fpath, chains):
+    """
+    Args:
+        fpath: filepath to either pdb or cif file
+        chains: the chain ids (the order matters for autoregressive model)
+    Returns:
+        Tuple (coords_list, seq_list)
+        - coords: Dictionary mapping chain ids to L x 3 x 3 array for N, CA, C
+          coordinates representing the backbone of each chain
+        - seqs: Dictionary mapping chain ids to native sequences of each chain
+    """
+    structure = load_structure(fpath, chains)
+    return extract_coords_from_complex(structure)
+
+
+def extract_coords_from_complex(structure: biotite.structure.AtomArray):
+    """
+    Args:
+        structure: biotite AtomArray
+    Returns:
+        Tuple (coords_list, seq_list)
+        - coords: Dictionary mapping chain ids to L x 3 x 3 array for N, CA, C
+          coordinates representing the backbone of each chain
+        - seqs: Dictionary mapping chain ids to native sequences of each chain
+    """
+    coords = {}
+    seqs = {}
+    all_chains = biotite.structure.get_chains(structure)
+    for chain_id in all_chains:
+        chain = structure[structure.chain_id == chain_id]
+        coords[chain_id], seqs[chain_id] = extract_coords_from_structure(chain)
+    return coords, seqs
+
+
+def extract_coords_from_structure(structure: biotite.structure.AtomArray):
+    """
+    Args:
+        structure: An instance of biotite AtomArray
+    Returns:
+        Tuple (coords, seq)
+            - coords is an L x 3 x 3 array for N, CA, C coordinates
+            - seq is the extracted sequence
+    """
+    coords = get_atom_coords_residuewise(["N", "CA", "C"], structure)
+    residue_identities = get_residues(structure)[1]
+    seq = ''.join([ProteinSequence.convert_letter_3to1(r) for r in residue_identities])
+    return coords, seq
+
+
+def get_atom_coords_residuewise(atoms: List[str], struct: biotite.structure.AtomArray):
+    """
+    Example for atoms argument: ["N", "CA", "C"]
+    """
+    def filterfn(s, axis=None):
+        filters = np.stack([s.atom_name == name for name in atoms], axis=1)
+        sum = filters.sum(0)
+        if not np.all(sum <= np.ones(filters.shape[1])):
+            raise RuntimeError("structure has multiple atoms with same name")
+        index = filters.argmax(0)
+        coords = s[index].coord
+        coords[sum == 0] = float("nan")
+        return coords
+
+    return biotite.structure.apply_residue_wise(struct, struct, filterfn)
