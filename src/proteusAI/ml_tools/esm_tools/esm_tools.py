@@ -18,6 +18,7 @@ import typing as T
 from typing import Union, Tuple, List
 
 from transformers import AutoTokenizer, AutoModelForMaskedLM
+
 import numpy as np
 import openmm  # move this and pdb fixer to struc tools
 import pandas as pd
@@ -125,22 +126,22 @@ def retrieve_model_tokenizer(model: Union[torch.nn.Module, str]) -> Tuple[torch.
     if isinstance(model, str):
         if model == "esm2":
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D", output_hidden_states=True)
         elif model == "esm2_8M":
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t6_8M_UR50D")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t6_8M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t6_8M_UR50D", output_hidden_states=True)
         elif model == "esm2_35M":
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D", output_hidden_states=True)
         elif model == "esm2_150M":
-            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t30_150M_UR50D")
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t30_150M_UR50D", output_hidden_states=True)
             model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t30_150M_UR50D")
         elif model == "esm2_650M":
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D", output_hidden_states=True)
         elif model == "esm1v":
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm1v_t33_650M_UR90S")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm1v_t33_650M_UR90S")
+            model = AutoModelForMaskedLM.from_pretrained("facebook/esm1v_t33_650M_UR90S", output_hidden_states=True)
         else:
             raise ValueError(f"{model} is not a valid model")
 
@@ -157,9 +158,8 @@ def get_seq_rep(results, batch_lens, layer=33):
     """
     Get sequence representations from esm_compute
     """
-
-    token_representations = results["representations"][layer]
-
+    
+    token_representations = results.hidden_states[layer]
     # Generate per-sequence representations via averaging
     sequence_representations = []
     for i, tokens_len in enumerate(batch_lens):
@@ -244,6 +244,7 @@ def batch_compute(
         2.
         batch_compute(fasta_path='file.fasta', dest='path')
     """
+
     if dest is None:
         raise "No save destination provided."
 
@@ -280,7 +281,7 @@ def batch_compute(
                 rep_layer=rep_layer,
                 device=device,
             )
-
+        print("Finished Computing")
         sequence_representations = get_seq_rep(
             results, batch_lens, layer=esm_layer_dict[model]
         )
@@ -911,7 +912,7 @@ def entropy_to_bfactor(pdb, entropy_values, trim=False, vocabulary_size=33):
 # Visualization
 def plot_heatmap(
     p,
-    vocabulary,
+    alphabet,
     include="canonical",
     remove_tokens: bool = False,
 ):

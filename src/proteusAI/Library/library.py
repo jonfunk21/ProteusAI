@@ -636,6 +636,7 @@ class Library:
         names = [protein.seq_hash for protein in proteins_to_compute]
         seqs = [protein.seq for protein in proteins_to_compute]
 
+        print(esm_tools.batch_compute)
         # compute representations
         esm_tools.batch_compute(
             seqs,
@@ -646,6 +647,8 @@ class Library:
             pbar=pbar,
             device=device,
         )
+
+        print("hello world")
 
         for protein in proteins_to_compute:
             if model not in protein.reps:

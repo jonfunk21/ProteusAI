@@ -2150,6 +2150,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         mode = MODE()
         lib = LIBRARY()
         prot = PROTEIN()
+        print(input.dat_rep_type())
         method = MODEL_DICT[input.dat_rep_type()]
 
         if mode == "structure":

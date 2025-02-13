@@ -645,7 +645,7 @@ class Protein:
             temperature=temperature,
             num_samples=num_samples,
             model=model,
-            alphabet=esm_tools.alphabet,
+            alphabet=esm_tools.vocabluary,
             noise=noise,
             pbar=pbar,
         )
@@ -842,7 +842,7 @@ class Protein:
         # Plot heatmap
         fig = esm_tools.plot_heatmap(
             p=self.mmp,
-            alphabet=esm_tools.alphabet,
+            alphabet=esm_tools.vocabulary,
             remove_tokens=False,
         )
         return fig
