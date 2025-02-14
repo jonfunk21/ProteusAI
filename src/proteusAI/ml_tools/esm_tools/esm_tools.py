@@ -7,7 +7,10 @@ __author__ = "Jonathan Funk"
 # Quick fix remove later
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
+
+load_dotenv()
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import math
@@ -17,7 +20,8 @@ import tempfile
 import typing as T
 from typing import Union, Tuple, List
 
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, EsmTokenizer
+
 
 import numpy as np
 import openmm  # move this and pdb fixer to struc tools
@@ -25,17 +29,12 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from biotite.structure.io.pdb import PDBFile
-
+from .esm_if import esm_if
 
 import plotly.graph_objects as go
 
-
-
-#vocabulary = torch.load(
-#    os.path.join(Path(__file__).parent, "alphabet.pt"), weights_only=False
-#)
-
-vocabulary = None
+HF_TOKEN=os.getenv('HF_ACCESS_TOKEN')
+global vocabulary
 
 esm_layer_dict = {
     "esm2": 33,
@@ -144,7 +143,8 @@ def retrieve_model_tokenizer(model: Union[torch.nn.Module, str]) -> Tuple[torch.
             model = AutoModelForMaskedLM.from_pretrained("facebook/esm1v_t33_650M_UR90S", output_hidden_states=True)
         else:
             raise ValueError(f"{model} is not a valid model")
-
+        global vocabulary
+        vocabulary = tokenizer.get_vocab()
     #elif isinstance(model, torch.nn.Module):
     #    vocabulary = torch.load(
     #        os.path.join(Path(__file__).parent, "vocabulary.pt"), weights_only=False
@@ -690,7 +690,7 @@ def esm_design(
     pbar=None,
 ):
     """
-    Perform structure-based protein design for a specific chain within a protein complex using Hugging Face's ESM-IF.
+    Perform structure-based protein design for a specific chain within a protein complex using SaProt.
 
     Args:
         pdbfile (str): Path to PDB file.
@@ -709,9 +709,10 @@ def esm_design(
     """
     # Load model and tokenizer if not provided
     if model is None or tokenizer is None:
-        tokenizer = AutoTokenizer.from_pretrained("facebook/esm_if1_gvp4_t16_142M_UR50")
-        model = AutoModelForMaskedLM.from_pretrained("facebook/esm_if1_gvp4_t16_142M_UR50")
+        tokenizer = AutoTokenizer.from_pretrained("westlake-repl/SaProt_650M_AF2_inverse_folding")
+        model = AutoModelForMaskedLM.from_pretrained("westlake-repl/SaProt_650M_AF2_inverse_folding")
 
+    vocabulary = tokenizer.get_vocab()
     # Load coordinates and sequences from the PDB file
     coords_dict, seqs_dict = load_complex_coords(pdbfile, chains)  # Replace with your PDB parsing function
 
@@ -731,22 +732,27 @@ def esm_design(
     target_chain_length = len(target_chain_seq)
 
     # Convert coordinates to model inputs
-    inputs = tokenizer(target_chain_seq, return_tensors="pt", padding=True, truncation=True)
+    inputs = tokenizer(target_chain_seq, return_tensors="pt", padding=True)
 
     # Initialize storage for sampled sequences
     all_seqs = []
     results = []
 
-    # Autoregressive decoding loop
+    # Sampling loop
     for i in range(num_samples):
-        # Generate a new sequence using the model
-        outputs = model.generate(**inputs, max_length=target_chain_length, temperature=temperature)
-        sampled_seq = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # Forward pass to get logits
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits  # Shape: (batch_size, sequence_length, vocab_size)
+
+        # Sample sequences using multinomial sampling
+        probs = torch.softmax(logits / temperature, dim=-1)
+        sampled_tokens = torch.multinomial(probs[0], num_samples=1).squeeze(-1)
+        sampled_seq = tokenizer.decode(sampled_tokens, skip_special_tokens=True)
 
         # Calculate recovery and log-likelihood
         recovery = np.mean([(a == b) for a, b in zip(target_chain_seq, sampled_seq)])
-        logits = model(**inputs).logits
-        log_likelihood = -torch.nn.functional.cross_entropy(logits, outputs).item()
+        log_likelihood = -torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), sampled_tokens.view(-1)).item()
 
         # Append to results
         results.append({

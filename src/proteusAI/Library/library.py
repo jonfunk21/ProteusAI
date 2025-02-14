@@ -189,7 +189,6 @@ class Library:
         # For the future adapt this so it can handle multi-factor optimization
         # extract data from parent file
         data = self.source
-
         # Parsing parameters
         self.rep_path = data["rep_path"]
         self.struc_path = data["struc_path"]
@@ -197,6 +196,7 @@ class Library:
         self.names_col = data["names_col"]
         self.reps = data["reps"]
         self.class_dict = data["class_dict"]
+
 
         # Parsing arguments
         df = data["df"]

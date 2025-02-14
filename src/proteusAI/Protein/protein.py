@@ -16,7 +16,8 @@ import pandas as pd
 import torch
 
 #import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
-import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
+#import proteusAI.ml_tools.esm_tools.esm_tools as esm_tools
+import proteusAI.ml_tools.esm_tools as esm_tools
 import proteusAI.struc as pai_struc
 from proteusAI.io_tools.fasta import hash_sequence
 
@@ -400,7 +401,7 @@ class Protein:
         Returns:
             out (dict): Dictionary containing the results of the computation
         """
-
+    
         if chain is None and len(self.chains) >= 1:
             chain = self.chains[0]
             wt_seq = self.seq[chain]
@@ -410,11 +411,13 @@ class Protein:
             )
         elif len(self.chains) >= 1:
             wt_seq = self.seq[chain]
+            wt_seq_hash = hash_sequence(wt_seq)
             zs_results_path = os.path.join(
                 self.zs_path, "results", chain, model, f"{wt_seq_hash}_zs_scores.csv"
             )
         else:
             wt_seq = self.seq
+            wt_seq_hash = hash_sequence(wt_seq)
             zs_results_path = os.path.join(
                 self.zs_path, "results", model, f"{wt_seq_hash}_zs_scores.csv"
             )
@@ -635,7 +638,7 @@ class Protein:
             csv_path = os.path.join(dest, f"{seq_hash}.csv")
 
         os.makedirs(dest, exist_ok=True)
-
+        
         # return dataframe of results
         df = esm_tools.esm_design(
             self.pdb_file,
@@ -645,7 +648,6 @@ class Protein:
             temperature=temperature,
             num_samples=num_samples,
             model=model,
-            alphabet=esm_tools.vocabluary,
             noise=noise,
             pbar=pbar,
         )

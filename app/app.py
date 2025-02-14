@@ -24,6 +24,8 @@ import shinywidgets as widgets
 import sys
 import os
 
+from dotenv import load_dotenv
+
 # adding the proteus source to the syspath
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 import proteusAI as pai
@@ -37,6 +39,9 @@ from proteusAI.io_tools.fasta import hash_sequence
 app_path = os.path.dirname(os.path.realpath(__file__))
 google_analytics = os.path.join(app_path, "google_analytics.html")
 google_analytics_string = ""
+
+load_dotenv()
+
 
 try:
     with open(google_analytics, "r") as f:
@@ -94,7 +99,7 @@ REP_DICT = {
     "VAE": "vae",
 }
 INVERTED_REPS = {v: k for k, v in REP_DICT.items()}
-DESIGN_MODELS = {"ESM-IF": "esm_if"}
+DESIGN_MODELS = {"SAProt-650-IF": "esm_if"}
 REP_VISUAL = ["UMAP", "t-SNE", "PCA"]
 REP_VISUAL_DICT = {
     "UMAP": "umap",
@@ -1735,6 +1740,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 if len(fixed_ids) > 0:
                     fixed = [seq[i - 1] + str(i) for i in fixed_ids if i < len(seq)]
 
+
+          
                 # Run the blocking function `prot.zs_prediction` in a separate thread to avoid blocking the event loop
                 loop = asyncio.get_running_loop()
 
@@ -1747,9 +1754,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                     float(input.sampling_temp()),
                     n_designs,
                 )
-
+                out["names_col"] = "seqid"
                 lib = pai.Library(user=prot.user, source=out)
-
+                
                 # set reactive values
                 FIXED_RES.set(fixed)
                 DESIGN_OUTPUT.set(out["df"])
