@@ -8,14 +8,14 @@ sys.path.append("src/")
 
 
 # will initiate storage space - else in memory
-dataset = "demo/demo_data/Nitric_Oxide_Dioxygenase.csv"
+dataset = "demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"
 
 # load data from csv or excel: x should be sequences, y should be labels, y_type class or num
 library = pai.Library(
     source=dataset,
     seqs_col="Sequence",
-    y_col="Data",
-    y_type="num",
+    y_col=["Data", "Data"],
+    y_type=["num", "num"],
     names_col="Description",
 )
 
@@ -23,13 +23,13 @@ library = pai.Library(
 library.compute(method="esm2_8M", batch_size=10)
 
 # define a model
-model = pai.Model(library=library, k_folds=5, model_type="rf", x="vhse")
+model = pai.Model(library=library, k_folds=1, model_type="rf", x="vhse")
 
 # train model
 model.train()
 
 # search for new mutants
-out = model.search(optim_problem="max")
+out = model.mlde(optim_problem="max")
 
 # save results
 if not os.path.exists("demo/demo_data/out/"):

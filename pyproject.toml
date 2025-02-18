@@ -36,6 +36,8 @@ dependencies = [
   "umap-learn",
   "hdbscan",
   "proteusAI",
+  "plotly",
+  "shinywidgets",
   #"pdbfixer @ git+https://github.com/openmm/pdbfixer@1.9"
 ]
 

@@ -10,6 +10,7 @@ import random
 import sys
 from typing import Union
 import hashlib
+import warnings
 
 import gpytorch
 import hdbscan
@@ -25,6 +26,7 @@ from sklearn.model_selection import KFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR
 from scipy.stats import pearsonr, kendalltau
+from sklearn.metrics import r2_score
 
 import proteusAI.ml_tools.bo_tools as BO
 import proteusAI.visual_tools as vis
@@ -123,6 +125,13 @@ class Model:
         self.y_unlabelled_pred = []
         self.y_unlabelled_sigma = []
         self.y_unlabelled = []
+        self.y_train = {}
+        self.y_test = {}
+        self.y_val = {}
+        self.y_test_pred = {}
+        self.y_train_pred = {}
+        self.y_train_sigma = {}
+        self.y_test_sigma = {}
         self.calibration = None
         self.rep_path = None
         self.dest = None
@@ -166,7 +175,7 @@ class Model:
         # self._update_attributes(**kwargs)
 
         # split data
-        self.train_data, self.test_data, self.val_data, self.unlabelled_data = (
+        self.train_data, self.test_data, self.val_data, self.labelled_data, self.unlabelled_data = (
             self.split_data()
         )
 
@@ -175,18 +184,38 @@ class Model:
 
         # train
         out = None
-        if self.model_type in self._sklearn_models:
-            out = self.train_sklearn(rep_path=self.rep_path, pbar=self.pbar)
-        elif self.model_type in self._clustering_algs:
-            out = self.cluster(
-                rep_path=self.rep_path, n_neighbors=n_neighbors, pbar=self.pbar
-            )
-        elif self.model_type in self._pt_models:
-            out = self.train_gp(rep_path=self.rep_path, pbar=self.pbar)
-        else:
-            raise ValueError(
-                f"The training method for '{self.model_type}' models has not been implemented yet"
-            )
+        for task in self._model.keys():
+            if self.model_type in self._sklearn_models:
+                out = self.train_sklearn(rep_path=self.rep_path, task=task, pbar=self.pbar)
+            elif self.model_type in self._clustering_algs:
+                out = self.cluster(
+                    rep_path=self.rep_path, n_neighbors=n_neighbors, task=task, pbar=self.pbar
+                )
+            elif self.model_type in self._pt_models:
+                out = self.train_gp(rep_path=self.rep_path, task=task, pbar=self.pbar)
+            else:
+                raise ValueError(
+                    f"The training method for '{self.model_type}' models has not been implemented yet"
+                )
+        
+        self.update_proteins()
+
+        self.save_to_csv()
+
+        out = {
+            "df": self.out_df,
+            "rep_path": self.library.rep_path,
+            "struc_path": self.library.struc_path,
+            "y_type": self.library.y_type,
+            "y_col": "y_true",
+            "y_pred_col": "y_predicted",
+            "y_sigma_col": "y_sigma",
+            "seqs_col": "sequence",
+            "names_col": "name",
+            "reps": self.library.reps,
+            "class_dict": self.library.class_dict,
+            "dr_df": None,
+        }
 
         return out
 
@@ -208,16 +237,19 @@ class Model:
 
         proteins = self.library.proteins
 
-        if self.y_type == "class":
-            unlabelled_data = [
-                prot for prot in proteins if self.library.class_dict[prot.y] == "nan"
-            ]
-            labelled_data = [
-                prot for prot in proteins if self.library.class_dict[prot.y] != "nan"
-            ]
-        else:
-            labelled_data = proteins
-            unlabelled_data = []
+        # split class data into labelled and unlabelled data - NOTE: This will not work if multiple class columns are given...
+        # TODO for multi class columns consider having the classification of unlabeled data based on the availability of labels across all classes
+        for i, y_type in enumerate(self.library.y_type):
+            if y_type == "class":
+                unlabelled_data = [
+                    prot for prot in proteins if self.library.class_dict[prot.y[i]] == "nan"
+                ]
+                labelled_data = [
+                    prot for prot in proteins if self.library.class_dict[prot.y[i]] != "nan"
+                ]
+            else:
+                labelled_data = proteins
+                unlabelled_data = []
 
         if self.seed:
             random.seed(self.seed)
@@ -246,13 +278,14 @@ class Model:
 
         # use stratified split that works for both regression and classification
         elif self.split == "smart":
-            if self.y_type == "class":
+            y_type = self.library.y_type[0]
+            if y_type == "class":
                 # get the unique classes
-                classes = list(set([prot.y for prot in labelled_data]))
+                classes = list(set([prot.y[0] for prot in labelled_data]))
 
                 # split the data into classes
                 class_data = {
-                    c: [prot for prot in labelled_data if prot.y == c] for c in classes
+                    c: [prot for prot in labelled_data if prot.y[0] == c] for c in classes
                 }
 
                 # split the data into train, test, val
@@ -267,7 +300,7 @@ class Model:
                     test_data += class_data[c][train_size : train_size + test_size]
                     val_data += class_data[c][train_size + test_size :]
             else:
-                y_values = np.array([prot.y for prot in labelled_data])
+                y_values = np.array([prot.y[0] for prot in labelled_data])
 
                 # Dynamically adjust the number of bins based on dataset size
                 n_bins = min(
@@ -328,7 +361,7 @@ class Model:
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
 
-        return train_data, test_data, val_data, unlabelled_data
+        return train_data, test_data, val_data, labelled_data, unlabelled_data
 
     def load_representations(self, proteins: list, rep_path: Union[str, None] = None):
         """
@@ -358,60 +391,59 @@ class Model:
         """
 
         model_type = self.model_type
-        model = None
+        model = {}
 
-        if model_type in self._sklearn_models:
-            # model_params = kwargs.copy() # optional to add custom parameters
+        for y_type in set(self.library.y_type):
+            if model_type in self._sklearn_models:
+                # model_params = kwargs.copy() # optional to add custom parameters
+                if y_type == "class":
+                    if model_type == "rf":
+                        model["class"] = RandomForestClassifier()
+                    elif model_type == "svm":
+                        model["class"] =  SVC()
+                    elif model_type == "knn":
+                        model["class"] = KNeighborsClassifier()
+                    elif model_type == "ridge":  # Added support for Ridge Classification
+                        model["class"] = RidgeClassifier()
+                elif y_type == "num":
+                    if model_type == "rf":
+                        model["num"] = RandomForestRegressor()
+                    elif model_type == "svm":
+                        model["num"] = SVR()
+                    elif model_type == "knn":
+                        model["num"] = KNeighborsRegressor()
+                    elif model_type == "ridge":  # Added support for Ridge Regression
+                        model["num"] = Ridge()
 
-            if self.y_type == "class":
-                if model_type == "rf":
-                    model = RandomForestClassifier()
-                elif model_type == "svm":
-                    model = SVC()
-                elif model_type == "knn":
-                    model = KNeighborsClassifier()
-                elif model_type == "ridge":  # Added support for Ridge Classification
-                    model = RidgeClassifier()
-            elif self.y_type == "num":
-                if model_type == "rf":
-                    model = RandomForestRegressor()
-                elif model_type == "svm":
-                    model = SVR()
-                elif model_type == "knn":
-                    model = KNeighborsRegressor()
-                elif model_type == "ridge":  # Added support for Ridge Regression
-                    model = Ridge()
+            elif model_type == "hdbscan":
+                model_params = kwargs.copy()
+                model["cluster"] = hdbscan.HDBSCAN(
+                    min_samples=model_params["min_samples"],
+                    min_cluster_size=model_params["min_cluster_size"],
+                )
 
-            return model
+            elif model_type in self._pt_models:
+                if y_type == "class":
+                    if model_type == "gp":
+                        raise ValueError(
+                            f"Model type '{model_type}' has not been implemented yet"
+                        )
+                elif y_type == "num":
+                    if model_type == "gp":
+                        model["num"] = "GP_MODEL"
+  
+            else:
+                raise ValueError(f"Model type '{model_type}' has not been implemented yet")
+        
+        return model
 
-        elif model_type == "hdbscan":
-            model_params = kwargs.copy()
-            model = hdbscan.HDBSCAN(
-                min_samples=model_params["min_samples"],
-                min_cluster_size=model_params["min_cluster_size"],
-            )
-            return model
-
-        elif model_type in self._pt_models:
-            if self.y_type == "class":
-                if model_type == "gp":
-                    raise ValueError(
-                        f"Model type '{model_type}' has not been implemented yet"
-                    )
-            elif self.y_type == "num":
-                if model_type == "gp":
-                    model = "GP_MODEL"
-
-            return model
-        else:
-            raise ValueError(f"Model type '{model_type}' has not been implemented yet")
-
-    def train_sklearn(self, rep_path, pbar=None):
+    def train_sklearn(self, rep_path, task, pbar=None):
         """
         Train sklearn models and save the model.
 
         Args:
             rep_path (str): representation path
+            task (str): task to train the model on numerical or classification (num or class).
             pbar: Progress bar for shiny app.
         """
         assert self._model is not None
@@ -435,81 +467,80 @@ class Model:
         x_val = torch.stack(val).cpu().numpy()
 
         if self.library.pred_data:
-            self.y_train = [protein.y_pred for protein in self.train_data]
-            self.y_test = [protein.y_pred for protein in self.test_data]
-            self.y_val = [protein.y_pred for protein in self.val_data]
+            self.y_train[task] = np.array([protein.y_pred for protein in self.train_data])
+            self.y_test[task] = np.array([protein.y_pred for protein in self.test_data])
+            self.y_val[task] = np.array([protein.y_pred for protein in self.val_data])
         else:
-            self.y_train = [protein.y for protein in self.train_data]
-            self.y_test = [protein.y for protein in self.test_data]
-            self.y_val = [protein.y for protein in self.val_data]
+            self.y_train[task] = np.array([protein.y for protein in self.train_data])
+            self.y_test[task] = np.array([protein.y for protein in self.test_data])
+            self.y_val[task] = np.array([protein.y for protein in self.val_data])
+
+        # get indices of numerical data
+        self.num_ind = [i for i, y_type in enumerate(self.library.y_type) if y_type == "num"]
+        self.class_ind = [i for i, y_type in enumerate(self.library.y_type) if y_type == "class"]
+        
+        # keep y values depending on task
+        if task == "num":
+            # keep columns with numerical values
+            self.y_train[task] = self.y_train[task][:, self.num_ind]
+            self.y_test[task] = self.y_test[task][:, self.num_ind]
+            self.y_val[task] = self.y_val[task][:, self.num_ind]
+        elif task == "class":
+            # keep columns with class values
+            self.y_train[task] = self.y_train[task][:, self.class_ind]
+            self.y_test[task] = self.y_test[task][:, self.class_ind]
+            self.y_val[task] = self.y_val[task][:, self.class_ind]
 
         self.test_names = [protein.name for protein in self.test_data]
 
         # combine train and val if no hyperparameter tuning
         if not self.grid_search:
             x_train = np.concatenate((x_train, x_val), axis=0)
-            self.y_train = np.concatenate((self.y_train, self.y_val))
+            self.y_train[task] = np.concatenate((self.y_train[task], self.y_val[task]))
             self.val_names = [protein.name for protein in self.val_data]
 
-        if self.k_folds is None:
+        if isinstance(self.k_folds, type(None)) or self.k_folds == 1:
             if pbar:
                 pbar.set(message="Training {self.model_type}", detail="...")
 
             # train model
-            self._model.fit(x_train, self.y_train)
+            self._model[task].fit(x_train, self.y_train[task])
 
             # make predictions
-            self.test_r2 = self._model.score(x_test, self.y_test)
-            self.y_test_pred = self._model.predict(x_test)
-            self.y_train_pred = self._model.predict(x_train)
+            if task == "num":
+                y_pred = self._model[task].predict(x_test)
+                self.test_r2 = r2_score(self.y_test[task], y_pred, multioutput='raw_values')
+                
+            self.y_test_pred[task] = self._model[task].predict(x_test)
+            self.y_train_pred[task] = self._model[task].predict(x_train)
 
-            self.y_train_sigma = [None] * len(self.y_train)
-            self.y_test_sigma = [None] * len(self.y_test)
+            if len(self.y_test_pred[task].shape) == 1:
+                self.y_train_sigma[task] = [None] * len(self.y_train[task])
+                self.y_test_sigma[task] = [None] * len(self.y_test[task])
+            else:
+                self.y_train_sigma[task] = [[None for _ in range(self.y_train[task].shape[1])] for _ in range(self.y_train[task].shape[0])]
+                self.y_test_sigma[task] = [[None for _ in range(self.y_test[task].shape[1])] for _ in range(self.y_test[task].shape[0])]
 
             # conformal prediction and statistics
-            self.calibration = self.calibrate(
-                self.y_test, self.y_test_pred, confidence=0.90
-            )
-
-            self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
-            self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
-
-            # Add predictions to test proteins
-            for i in range(len(test)):
-                self.test_data[i].y_pred = self.y_test_pred[i]
-                self.test_data[i].y_sigma = self.y_test_sigma[i]
-
-            # Save dataframes
-            if self.dest is not None:
-                csv_dest = f"{self.dest}"
-            else:
-                csv_dest = os.path.join(
-                    f"{self.library.rep_path}",
-                    f"../models/{self.model_type}/{self.rep}",
+            if task == "num":
+                self.calibration = self.calibrate(
+                    self.y_test[task], self.y_test_pred[task], confidence=0.90
                 )
 
-            if not os.path.exists(csv_dest):
-                os.makedirs(csv_dest, exist_ok=True)
+                test_pearsons = []
+                test_ken_taus = []
+                for idx in range(len(self.num_ind)):
+                    test_pearson = pearsonr(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_pearsons.append(test_pearson)
+                    test_ken_tau = kendalltau(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_ken_taus.append(test_ken_tau)
+                self.test_pearson = test_pearsons
+                self.test_ken_tau = test_ken_taus
 
-            train_df = self.save_to_csv(
-                self.train_data,
-                self.y_train,
-                self.y_train_pred,
-                self.y_train_sigma,
-                f"{csv_dest}/train_data.csv",
-            )
-
-            test_df = self.save_to_csv(
-                self.test_data,
-                self.y_test,
-                self.y_test_pred,
-                self.y_test_sigma,
-                f"{csv_dest}/test_data.csv",
-            )
-
-            # add split information to df
-            train_df["split"] = "train"
-            test_df["split"] = "test"
+                # Add predictions to test proteins
+                for i in range(len(test)):
+                    self.test_data[i].y_pred = self.y_test_pred[task][i]
+                    self.test_data[i].y_sigma = self.y_test_sigma[task][i]
 
             if self.grid_search:
                 self.val_r2 = self._model.score(x_val, self.y_val)
@@ -520,29 +551,14 @@ class Model:
                 )
                 self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
                 self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
-                val_df = self.save_to_csv(
-                    self.val_data,
-                    self.y_val,
-                    self.y_val_pred,
-                    self.y_val_sigma,
-                    f"{csv_dest}/val_data.csv",
-                )
-                val_df["split"] = "val"
 
-                # Concatenate the DataFrames
-                self.out_df = pd.concat(
-                    [train_df, test_df, val_df], axis=0
-                ).reset_index(drop=True)
-
-                self.y_best = max(
-                    (max(self.y_train), max(self.y_test), max(self.y_val))
-                )
+                if task == "num":
+                    self.y_best = max(
+                        (max(self.y_train[task]), max(self.y_test[task]), max(self.y_val[task]))
+                    )
             else:
-                # Concatenate the DataFrames
-                self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(
-                    drop=True
-                )
-                self.y_best = max((max(self.y_train), max(self.y_test)))
+                if task == "num":
+                    self.y_best = max(np.max(self.y_train[task]), np.max(self.y_test[task]))
 
         # handle ensembles
         else:
@@ -561,410 +577,130 @@ class Model:
 
                 x_train_fold, x_val_fold = x_train[train_index], x_train[val_index]
                 y_train_fold, y_val_fold = (
-                    np.array(self.y_train)[train_index],
-                    np.array(self.y_train)[val_index],
+                    self.y_train[task][train_index],
+                    self.y_train[task][val_index],
                 )
 
-                self._model = self.model()
-                self._model.fit(x_train_fold, y_train_fold)
-                val_r2 = self._model.score(x_val_fold, y_val_fold)
-                fold_results.append(val_r2)
-                ensemble.append(self._model)
+                self._model[task].fit(x_train_fold, y_train_fold)
+                
+                ensemble.append(self._model[task])
 
-                # conformal prediction
-                calibration = self.calibrate(
-                    y_val_fold, self._model.predict(x_val_fold), confidence=0.90
-                )
-                calibrations.append(calibration)
-
-            # avg_test_r2 = np.mean(fold_results)
-            # avg_calibration_ratio = np.mean([c for c in calibrations])
+                if task == "num":
+                    val_r2 = self._model[task].score(x_val_fold, y_val_fold)
+                    fold_results.append(val_r2)
+                    calibration = self.calibrate(
+                        y_val_fold, self._model[task].predict(x_val_fold), confidence=0.90
+                    )
+                    calibrations.append(calibration)
 
             # Store model ensemble as model
-            self._model = ensemble
+            self._model[task] = ensemble
 
             # Prediction on validation set
-            predictions = self.predict(self.train_data)
+            predictions = self.predict(self.train_data, task=task)
             self.train_data = predictions["pred_proteins"]
-            self.y_train_pred = predictions["y_pred"]
-            self.y_train_sigma = predictions["y_sigma"]
-            self.y_train = predictions["y_true"]
+            self.y_train_pred[task] = predictions["y_pred"]
+            self.y_train_sigma[task] = predictions["y_sigma"]
+            self.y_train[task] = predictions["y_true"]
 
             # Prediction on test set
-            predictions = self.predict(self.test_data)
+            predictions = self.predict(self.test_data, task=task)
             self.test_data = predictions["pred_proteins"]
-            self.y_test_pred = predictions["y_pred"]
-            self.y_test_sigma = predictions["y_sigma"]
-            self.y_test = predictions["y_true"]
+            self.y_test_pred[task] = predictions["y_pred"]
+            self.y_test_sigma[task] = predictions["y_sigma"]
+            self.y_test[task] = predictions["y_true"]
 
-            # Compute R-squared on test dataset
-            self.test_r2 = self.score(self.test_data)
+            if task == "num":
+                # Compute R-squared on test dataset
+                self.test_r2 = self.score(self.test_data)
 
-            # conformal prediction and statistics
-            self.calibration = self.calibrate(
-                self.y_test, self.y_test_pred, confidence=0.90
-            )
-            self.calibration_ratio, within_calibration = self._within_calibration(
-                self.y_test_pred, self.y_test
-            )
+                # conformal prediction and statistics
+                self.calibration = self.calibrate(
+                    self.y_test[task], self.y_test_pred[task], confidence=0.90
+                )
+                self.calibration_ratio, within_calibration = self._within_calibration(
+                    self.y_test_pred[task], self.y_test[task]
+                )
 
             # Prediction unlabelled data if exists
             if len(self.unlabelled_data) > 0:
                 predictions = self.predict(self.unlabelled_data)
-                self.y_unlabelled_pred = predictions["y_pred"]
-                self.y_unlabelled_sigma = predictions["y_sigma"]
-                self.y_unlabelled = predictions["y_true"]
+                self.y_unlabelled_pred[task] = predictions["y_pred"]
+                self.y_unlabelled_sigma[task] = predictions["y_sigma"]
+                self.y_unlabelled[task] = predictions["y_true"]
 
-            self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
-            self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
+            if task == "num":
+                test_pearsons = []
+                test_ken_taus = []
+                for idx in self.num_ind:
+                    test_pearson = pearsonr(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_pearsons.append(test_pearson)
+                    test_ken_tau = kendalltau(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_ken_taus.append(test_ken_tau)
+                self.test_pearson = test_pearsons
+                self.test_ken_tau = test_ken_taus
 
-            # Save the model
-            if self.dest is not None:
-                csv_dest = f"{self.dest}"
-            else:
-                csv_dest = os.path.join(
-                    f"{self.library.rep_path}",
-                    f"../models/{self.model_type}/{self.rep}",
-                )
-
-            if not os.path.exists(csv_dest):
-                os.makedirs(csv_dest, exist_ok=True)
-
-            # Save the sequences, y-values, and predicted y-values to CSV
-            train_df = self.save_to_csv(
-                self.train_data,
-                self.y_train,
-                self.y_train_pred,
-                self.y_train_sigma,
-                f"{csv_dest}/train_data.csv",
-            )
-            # Save the sequences, y-values, and predicted y-values to CSV
-            test_df = self.save_to_csv(
-                self.test_data,
-                self.y_test,
-                self.y_test_pred,
-                self.y_test_sigma,
-                f"{csv_dest}/test_data.csv",
-            )
-
-            # save unlabelled data if exists
-            if len(self.unlabelled_data) > 0:
-                unlabelled_df = self.save_to_csv(
-                    self.unlabelled_data,
-                    self.y_unlabelled,
-                    self.y_unlabelled_pred,
-                    self.y_unlabelled_sigma,
-                    f"{csv_dest}/unlabelled_data.csv",
-                )
+                # Add predictions to test proteins
+                for i in range(len(test)):
+                    self.test_data[i].y_pred = self.y_test_pred[task][i]
+                    self.test_data[i].y_sigma = self.y_test_sigma[task][i]
 
             if self.grid_search:
                 predictions = self.predict(self.val_data)
                 self.test_data = predictions["pred_proteins"]
-                self.y_val_pred = predictions["y_pred"]
-                self.y_val_sigma = predictions["y_sigma"]
-                self.y_val = predictions["y_true"]
+                self.y_val_pred[task] = predictions["y_pred"]
+                self.y_val_sigma[task] = predictions["y_sigma"]
+                self.y_val[task] = predictions["y_true"]
                 # Compute R-squared on validataion dataset
-                self.val_r2 = self.score(self.val_data)
-                self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
-                self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
-                val_df = self.save_to_csv(
-                    self.val_data,
-                    self.y_val,
-                    self.y_val_pred,
-                    self.y_val_sigma,
-                    f"{csv_dest}/val_data.csv",
-                )
-                train_df["split"] = "train"
-                test_df["split"] = "test"
-                val_df["split"] = "val"
-                if len(self.unlabelled_data) > 0:
-                    unlabelled_df["split"] = "unlabelled"
-                    comb_df = [train_df, test_df, unlabelled_df]
-                else:
-                    comb_df = [train_df, test_df, val_df]
-                self.y_best = max(
-                    (max(self.y_train), max(self.y_test), max(self.y_val))
-                )
+                if task == "num":
+                    self.val_r2 = self.score(self.val_data)
+                    val_pearsons = []
+                    val_ken_taus = []
+                    for idx in self.num_ind:
+                        val_pearson = pearsonr(np.array(self.y_val[task])[:, idx], np.array(self.y_val_pred[task])[:, idx])
+                        val_pearsons.append(val_pearson)
+                        val_ken_tau = kendalltau(np.array(self.y_val[task])[:, idx], np.array(self.y_val_pred[task])[:, idx])
+                        val_ken_taus.append(val_ken_tau)
+
+                    self.val_pearson = val_pearsons
+                    self.val_ken_tau = val_ken_taus
+                
+                if task == "num":
+                    self.y_best = max(
+                        (np.max(self.y_train[task]), np.max(self.y_test[task]), np.max(self.y_val[task]))
+                    )
+                
             else:
-                # add split information to df
-                train_df["split"] = "train"
-                test_df["split"] = "test"
-                if len(self.unlabelled_data) > 0:
-                    unlabelled_df["split"] = "unlabelled"
-                    comb_df = [train_df, test_df, unlabelled_df]
-                else:
-                    comb_df = [train_df, test_df]
                 # TODO: that depends on minimization or maximization goal
-                self.y_best = max((max(self.y_train), max(self.y_test)))
+                if task == "num":
+                    self.y_best = max((np.max(self.y_train[task]), np.max(self.y_test[task])))
 
-            # Concatenate the DataFrames
-            self.out_df = pd.concat(comb_df, axis=0).reset_index(drop=True)
-
-            self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
-
-        out = {
-            "df": self.out_df,
-            "rep_path": self.library.rep_path,
-            "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
-            "seqs_col": "sequence",
-            "names_col": "name",
-            "reps": self.library.reps,
-            "class_dict": self.library.class_dict,
-            "dr_df": None,
-        }
+            self.library.y_pred[task] = [prot.y_pred for prot in self.library.proteins]
 
         print(
             f"Training completed:\ntest_r2:\t{self.test_r2}\ntest_pearson:\t{self.test_pearson}"
         )
 
-        return out
-
-    def train_gp(
-        self,
-        rep_path,
-        epochs=150,
-        initial_lr=0.1,
-        final_lr=1e-6,
-        decay_rate=0.1,
-        pbar=None,
-    ):
-        """
-        Train a Gaussian Process model and save the model.
-
-        Args:
-            rep_path (str): representation path
-            pbar: Progress bar for shiny app.
-        """
-
-        assert self._model is not None
-
-        if pbar:
-            pbar.set(message="Loading representations", detail="...")
-
-        # This is for representations that are not stored in memory
-        train = self.load_representations(self.train_data, rep_path=rep_path)
-        test = self.load_representations(self.test_data, rep_path=rep_path)
-        val = self.load_representations(self.val_data, rep_path=rep_path)
-
-        # handle representations that are not esm
-        if len(train[0].shape) == 2:
-            train = [x.view(-1) for x in train]
-            test = [x.view(-1) for x in test]
-            val = [x.view(-1) for x in val]
-
-        x_train = torch.stack(train).to(device=self.device)
-        x_test = torch.stack(test).to(device=self.device)
-        x_val = torch.stack(val).to(device=self.device)
-
-        if self.library.pred_data:
-            self.y_train = (
-                torch.stack(
-                    [torch.Tensor([protein.y_pred]) for protein in self.train_data]
-                )
-                .view(-1)
-                .to(device=self.device)
-            )
-            self.y_test = (
-                torch.stack(
-                    [torch.Tensor([protein.y_pred]) for protein in self.test_data]
-                )
-                .view(-1)
-                .to(device=self.device)
-            )
-            y_val = (
-                torch.stack(
-                    [torch.Tensor([protein.y_pred]) for protein in self.val_data]
-                )
-                .view(-1)
-                .to(device=self.device)
-            )
-        else:
-            self.y_train = (
-                torch.stack([torch.Tensor([protein.y]) for protein in self.train_data])
-                .view(-1)
-                .to(device=self.device)
-            )
-            self.y_test = (
-                torch.stack([torch.Tensor([protein.y]) for protein in self.test_data])
-                .view(-1)
-                .to(device=self.device)
-            )
-            y_val = (
-                torch.stack([torch.Tensor([protein.y]) for protein in self.val_data])
-                .view(-1)
-                .to(device=self.device)
-            )
-
-        self.test_names = [protein.name for protein in self.test_data]
-
-        if self.grid_search:
-            x_train = torch.cat((x_train, x_val), dim=0)
-            self.y_train = torch.cat((self.y_train, y_val))
-            self.val_names = [protein.name for protein in self.val_data]
-
-        self.likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
-            device=self.device
-        )
-        self._model = GP(x_train, self.y_train, self.likelihood).to(device=self.device)
-
-        optimizer = torch.optim.Adam(self._model.parameters(), lr=initial_lr)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_rate)
-        mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self._model)
-
-        self._model.train()
-        self.likelihood.train()
-        prev_loss = float("inf")
-
-        if pbar:
-            pbar.set(message=f"Training {self.model_type}", detail="...")
-
-        for _ in range(epochs):
-            optimizer.zero_grad()
-            output = self._model(x_train)
-            loss = -mll(output, self.y_train)
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
-
-            # Check for convergence
-            if abs(prev_loss - loss.item()) < 0.0001:
-                #    print(f'Convergence reached. Stopping training...')
-                break
-
-            prev_loss = loss.item()
-
-        print(f"Training completed. Final loss: {loss.item()}")
-
-        # prediction on train set
-        y_train_pred, y_train_sigma = predict_gp(self._model, self.likelihood, x_train)
-        self.y_train_pred, self.y_train_sigma = (
-            y_train_pred.cpu().numpy(),
-            y_train_sigma.cpu().numpy(),
-        )
-
-        # prediction on test set
-        y_test_pred, y_test_sigma = predict_gp(self._model, self.likelihood, x_test)
-        self.test_r2 = computeR2(self.y_test, y_test_pred)
-        self.y_test_pred, self.y_test_sigma = (
-            y_test_pred.cpu().numpy(),
-            y_test_sigma.cpu().numpy(),
-        )
-        self.y_train = self.y_train.cpu().numpy()
-        self.y_test = self.y_test.cpu().numpy()
-        self.test_pearson = pearsonr(self.y_test, self.y_test_pred)
-        self.test_ken_tau = kendalltau(self.y_test, self.y_test_pred)
-        self.y_best = max((max(self.y_train), max(self.y_test)))
-
-        # conformal prediction and statistics
-        self.calibration = self.calibrate(
-            self.y_test, self.y_test_pred, confidence=0.90
-        )
-
-        # Add predictions to proteins
-        for i in range(len(train)):
-            self.train_data[i].y_pred = self.y_train_pred[i].item()
-            self.train_data[i].y_sigma = self.y_train_sigma[i].item()
-
-        # Add predictions to test proteins
-        for i in range(len(test)):
-            self.test_data[i].y_pred = self.y_test_pred[i].item()
-            self.test_data[i].y_sigma = self.y_test_sigma[i].item()
-
-        # save dataframes
-        if self.dest is not None:
-            csv_dest = f"{self.dest}"
-        else:
-            csv_dest = os.path.join(
-                f"{self.library.rep_path}",
-                f"../models/{self.model_type}/{self.rep}",
-            )
-
-        if not os.path.exists(csv_dest):
-            os.makedirs(csv_dest, exist_ok=True)
-
-        train_df = self.save_to_csv(
-            self.train_data,
-            self.y_train,
-            self.y_train_pred,
-            self.y_train_sigma,
-            f"{csv_dest}/train_data.csv",
-        )
-        test_df = self.save_to_csv(
-            self.test_data,
-            self.y_test,
-            self.y_test_pred,
-            self.y_test_sigma,
-            f"{csv_dest}/test_data.csv",
-        )
-
-        # add split information to df
-        train_df["split"] = "train"
-        test_df["split"] = "test"
-
-        if self.grid_search:
-            # prediction on validation set
-            y_val_pred, y_val_sigma = predict_gp(self._model, self.likelihood, x_val)
-            self.val_r2 = computeR2(y_val, y_val_pred)
-            self.y_train = self.y_train.cpu().numpy()
-
-            self.y_val_pred, self.y_val_sigma = (
-                y_val_pred.cpu().numpy(),
-                y_val_sigma.cpu().numpy(),
-            )
-
-            self.y_val = y_val.cpu().numpy()
-            self.y_test = self.y_test.cpu().numpy()
-
-            self.calibration_ratio, within_calibration = self._within_calibration(
-                self.y_val_pred, self.y_val
-            )
-            self.val_pearson = pearsonr(self.y_val, self.y_val_pred)
-            self.val_ken_tau = kendalltau(self.y_val, self.y_val_pred)
-
-            self.y_best = max((max(self.y_train), max(self.y_test), max(self.y_val)))
-            self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
-
-            # Add predictions to val proteins
-            for i in range(len(val)):
-                self.val_data[i].y_pred = self.y_val_pred[i].item()
-                self.val_data[i].y_pred = self.y_val_sigma[i].item()
-
-            val_df = self.save_to_csv(
-                self.val_data,
-                self.y_val,
-                self.y_val_pred,
-                self.y_val_sigma,
-                f"{csv_dest}/val_data.csv",
-            )
-            val_df["split"] = "val"
-            # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, test_df, val_df], axis=0).reset_index(
-                drop=True
-            )
-        else:
-            # Concatenate the DataFrames
-            self.out_df = pd.concat([train_df, test_df], axis=0).reset_index(drop=True)
-
-        out = {
-            "df": self.out_df,
-            "rep_path": self.library.rep_path,
-            "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
-            "seqs_col": "sequence",
-            "names_col": "name",
-            "reps": self.library.reps,
-            "class_dict": self.library.class_dict,
-            "dr_df": None,
-        }
-
-        return out
+    def update_proteins(self):
+        proteins = self.train_data + self.test_data + self.val_data + self.unlabelled_data
+        y_vals = []
+        y_sigmas = []
+        for val in ["num", "class"]:
+            
+        for i, prot in enumerate(proteins):
+            y_pred = [None] * len(self.library.y_type)
+            y_sigma = [None] * len(self.library.y_type)
+            for y_type in set(self.library.y_type):
+                if y_type == "num":
+                    for k in self.num_ind:
+                        y_pred[k] = self.y_test_pred["num"][i][k]
+                        y_sigma[k] = self.y_test_sigma["num"][i][k]
+                elif y_type == "class":
+                    for k in self.class_ind:
+                        y_pred[k] = self.y_test_pred["class"][i][k]
+                        y_sigma[k] = self.y_test_sigma["class"][i][k]
+            prot.y_pred = y_pred
+            prot.y_sigma = y_sigma
 
     # calibration for conformal predictions
     def calibrate(self, y_cal, y_cal_pred, confidence=0.90):
@@ -979,6 +715,11 @@ class Model:
         Returns:
             width: The width of the prediction interval.
         """
+        if not isinstance(y_cal, np.ndarray):
+            y_cal = np.array(y_cal)
+        if not isinstance(y_cal_pred, np.ndarray):
+            y_cal_pred = np.array(y_cal_pred)
+
         residuals = y_cal - y_cal_pred
         conformity_scores = np.sort(np.abs(residuals))[::-1]
         quantile_index = int((1 - confidence) * (len(conformity_scores) + 1)) - 1
@@ -999,6 +740,11 @@ class Model:
             y_pred = self.y_test_pred
         if y_true is None:
             y_true = self.y_test
+        
+        if not isinstance(y_pred, np.ndarray):
+            y_pred = np.array(y_pred)
+        if not isinstance(y_true, np.ndarray):
+            y_true = np.array(y_true)
 
         residuals = np.abs(y_pred - y_true)
         within_cal = np.where(residuals <= self.calibration, 1, 0)
@@ -1009,70 +755,72 @@ class Model:
     # Save the sequences, y-values, and predicted y-values to CSV
     def save_to_csv(
         self,
-        proteins,
-        y_values,
-        y_pred_values,
-        y_sigma_values,
-        filename,
-        acq_scores=None,
     ):
-        # Prepare data for CSV and DataFrame
-        data = []
-        names = [prot.name for prot in proteins]
-
-        # Determine if acquisition scores are provided
-        if acq_scores is not None:
-            header = [
-                "name",
-                "sequence",
-                "y_value",
-                "y_predicted",
-                "y_sigma",
-                "acq_score",
-            ]  # CSV header with acq_scores
+        # Save dataframes
+        if self.dest is not None:
+            csv_dest = f"{self.dest}"
         else:
-            header = [
-                "name",
-                "sequence",
-                "y_value",
-                "y_predicted",
-                "y_sigma",
-            ]  # CSV header without acq_scores
-
-        with open(filename, "w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(header)
-            for i, (name, protein, y, y_pred, y_sigma) in enumerate(
-                zip(names, proteins, y_values, y_pred_values, y_sigma_values)
-            ):
-                if acq_scores is not None:
-                    row = [name, protein.seq, y, y_pred, y_sigma, acq_scores[i]]
-                else:
-                    row = [name, protein.seq, y, y_pred, y_sigma]
-                writer.writerow(row)
-                data.append(row)
-
-        # Create a DataFrame from the collected data
-        if acq_scores is not None:
-            df = pd.DataFrame(
-                data,
-                columns=[
-                    "name",
-                    "sequence",
-                    "y_true",
-                    "y_predicted",
-                    "y_sigma",
-                    "acq_score",
-                ],
+            csv_dest = os.path.join(
+                f"{self.library.rep_path}",
+                f"../models/{self.model_type}/{self.rep}",
             )
-        else:
-            df = pd.DataFrame(
-                data, columns=["name", "sequence", "y_true", "y_predicted", "y_sigma"]
-            )
+
+        if not os.path.exists(csv_dest):
+            os.makedirs(csv_dest, exist_ok=True)
+        
+        data_categories = [
+            "train",
+            "test",
+            "val",
+            "labelled",
+            "unlabelled",
+        ]
+
+        for dat in data_categories:
+            # Prepare data for CSV and DataFrame
+            data = {}
+            header = ["name", "sequence"]
+
+            for col in self.library.y_col:
+                header.append(f"y_true_{col}")
+            
+            for col in self.library.y_col:
+                header.append(f"y_predicted_{col}")
+                header.append(f"y_sigma_{col}")
+            
+            for head in header:
+                data[head] = []
+
+            # Create a DataFrame from the collected data
+            if dat == "train":
+                proteins = self.train_data
+            elif dat == "test":
+                proteins = self.test_data
+            elif dat == "val":
+                proteins = self.val_data
+            elif dat == "labelled":
+                proteins = self.labelled_data
+            elif dat == "unlabelled":
+                proteins = self.unlabelled_data
+
+            for prot in proteins:
+                name = prot.name
+                seq = prot.seq
+                y_true = prot.y
+                y_pred = prot.y_pred
+                y_sigma = prot.y_sigma
+                for i, col in enumerate(self.library.y_col):
+                    data["name"].append(name)
+                    data["sequence"].append(seq)
+                    data[f"y_true_{col}"].append(y_true[i])
+                    data[f"y_predicted_{col}"].append(y_pred[i])
+                    data[f"y_sigma_{col}"].append(y_sigma[i])
+            
+            df = pd.DataFrame(data)
 
         return df
 
-    def predict(self, proteins, rep_path=None, acq_fn="greedy", batch_size=10000):
+    def predict(self, proteins, task=None, rep_path=None, acq_fn="greedy", batch_size=10000):
         """
         Makes predictions using the trained model, either for a list of proteins, sequence(s), or a Library object.
 
@@ -1087,6 +835,11 @@ class Model:
         """
         if self._model is None:
             raise ValueError("Model is 'None'")
+
+        if isinstance(task, type(None)):
+            tasks = self._model.keys()
+        elif isinstance(task, str):
+            tasks = [task]
 
         if acq_fn == "ei":
             acq = BO.EI
@@ -1151,79 +904,119 @@ class Model:
         elif isinstance(proteins, Library):
             proteins = proteins.proteins
 
-        for i in range(0, len(proteins), batch_size):
-            batch_proteins = proteins[i : i + batch_size]
-            batch_reps = self.load_representations(batch_proteins, rep_path)
+        # compute number of total variables
+        n_vars = len(self.num_ind) + len(self.class_ind)
+        
+        # handle different tasks
+        pred_dfs = {}
+        for task in tasks:
+            for i in range(0, len(proteins), batch_size):
+                batch_proteins = proteins[i : i + batch_size]
+                batch_reps = self.load_representations(batch_proteins, rep_path)
 
-            if len(batch_reps[0].shape) == 2:
-                batch_reps = [x.view(-1) for x in batch_reps]
+                if len(batch_reps[0].shape) == 2:
+                    batch_reps = [x.view(-1) for x in batch_reps]
 
-            # GP
-            if self.model_type == "gp":
-                self.likelihood.eval()
-                x = torch.stack(batch_reps).to(device=self.device)
-                y_pred, sigma_pred = predict_gp(self._model, self.likelihood, x)
-                y_pred = y_pred.cpu().numpy()
-                sigma_pred = sigma_pred.cpu().numpy()
-                acq_score = acq(y_pred, sigma_pred, self.y_best)
+                
+                # GP
+                if self.model_type == "gp":
+                    self.likelihood.eval()
+                    x = torch.stack(batch_reps).to(device=self.device)
+                    y_pred, sigma_pred = predict_gp(self._model, self.likelihood, x)
+                    y_pred = y_pred.cpu().numpy()
+                    sigma_pred = sigma_pred.cpu().numpy()
+                    acq_score = acq(y_pred, sigma_pred, self.y_best)
 
-            # Handle ensembles
-            elif isinstance(self._model, list):
-                ys = []
-                for model in self._model:
+                # Handle ensembles
+                elif isinstance(self._model[task], list):
+                    ys = []
+                    for model in self._model[task]:
+                        x = torch.stack(batch_reps).cpu().numpy()
+                        y_pred = model.predict(x)
+                        ys.append(y_pred)
+
+                    y_stack = np.stack(ys)
+                    y_pred = np.mean(y_stack, axis=0)
+                    sigma_pred = np.std(y_stack, axis=0)
+                    acq_score = acq(y_pred, sigma_pred, self.y_best)
+
+                # Handle single model
+                else:
                     x = torch.stack(batch_reps).cpu().numpy()
-                    y_pred = model.predict(x)
-                    ys.append(y_pred)
+                    y_pred = self._model[task].predict(x)
+                    sigma_pred = np.zeros_like(y_pred)
+                    acq_score = acq(y_pred, sigma_pred, self.y_best)
 
-                y_stack = np.stack(ys)
-                y_pred = np.mean(y_stack, axis=0)
-                sigma_pred = np.std(y_stack, axis=0)
-                acq_score = acq(y_pred, sigma_pred, self.y_best)
+                all_y_pred.extend(y_pred)
+                all_sigma_pred.extend(sigma_pred)
+                all_acq_scores.extend(acq_score)
 
-            # Handle single model
+            all_y_pred = np.array(all_y_pred)
+            all_sigma_pred = np.array(all_sigma_pred)
+            all_acq_scores = np.array(all_acq_scores)
+
+            # compute average acq_scores
+            if len(acq_score.shape) > 1:
+                avg_acq_score = np.mean(all_acq_scores, axis=-1)
             else:
-                x = torch.stack(batch_reps).cpu().numpy()
-                y_pred = self._model.predict(x)
-                sigma_pred = np.zeros_like(y_pred)
-                acq_score = acq(y_pred, sigma_pred, self.y_best)
+                avg_acq_score = all_acq_scores
 
-            all_y_pred.extend(y_pred)
-            all_sigma_pred.extend(sigma_pred)
-            all_acq_scores.extend(acq_score)
+            # Sort by average acquisition scores and get sorted indices
+            sorted_indices = np.argsort(avg_acq_score)[::-1]
 
-        all_y_pred = np.array(all_y_pred)
-        all_sigma_pred = np.array(all_sigma_pred)
-        all_acq_scores = np.array(all_acq_scores)
+            # Sort all lists/arrays by the sorted indices
+            pred_proteins = [proteins[i] for i in sorted_indices]
+            y_val = [prot.y for prot in pred_proteins]
+            y_val_pred = all_y_pred[sorted_indices]
+            y_val_sigma = all_sigma_pred[sorted_indices]
+            sorted_acq_score = all_acq_scores[sorted_indices]
 
-        # Sort acquisition scores and get sorted indices
-        sorted_indices = np.argsort(all_acq_scores)[::-1]
+            if len(y_val_pred.shape) > 1:
+                y_val_pred = [row for row in y_val_pred]
+                y_val_sigma = [row for row in y_val_sigma]
+                sorted_acq_score = [row for row in sorted_acq_score]
 
-        # Sort all lists/arrays by the sorted indices
-        pred_proteins = [proteins[i] for i in sorted_indices]
-        y_val = [prot.y for prot in pred_proteins]
-        y_val_pred = all_y_pred[sorted_indices]
-        y_val_sigma = all_sigma_pred[sorted_indices]
-        sorted_acq_score = all_acq_scores[sorted_indices]
+            for i, prot in enumerate(pred_proteins):
+                if len(prot.y_pred) < n_vars:
+                    prot.y_pred = [None] * n_vars
+                    prot.y_sigma = [None] * n_vars
+                    prot.acq_score = [None] * n_vars
+                if task == "num":
+                    for idx, val in zip(self.num_ind, y_val_pred[i]):  # Place numerical predictions
+                        prot.y_pred[idx] = val
+                    for idx, sigma_val in zip(self.num_ind, y_val_sigma[i]):  # Place numerical uncertainty
+                        prot.y_sigma[idx] = sigma_val
+                    for idx, acq_val in zip(self.num_ind, sorted_acq_score[i]):
+                        prot.acq_score[idx] = acq_val
 
-        for i, prot in enumerate(pred_proteins):
-            prot.y_pred = y_val_pred[i]
-            prot.y_sigma = y_val_sigma[i]
+                elif task == "class": 
+                    for idx, val in zip(self.class_ind, y_val_pred[i]):  # Place categorical predictions
+                        prot.y_pred[idx] = val
+                    for idx, sigma_val in zip(self.class_ind, y_val_sigma[i]):  # Place categorical uncertainty
+                        prot.y_sigma[idx] = sigma_val
+                    for idx, acq_val in zip(self.class_ind, sorted_acq_score[i]):
+                        prot.acq_score[idx] = acq_val
+                #prot.y_pred = y_val_pred[i]
+                #prot.y_sigma = y_val_sigma[i]
 
-        # Prediction dataframe
-        pred_df = pd.DataFrame(
-            {
-                "name": [prot.name for prot in pred_proteins],
-                "sequence": [prot.seq for prot in pred_proteins],
-                "y_true": y_val,
-                "y_predicted": y_val_pred,
-                "y_sigma": y_val_sigma,
-                "acq_score": sorted_acq_score,
-            }
-        )
-        # Save dataframes
+            # Prediction dataframe
+            pred_df = pd.DataFrame(
+                {
+                    "name": [prot.name for prot in pred_proteins],
+                    "sequence": [prot.seq for prot in pred_proteins],
+                    "y_true": y_val,
+                    "y_predicted": y_val_pred,
+                    "y_sigma": y_val_sigma,
+                    "acq_score": sorted_acq_score,
+                    "acq_average": avg_acq_score,
+                }
+            )
 
+            pred_dfs[task] = pred_df
+
+        # TODO: This may need to be changed
         out = {
-            "df": pred_df,
+            "df": pred_dfs,
             "rep_path": pred_rep_path,
             "struc_path": self.library.struc_path,
             "y_type": self.library.y_type,
@@ -1268,18 +1061,31 @@ class Model:
             reps = [x.view(-1) for x in reps]
 
         x = torch.stack(reps).cpu().numpy()
-        y = [protein.y for protein in proteins]
 
-        # ensemble
-        ensemble_scores = []
-        if isinstance(self._model, list):
-            for model in self._model:
-                score = model.score(x, y)
-                ensemble_scores.append(score)
-            ensemble_scores = np.stack(ensemble_scores)
-            scores = np.mean(ensemble_scores, axis=0)
-        else:
-            scores = self._model.score(x, y)
+        # get the y values of the numerical indices
+        y = [protein.y for protein in proteins]
+        y = np.array(y)
+        y_num = y[:,self.num_ind]
+        y_class = y[:,self.num_ind]
+
+        # predictions for num and reg
+        scores = {}
+        for task in self._model.keys():
+            ensemble_scores = []
+
+            if task == "num":
+                _y = y_num
+            elif task == "class":
+                _y = y_class
+
+            if isinstance(self._model[task], list):
+                for model in self._model[task]:
+                    score = model.score(x, _y)
+                    ensemble_scores.append(score)
+                ensemble_scores = np.stack(ensemble_scores)
+                scores[task] = np.mean(ensemble_scores, axis=0)
+            else:
+                scores[task] = self._model.score(x, _y)
 
         return scores
 
@@ -1431,15 +1237,15 @@ class Model:
             os.makedirs(csv_dest, exist_ok=True)
 
         # create out dataframe
-        out_df = self.save_to_csv(
-            self.library.proteins,
-            y_trues,
-            labels,
-            [None] * len(self.library.proteins),
-            f"{csv_dest}/clustering.csv",
-        )
+        # out_df = self.save_to_csv(
+        #     self.library.proteins,
+        #     y_trues,
+        #     labels,
+        #     [None] * len(self.library.proteins),
+        #     f"{csv_dest}/clustering.csv",
+        # )
 
-        self.out_df = out_df
+        self.out_df[task] = out_df
 
         out = {
             "df": self.out_df,
@@ -1470,15 +1276,20 @@ class Model:
         pbar=None,
         acq_fn="ei",
         overwrite=True,
+        y_type="num"
     ):
         """Search for new mutants or select variants from a set of sequences"""
 
-        if self.y_type == "class":
+        warnings.warn("The 'search' method is depreciated, please use 'mlde' or 'discovery' instead.", DeprecationWarning)
+
+        y_type = y_type
+
+        if y_type == "class":
             out = self._class_search(
                 N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar
             )
-        elif self.y_type == "num":
-            out = self._num_search(
+        elif y_type == "num":
+            out = self.mlde(
                 method=method,
                 optim_problem=optim_problem,
                 max_eval=max_eval,
@@ -1542,7 +1353,7 @@ class Model:
 
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
 
-        # Map selected_indices back to full_protein list using full_indices
+        # Map selected_indices back to full_protein list using full_indices<
         full_selected_indices = [full_indices[i] for i in selected_indices]
 
         # Create a mask for the full protein list
@@ -1565,9 +1376,9 @@ class Model:
                 f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
             )
 
-        self.search_df = self.save_to_csv(
-            selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results.csv"
-        )
+        # self.search_df = self.save_to_csv(
+        #     selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results.csv"
+        # )
 
         out = {
             "df": self.search_df,
@@ -1587,9 +1398,10 @@ class Model:
 
         return out
 
-    def _num_search(
+    def mlde(
         self,
         optim_problem="max",
+        optim_mask = None,
         method="ga",
         max_eval=10000,
         explore=0.1,
@@ -1602,7 +1414,8 @@ class Model:
         Search for improved mutants.
 
         Args:
-            optim_problem (str): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
+            optim_problem (str): Minimization or maximization of all y-values. Default 'max', alternatively 'min'.
+            optim_mask (list): List of 1s and -1s to indicate which y-vales to maximize or minimize. Default None.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
             max_eval (int): Maximum number of evaluations. Default 1000.
             explore (float): Exploration ratio, float between 0 and 1 to control the exploratory tendency of the sampling algorithm.
@@ -1615,26 +1428,34 @@ class Model:
             pbar.set(message=f"Evaluation {max_eval} sequences", detail="...")
 
         # Sort proteins based on the optimization problem
-        if optim_problem == "max":
-            proteins = sorted(
-                self.library.proteins, key=lambda prot: prot.y, reverse=True
-            )
+        num_ind = self.num_ind
+        if optim_mask is not None:
+            optim_mask = optim_mask
+        elif optim_problem == "max":
+            optim_mask = [1] * len(num_ind)
         elif optim_problem == "min":
-            proteins = sorted(
-                self.library.proteins, key=lambda prot: prot.y, reverse=False
-            )
+            optim_mask = [-1] * len(num_ind)
         else:
             raise ValueError(f"'{optim_problem}' is an invalid optimization problem")
 
         # Extract y values and compute the mean
-        ys = [prot.y for prot in proteins]
-        mean_y = np.mean(ys)
+        ys = np.array([prot.y for prot in self.library.proteins])
+        ys = ys[:, num_ind]
+        mean_y = np.mean(ys, axis=0)
 
         # Get the sequences of the top N proteins that have y > mean_y or y < mean_y based on the optimization problem
-        if optim_problem == "max":
-            improved_seqs = [prot.seq for prot in proteins if prot.y > mean_y]
-        elif optim_problem == "min":
-            improved_seqs = [prot.seq for prot in proteins if prot.y < mean_y]
+        improved_seqs = []
+        for i, opt in enumerate(optim_mask):
+            n = num_ind[i]
+            if opt == 1:
+                seqs = [prot.seq for prot in self.library.proteins if prot.y[n] > mean_y[i]]
+                improved_seqs.extend(seqs)
+            elif opt == -1:
+                seqs = [prot.seq for prot in self.library.proteins if prot.y[n] < mean_y[i]]
+                improved_seqs.extend(seqs)
+        
+        # reomve duplicates
+        improved_seqs = list(set(improved_seqs))
 
         # Introduce random mutations from the mutations dictionary
         seq_lens = set([len(seq) for seq in improved_seqs])
@@ -1689,7 +1510,7 @@ class Model:
             self.search_df = None
 
         mutant_df = self._mutate(
-            proteins, mutations, explore=explore, max_eval=max_eval
+            self.library.proteins, mutations, explore=explore, max_eval=max_eval
         )
 
         out = {
@@ -1720,9 +1541,9 @@ class Model:
         y_val = predictions["y_true"]
         acq_score = predictions["acq_score"]
 
-        self.search_df = self.save_to_csv(
-            val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score
-        )
+        # self.search_df = self.save_to_csv(
+        #     val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score
+        # )
 
         return self.search_df
 

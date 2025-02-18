@@ -64,8 +64,8 @@ class Library:
         source: Union[str, dict, None] = None,
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
-        y_col: Union[str, None] = None,
-        y_type: str = "num",
+        y_col: Union[str, list] = [],
+        y_type: Union[str, list]= ["num"],
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
         seed: int = 42,
@@ -79,7 +79,7 @@ class Library:
             source (str, or dict): Source of data, either a file or a data package created from a diversification step.
             seqs_col (str): Column name for the sequences, if the source is a '.csv' or Excel file.
             names_col (str): Column name for the names (sequence descriptions), if the source is a '.csv' or Excel file.
-            y_col (str): Column name for the y-values (e.g. fitness, stability, activity), if the source is a '.csv' or Excel file.
+            y_col (str): Column names for the y-values (e.g. fitness, stability, activity), if the source is a '.csv' or Excel file.
             y_type (str): Specify the data type of y-values, either categorical or numerical. Will parse automatically if none is provided.
             sheet (str): Specify the excel sheet name, if the source is an Excel file.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
@@ -115,7 +115,7 @@ class Library:
         self.data = None
         self.seqs = None
         self.y = None
-        self.y_pred = None
+        self.y_pred = {}
         self.names = None
         self.reps = self.in_memory.copy()
         self.source_path = None
@@ -126,6 +126,16 @@ class Library:
         self.pred_data = False
         self.seed = seed
         self.out_df = None
+
+        if not isinstance(self.y_col, list):
+            self.y_col = [self.y_col]
+        if not isinstance(self.y_type, list):
+            self.y_type = [self.y_type]
+
+        # if y_type not provided, assume all numerical
+        if len(self.y_type) != len(self.y_col):
+            self.y_type = ["num"] * len(self.y_col)
+        self.y_labels = {y:y_type for y, y_type in zip(self.y_col, self.y_type)} # TODO: also give option to provide y_labels - then ycols also need to be inffered
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -141,6 +151,9 @@ class Library:
         """
         Initialize a library from a file.
         """
+        # if y-col is not lst make it a list
+        if not isinstance(self.y_col, list):
+            self.y_col = [self.y_col]
 
         # handle app case
         if self.fname:
@@ -167,7 +180,7 @@ class Library:
             self._read_tabular_data(
                 in_file=self.source,
                 seqs=self.seq_col,
-                y=self.y_col,
+                y_cols=self.y_col,
                 y_type=self.y_type,
                 names=self.names_col,
                 sheet=self.sheet,
@@ -208,30 +221,39 @@ class Library:
         # if true y values are there
         if "y_col" in data.keys():
             self.y_col = data["y_col"]
-            self.y = df[self.y_col].to_list()
+            ys = []
+            for y_col in self.y_col:
+                ys.append(df[y_col].to_list())
+            self.y = ys
         else:
-            self.y = [None] * len(self.seqs)
+            self.y = [[None] * len(self.seqs)]
 
         # if predicted y values are there
         if "y_pred_col" in data.keys():
             self.y_pred_col = data["y_pred_col"]
-            self.y_pred = df[self.y_pred_col].to_list()
+            y_preds = []
+            for y_pred_col in self.y_pred_col:
+                y_preds.append(df[y_pred_col].to_list())
+            self.y_pred = y_preds
         else:
-            self.y_pred = [None] * len(self.seqs)
+            self.y_pred = [[None] * len(self.seqs)]
 
         # if predicted y values are there
         if "y_sigma_col" in data.keys():
             self.y_sigma_col = data["y_sigma_col"]
-            self.y_sigma = df[self.y_sigma_col].to_list()
+            for y_sigma_col in self.y_sigma_col:
+                y_sigmas.append(df[y_sigma_col].to_list())
+            self.y_sigma = y_sigmas
         else:
-            self.y_sigma = [None] * len(self.y)
+            self.y_sigma = [[None] * len(self.y)]
 
         # if predicted y values are there
         if "acq_col" in data.keys():
             self.acq_col = data["acq_col"]
-            self.acq_score = df[self.acq_col].to_list()
+            for acq_col in self.acq_col:
+                acq_scores.append(df[acq_col].to_list())
         else:
-            self.acq_score = [None] * len(self.y)
+            self.acq_score = [[None] * len(self.y)]
 
         if "pred_data" in data.keys():
             self.pred_data = data["pred_data"]
@@ -332,8 +354,8 @@ class Library:
         self,
         data: str,
         seqs: Union[str, None] = None,
-        y: Union[str, None] = None,
-        y_type: str = "num",
+        y: Union[str, list] = [],
+        y_type: Union[str, list] = ["num"],
         names: Union[str, None] = None,
         sheet: Optional[str] = None,
     ):
@@ -349,7 +371,9 @@ class Library:
             sheet (str, optional): Name of the Excel sheet to read.
         """
 
-        assert y_type in self._allowed_y_types
+        for y_t in y_type:
+            assert y_t in self._allowed_y_types
+
         self.y_type = y_type
 
         # Determine file type based on extension
@@ -363,7 +387,7 @@ class Library:
             self._read_tabular_data(
                 in_file=data,
                 seqs=seqs,
-                y=y,
+                y_cols=y,
                 y_type=y_type,
                 names=names,
                 sheet=sheet,
@@ -378,7 +402,7 @@ class Library:
         self,
         in_file: str,
         seqs: str,
-        y: Union[str, None],
+        y_cols: Union[str, None],
         y_type: Union[str, None],
         names: Union[str, None],
         sheet: Optional[str],
@@ -392,7 +416,7 @@ class Library:
             Args:
                 data (str): Path to the data file.
                 seqs (str): Column name for sequences in the data file.
-                y (str): Column name for y values in the data file.
+                y_cols (str): Column names for y values in the data file.
                 y_type (str): Type of y values ('class' or 'num').
                 names (str, optional): Column name for sequence names in the data file.
                 sheet (str, optional): Name of the Excel sheet to read.
@@ -412,10 +436,11 @@ class Library:
 
         self.data = df
         # Validate the columns exist
-        if seqs not in df.columns or y not in df.columns:
-            raise ValueError(
-                "The provided column names do not match the columns in the data file."
-            )
+        for y in y_cols:
+            if seqs not in df.columns or y not in df.columns:
+                raise ValueError(
+                    "The provided column names do not match the columns in the data file."
+                )
 
         # If names are not provided, generate dummy names
         if names not in df.columns:
@@ -426,19 +451,34 @@ class Library:
         self.seqs = df[seqs].tolist()
 
         # Handle y values
-        if y is not None:
-            self.y = df[y].tolist()
-
-            if y_type == "class":
-                self.y, self.class_dict = self._encode_categorical_labels(self.y)
-
-            # Create protein objects with y values
+        self.y_labels = {y:y_type for y, y_type in zip(y_cols, y_type)}
+        if isinstance(y_cols, type(None)) or y_cols is not []:
+            ys = []
+            y_pred = []
+            class_dicts = []
+            for i, y_col in enumerate(y_cols):
+                if y_type[i] == "class":
+                    _y = df[y_col].tolist()
+                    _y, _class_dict = self._encode_categorical_labels(_y)
+                    ys.append(_y)
+                    class_dicts.append(_class_dict)
+                else:
+                    _y = df[y_col].tolist()
+                    ys.append(_y)
+                    class_dicts.append(None)
+                y_pred.append([None]*len(_y))
+            
+            transposed_ys = list(map(list, zip(*ys)))
+            transposed_y_preds = list(map(list, zip(*y_pred)))
             self.proteins = [
-                Protein(name, seq, y=y, user=self.user)
-                for name, seq, y in zip(self.names, self.seqs, self.y)
+                Protein(name, seq, y=y, y_sigma=y_pred, y_pred=y_pred, y_labels=self.y_labels, class_dicts=class_dicts, user=self.user)
+                for name, seq, y, y_pred in zip(self.names, self.seqs, transposed_ys, transposed_y_preds)
             ]
+            self.y = transposed_ys
+            self.class_dict = class_dicts
+
+        # Create protein objects without y values
         else:
-            # Create protein objects without y values
             self.proteins = [
                 Protein(name, seq, user=self.user)
                 for name, seq in zip(self.names, self.seqs)
@@ -464,7 +504,7 @@ class Library:
 
         # Create protein objects from names and sequences
         self.proteins = [Protein(name, seq) for name, seq in zip(self.names, self.seqs)]
-        self.y = [None] * len(self.proteins)
+        self.y = [[None] * len(self.proteins)]
         df = pd.DataFrame({"names": names, "sequence": self.seqs, "y": self.y})
         self.data = df
 
@@ -531,12 +571,13 @@ class Library:
         self._check_reps()
         self._check_strucs()
 
-    def set_y_values(self, y_values: list):
+    def set_y_values(self, y_values: list, y_index: int=0):
         """
         Sets the y values for all proteins.
 
         Args:
             y_values (list): List of y values.
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
         """
 
         if len(y_values) != len(self.proteins):
@@ -545,7 +586,7 @@ class Library:
             )
 
         for protein, y_value in zip(self.proteins, y_values):
-            protein.y = y_value
+            protein.y[y_index] = y_value
 
     ### Representation builders ###
     def compute(
@@ -930,6 +971,7 @@ class Library:
         use_y_pred=False,
         seed=None,
         df=None,
+        y_index=0,
     ):
         """
         Plot library data using specific representations.
@@ -944,6 +986,7 @@ class Library:
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
             df (pd.DataFrame): Dataframe to plot. Default None.
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
         """
         if self.seed is None:
             self.seed = seed
@@ -960,6 +1003,7 @@ class Library:
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
                 df=df,
+                y_index=y_index,
             )
         elif method == "tsne":
             fig, ax, df = self.plot_tsne(
@@ -971,6 +1015,7 @@ class Library:
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
                 df=df,
+                y_index=y_index,
             )
         elif method == "pca":
             fig, ax, df = self.plot_pca(
@@ -982,6 +1027,7 @@ class Library:
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
                 df=df,
+                y_index=y_index
             )
 
         else:
@@ -1000,6 +1046,7 @@ class Library:
         use_y_pred=False,
         seed=None,
         df=None,
+        y_index=0,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1013,6 +1060,7 @@ class Library:
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
             df (pd.DataFrame): Dataframe to plot. Default None.
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
         """
         if self.seed is None:
             self.seed = seed
@@ -1021,10 +1069,10 @@ class Library:
 
         x = self.load_representations(rep)
 
-        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y[y_index]
 
         if not use_y_pred and self.y_type == "class":
-            y = [self.class_dict[i] for i in y]
+            y = [self.class_dict[y_index][i] for i in y]
 
         fig, ax, df = vis.plot_tsne(
             x,
@@ -1052,6 +1100,7 @@ class Library:
         use_y_pred=False,
         seed=None,
         df=None,
+        y_index=0,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1065,6 +1114,7 @@ class Library:
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
             df (pd.DataFrame): Dataframe to plot. Default None.
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
         """
         if self.seed is None:
             self.seed = seed
@@ -1073,10 +1123,10 @@ class Library:
 
         x = self.load_representations(rep)
 
-        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y[y_index]
 
         if not use_y_pred and self.y_type == "class":
-            y = [self.class_dict[i] for i in y]
+            y = [self.class_dict[y_index][i] for i in y]
 
         fig, ax, df = vis.plot_umap(
             x,
@@ -1106,6 +1156,7 @@ class Library:
         use_y_pred=False,
         seed=None,
         df=None,
+        y_index=0,
     ):
         """
         Plot representations with optional thresholds and point names.
@@ -1118,6 +1169,8 @@ class Library:
             highlight_mask (list): List of 0s and 1s to highlight plot. Default None.
             highlight_label (str): Text for the legend entry of highlighted points.
             seed (int): random seed. Default None.
+            df (pd.DataFrame): Dataframe to plot. Default None.
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
         """
         if self.seed is None:
             self.seed = seed
@@ -1126,10 +1179,10 @@ class Library:
 
         x = self.load_representations(rep)
 
-        y = [str(i) for i in self.y_pred] if use_y_pred else self.y
+        y = [str(i) for i in self.y_pred] if use_y_pred else self.y[y_index]
 
         if not use_y_pred and self.y_type == "class":
-            y = [self.class_dict[i] for i in y]
+            y = [self.class_dict[y_index][i] for i in y]
 
         fig, ax, df = vis.plot_pca(
             x,
@@ -1149,12 +1202,13 @@ class Library:
     def __len__(self):
         return len(self.seqs)
 
-    def top_n(self, n: int = 10, ascending=False):
+    def top_n(self, n: int = 10, y_index=0, ascending=False):
         """
         Returns the top n-proteins by y-value.
 
         Args:
             n (int): Number of top variants. Default 10
+            y_index (int): index defining which y_values to change (in case of multiple y_vales). Default 0.
             ascending (bool): sort in ascending or descending order
         """
 
@@ -1163,7 +1217,7 @@ class Library:
 
         # Sort the proteins by y-value
         sorted_proteins = sorted(
-            proteins, key=lambda protein: protein.y, reverse=not ascending
+            proteins, key=lambda protein: protein.y[y_index], reverse=not ascending
         )
 
         # Return the top n proteins

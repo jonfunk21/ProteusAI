@@ -62,10 +62,12 @@ class Protein:
         rep_path: Union[str, None] = None,
         user: Union[str, None] = "guest",
         user_root: Union[str, None] = USR_PATH,
-        y=None,
-        y_pred=None,
-        y_sigma=None,
-        acq_score=None,
+        y=[],
+        y_pred=[],
+        y_sigma=[],
+        acq_score=[],
+        y_labels={},
+        class_dicts=[],
         source: Union[str, None] = None,
         fname: Union[str, None] = None,
     ):
@@ -80,10 +82,13 @@ class Protein:
             rep_path (str): Path to representations directory.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
-            y (float, int, str): Label for the protein.
-            y_pred (float, int, str): Predicted y_value.
-            y_sigma (float, int, str): Predicted y_value.
-            acq_score (float): acquisition score.
+            
+            y (list): Labels for the protein.
+            y_pred (list): Predicted y_values.
+            y_sigma (float, int, str): Predicted y_values.
+            acq_score (float): acquisition scores.
+            y_labels (dict): Labels for the y_values as keys and data type ('num' or 'class') as values.
+            class_dicts (list): List of dictionaries of class labels.
             source (str, or data): Source of data, either a file or a data package created from a diversification step.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
 
@@ -97,10 +102,13 @@ class Protein:
         self.reps = list(reps)
         self.struc = struc
         self.source = source
+        
         self.y = y
         self.y_pred = y_pred
         self.y_sigma = y_sigma
         self.acq_score = acq_score
+        self.y_labels = y_labels
+        self.class_dicts = class_dicts
         self.fname = fname
         self.user = os.path.join(user_root, user)
         self.rep_path = rep_path
@@ -912,8 +920,6 @@ class Protein:
 
     @y.setter
     def y(self, value):
-        if not isinstance(value, (str, int, float)) and value is not None:
-            raise TypeError(
-                f"Expected 'rep' to be of type 'int', 'float', or 'str', but got '{type(value).__name__}'"
-            )
+        if isinstance(value, (str, int, float, type(None))):
+            value = [value]
         self._y = value
