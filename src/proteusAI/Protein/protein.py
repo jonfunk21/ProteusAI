@@ -82,7 +82,7 @@ class Protein:
             rep_path (str): Path to representations directory.
             user (str): Path to the user. Will create one if the path does not exist. Default guest.
             user_root (str): Path to the user root. Default is the ~/ProteusAI/usrs".
-            
+
             y (list): Labels for the protein.
             y_pred (list): Predicted y_values.
             y_sigma (float, int, str): Predicted y_values.
@@ -102,7 +102,7 @@ class Protein:
         self.reps = list(reps)
         self.struc = struc
         self.source = source
-        
+
         self.y = y
         self.y_pred = y_pred
         self.y_sigma = y_sigma

@@ -8,15 +8,36 @@ sys.path.append("src/")
 
 
 # will initiate storage space - else in memory
-dataset = "demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv"
+dataset = "demo/demo_data/indigo_data.csv"
+
+class_cols = ["indigo"]
+num_cols = [
+    "concentration",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "S9",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14",
+]
+
+y_types = ["num"] * len(num_cols) + ["class"] * len(class_cols)
 
 # load data from csv or excel: x should be sequences, y should be labels, y_type class or num
 library = pai.Library(
     source=dataset,
-    seqs_col="Sequence",
-    y_col=["Data", "Data"],
-    y_type=["num", "num"],
-    names_col="Description",
+    seqs_col="sequence",
+    y_col=num_cols + class_cols,
+    y_type=y_types,
+    names_col="description",
 )
 
 # compute and save ESM-2 representations at example_lib/representations/esm2
@@ -35,4 +56,4 @@ out = model.mlde(optim_problem="max")
 if not os.path.exists("demo/demo_data/out/"):
     os.makedirs("demo/demo_data/out/", exist_ok=True)
 
-out.to_csv("demo/demo_data/out/demo_search_results.csv")
+out.to_csv("demo/demo_data/out/demo_mlde_results.csv")

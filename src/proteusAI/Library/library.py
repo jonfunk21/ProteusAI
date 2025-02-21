@@ -65,7 +65,7 @@ class Library:
         seqs_col: Union[str, None] = None,
         names_col: Union[str, None] = None,
         y_col: Union[str, list] = [],
-        y_type: Union[str, list]= ["num"],
+        y_type: Union[str, list] = ["num"],
         sheet: Union[str, None] = None,
         fname: Union[str, None] = None,
         seed: int = 42,
@@ -135,7 +135,9 @@ class Library:
         # if y_type not provided, assume all numerical
         if len(self.y_type) != len(self.y_col):
             self.y_type = ["num"] * len(self.y_col)
-        self.y_labels = {y:y_type for y, y_type in zip(self.y_col, self.y_type)} # TODO: also give option to provide y_labels - then ycols also need to be inffered
+        self.y_labels = {
+            y: y_type for y, y_type in zip(self.y_col, self.y_type)
+        }  # TODO: also give option to provide y_labels - then ycols also need to be inffered
 
         # Create user if user does not exist
         if not os.path.exists(self.user):
@@ -198,8 +200,6 @@ class Library:
         Args:
             data (dict): Contains parent path and path to data file.
         """
-
-        # For the future adapt this so it can handle multi-factor optimization
         # extract data from parent file
         data = self.source
 
@@ -216,44 +216,80 @@ class Library:
         self.seqs = df[self.seq_col].to_list()
         self.names = df[self.names_col].to_list()
         self.y_type = data["y_type"]
+
+        # if y-col is not lst make it a list
+        if not isinstance(self.y_col, list):
+            self.y_col = [self.y_col]
+
+        # if y-type is not lst make it a list
+        if not isinstance(self.y_type, list):
+            self.y_type = [self.y_type]
+
         self.data = df
 
         # if true y values are there
         if "y_col" in data.keys():
             self.y_col = data["y_col"]
+
+            # if y-col is not lst make it a list
+            if not isinstance(self.y_col, list):
+                self.y_col = [self.y_col]
+
             ys = []
             for y_col in self.y_col:
                 ys.append(df[y_col].to_list())
-            self.y = ys
+            # Transpose ys to match expected format [[y1, y2, y3], [y1, y2, y3], ...]
+            self.y = list(map(list, zip(*ys)))
         else:
-            self.y = [[None] * len(self.seqs)]
+            self.y = [[None] * len(self.y_col) for _ in range(len(self.seqs))]
 
         # if predicted y values are there
         if "y_pred_col" in data.keys():
             self.y_pred_col = data["y_pred_col"]
+
+            # if y-pred-col is not lst make it a list
+            if not isinstance(self.y_pred_col, list):
+                self.y_pred_col = [self.y_pred_col]
+
             y_preds = []
             for y_pred_col in self.y_pred_col:
                 y_preds.append(df[y_pred_col].to_list())
-            self.y_pred = y_preds
+            # Transpose y_preds
+            self.y_pred = list(map(list, zip(*y_preds)))
         else:
-            self.y_pred = [[None] * len(self.seqs)]
+            self.y_pred = [[None] * len(self.y_col) for _ in range(len(self.seqs))]
 
-        # if predicted y values are there
+        # if sigma values are there
         if "y_sigma_col" in data.keys():
             self.y_sigma_col = data["y_sigma_col"]
+
+            # if y-sigma is not lst make it a list
+            if not isinstance(self.y_sigma_col, list):
+                self.y_sigma_col = [self.y_sigma_col]
+
+            y_sigmas = []
             for y_sigma_col in self.y_sigma_col:
                 y_sigmas.append(df[y_sigma_col].to_list())
-            self.y_sigma = y_sigmas
+            # Transpose y_sigmas
+            self.y_sigma = list(map(list, zip(*y_sigmas)))
         else:
-            self.y_sigma = [[None] * len(self.y)]
+            self.y_sigma = [[None] * len(self.y_col) for _ in range(len(self.seqs))]
 
-        # if predicted y values are there
+        # if acquisition scores are there
         if "acq_col" in data.keys():
             self.acq_col = data["acq_col"]
+
+            # if acq-col is not lst make it a list
+            if not isinstance(self.acq_col, list):
+                self.acq_col = [self.acq_col]
+
+            acq_scores = []
             for acq_col in self.acq_col:
                 acq_scores.append(df[acq_col].to_list())
+            # Transpose acq_scores
+            self.acq_score = list(map(list, zip(*acq_scores)))
         else:
-            self.acq_score = [[None] * len(self.y)]
+            self.acq_score = [[None] * len(self.y_col) for _ in range(len(self.seqs))]
 
         if "pred_data" in data.keys():
             self.pred_data = data["pred_data"]
@@ -451,10 +487,10 @@ class Library:
         self.seqs = df[seqs].tolist()
 
         # Handle y values
-        self.y_labels = {y:y_type for y, y_type in zip(y_cols, y_type)}
-        if isinstance(y_cols, type(None)) or y_cols is not []:
+        self.y_labels = {y: y_type for y, y_type in zip(y_cols, y_type)}
+        if isinstance(y_cols, type(None)) or y_cols != []:
             ys = []
-            y_pred = []
+            y_pred_sigma = []
             class_dicts = []
             for i, y_col in enumerate(y_cols):
                 if y_type[i] == "class":
@@ -466,13 +502,28 @@ class Library:
                     _y = df[y_col].tolist()
                     ys.append(_y)
                     class_dicts.append(None)
-                y_pred.append([None]*len(_y))
-            
+                y_pred_sigma.append([None] * len(_y))
+
             transposed_ys = list(map(list, zip(*ys)))
-            transposed_y_preds = list(map(list, zip(*y_pred)))
+            transposed_y_preds_sigmas = list(map(list, zip(*y_pred_sigma)))
             self.proteins = [
-                Protein(name, seq, y=y, y_sigma=y_pred, y_pred=y_pred, y_labels=self.y_labels, class_dicts=class_dicts, user=self.user)
-                for name, seq, y, y_pred in zip(self.names, self.seqs, transposed_ys, transposed_y_preds)
+                Protein(
+                    name,
+                    seq,
+                    y=y,
+                    y_sigma=y_sigma,
+                    y_pred=y_pred,
+                    y_labels=self.y_labels,
+                    class_dicts=class_dicts,
+                    user=self.user,
+                )
+                for name, seq, y, y_sigma, y_pred in zip(
+                    self.names,
+                    self.seqs,
+                    transposed_ys,
+                    transposed_y_preds_sigmas,
+                    transposed_y_preds_sigmas,
+                )
             ]
             self.y = transposed_ys
             self.class_dict = class_dicts
@@ -571,7 +622,7 @@ class Library:
         self._check_reps()
         self._check_strucs()
 
-    def set_y_values(self, y_values: list, y_index: int=0):
+    def set_y_values(self, y_values: list, y_index: int = 0):
         """
         Sets the y values for all proteins.
 
@@ -1027,7 +1078,7 @@ class Library:
                 highlight_label=highlight_label,
                 use_y_pred=use_y_pred,
                 df=df,
-                y_index=y_index
+                y_index=y_index,
             )
 
         else:

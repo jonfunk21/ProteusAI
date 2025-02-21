@@ -129,28 +129,41 @@ def find_mutations(sequences):
 
     Returns:
     dict: A dictionary where keys are positions (1-indexed) and values are lists of amino acids at those positions.
+            If sequences have different lengths, returns all possible mutations at all positions.
     """
     # Check if the list is empty
     if not sequences:
         return {}
 
-    # Initialize a dictionary to store mutations
-    mutations = {}
+    # Check if all sequences have the same length
+    lengths = {len(seq) for seq in sequences}
+    if len(lengths) > 1:
+        print(
+            "WARNING: Sequences have different lengths. Exploitation won't work and explore will be set to 1."
+        )
+        # Get the maximum length
+        max_length = max(lengths)
+        mutations = {}
+        all_amino_acids = list("ACDEFGHIKLMNPQRSTVWY")
 
-    # Get the reference sequence (assuming all sequences have the same length)
+        # For each position up to the longest sequence, allow all possible mutations
+        for i in range(max_length):
+            mutations[i + 1] = all_amino_acids  # +1 to make position 1-indexed
+        return mutations
+
+    # Convert sequences to numpy array for faster operations
+    seq_array = np.array([list(seq) for seq in sequences])
+
+    # Original logic for same-length sequences
+    mutations = {}
     reference_seq = sequences[0]
 
-    # Iterate through each position in the sequence
+    # For each position, get unique amino acids
     for i in range(len(reference_seq)):
-        # Initialize a set to store the different amino acids at this position
-        amino_acids = set()
-
-        # Check the amino acid at this position in each sequence
-        for seq in sequences:
-            amino_acids.add(seq[i])
+        unique_aas = np.unique(seq_array[:, i])
 
         # If there is more than one unique amino acid at this position, it's a mutation
-        if len(amino_acids) > 1:
-            mutations[i + 1] = list(amino_acids)  # +1 to make position 1-indexed
+        if len(unique_aas) > 1:
+            mutations[i + 1] = unique_aas.tolist()  # +1 to make position 1-indexed
 
     return mutations

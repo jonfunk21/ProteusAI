@@ -4,7 +4,6 @@
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-import csv
 import os
 import random
 import sys
@@ -12,7 +11,6 @@ from typing import Union
 import hashlib
 import warnings
 
-import gpytorch
 import hdbscan
 import numpy as np
 import pandas as pd
@@ -26,13 +24,12 @@ from sklearn.model_selection import KFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR
 from scipy.stats import pearsonr, kendalltau
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, accuracy_score, cohen_kappa_score
 
 import proteusAI.ml_tools.bo_tools as BO
 import proteusAI.visual_tools as vis
 from proteusAI.Library import Library
 from proteusAI.Protein import Protein
-from proteusAI.ml_tools.torch_tools import GP, computeR2, predict_gp
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(current_path, "..")
@@ -64,11 +61,14 @@ class Model:
         val_true (list): List of true values of the validation dataset.
         val_predictions (list): Predicted values of the validation dataset.
         val_r2 (float): R-squared value of the model on the validation dataset.
+        test_acc (list): List of true values of the test dataset for classification.
+        test_kappa (list): List of kappa values of the test dataset for classification.
+        val_acc (list): List of true values of the validation dataset for classification.
+        val_kappa (list): List of kappa values of the validation dataset for classification.
     """
 
     _clustering_algs = ["hdbscan"]
     _sklearn_models = ["rf", "knn", "svm", "ffnn", "ridge"]
-    _pt_models = ["gp"]
     _in_memory_representations = ["ohe", "blosum50", "blosum62", "vhse"]
     defaults = {
         "library": None,
@@ -122,6 +122,10 @@ class Model:
         self.val_r2 = []
         self.val_pearson = []
         self.val_ken_tau = []
+        self.test_acc = []
+        self.test_kappa = []
+        self.val_acc = []
+        self.val_kappa = []
         self.y_unlabelled_pred = []
         self.y_unlabelled_sigma = []
         self.y_unlabelled = []
@@ -136,8 +140,10 @@ class Model:
         self.rep_path = None
         self.dest = None
         self.y_best = None
-        self.out_df = None
-        self.search_df = None
+        self.train_df = None
+        self.mlde_df = None
+        self.cluster_df = None
+        self.discovery_df = None
 
         # check for device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -175,9 +181,13 @@ class Model:
         # self._update_attributes(**kwargs)
 
         # split data
-        self.train_data, self.test_data, self.val_data, self.labelled_data, self.unlabelled_data = (
-            self.split_data()
-        )
+        (
+            self.train_data,
+            self.test_data,
+            self.val_data,
+            self.labelled_data,
+            self.unlabelled_data,
+        ) = self.split_data()
 
         # load model
         self._model = self.model(**self.defaults)
@@ -186,24 +196,27 @@ class Model:
         out = None
         for task in self._model.keys():
             if self.model_type in self._sklearn_models:
-                out = self.train_sklearn(rep_path=self.rep_path, task=task, pbar=self.pbar)
+                out = self.train_sklearn(
+                    rep_path=self.rep_path, task=task, pbar=self.pbar
+                )
             elif self.model_type in self._clustering_algs:
                 out = self.cluster(
-                    rep_path=self.rep_path, n_neighbors=n_neighbors, task=task, pbar=self.pbar
+                    rep_path=self.rep_path,
+                    n_neighbors=n_neighbors,
+                    task=task,
+                    pbar=self.pbar,
                 )
-            elif self.model_type in self._pt_models:
-                out = self.train_gp(rep_path=self.rep_path, task=task, pbar=self.pbar)
             else:
                 raise ValueError(
                     f"The training method for '{self.model_type}' models has not been implemented yet"
                 )
-        
+
         self.update_proteins()
 
         self.save_to_csv()
 
         out = {
-            "df": self.out_df,
+            "df": self.train_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
             "y_type": self.library.y_type,
@@ -242,10 +255,14 @@ class Model:
         for i, y_type in enumerate(self.library.y_type):
             if y_type == "class":
                 unlabelled_data = [
-                    prot for prot in proteins if self.library.class_dict[prot.y[i]] == "nan"
+                    prot
+                    for prot in proteins
+                    if self.library.class_dict[prot.y[i]] == "nan"
                 ]
                 labelled_data = [
-                    prot for prot in proteins if self.library.class_dict[prot.y[i]] != "nan"
+                    prot
+                    for prot in proteins
+                    if self.library.class_dict[prot.y[i]] != "nan"
                 ]
             else:
                 labelled_data = proteins
@@ -285,7 +302,8 @@ class Model:
 
                 # split the data into classes
                 class_data = {
-                    c: [prot for prot in labelled_data if prot.y[0] == c] for c in classes
+                    c: [prot for prot in labelled_data if prot.y[0] == c]
+                    for c in classes
                 }
 
                 # split the data into train, test, val
@@ -400,10 +418,12 @@ class Model:
                     if model_type == "rf":
                         model["class"] = RandomForestClassifier()
                     elif model_type == "svm":
-                        model["class"] =  SVC()
+                        model["class"] = SVC()
                     elif model_type == "knn":
                         model["class"] = KNeighborsClassifier()
-                    elif model_type == "ridge":  # Added support for Ridge Classification
+                    elif (
+                        model_type == "ridge"
+                    ):  # Added support for Ridge Classification
                         model["class"] = RidgeClassifier()
                 elif y_type == "num":
                     if model_type == "rf":
@@ -422,19 +442,11 @@ class Model:
                     min_cluster_size=model_params["min_cluster_size"],
                 )
 
-            elif model_type in self._pt_models:
-                if y_type == "class":
-                    if model_type == "gp":
-                        raise ValueError(
-                            f"Model type '{model_type}' has not been implemented yet"
-                        )
-                elif y_type == "num":
-                    if model_type == "gp":
-                        model["num"] = "GP_MODEL"
-  
             else:
-                raise ValueError(f"Model type '{model_type}' has not been implemented yet")
-        
+                raise ValueError(
+                    f"Model type '{model_type}' has not been implemented yet"
+                )
+
         return model
 
     def train_sklearn(self, rep_path, task, pbar=None):
@@ -467,7 +479,9 @@ class Model:
         x_val = torch.stack(val).cpu().numpy()
 
         if self.library.pred_data:
-            self.y_train[task] = np.array([protein.y_pred for protein in self.train_data])
+            self.y_train[task] = np.array(
+                [protein.y_pred for protein in self.train_data]
+            )
             self.y_test[task] = np.array([protein.y_pred for protein in self.test_data])
             self.y_val[task] = np.array([protein.y_pred for protein in self.val_data])
         else:
@@ -476,9 +490,13 @@ class Model:
             self.y_val[task] = np.array([protein.y for protein in self.val_data])
 
         # get indices of numerical data
-        self.num_ind = [i for i, y_type in enumerate(self.library.y_type) if y_type == "num"]
-        self.class_ind = [i for i, y_type in enumerate(self.library.y_type) if y_type == "class"]
-        
+        self.num_ind = [
+            i for i, y_type in enumerate(self.library.y_type) if y_type == "num"
+        ]
+        self.class_ind = [
+            i for i, y_type in enumerate(self.library.y_type) if y_type == "class"
+        ]
+
         # keep y values depending on task
         if task == "num":
             # keep columns with numerical values
@@ -509,8 +527,14 @@ class Model:
             # make predictions
             if task == "num":
                 y_pred = self._model[task].predict(x_test)
-                self.test_r2 = r2_score(self.y_test[task], y_pred, multioutput='raw_values')
-                
+                self.test_r2 = r2_score(
+                    self.y_test[task], y_pred, multioutput="raw_values"
+                )
+            elif task == "class":
+                y_pred = self._model[task].predict(x_test)
+                self.test_acc = accuracy_score(self.y_test[task], y_pred)
+                self.test_kappa = cohen_kappa_score(self.y_test[task], y_pred)
+
             self.y_test_pred[task] = self._model[task].predict(x_test)
             self.y_train_pred[task] = self._model[task].predict(x_train)
 
@@ -518,8 +542,14 @@ class Model:
                 self.y_train_sigma[task] = [None] * len(self.y_train[task])
                 self.y_test_sigma[task] = [None] * len(self.y_test[task])
             else:
-                self.y_train_sigma[task] = [[None for _ in range(self.y_train[task].shape[1])] for _ in range(self.y_train[task].shape[0])]
-                self.y_test_sigma[task] = [[None for _ in range(self.y_test[task].shape[1])] for _ in range(self.y_test[task].shape[0])]
+                self.y_train_sigma[task] = [
+                    [None for _ in range(self.y_train[task].shape[1])]
+                    for _ in range(self.y_train[task].shape[0])
+                ]
+                self.y_test_sigma[task] = [
+                    [None for _ in range(self.y_test[task].shape[1])]
+                    for _ in range(self.y_test[task].shape[0])
+                ]
 
             # conformal prediction and statistics
             if task == "num":
@@ -530,9 +560,15 @@ class Model:
                 test_pearsons = []
                 test_ken_taus = []
                 for idx in range(len(self.num_ind)):
-                    test_pearson = pearsonr(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_pearson = pearsonr(
+                        np.array(self.y_test[task])[:, idx],
+                        np.array(self.y_test_pred[task])[:, idx],
+                    )
                     test_pearsons.append(test_pearson)
-                    test_ken_tau = kendalltau(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_ken_tau = kendalltau(
+                        np.array(self.y_test[task])[:, idx],
+                        np.array(self.y_test_pred[task])[:, idx],
+                    )
                     test_ken_taus.append(test_ken_tau)
                 self.test_pearson = test_pearsons
                 self.test_ken_tau = test_ken_taus
@@ -554,11 +590,17 @@ class Model:
 
                 if task == "num":
                     self.y_best = max(
-                        (max(self.y_train[task]), max(self.y_test[task]), max(self.y_val[task]))
+                        (
+                            max(self.y_train[task]),
+                            max(self.y_test[task]),
+                            max(self.y_val[task]),
+                        )
                     )
             else:
                 if task == "num":
-                    self.y_best = max(np.max(self.y_train[task]), np.max(self.y_test[task]))
+                    self.y_best = max(
+                        np.max(self.y_train[task]), np.max(self.y_test[task])
+                    )
 
         # handle ensembles
         else:
@@ -582,14 +624,16 @@ class Model:
                 )
 
                 self._model[task].fit(x_train_fold, y_train_fold)
-                
+
                 ensemble.append(self._model[task])
 
                 if task == "num":
                     val_r2 = self._model[task].score(x_val_fold, y_val_fold)
                     fold_results.append(val_r2)
                     calibration = self.calibrate(
-                        y_val_fold, self._model[task].predict(x_val_fold), confidence=0.90
+                        y_val_fold,
+                        self._model[task].predict(x_val_fold),
+                        confidence=0.90,
                     )
                     calibrations.append(calibration)
 
@@ -633,9 +677,15 @@ class Model:
                 test_pearsons = []
                 test_ken_taus = []
                 for idx in self.num_ind:
-                    test_pearson = pearsonr(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_pearson = pearsonr(
+                        np.array(self.y_test[task])[:, idx],
+                        np.array(self.y_test_pred[task])[:, idx],
+                    )
                     test_pearsons.append(test_pearson)
-                    test_ken_tau = kendalltau(np.array(self.y_test[task])[:, idx], np.array(self.y_test_pred[task])[:, idx])
+                    test_ken_tau = kendalltau(
+                        np.array(self.y_test[task])[:, idx],
+                        np.array(self.y_test_pred[task])[:, idx],
+                    )
                     test_ken_taus.append(test_ken_tau)
                 self.test_pearson = test_pearsons
                 self.test_ken_tau = test_ken_taus
@@ -657,50 +707,144 @@ class Model:
                     val_pearsons = []
                     val_ken_taus = []
                     for idx in self.num_ind:
-                        val_pearson = pearsonr(np.array(self.y_val[task])[:, idx], np.array(self.y_val_pred[task])[:, idx])
+                        val_pearson = pearsonr(
+                            np.array(self.y_val[task])[:, idx],
+                            np.array(self.y_val_pred[task])[:, idx],
+                        )
                         val_pearsons.append(val_pearson)
-                        val_ken_tau = kendalltau(np.array(self.y_val[task])[:, idx], np.array(self.y_val_pred[task])[:, idx])
+                        val_ken_tau = kendalltau(
+                            np.array(self.y_val[task])[:, idx],
+                            np.array(self.y_val_pred[task])[:, idx],
+                        )
                         val_ken_taus.append(val_ken_tau)
 
                     self.val_pearson = val_pearsons
                     self.val_ken_tau = val_ken_taus
-                
+
                 if task == "num":
                     self.y_best = max(
-                        (np.max(self.y_train[task]), np.max(self.y_test[task]), np.max(self.y_val[task]))
+                        (
+                            np.max(self.y_train[task]),
+                            np.max(self.y_test[task]),
+                            np.max(self.y_val[task]),
+                        )
                     )
-                
+
             else:
                 # TODO: that depends on minimization or maximization goal
                 if task == "num":
-                    self.y_best = max((np.max(self.y_train[task]), np.max(self.y_test[task])))
+                    self.y_best = max(
+                        (np.max(self.y_train[task]), np.max(self.y_test[task]))
+                    )
 
             self.library.y_pred[task] = [prot.y_pred for prot in self.library.proteins]
 
-        print(
-            f"Training completed:\ntest_r2:\t{self.test_r2}\ntest_pearson:\t{self.test_pearson}"
-        )
+        # At the end of training, print appropriate metrics
+        if task == "num":
+            print(
+                f"Training completed:\ntest_r2:\t{self.test_r2}\ntest_pearson:\t{self.test_pearson}"
+            )
+            if self.grid_search:
+                print(f"val_r2:\t{self.val_r2}\nval_pearson:\t{self.val_pearson}")
+        else:
+            print(
+                f"Training completed:\ntest_acc:\t{self.test_acc}\ntest_kappa:\t{self.test_kappa}"
+            )
+            if self.grid_search:
+                print(f"val_acc:\t{self.val_acc}\nval_kappa:\t{self.val_kappa}")
 
     def update_proteins(self):
-        proteins = self.train_data + self.test_data + self.val_data + self.unlabelled_data
-        y_vals = []
-        y_sigmas = []
-        for val in ["num", "class"]:
-            
+        proteins = (
+            self.train_data + self.val_data + self.test_data + self.unlabelled_data
+        )
+        y_types = self.library.y_type
+        y_labels = self.library.y_labels
+
+        # Initialize arrays with correct shapes
+        y_preds = np.zeros((len(proteins), len(y_types)))
+        y_sigmas = np.zeros((len(proteins), len(y_types)))
+
+        # if grid search, add val data to the predictions and sigmas, else y_val has been added to y_train
+        for y_type in set(self.library.y_type):
+            if self.grid_search:
+                y_preds_tmp = np.concatenate(
+                    (
+                        self.y_train_pred[y_type],
+                        self.y_test_pred[y_type],
+                        self.y_val_pred[y_type],
+                    )
+                )
+                y_sigmas_tmp = np.concatenate(
+                    (
+                        self.y_train_sigma[y_type],
+                        self.y_test_sigma[y_type],
+                        self.y_val_sigma[y_type],
+                    )
+                )
+            else:
+                y_preds_tmp = np.concatenate(
+                    (self.y_train_pred[y_type], self.y_test_pred[y_type])
+                )
+                y_sigmas_tmp = np.concatenate(
+                    (self.y_train_sigma[y_type], self.y_test_sigma[y_type])
+                )
+
+            # if unlabelled data exists, add it to the predictions and sigmas
+            if len(self.unlabelled_data) > 0:
+                y_preds_tmp = np.concatenate(
+                    (y_preds_tmp, self.y_unlabelled_pred[y_type])
+                )
+                y_sigmas_tmp = np.concatenate(
+                    (y_sigmas_tmp, self.y_unlabelled_sigma[y_type])
+                )
+
+            # Ensure arrays are 2D
+            if y_preds_tmp.ndim == 1:
+                y_preds_tmp = y_preds_tmp.reshape(-1, 1)
+            if y_sigmas_tmp.ndim == 1:
+                y_sigmas_tmp = y_sigmas_tmp.reshape(-1, 1)
+
+            if y_type == "num":
+                for i, idx in enumerate(self.num_ind):
+                    y_preds[:, idx] = (
+                        y_preds_tmp[:, i]
+                        if y_preds_tmp.ndim > 1
+                        else y_preds_tmp.ravel()
+                    )
+                    y_sigmas[:, idx] = (
+                        y_sigmas_tmp[:, i]
+                        if y_sigmas_tmp.ndim > 1
+                        else y_sigmas_tmp.ravel()
+                    )
+            elif y_type == "class":
+                for i, idx in enumerate(self.class_ind):
+                    y_preds[:, idx] = (
+                        y_preds_tmp[:, i]
+                        if y_preds_tmp.ndim > 1
+                        else y_preds_tmp.ravel()
+                    )
+                    y_sigmas[:, idx] = (
+                        y_sigmas_tmp[:, i]
+                        if y_sigmas_tmp.ndim > 1
+                        else y_sigmas_tmp.ravel()
+                    )
+
+        # Update protein objects
         for i, prot in enumerate(proteins):
             y_pred = [None] * len(self.library.y_type)
             y_sigma = [None] * len(self.library.y_type)
-            for y_type in set(self.library.y_type):
+            for y_col in self.library.y_col:
+                y_type = y_labels[y_col]
                 if y_type == "num":
                     for k in self.num_ind:
-                        y_pred[k] = self.y_test_pred["num"][i][k]
-                        y_sigma[k] = self.y_test_sigma["num"][i][k]
+                        y_pred[k] = y_preds[i][k]
+                        y_sigma[k] = y_sigmas[i][k]
                 elif y_type == "class":
                     for k in self.class_ind:
-                        y_pred[k] = self.y_test_pred["class"][i][k]
-                        y_sigma[k] = self.y_test_sigma["class"][i][k]
-            prot.y_pred = y_pred
-            prot.y_sigma = y_sigma
+                        y_pred[k] = y_preds[i][k]
+                        y_sigma[k] = y_sigmas[i][k]
+                prot.y_pred = y_pred
+                prot.y_sigma = y_sigma
 
     # calibration for conformal predictions
     def calibrate(self, y_cal, y_cal_pred, confidence=0.90):
@@ -740,7 +884,7 @@ class Model:
             y_pred = self.y_test_pred
         if y_true is None:
             y_true = self.y_test
-        
+
         if not isinstance(y_pred, np.ndarray):
             y_pred = np.array(y_pred)
         if not isinstance(y_true, np.ndarray):
@@ -767,15 +911,20 @@ class Model:
 
         if not os.path.exists(csv_dest):
             os.makedirs(csv_dest, exist_ok=True)
-        
-        data_categories = [
-            "train",
-            "test",
-            "val",
-            "labelled",
-            "unlabelled",
-        ]
 
+        data_categories = ["train"]
+
+        if self.grid_search:
+            data_categories.append("val")
+
+        data_categories.extend(
+            [
+                "test",
+                "unlabelled",
+            ]
+        )
+
+        dfs = []
         for dat in data_categories:
             # Prepare data for CSV and DataFrame
             data = {}
@@ -783,23 +932,23 @@ class Model:
 
             for col in self.library.y_col:
                 header.append(f"y_true_{col}")
-            
-            for col in self.library.y_col:
                 header.append(f"y_predicted_{col}")
                 header.append(f"y_sigma_{col}")
-            
+
+            header.append("dataset")
+
             for head in header:
                 data[head] = []
 
             # Create a DataFrame from the collected data
             if dat == "train":
                 proteins = self.train_data
-            elif dat == "test":
-                proteins = self.test_data
+                if self.grid_search:
+                    proteins = proteins + self.val_data
             elif dat == "val":
                 proteins = self.val_data
-            elif dat == "labelled":
-                proteins = self.labelled_data
+            elif dat == "test":
+                proteins = self.test_data
             elif dat == "unlabelled":
                 proteins = self.unlabelled_data
 
@@ -810,17 +959,23 @@ class Model:
                 y_pred = prot.y_pred
                 y_sigma = prot.y_sigma
                 for i, col in enumerate(self.library.y_col):
-                    data["name"].append(name)
-                    data["sequence"].append(seq)
                     data[f"y_true_{col}"].append(y_true[i])
                     data[f"y_predicted_{col}"].append(y_pred[i])
                     data[f"y_sigma_{col}"].append(y_sigma[i])
-            
+
+                data["name"].append(name)
+                data["sequence"].append(seq)
+                data["dataset"].append(dat)
+
             df = pd.DataFrame(data)
+            dfs.append(df)
 
-        return df
+        self.train_df = pd.concat(dfs)
+        return self.train_df
 
-    def predict(self, proteins, task=None, rep_path=None, acq_fn="greedy", batch_size=10000):
+    def predict(
+        self, proteins, task=None, rep_path=None, acq_fn="greedy", batch_size=10000
+    ):
         """
         Makes predictions using the trained model, either for a list of proteins, sequence(s), or a Library object.
 
@@ -850,6 +1005,7 @@ class Model:
         elif acq_fn == "random":
             acq = BO.random_acquisition
 
+        # Initialize as lists to collect predictions
         all_y_pred = []
         all_sigma_pred = []
         all_acq_scores = []
@@ -906,32 +1062,33 @@ class Model:
 
         # compute number of total variables
         n_vars = len(self.num_ind) + len(self.class_ind)
-        
+
         # handle different tasks
         pred_dfs = {}
         for task in tasks:
+            batch_predictions = []
+            batch_sigmas = []
+            batch_acq_scores = []
+
             for i in range(0, len(proteins), batch_size):
                 batch_proteins = proteins[i : i + batch_size]
                 batch_reps = self.load_representations(batch_proteins, rep_path)
 
-                if len(batch_reps[0].shape) == 2:
-                    batch_reps = [x.view(-1) for x in batch_reps]
+                # Handle if batch_reps is already a tensor
+                if isinstance(batch_reps, torch.Tensor):
+                    x = batch_reps.cpu().numpy()
+                else:
+                    # Stack if it's a list of tensors
+                    x = torch.stack(batch_reps).cpu().numpy()
 
-                
-                # GP
-                if self.model_type == "gp":
-                    self.likelihood.eval()
-                    x = torch.stack(batch_reps).to(device=self.device)
-                    y_pred, sigma_pred = predict_gp(self._model, self.likelihood, x)
-                    y_pred = y_pred.cpu().numpy()
-                    sigma_pred = sigma_pred.cpu().numpy()
-                    acq_score = acq(y_pred, sigma_pred, self.y_best)
+                # Ensure x is 2D
+                if len(x.shape) == 3:  # If 3D tensor
+                    x = x.reshape(x.shape[0], -1)  # Flatten to 2D
 
                 # Handle ensembles
-                elif isinstance(self._model[task], list):
+                if isinstance(self._model[task], list):
                     ys = []
                     for model in self._model[task]:
-                        x = torch.stack(batch_reps).cpu().numpy()
                         y_pred = model.predict(x)
                         ys.append(y_pred)
 
@@ -942,18 +1099,18 @@ class Model:
 
                 # Handle single model
                 else:
-                    x = torch.stack(batch_reps).cpu().numpy()
                     y_pred = self._model[task].predict(x)
                     sigma_pred = np.zeros_like(y_pred)
                     acq_score = acq(y_pred, sigma_pred, self.y_best)
 
-                all_y_pred.extend(y_pred)
-                all_sigma_pred.extend(sigma_pred)
-                all_acq_scores.extend(acq_score)
+                batch_predictions.append(y_pred)
+                batch_sigmas.append(sigma_pred)
+                batch_acq_scores.append(acq_score)
 
-            all_y_pred = np.array(all_y_pred)
-            all_sigma_pred = np.array(all_sigma_pred)
-            all_acq_scores = np.array(all_acq_scores)
+            # Concatenate all batches
+            all_y_pred = np.concatenate(batch_predictions)
+            all_sigma_pred = np.concatenate(batch_sigmas)
+            all_acq_scores = np.concatenate(batch_acq_scores)
 
             # compute average acq_scores
             if len(acq_score.shape) > 1:
@@ -981,59 +1138,143 @@ class Model:
                     prot.y_pred = [None] * n_vars
                     prot.y_sigma = [None] * n_vars
                     prot.acq_score = [None] * n_vars
-                if task == "num":
-                    for idx, val in zip(self.num_ind, y_val_pred[i]):  # Place numerical predictions
-                        prot.y_pred[idx] = val
-                    for idx, sigma_val in zip(self.num_ind, y_val_sigma[i]):  # Place numerical uncertainty
-                        prot.y_sigma[idx] = sigma_val
-                    for idx, acq_val in zip(self.num_ind, sorted_acq_score[i]):
-                        prot.acq_score[idx] = acq_val
 
-                elif task == "class": 
-                    for idx, val in zip(self.class_ind, y_val_pred[i]):  # Place categorical predictions
-                        prot.y_pred[idx] = val
-                    for idx, sigma_val in zip(self.class_ind, y_val_sigma[i]):  # Place categorical uncertainty
-                        prot.y_sigma[idx] = sigma_val
-                    for idx, acq_val in zip(self.class_ind, sorted_acq_score[i]):
-                        prot.acq_score[idx] = acq_val
-                #prot.y_pred = y_val_pred[i]
-                #prot.y_sigma = y_val_sigma[i]
+                if task == "num":
+                    # Handle single output case
+                    if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
+                        for idx in self.num_ind:
+                            prot.y_pred[idx] = y_val_pred[i]
+                            prot.y_sigma[idx] = y_val_sigma[i]
+                            prot.acq_score[idx] = sorted_acq_score[i]
+                    # Handle multiple output case
+                    else:
+                        for idx, val in zip(self.num_ind, y_val_pred[i]):
+                            prot.y_pred[idx] = val
+                        for idx, sigma_val in zip(self.num_ind, y_val_sigma[i]):
+                            prot.y_sigma[idx] = sigma_val
+                        for idx, acq_val in zip(self.num_ind, sorted_acq_score[i]):
+                            prot.acq_score[idx] = acq_val
+
+                elif task == "class":
+                    # Handle single output case
+                    if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
+                        for idx in self.class_ind:
+                            prot.y_pred[idx] = y_val_pred[i]
+                            prot.y_sigma[idx] = y_val_sigma[i]
+                            prot.acq_score[idx] = sorted_acq_score[i]
+                    # Handle multiple output case
+                    else:
+                        for idx, val in zip(self.class_ind, y_val_pred[i]):
+                            prot.y_pred[idx] = val
+                        for idx, sigma_val in zip(self.class_ind, y_val_sigma[i]):
+                            prot.y_sigma[idx] = sigma_val
+                        for idx, acq_val in zip(self.class_ind, sorted_acq_score[i]):
+                            prot.acq_score[idx] = acq_val
 
             # Prediction dataframe
-            pred_df = pd.DataFrame(
-                {
-                    "name": [prot.name for prot in pred_proteins],
-                    "sequence": [prot.seq for prot in pred_proteins],
-                    "y_true": y_val,
-                    "y_predicted": y_val_pred,
-                    "y_sigma": y_val_sigma,
-                    "acq_score": sorted_acq_score,
-                    "acq_average": avg_acq_score,
-                }
-            )
+            # Create column names for each objective
+            y_true_cols = []
+            y_pred_cols = []
+            y_sigma_cols = []
+            acq_cols = []
+            for i, col_name in enumerate(self.library.y_col):
+                y_true_cols.append(f"y_true_{col_name}")
+                y_pred_cols.append(f"y_predicted_{col_name}")
+                y_sigma_cols.append(f"y_sigma_{col_name}")
+                acq_cols.append(f"acq_score_{col_name}")
 
+            # Prediction dataframe with multi-objective columns
+            data = {
+                "name": [prot.name for prot in pred_proteins],
+                "sequence": [prot.seq for prot in pred_proteins],
+            }
+
+            # Add columns for each objective
+            for i, col_name in enumerate(self.library.y_col):
+                # Extract the i-th component of each y value if it exists
+                data[f"y_true_{col_name}"] = [
+                    y[i] if y and i < len(y) else None for y in y_val
+                ]
+
+                # Handle predictions based on shape
+                if isinstance(y_val_pred[0], (list, np.ndarray)):
+                    data[f"y_predicted_{col_name}"] = [
+                        y[i] if i < len(y) else None for y in y_val_pred
+                    ]
+                    data[f"y_sigma_{col_name}"] = [
+                        s[i] if i < len(s) else None for s in y_val_sigma
+                    ]
+                    data[f"acq_score_{col_name}"] = [
+                        a[i] if i < len(a) else None for a in sorted_acq_score
+                    ]
+                else:
+                    # Handle single output case
+                    data[f"y_predicted_{col_name}"] = y_val_pred
+                    data[f"y_sigma_{col_name}"] = y_val_sigma
+                    data[f"acq_score_{col_name}"] = sorted_acq_score
+
+            # Add average acquisition score
+            data["acq_average"] = avg_acq_score
+
+            pred_df = pd.DataFrame(data)
             pred_dfs[task] = pred_df
 
-        # TODO: This may need to be changed
+        # Create a single consolidated DataFrame
+        data = {
+            "name": [prot.name for prot in proteins],
+            "sequence": [prot.seq for prot in proteins],
+        }
+
+        # Add columns for each objective based on task type
+        for i, col_name in enumerate(self.library.y_col):
+            # Add true values
+            data[f"y_true_{col_name}"] = [
+                prot.y[i] if prot.y and i < len(prot.y) else None for prot in proteins
+            ]
+
+            # Determine task type for this column
+            is_numeric = i in self.num_ind
+            task_type = "num" if is_numeric else "class"
+
+            # Get predictions from appropriate task
+            if task_type in pred_dfs:
+                task_df = pred_dfs[task_type]
+                data[f"y_predicted_{col_name}"] = task_df[f"y_predicted_{col_name}"]
+                data[f"y_sigma_{col_name}"] = task_df[f"y_sigma_{col_name}"]
+                data[f"acq_score_{col_name}"] = task_df[f"acq_score_{col_name}"]
+            else:
+                # If no predictions for this task, fill with None
+                data[f"y_predicted_{col_name}"] = [None] * len(proteins)
+                data[f"y_sigma_{col_name}"] = [None] * len(proteins)
+                data[f"acq_score_{col_name}"] = [None] * len(proteins)
+
+        # Add average acquisition score if it exists
+        if "num" in pred_dfs:
+            data["acq_average"] = pred_dfs["num"]["acq_average"]
+        elif "class" in pred_dfs:
+            data["acq_average"] = pred_dfs["class"]["acq_average"]
+        else:
+            data["acq_average"] = [None] * len(proteins)
+
+        # Create final consolidated DataFrame
+        final_df = pd.DataFrame(data)
+
+        # Update output dictionary with consolidated DataFrame
         out = {
-            "df": pred_dfs,
+            "df": final_df,  # Single DataFrame instead of pred_dfs dictionary
             "rep_path": pred_rep_path,
             "struc_path": self.library.struc_path,
             "y_type": self.library.y_type,
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
             "seqs_col": "sequence",
-            "acq_col": "acq_score",
+            "y_col": [f"y_true_{col}" for col in self.library.y_col],
+            "y_pred_col": [f"y_predicted_{col}" for col in self.library.y_col],
+            "y_sigma_col": [f"y_sigma_{col}" for col in self.library.y_col],
+            "acq_col": [f"acq_score_{col}" for col in self.library.y_col],
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
             "dr_df": None,
-            "pred_proteins": pred_proteins,
-            "y_pred": y_val_pred,
-            "y_sigma": y_val_sigma,
-            "y_true": y_val,
-            "acq_score": sorted_acq_score,
+            "pred_proteins": proteins,
         }
 
         return out
@@ -1065,8 +1306,8 @@ class Model:
         # get the y values of the numerical indices
         y = [protein.y for protein in proteins]
         y = np.array(y)
-        y_num = y[:,self.num_ind]
-        y_class = y[:,self.num_ind]
+        y_num = y[:, self.num_ind]
+        y_class = y[:, self.num_ind]
 
         # predictions for num and reg
         scores = {}
@@ -1236,19 +1477,20 @@ class Model:
         if not os.path.exists(csv_dest):
             os.makedirs(csv_dest, exist_ok=True)
 
-        # create out dataframe
-        # out_df = self.save_to_csv(
-        #     self.library.proteins,
-        #     y_trues,
-        #     labels,
-        #     [None] * len(self.library.proteins),
-        #     f"{csv_dest}/clustering.csv",
-        # )
+        out_df = pd.DataFrame(
+            {
+                "name": [protein.name for protein in self.library.proteins],
+                "sequence": [protein.seq for protein in self.library.proteins],
+                "y_true": y_trues,
+                "y_predicted": labels,
+                "y_sigma": [None] * len(self.library.proteins),
+            }
+        )
 
-        self.out_df[task] = out_df
+        self.cluster_df = out_df
 
         out = {
-            "df": self.out_df,
+            "df": self.cluster_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
             "y_type": self.library.y_type,
@@ -1276,11 +1518,14 @@ class Model:
         pbar=None,
         acq_fn="ei",
         overwrite=True,
-        y_type="num"
+        y_type="num",
     ):
         """Search for new mutants or select variants from a set of sequences"""
 
-        warnings.warn("The 'search' method is depreciated, please use 'mlde' or 'discovery' instead.", DeprecationWarning)
+        warnings.warn(
+            "The 'search' method is depreciated, please use 'mlde' or 'discovery' instead.",
+            DeprecationWarning,
+        )
 
         y_type = y_type
 
@@ -1353,7 +1598,7 @@ class Model:
 
         selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
 
-        # Map selected_indices back to full_protein list using full_indices<
+        # Map selected_indices back to full_protein list using full_indices
         full_selected_indices = [full_indices[i] for i in selected_indices]
 
         # Create a mask for the full protein list
@@ -1361,24 +1606,6 @@ class Model:
 
         # Set the selected indices in the full list to 1
         mask[full_selected_indices] = 1
-
-        # Select the proteins based on the full_selected_indices
-        selected_proteins = [full_proteins[i] for i in full_selected_indices]
-        ys = [prot.y for prot in selected_proteins]
-        y_pred = [prot.y_pred for prot in selected_proteins]
-        y_sigma = [prot.y_sigma for prot in selected_proteins]
-
-        # Save the search results
-        if self.dest is not None:
-            csv_dest = self.dest
-        else:
-            csv_dest = os.path.join(
-                f"{self.library.rep_path}", f"../models/{self.model_type}/{self.rep}"
-            )
-
-        # self.search_df = self.save_to_csv(
-        #     selected_proteins, ys, y_pred, y_sigma, f"{csv_dest}/search_results.csv"
-        # )
 
         out = {
             "df": self.search_df,
@@ -1401,7 +1628,7 @@ class Model:
     def mlde(
         self,
         optim_problem="max",
-        optim_mask = None,
+        optim_mask=None,
         method="ga",
         max_eval=10000,
         explore=0.1,
@@ -1448,12 +1675,16 @@ class Model:
         for i, opt in enumerate(optim_mask):
             n = num_ind[i]
             if opt == 1:
-                seqs = [prot.seq for prot in self.library.proteins if prot.y[n] > mean_y[i]]
+                seqs = [
+                    prot.seq for prot in self.library.proteins if prot.y[n] > mean_y[i]
+                ]
                 improved_seqs.extend(seqs)
             elif opt == -1:
-                seqs = [prot.seq for prot in self.library.proteins if prot.y[n] < mean_y[i]]
+                seqs = [
+                    prot.seq for prot in self.library.proteins if prot.y[n] < mean_y[i]
+                ]
                 improved_seqs.extend(seqs)
-        
+
         # reomve duplicates
         improved_seqs = list(set(improved_seqs))
 
@@ -1497,10 +1728,6 @@ class Model:
             )
             os.makedirs(csv_dest, exist_ok=True)
 
-        csv_file = os.path.join(
-            csv_dest, f"{self.model_type}_{self.rep}_predictions.csv"
-        )
-
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.rep}.csv"
 
@@ -1513,16 +1740,27 @@ class Model:
             self.library.proteins, mutations, explore=explore, max_eval=max_eval
         )
 
+        # Create column names for each objective
+        y_true_cols = []
+        y_pred_cols = []
+        y_sigma_cols = []
+        acq_cols = []
+        for i, col_name in enumerate(self.library.y_col):
+            y_true_cols.append(f"y_true_{col_name}")
+            y_pred_cols.append(f"y_predicted_{col_name}")
+            y_sigma_cols.append(f"y_sigma_{col_name}")
+            acq_cols.append(f"acq_score_{col_name}")
+
         out = {
             "df": mutant_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
             "y_type": self.library.y_type,
             "seqs_col": "sequence",
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
-            "acq_col": "acq_score",
+            "y_col": y_true_cols,
+            "y_pred_col": y_pred_cols,
+            "y_sigma_col": y_sigma_cols,
+            "acq_col": acq_cols,
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
@@ -1535,17 +1773,12 @@ class Model:
             library.compute(method=self.rep, pbar=pbar, batch_size=batch_size)
 
         predictions = self.predict(library.proteins, rep_path=library.rep_path)
-        val_data = predictions["pred_proteins"]
-        y_pred = predictions["y_pred"]
-        y_sigma = predictions["y_sigma"]
-        y_val = predictions["y_true"]
-        acq_score = predictions["acq_score"]
 
-        # self.search_df = self.save_to_csv(
-        #     val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score
-        # )
+        # save the csv
+        self.mlde_df = predictions["df"]
+        self.mlde_df.to_csv(fname, index=False)
 
-        return self.search_df
+        return self.mlde_df
 
     def _mutate(self, proteins, mutations, explore=0.1, max_eval=100):
         """
@@ -1562,14 +1795,21 @@ class Model:
         Returns:
             pandas dataframe
         """
+        # Get number of objectives from library
+        n_objectives = (
+            len(self.library.y_col)
+            if hasattr(self.library, "y_col")
+            else len(self.library.y_type)
+        )
 
-        if self.search_df is not None and not self.search_df.empty:
-            mutated_seqs = self.search_df.sequence.to_list()
-            mutated_names = self.search_df.name.to_list()
-            y_trues = [None] * len(mutated_seqs)
-            y_preds = self.search_df.y_predicted.to_list()
-            y_sigmas = self.search_df.y_sigma.to_list()
-            acq_scores = self.search_df.acq_score.to_list()
+        if self.mlde_df is not None and not self.mlde_df.empty:
+            mutated_seqs = self.mlde_df.sequence.to_list()
+            mutated_names = self.mlde_df.name.to_list()
+            # Create lists of None values for each objective
+            y_trues = [[None] * n_objectives for _ in range(len(mutated_seqs))]
+            y_preds = self.mlde_df.y_predicted.to_list()
+            y_sigmas = self.mlde_df.y_sigma.to_list()
+            acq_scores = self.mlde_df.acq_score.to_list()
 
         else:
             mutated_seqs = []
@@ -1611,21 +1851,26 @@ class Model:
                 mutated_seq = "".join(seq_list)
                 mutated_seqs.append(mutated_seq)
                 mutated_names.append(mutated_name)
-                y_trues.append(None)
-                y_preds.append(None)
-                y_sigmas.append(None)
-                acq_scores.append(None)
+                # Add placeholder values for each objective
+                y_trues.append([None] * n_objectives)
+                y_preds.append([None] * n_objectives)
+                y_sigmas.append([None] * n_objectives)
+                acq_scores.append([None] * n_objectives)
 
-        out_df = pd.DataFrame(
-            {
-                "name": mutated_names,
-                "sequence": mutated_seqs,
-                "y_true": y_trues,
-                "y_predicted": y_preds,
-                "y_sigma": y_sigmas,
-                "acq_score": acq_scores,
-            }
-        )
+        # Create DataFrame with columns for each objective
+        data = {
+            "name": mutated_names,
+            "sequence": mutated_seqs,
+        }
+
+        # Add columns for each objective using library column names
+        for i, col_name in enumerate(self.library.y_col):
+            data[f"y_true_{col_name}"] = [y[i] if y else None for y in y_trues]
+            data[f"y_predicted_{col_name}"] = [y[i] if y else None for y in y_preds]
+            data[f"y_sigma_{col_name}"] = [y[i] if y else None for y in y_sigmas]
+            data[f"acq_score_{col_name}"] = [y[i] if y else None for y in acq_scores]
+
+        out_df = pd.DataFrame(data)
 
         return out_df
 
