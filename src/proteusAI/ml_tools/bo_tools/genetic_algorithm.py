@@ -37,6 +37,7 @@ def diversity_score_incremental(
 
 def simulated_annealing(
     vectors,
+    classes,
     N,
     initial_temperature=1000.0,
     cooling_rate=0.003,
@@ -44,10 +45,11 @@ def simulated_annealing(
     pbar=None,
 ):
     """
-    Simulated Annealing to select N vectors that maximize diversity.
+    Simulated Annealing to select N vectors that maximize diversity and ensure class balance.
 
     Args:
         vectors (list): List of numpy arrays.
+        classes (list): List of class labels corresponding to each vector.
         N (int): Number of sequences that should be sampled.
         initial_temperature (float): Initial temperature of the simulated annealing algorithm. Default 1000.0.
         cooling_rate (float): Cooling rate of the simulated annealing algorithm. Default 0.003.
@@ -56,15 +58,34 @@ def simulated_annealing(
     Returns:
         list: Indices of diverse vectors.
     """
-
     if pbar:
         pbar.set(message="Computing distance matrix", detail="...")
 
     # Precompute all pairwise distances
     distance_matrix = precompute_distances(vectors)
 
-    # Randomly initialize the selection of N vectors
-    selected_indices = random.sample(range(len(vectors)), N)
+    # Ensure each class is represented at least once
+    class_indices = {cls: [] for cls in set(classes)}
+    for idx, cls in enumerate(classes):
+        class_indices[cls].append(idx)
+
+    # Calculate the number of samples per class
+    num_classes = len(class_indices)
+    samples_per_class = max(1, N // num_classes)
+    remaining_samples = N - samples_per_class * num_classes
+
+    # Randomly initialize the selection of N vectors ensuring class balance
+    selected_indices = []
+    for cls, indices in class_indices.items():
+        if len(indices) >= samples_per_class:
+            selected_indices.extend(random.sample(indices, samples_per_class))
+        else:
+            selected_indices.extend(indices)
+
+    # Distribute remaining samples
+    remaining_indices = [i for i in range(len(vectors)) if i not in selected_indices]
+    selected_indices.extend(random.sample(remaining_indices, remaining_samples))
+
     current_score = sum(
         distance_matrix[i, j]
         for i in selected_indices
@@ -77,15 +98,22 @@ def simulated_annealing(
     best_selection = selected_indices[:]
 
     for iteration in range(max_iterations):
-
         if pbar:
             pbar.set(iteration, message="Minimizing energy", detail="...")
 
-        # Randomly select a vector to swap
-        idx_out = random.choice(selected_indices)
-        idx_in = random.choice(
-            [i for i in range(len(vectors)) if i not in selected_indices]
-        )
+        # Randomly select a class to swap within
+        cls = random.choice(list(class_indices.keys()))
+        class_selected_indices = [i for i in selected_indices if classes[i] == cls]
+        class_remaining_indices = [
+            i for i in class_indices[cls] if i not in selected_indices
+        ]
+
+        if not class_remaining_indices:
+            continue
+
+        # Randomly select a vector to swap within the class
+        idx_out = random.choice(class_selected_indices)
+        idx_in = random.choice(class_remaining_indices)
 
         # Incrementally update the diversity score
         new_score = diversity_score_incremental(
@@ -106,10 +134,6 @@ def simulated_annealing(
 
         # Cool down the temperature
         temperature *= 1 - cooling_rate
-
-        # Early stopping if the temperature is low enough
-        # if temperature < 1e-8:
-        #    break
 
     return best_selection, best_score
 

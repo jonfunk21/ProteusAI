@@ -35,8 +35,8 @@ y_types = ["num"] * len(num_cols) + ["class"] * len(class_cols)
 library = pai.Library(
     source=dataset,
     seqs_col="sequence",
-    y_col=num_cols + class_cols,
-    y_type=y_types,
+    y_cols=num_cols + class_cols,
+    y_types=y_types,
     names_col="description",
 )
 

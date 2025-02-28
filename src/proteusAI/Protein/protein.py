@@ -67,6 +67,7 @@ class Protein:
         y_sigma=[],
         acq_score=[],
         y_labels={},
+        y_types=[],
         class_dicts=[],
         source: Union[str, None] = None,
         fname: Union[str, None] = None,
@@ -88,6 +89,7 @@ class Protein:
             y_sigma (float, int, str): Predicted y_values.
             acq_score (float): acquisition scores.
             y_labels (dict): Labels for the y_values as keys and data type ('num' or 'class') as values.
+            y_types (list): List of data types for the y_values.
             class_dicts (list): List of dictionaries of class labels.
             source (str, or data): Source of data, either a file or a data package created from a diversification step.
             fname (str): Only relevant for the app - provides the real file name instead of temporary file name from shiny.
@@ -114,6 +116,8 @@ class Protein:
         self.rep_path = rep_path
 
         # Parameters
+        self.y_labels = y_labels
+        self.y_types = y_types
         self.pdb_file = None
         self.fasta_file = None
         self.reps = []
@@ -124,6 +128,15 @@ class Protein:
         self.zs_path = None
         self.class_dict = None
         self.seq_hash = hash_sequence(seq)
+
+        # add num and class index
+        self.num_ind = []
+        self.class_ind = []
+        for i, y_type in enumerate(y_labels.values()):
+            if y_type == "num":
+                self.num_ind.append(i)
+            elif y_type == "class":
+                self.class_ind.append(i)
 
         # Create user if user does not exist
         if not os.path.exists(self.user):

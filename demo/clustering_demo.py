@@ -18,8 +18,8 @@ results_dictionary = {}
 library = pai.Library(
     source=dataset,
     seqs_col="sequence",
-    y_col=y_column,
-    y_type="class",
+    y_cols=y_column,
+    y_types="class",
     names_col="uid",
 )
 
@@ -27,7 +27,7 @@ library = pai.Library(
 library.compute(method="esm2_8M", batch_size=10)
 
 # dimensionality reduction
-dr_method = "tsne"
+dr_method = "pca"
 
 # random seed
 seed = 42
@@ -48,7 +48,7 @@ model = pai.Model(
 model.train()
 
 # search predict the classes of unknown sequences
-out = model.search()
+out = model.discovery(y_col="cluster")
 search_mask = out["mask"]
 
 # save results
@@ -59,12 +59,15 @@ out["df"].to_csv("demo/demo_data/out/clustering_search_results.csv")
 
 model_lib = pai.Library(source=out)
 
-# plot results
-fig, ax, plot_df = model.library.plot(
+# plot results using the new plot_all function
+plot_objects = model.library.plot_all(
     rep="esm2_8M",
-    method=dr_method,
+    methods=["pca"],
+    y_labels=["cluster"],
     use_y_pred=True,
     highlight_mask=search_mask,
     seed=seed,
 )
-plt.savefig(f"demo/demo_data/out/clustering_results_{dr_method}.png")
+
+# save plot
+plt.savefig("demo/demo_data/out/clustering_results.png")

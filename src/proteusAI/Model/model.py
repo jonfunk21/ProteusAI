@@ -145,11 +145,19 @@ class Model:
         self.cluster_df = None
         self.discovery_df = None
 
+        # Initialize indices for numerical and classification tasks
+        self.num_ind = []
+        self.class_ind = []
+
         # check for device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
+
+        # Update indices if library is provided
+        if hasattr(self, "library") and self.library is not None:
+            self._update_indices()
 
     ### args
     def _set_attributes(self, **kwargs):
@@ -203,7 +211,6 @@ class Model:
                 out = self.cluster(
                     rep_path=self.rep_path,
                     n_neighbors=n_neighbors,
-                    task=task,
                     pbar=self.pbar,
                 )
             else:
@@ -211,7 +218,8 @@ class Model:
                     f"The training method for '{self.model_type}' models has not been implemented yet"
                 )
 
-        self.update_proteins()
+        if task != "cluster":
+            self.update_proteins()
 
         self.save_to_csv()
 
@@ -219,15 +227,14 @@ class Model:
             "df": self.train_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
-            "y_col": "y_true",
+            "y_types": self.library.y_types,
+            "y_cols": "y_true",
             "y_pred_col": "y_predicted",
             "y_sigma_col": "y_sigma",
             "seqs_col": "sequence",
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
-            "dr_df": None,
         }
 
         return out
@@ -247,26 +254,25 @@ class Model:
         Returns:
             tuple: returns three lists of train, test, and validation proteins.
         """
-
         proteins = self.library.proteins
 
-        # split class data into labelled and unlabelled data - NOTE: This will not work if multiple class columns are given...
-        # TODO for multi class columns consider having the classification of unlabeled data based on the availability of labels across all classes
-        for i, y_type in enumerate(self.library.y_type):
-            if y_type == "class":
-                unlabelled_data = [
-                    prot
-                    for prot in proteins
-                    if self.library.class_dict[prot.y[i]] == "nan"
-                ]
-                labelled_data = [
-                    prot
-                    for prot in proteins
-                    if self.library.class_dict[prot.y[i]] != "nan"
-                ]
+        # Handle labelled/unlabelled split - a protein is unlabelled only if all y_values are empty
+        unlabelled_data = []
+        labelled_data = []
+
+        for prot in proteins:
+            # Check if all y values are empty
+            all_empty = True
+            for y_val in prot.y:
+                # Check for various types of empty values
+                if y_val is not None and y_val != "" and not pd.isna(y_val):
+                    all_empty = False
+                    break
+
+            if all_empty:
+                unlabelled_data.append(prot)
             else:
-                labelled_data = proteins
-                unlabelled_data = []
+                labelled_data.append(prot)
 
         if self.seed:
             random.seed(self.seed)
@@ -295,7 +301,7 @@ class Model:
 
         # use stratified split that works for both regression and classification
         elif self.split == "smart":
-            y_type = self.library.y_type[0]
+            y_type = self.library.y_types[0]
             if y_type == "class":
                 # get the unique classes
                 classes = list(set([prot.y[0] for prot in labelled_data]))
@@ -411,7 +417,7 @@ class Model:
         model_type = self.model_type
         model = {}
 
-        for y_type in set(self.library.y_type):
+        for y_type in set(self.library.y_types):
             if model_type in self._sklearn_models:
                 # model_params = kwargs.copy() # optional to add custom parameters
                 if y_type == "class":
@@ -491,10 +497,10 @@ class Model:
 
         # get indices of numerical data
         self.num_ind = [
-            i for i, y_type in enumerate(self.library.y_type) if y_type == "num"
+            i for i, y_type in enumerate(self.library.y_types) if y_type == "num"
         ]
         self.class_ind = [
-            i for i, y_type in enumerate(self.library.y_type) if y_type == "class"
+            i for i, y_type in enumerate(self.library.y_types) if y_type == "class"
         ]
 
         # keep y values depending on task
@@ -535,7 +541,7 @@ class Model:
                 self.test_acc = accuracy_score(self.y_test[task], y_pred)
                 self.test_kappa = cohen_kappa_score(self.y_test[task], y_pred)
 
-            self.y_test_pred[task] = self._model[task].predict(x_test)
+            self.y_test_pred[task] = y_pred
             self.y_train_pred[task] = self._model[task].predict(x_train)
 
             if len(self.y_test_pred[task].shape) == 1:
@@ -754,48 +760,52 @@ class Model:
                 print(f"val_acc:\t{self.val_acc}\nval_kappa:\t{self.val_kappa}")
 
     def update_proteins(self):
+        """
+        Updates protein objects with predictions and uncertainties from the trained model.
+        Handles both clustering and regular model predictions.
+        """
         proteins = (
             self.train_data + self.val_data + self.test_data + self.unlabelled_data
         )
-        y_types = self.library.y_type
+        y_types = self.library.y_types
         y_labels = self.library.y_labels
 
         # Initialize arrays with correct shapes
         y_preds = np.zeros((len(proteins), len(y_types)))
         y_sigmas = np.zeros((len(proteins), len(y_types)))
 
-        # if grid search, add val data to the predictions and sigmas, else y_val has been added to y_train
-        for y_type in set(self.library.y_type):
+        # Handle different model types
+        for task in self._model.keys():
             if self.grid_search:
                 y_preds_tmp = np.concatenate(
                     (
-                        self.y_train_pred[y_type],
-                        self.y_test_pred[y_type],
-                        self.y_val_pred[y_type],
+                        self.y_train_pred[task],
+                        self.y_test_pred[task],
+                        self.y_val_pred[task],
                     )
                 )
                 y_sigmas_tmp = np.concatenate(
                     (
-                        self.y_train_sigma[y_type],
-                        self.y_test_sigma[y_type],
-                        self.y_val_sigma[y_type],
+                        self.y_train_sigma[task],
+                        self.y_test_sigma[task],
+                        self.y_val_sigma[task],
                     )
                 )
             else:
                 y_preds_tmp = np.concatenate(
-                    (self.y_train_pred[y_type], self.y_test_pred[y_type])
+                    (self.y_train_pred[task], self.y_test_pred[task])
                 )
                 y_sigmas_tmp = np.concatenate(
-                    (self.y_train_sigma[y_type], self.y_test_sigma[y_type])
+                    (self.y_train_sigma[task], self.y_test_sigma[task])
                 )
 
             # if unlabelled data exists, add it to the predictions and sigmas
             if len(self.unlabelled_data) > 0:
                 y_preds_tmp = np.concatenate(
-                    (y_preds_tmp, self.y_unlabelled_pred[y_type])
+                    (y_preds_tmp, self.y_unlabelled_pred[task])
                 )
                 y_sigmas_tmp = np.concatenate(
-                    (y_sigmas_tmp, self.y_unlabelled_sigma[y_type])
+                    (y_sigmas_tmp, self.y_unlabelled_sigma[task])
                 )
 
             # Ensure arrays are 2D
@@ -804,7 +814,7 @@ class Model:
             if y_sigmas_tmp.ndim == 1:
                 y_sigmas_tmp = y_sigmas_tmp.reshape(-1, 1)
 
-            if y_type == "num":
+            if task == "num":
                 for i, idx in enumerate(self.num_ind):
                     y_preds[:, idx] = (
                         y_preds_tmp[:, i]
@@ -816,7 +826,7 @@ class Model:
                         if y_sigmas_tmp.ndim > 1
                         else y_sigmas_tmp.ravel()
                     )
-            elif y_type == "class":
+            elif task == "class":
                 for i, idx in enumerate(self.class_ind):
                     y_preds[:, idx] = (
                         y_preds_tmp[:, i]
@@ -831,10 +841,10 @@ class Model:
 
         # Update protein objects
         for i, prot in enumerate(proteins):
-            y_pred = [None] * len(self.library.y_type)
-            y_sigma = [None] * len(self.library.y_type)
-            for y_col in self.library.y_col:
-                y_type = y_labels[y_col]
+            y_pred = [None] * len(self.library.y_types)
+            y_sigma = [None] * len(self.library.y_types)
+            for y_cols in self.library.y_cols:
+                y_type = y_labels[y_cols]
                 if y_type == "num":
                     for k in self.num_ind:
                         y_pred[k] = y_preds[i][k]
@@ -843,6 +853,10 @@ class Model:
                     for k in self.class_ind:
                         y_pred[k] = y_preds[i][k]
                         y_sigma[k] = y_sigmas[i][k]
+                elif "cluster" in self._model:
+                    # For clustering, assign the same cluster label to all objectives
+                    y_pred = [y_preds[i][0]] * len(self.library.y_types)
+                    y_sigma = [y_sigmas[i][0]] * len(self.library.y_types)
                 prot.y_pred = y_pred
                 prot.y_sigma = y_sigma
 
@@ -930,7 +944,7 @@ class Model:
             data = {}
             header = ["name", "sequence"]
 
-            for col in self.library.y_col:
+            for col in self.library.y_cols:
                 header.append(f"y_true_{col}")
                 header.append(f"y_predicted_{col}")
                 header.append(f"y_sigma_{col}")
@@ -958,7 +972,7 @@ class Model:
                 y_true = prot.y
                 y_pred = prot.y_pred
                 y_sigma = prot.y_sigma
-                for i, col in enumerate(self.library.y_col):
+                for i, col in enumerate(self.library.y_cols):
                     data[f"y_true_{col}"].append(y_true[i])
                     data[f"y_predicted_{col}"].append(y_pred[i])
                     data[f"y_sigma_{col}"].append(y_sigma[i])
@@ -1177,7 +1191,7 @@ class Model:
             y_pred_cols = []
             y_sigma_cols = []
             acq_cols = []
-            for i, col_name in enumerate(self.library.y_col):
+            for i, col_name in enumerate(self.library.y_cols):
                 y_true_cols.append(f"y_true_{col_name}")
                 y_pred_cols.append(f"y_predicted_{col_name}")
                 y_sigma_cols.append(f"y_sigma_{col_name}")
@@ -1190,7 +1204,7 @@ class Model:
             }
 
             # Add columns for each objective
-            for i, col_name in enumerate(self.library.y_col):
+            for i, col_name in enumerate(self.library.y_cols):
                 # Extract the i-th component of each y value if it exists
                 data[f"y_true_{col_name}"] = [
                     y[i] if y and i < len(y) else None for y in y_val
@@ -1226,7 +1240,7 @@ class Model:
         }
 
         # Add columns for each objective based on task type
-        for i, col_name in enumerate(self.library.y_col):
+        for i, col_name in enumerate(self.library.y_cols):
             # Add true values
             data[f"y_true_{col_name}"] = [
                 prot.y[i] if prot.y and i < len(prot.y) else None for prot in proteins
@@ -1264,12 +1278,12 @@ class Model:
             "df": final_df,  # Single DataFrame instead of pred_dfs dictionary
             "rep_path": pred_rep_path,
             "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
+            "y_types": self.library.y_types,
             "seqs_col": "sequence",
-            "y_col": [f"y_true_{col}" for col in self.library.y_col],
-            "y_pred_col": [f"y_predicted_{col}" for col in self.library.y_col],
-            "y_sigma_col": [f"y_sigma_{col}" for col in self.library.y_col],
-            "acq_col": [f"acq_score_{col}" for col in self.library.y_col],
+            "y_cols": [f"y_true_{col}" for col in self.library.y_cols],
+            "y_pred_col": [f"y_predicted_{col}" for col in self.library.y_cols],
+            "y_sigma_col": [f"y_sigma_{col}" for col in self.library.y_cols],
+            "acq_col": [f"acq_score_{col}" for col in self.library.y_cols],
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
@@ -1432,41 +1446,51 @@ class Model:
 
         x_reps = torch.stack(reps).cpu().numpy()
 
-        # do UMAP
+        # do dimensionality reduction
         if self.dr_method == "umap":
             clusterable_embedding = umap.UMAP(
                 n_neighbors=70, min_dist=0.0, n_components=2, random_state=self.seed
             ).fit_transform(x_reps)
-            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
-            dr_df["names"] = [protein.name for protein in self.library.proteins]
         elif self.dr_method == "pca":
             pca = PCA(n_components=2)
             clusterable_embedding = pca.fit_transform(x_reps)
-            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
-            dr_df["names"] = [protein.name for protein in self.library.proteins]
         elif self.dr_method == "tsne":
             tsne = TSNE(n_components=2, verbose=6, random_state=self.seed)
             clusterable_embedding = tsne.fit_transform(x_reps)
-            dr_df = pd.DataFrame(clusterable_embedding, columns=["z1", "z2"])
-            dr_df["names"] = [protein.name for protein in self.library.proteins]
 
         # perform clustering
-        if self._model_type == "hdbscan":
-            labels = self._model.fit_predict(clusterable_embedding)
+        labels = self._model["cluster"].fit_predict(clusterable_embedding)
 
-        elif self._model_type in self._sklearn_models:
-            self._model.fit(clusterable_embedding)
-            labels = self._model.labels_
+        # update library and model attributes
+        self.library.y_labels["cluster"] = "class"
+        cluster_ind = list(self.library.y_labels.keys()).index("cluster")
 
-        # store prediction results in protein
-        y_trues = []
-        for i, prot in enumerate(self.library.proteins):
-            self.library.proteins[i].y_pred = labels[i]
-            y_true = prot.y
-            y_trues.append(y_true)
+        if cluster_ind not in self.class_ind:
+            self.class_ind.append(cluster_ind)
+        if "cluster" not in self.y_types:
+            self.y_types.append("class")
+        if "cluster" not in self.library.y_types:
+            self.library.y_types.append("class")
 
-        self.library.y_pred = labels
+        # update proteins
+        for i, label in enumerate(labels):
+            prot = self.library.proteins[i]
+            prot.y_labels["cluster"] = "class"
+            if "cluster" not in prot.y_types:
+                prot.y_types.append("class")
+                prot.class_ind.append(cluster_ind)
 
+            if len(prot.y_pred) < len(prot.y_labels):
+                prot.y_pred.append(label)
+                prot.y_sigma.append(None)
+            else:
+                prot.y_pred[cluster_ind] = label
+                prot.y_sigma[cluster_ind] = None
+
+        # Update the library's y_pred with clustering results
+        self.library.y_pred = [prot.y_pred for prot in self.library.proteins]
+
+        # Create output DataFrame
         if self.dest is not None:
             csv_dest = f"{self.dest}"
         else:
@@ -1477,31 +1501,43 @@ class Model:
         if not os.path.exists(csv_dest):
             os.makedirs(csv_dest, exist_ok=True)
 
-        out_df = pd.DataFrame(
-            {
-                "name": [protein.name for protein in self.library.proteins],
-                "sequence": [protein.seq for protein in self.library.proteins],
-                "y_true": y_trues,
-                "y_predicted": labels,
-                "y_sigma": [None] * len(self.library.proteins),
-            }
-        )
+        # Create DataFrame with columns for each objective
+        data = {
+            "name": [protein.name for protein in self.library.proteins],
+            "sequence": [protein.seq for protein in self.library.proteins],
+            "z1": [c[0] for c in clusterable_embedding],
+            "z2": [c[1] for c in clusterable_embedding],
+        }
 
-        self.cluster_df = out_df
+        # Add columns for each objective
+        for i, col_name in enumerate(self.library.y_labels.keys()):
+            data[f"y_true_{col_name}"] = [
+                y[i] if y and i < len(y) else None
+                for y in [prot.y for prot in self.library.proteins]
+            ]
+            data[f"y_predicted_{col_name}"] = [
+                y_pred[i] if y_pred and i < len(y_pred) else None
+                for y_pred in [prot.y_pred for prot in self.library.proteins]
+            ]
+            data[f"y_sigma_{col_name}"] = [
+                y_sigma[i] if y_sigma and i < len(y_sigma) else None
+                for y_sigma in [prot.y_sigma for prot in self.library.proteins]
+            ]
+
+        self.cluster_df = pd.DataFrame(data)
 
         out = {
             "df": self.cluster_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
+            "y_types": self.library.y_types,
             "seqs_col": "sequence",
+            "y_cols": [f"y_true_{col}" for col in self.library.y_cols],
+            "y_pred_col": [f"y_predicted_{col}" for col in self.library.y_cols],
+            "y_sigma_col": [f"y_sigma_{col}" for col in self.library.y_cols],
             "names_col": "name",
             "reps": self.library.reps,
             "class_dict": self.library.class_dict,
-            "dr_df": dr_df,
         }
 
         return out
@@ -1518,7 +1554,7 @@ class Model:
         pbar=None,
         acq_fn="ei",
         overwrite=True,
-        y_type="num",
+        y_types="num",
     ):
         """Search for new mutants or select variants from a set of sequences"""
 
@@ -1527,13 +1563,13 @@ class Model:
             DeprecationWarning,
         )
 
-        y_type = y_type
+        y_types = y_types
 
-        if y_type == "class":
+        if y_types == "class":
             out = self._class_search(
                 N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar
             )
-        elif y_type == "num":
+        elif y_types == "num":
             out = self.mlde(
                 method=method,
                 optim_problem=optim_problem,
@@ -1547,13 +1583,11 @@ class Model:
 
         return out
 
-    def _class_search(
+    def discovery(
         self,
         N=10,
-        optim_problem="max",
+        y_col=None,
         labels=[],
-        method="ga",
-        max_eval=10000,
         pbar=None,
     ):
         """
@@ -1561,23 +1595,45 @@ class Model:
 
         Args:
             N (int): Number of sequences to be returned.
-            optim_problem (float): Minimization or maximization of y-values. Default 'max', alternatively 'min'.
-            labels (list): list of labels to sample from. Default [] will sample from all labels.
+            optim_problem (float): Choose the y_cols that should be the reference.
+            y_col (str): Name of y_column to sample from. Default "None" will take the first categorical column.
+                If y_col is equal to 'cluster', it will use labels generated from clustering.
+            labels (list): list of labels to sample from within a y_col. Default [] will sample from all labels.
             method (str): Method used for sampling. Default 'ga' - Genetic Algorithm.
             max_eval (int): Maximum number of evaluations. Default 1000.
             pbar: Progress bar for ProteusAI app.
         """
 
-        class_dict = self.library.class_dict
-        full_proteins = self.library.proteins  # Full list of proteins
+        full_proteins = self.library.proteins
+
+        if y_col == "cluster":
+            model_type = "clustering"
+        else:
+            model_type = "classification"
+
+        if isinstance(y_col, type(None)):
+            y_col = [
+                c for c in self.library.y_cols if self.library.y_labels[c] == "class"
+            ][0]
+
+        class_labels = [
+            y for y, y_type in self.library.y_labels.items() if y_type == "class"
+        ]
+
+        class_ind = self.class_ind[class_labels.index(y_col)]
 
         if len(labels) < 1 or labels == ["all"]:
-            if self.model_type in self._clustering_algs:
-                labels = list(set([prot.y_pred for prot in full_proteins]))
+            if y_col == "cluster":
+                labels = []
+                for prot in full_proteins:
+                    label = prot.y_pred[class_ind]
+                    if label not in labels:
+                        labels.append(label)
             else:
-                labels = list(class_dict.keys())
-                labels = [class_dict[label] for label in labels]
-            proteins = full_proteins
+                class_dict = self.library.class_dict[y_col]
+                labels = list(class_dict[y_col].keys())
+                labels = [class_dict[y_col][label] for label in labels]
+            protein_subset = full_proteins
             full_indices = list(range(len(full_proteins)))  # Indices for all proteins
         else:
             # Filter proteins by label and keep track of their original indices
@@ -1585,21 +1641,32 @@ class Model:
                 *[
                     (prot, idx)
                     for idx, prot in enumerate(full_proteins)
-                    if int(prot.y_pred) in labels
+                    if int(prot.y_pred[class_ind]) in labels
                 ]
             )
-            proteins = list(proteins)
+            protein_subset = list(proteins)
             full_indices = list(full_indices)
 
-        vectors = self.load_representations(proteins, rep_path=self.library.rep_path)
+        vectors = self.load_representations(
+            protein_subset, rep_path=self.library.rep_path
+        )
+        classes = [
+            prot.y_pred[class_ind] for prot in protein_subset
+        ]  # Extract class information
 
         if pbar:
             pbar.set(message=f"Searching {N} diverse sequences", detail="...")
 
-        selected_indices, diversity = BO.simulated_annealing(vectors, N, pbar=pbar)
+        selected_indices, diversity = BO.simulated_annealing(
+            vectors, classes, N, pbar=pbar
+        )
+        print(f"Diversity of sampled vectors: {diversity}")
 
         # Map selected_indices back to full_protein list using full_indices
-        full_selected_indices = [full_indices[i] for i in selected_indices]
+        full_selected_indices = [i for i in full_indices if i in selected_indices]
+
+        # selected proteins
+        selected_proteins = [full_proteins[i] for i in full_selected_indices]
 
         # Create a mask for the full protein list
         mask = np.zeros(len(full_proteins), dtype=int)
@@ -1607,14 +1674,59 @@ class Model:
         # Set the selected indices in the full list to 1
         mask[full_selected_indices] = 1
 
+        data = {
+            "name": [],
+            "sequence": [],
+        }
+
+        # Add columns for each y value type
+        y_cols = []
+        y_pred_cols = []
+        y_sigma_cols = []
+        acq_cols = []
+        for i, y in enumerate(self.library.y_cols):
+            data[f"y_true_{y}"] = []
+            data[f"y_predicted_{y}"] = []
+            data[f"y_sigma_{y}"] = []
+            data[f"acq_score_{y}"] = []
+            y_cols.append(f"y_true_{y}")
+            y_pred_cols.append(f"y_predicted_{y}")
+            y_sigma_cols.append(f"y_sigma_{y}")
+            acq_cols.append(f"acq_score_{y}")
+            if model_type == "clustering" and i == 0:
+                data["cluster_pred"] = []
+                data["cluster_sigma"] = []
+                y_pred_cols.append("cluster_pred")
+                y_sigma_cols.append("cluster_sigma")
+
+        # Add data for each protein
+        for prot in selected_proteins:
+            data["name"].append(prot.name)
+            data["sequence"].append(prot.seq)
+
+            # Add y values for each column
+            for j, y in enumerate(self.library.y_cols):
+                data[f"y_true_{y}"].append(prot.y[j] if prot.y else None)
+                data[f"y_predicted_{y}"].append(prot.y_pred[j] if prot.y_pred else None)
+                data[f"y_sigma_{y}"].append(prot.y_sigma[j] if prot.y_sigma else None)
+                data[f"acq_score_{y}"].append(
+                    prot.acq_score[j] if prot.acq_score else None
+                )
+                if model_type == "clustering":
+                    data["cluster_pred"].append(prot.y_pred[class_ind])
+                    data["cluster_sigma"].append(None)
+
+        self.discovery_df = pd.DataFrame(data)
+
         out = {
-            "df": self.search_df,
+            "df": self.discovery_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
-            "y_col": "y_true",
-            "y_pred_col": "y_predicted",
-            "y_sigma_col": "y_sigma",
+            "y_types": self.library.y_types,
+            "y_cols": y_cols,
+            "y_pred_cols": y_pred_cols,
+            "y_sigma_cols": y_sigma_cols,
+            "acq_cols": acq_cols,
             "seqs_col": "sequence",
             "names_col": "name",
             "reps": self.library.reps,
@@ -1745,7 +1857,7 @@ class Model:
         y_pred_cols = []
         y_sigma_cols = []
         acq_cols = []
-        for i, col_name in enumerate(self.library.y_col):
+        for i, col_name in enumerate(self.library.y_cols):
             y_true_cols.append(f"y_true_{col_name}")
             y_pred_cols.append(f"y_predicted_{col_name}")
             y_sigma_cols.append(f"y_sigma_{col_name}")
@@ -1755,9 +1867,9 @@ class Model:
             "df": mutant_df,
             "rep_path": self.library.rep_path,
             "struc_path": self.library.struc_path,
-            "y_type": self.library.y_type,
+            "y_types": self.library.y_types,
             "seqs_col": "sequence",
-            "y_col": y_true_cols,
+            "y_cols": y_true_cols,
             "y_pred_col": y_pred_cols,
             "y_sigma_col": y_sigma_cols,
             "acq_col": acq_cols,
@@ -1797,9 +1909,9 @@ class Model:
         """
         # Get number of objectives from library
         n_objectives = (
-            len(self.library.y_col)
-            if hasattr(self.library, "y_col")
-            else len(self.library.y_type)
+            len(self.library.y_cols)
+            if hasattr(self.library, "y_cols")
+            else len(self.library.y_types)
         )
 
         if self.mlde_df is not None and not self.mlde_df.empty:
@@ -1864,7 +1976,7 @@ class Model:
         }
 
         # Add columns for each objective using library column names
-        for i, col_name in enumerate(self.library.y_col):
+        for i, col_name in enumerate(self.library.y_cols):
             data[f"y_true_{col_name}"] = [y[i] if y else None for y in y_trues]
             data[f"y_predicted_{col_name}"] = [y[i] if y else None for y in y_preds]
             data[f"y_sigma_{col_name}"] = [y[i] if y else None for y in y_sigmas]
@@ -1884,7 +1996,8 @@ class Model:
     def library(self, library):
         self._library = library
         if library is not None:
-            self.y_type = library.y_type
+            self.y_types = library.y_types
+            self._update_indices()  # Update indices when library is set
 
     # Getter and Setter for model_type
     @property
@@ -1998,3 +2111,13 @@ class Model:
             stacklevel=2,
         )
         self.rep = value  # Automatically set `rep` to the provided value
+
+    def _update_indices(self):
+        """Update indices for numerical and classification tasks based on library y_types"""
+        if hasattr(self, "library") and self.library is not None:
+            self.num_ind = [
+                i for i, y_type in enumerate(self.library.y_types) if y_type == "num"
+            ]
+            self.class_ind = [
+                i for i, y_type in enumerate(self.library.y_types) if y_type == "class"
+            ]
