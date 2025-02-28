@@ -1344,36 +1344,18 @@ class Model:
 
         return scores
 
-    def true_vs_predicted(
+    def predicted_vs_true(
         self,
-        y_true: Union[list, None] = None,
-        y_pred: Union[list, None] = None,
-        title: Union[str, None] = None,
-        x_label: Union[str, None] = None,
-        y_label: Union[str, None] = None,
-        plot_grid: bool = True,
-        file: Union[str, None] = None,
-        show_plot: bool = False,
+        label: str,
     ):
         """
-        Predicts true values versus predicted values.
+        Plot a single true vs predicted plot.
 
         Args:
-            y_true (list): True y values.
-            y_pred (list): Predicted y values.
-            title (str): Set the title of the plot.
-            x_label (str): Set the x-axis label.
-            y_label (str): Set the y-axis label.
-            plot_grid (bool): Display a grid in the plot.
-            file (str): Choose a file name.
-            show_plot (bool): Choose to show the plot.
+            label (str): Label to plot.
+        Returns:
+            tuple: (fig, ax) - Plot figure and axis.
         """
-
-        if y_true is None:
-            y_true = self.y_test
-        if y_pred is None:
-            y_pred = self.y_test_pred
-
         if self.dest:
             dest = os.path.join(self.dest, "plots")
         else:
@@ -1383,46 +1365,47 @@ class Model:
         if not os.path.exists(dest):
             os.makedirs(dest)
 
+        # get the index of the label
+        i = list(self.library.y_labels.keys()).index(label)
+
+        # get the y_true and y_pred for the given label
+        y_true = [y[i] for y in self.y_test["num"]]
+        y_pred = [y[i] for y in self.y_test_pred["num"]]
+        calibration = self.calibration[i]
+
         fig, ax = vis.plot_predictions_vs_groundtruth(
-            y_true,
-            y_pred,
-            title,
-            x_label,
-            y_label,
-            plot_grid,
-            file,
-            show_plot,
-            self.calibration,
+            y_true=y_true,
+            y_pred=y_pred,
+            title=f"Predicted vs True {label}",
+            calibration=calibration,
         )
 
         return fig, ax
 
-    def predicted_vs_true(
+    def predicted_vs_true_all(
         self,
-        y_true: Union[list, None] = None,
-        y_pred: Union[list, None] = None,
-        title: Union[str, None] = None,
-        x_label: Union[str, None] = None,
-        y_label: Union[str, None] = None,
-        plot_grid: bool = True,
-        file: Union[str, None] = None,
-        show_plot: bool = False,
+        labels: list = None,
     ):
         """
-        Calls true_vs_predicted method to plot true vs predicted values. (I often get confused with the names)
-        """
-        out = self.true_vs_predicted(
-            y_true=y_true,
-            y_pred=y_pred,
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-            plot_grid=plot_grid,
-            file=file,
-            show_plot=show_plot,
-        )
+        Plot true vs predicted plots for all numerical y-values.
 
-        return out
+        Args:
+            labels (list): List of labels to plot.
+
+        Returns:
+            list: List of tuples (fig, ax) for each plot.
+        """
+        plot_objects = []
+        if labels is None:
+            labels = self.library.y_labels.keys()
+
+        for label in labels:
+            fig, ax = self.predicted_vs_true(
+                label=label,
+            )
+            plot_objects.append((fig, ax))
+
+        return plot_objects
 
     def cluster(self, rep_path, n_neighbors=70, pbar=None):
         """

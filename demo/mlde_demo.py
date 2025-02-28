@@ -49,6 +49,13 @@ model = pai.Model(library=library, k_folds=1, model_type="rf", x="vhse")
 # train model
 model.train()
 
+# visualize model results
+plots = model.predicted_vs_true_all()
+
+# save plots
+for i, (fig, ax) in enumerate(plots):
+    fig.savefig(f"demo/demo_data/out/predicted_vs_true_{num_cols[i]}.png")
+
 # search for new mutants
 out = model.mlde(optim_problem="max")
 
