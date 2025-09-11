@@ -25,6 +25,8 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR
 from scipy.stats import pearsonr, kendalltau
 from sklearn.metrics import r2_score, accuracy_score, cohen_kappa_score
+from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
 
 import proteusAI.ml_tools.bo_tools as BO
 import proteusAI.visual_tools as vis
@@ -202,6 +204,7 @@ class Model:
 
         # train
         out = None
+        task = None  # Initialize task variable
         for task in self._model.keys():
             if self.model_type in self._sklearn_models:
                 out = self.train_sklearn(
@@ -293,6 +296,27 @@ class Model:
             test_data = labelled_data[train_size : train_size + test_size]
             val_data = labelled_data[train_size + test_size :]
 
+            # Validate that there are no overlapping sequences between splits
+            train_seqs = set(prot.seq for prot in train_data)
+            test_seqs = set(prot.seq for prot in test_data)
+            val_seqs = set(prot.seq for prot in val_data)
+
+            # Check for overlaps
+            train_test_overlap = train_seqs.intersection(test_seqs)
+            train_val_overlap = train_seqs.intersection(val_seqs)
+            test_val_overlap = test_seqs.intersection(val_seqs)
+
+            if train_test_overlap or train_val_overlap or test_val_overlap:
+                print("Warning: Found overlapping sequences between splits:")
+                if train_test_overlap:
+                    print(f"Train-Test overlap: {len(train_test_overlap)} sequences")
+                if train_val_overlap:
+                    print(f"Train-Val overlap: {len(train_val_overlap)} sequences")
+                if test_val_overlap:
+                    print(f"Test-Val overlap: {len(test_val_overlap)} sequences")
+            else:
+                print("Validation successful: No overlapping sequences found between splits")
+
         # custom datasplit
         elif isinstance(self.split, dict):
             train_data = self.split["train"]
@@ -302,13 +326,26 @@ class Model:
         # use stratified split that works for both regression and classification
         elif self.split == "smart":
             y_type = self.library.y_types[0]
+            
+            # Create a dictionary to group proteins by their sequence
+            seq_groups = {}
+            for prot in labelled_data:
+                if prot.seq not in seq_groups:
+                    seq_groups[prot.seq] = []
+                seq_groups[prot.seq].append(prot)
+            
+            # Create a list of unique sequences with their associated proteins
+            unique_seqs = []
+            for seq, proteins in seq_groups.items():
+                unique_seqs.append((seq, proteins))
+            
             if y_type == "class":
-                # get the unique classes
-                classes = list(set([prot.y[0] for prot in labelled_data]))
+                # get the unique classes from the first protein in each sequence group
+                classes = list(set([proteins[0].y[0] for _, proteins in unique_seqs]))
 
                 # split the data into classes
                 class_data = {
-                    c: [prot for prot in labelled_data if prot.y[0] == c]
+                    c: [(seq, proteins) for seq, proteins in unique_seqs if proteins[0].y[0] == c]
                     for c in classes
                 }
 
@@ -320,15 +357,20 @@ class Model:
 
                     random.shuffle(class_data[c])
 
-                    train_data += class_data[c][:train_size]
-                    test_data += class_data[c][train_size : train_size + test_size]
-                    val_data += class_data[c][train_size + test_size :]
+                    # Add all proteins from each sequence group to the appropriate split
+                    for seq, proteins in class_data[c][:train_size]:
+                        train_data.extend(proteins)
+                    for seq, proteins in class_data[c][train_size : train_size + test_size]:
+                        test_data.extend(proteins)
+                    for seq, proteins in class_data[c][train_size + test_size :]:
+                        val_data.extend(proteins)
             else:
-                y_values = np.array([prot.y[0] for prot in labelled_data])
+                # Get y values from the first protein in each sequence group
+                y_values = np.array([proteins[0].y[0] for _, proteins in unique_seqs])
 
                 # Dynamically adjust the number of bins based on dataset size
                 n_bins = min(
-                    10, max(2, len(labelled_data) // 5)
+                    10, max(2, len(unique_seqs) // 5)
                 )  # At least 2 bins, at most 10
                 bins = np.linspace(np.min(y_values), np.max(y_values), n_bins)
                 y_binned = np.digitize(y_values, bins) - 1  # Ensure bins start at 0
@@ -354,33 +396,57 @@ class Model:
 
                 # Split data into train/test, then test/val
                 try:
-                    train_data_idx, temp_data_idx = train_test_split(
-                        range(len(labelled_data)),
+                    train_idx, temp_idx = train_test_split(
+                        range(len(unique_seqs)),
                         test_size=0.2,
                         stratify=y_binned,
                         random_state=self.seed,
                     )
-                    temp_y_binned = y_binned[temp_data_idx]
+                    temp_y_binned = y_binned[temp_idx]
 
-                    test_data_idx, val_data_idx = train_test_split(
-                        temp_data_idx,
+                    test_idx, val_idx = train_test_split(
+                        temp_idx,
                         test_size=0.5,
                         stratify=temp_y_binned,
                         random_state=self.seed,
                     )
                 except ValueError:
                     # Fallback to random split if stratification fails
-                    train_data_idx, temp_data_idx = train_test_split(
-                        range(len(labelled_data)), test_size=0.2, random_state=self.seed
+                    train_idx, temp_idx = train_test_split(
+                        range(len(unique_seqs)), test_size=0.2, random_state=self.seed
                     )
-                    test_data_idx, val_data_idx = train_test_split(
-                        temp_data_idx, test_size=0.5, random_state=self.seed
+                    test_idx, val_idx = train_test_split(
+                        temp_idx, test_size=0.5, random_state=self.seed
                     )
 
-                # Map indices back to the data
-                train_data = [labelled_data[i] for i in train_data_idx]
-                test_data = [labelled_data[i] for i in test_data_idx]
-                val_data = [labelled_data[i] for i in val_data_idx]
+                # Map indices back to the data, keeping sequence groups together
+                for idx in train_idx:
+                    train_data.extend(unique_seqs[idx][1])
+                for idx in test_idx:
+                    test_data.extend(unique_seqs[idx][1])
+                for idx in val_idx:
+                    val_data.extend(unique_seqs[idx][1])
+
+                # Validate that there are no overlapping sequences between splits
+                train_seqs = set(prot.seq for prot in train_data)
+                test_seqs = set(prot.seq for prot in test_data)
+                val_seqs = set(prot.seq for prot in val_data)
+
+                # Check for overlaps
+                train_test_overlap = train_seqs.intersection(test_seqs)
+                train_val_overlap = train_seqs.intersection(val_seqs)
+                test_val_overlap = test_seqs.intersection(val_seqs)
+
+                if train_test_overlap or train_val_overlap or test_val_overlap:
+                    print("Warning: Found overlapping sequences between splits:")
+                    if train_test_overlap:
+                        print(f"Train-Test overlap: {len(train_test_overlap)} sequences")
+                    if train_val_overlap:
+                        print(f"Train-Val overlap: {len(train_val_overlap)} sequences")
+                    if test_val_overlap:
+                        print(f"Test-Val overlap: {len(test_val_overlap)} sequences")
+                else:
+                    print("Validation successful: No overlapping sequences found between splits")
 
         else:
             raise ValueError(f"The {self.split} split has not been implemented yet...")
@@ -533,9 +599,20 @@ class Model:
             # make predictions
             if task == "num":
                 y_pred = self._model[task].predict(x_test)
-                self.test_r2 = r2_score(
-                    self.y_test[task], y_pred, multioutput="raw_values"
-                )
+                # Ensure y_pred is 2D if it's not already
+                if len(y_pred.shape) == 1:
+                    y_pred = y_pred.reshape(-1, 1)
+                # Ensure y_test is 2D if it's not already
+                if len(self.y_test[task].shape) == 1:
+                    self.y_test[task] = self.y_test[task].reshape(-1, 1)
+                
+                # Calculate R² for each output separately
+                self.test_r2 = {}
+                for i in range(y_pred.shape[1]):
+                    self.test_r2[f'output_{i}'] = r2_score(
+                        self.y_test[task][:, i],
+                        y_pred[:, i]
+                    )
             elif task == "class":
                 y_pred = self._model[task].predict(x_test)
                 self.test_acc = accuracy_score(self.y_test[task], y_pred)
@@ -543,6 +620,18 @@ class Model:
 
             self.y_test_pred[task] = y_pred
             self.y_train_pred[task] = self._model[task].predict(x_train)
+
+            # Ensure y_train_pred is 2D if it's not already
+            if len(self.y_train_pred[task].shape) == 1:
+                self.y_train_pred[task] = self.y_train_pred[task].reshape(-1, 1)
+
+            if len(self.y_test_pred[task].shape) == 1:
+                self.y_test_pred[task] = self.y_test_pred[task].reshape(-1, 1)
+
+            if len(self.y_train[task].shape) == 1:
+                self.y_train[task] = self.y_train[task].reshape(-1, 1)
+            if len(self.y_test[task].shape) == 1:
+                self.y_test[task] = self.y_test[task].reshape(-1, 1)
 
             if len(self.y_test_pred[task].shape) == 1:
                 self.y_train_sigma[task] = [None] * len(self.y_train[task])
@@ -566,18 +655,32 @@ class Model:
                 test_pearsons = []
                 test_ken_taus = []
                 for idx in range(len(self.num_ind)):
-                    test_pearson = pearsonr(
-                        np.array(self.y_test[task])[:, idx],
-                        np.array(self.y_test_pred[task])[:, idx],
-                    )
+                    # Handle both single and multiple output cases
+                    if len(self.y_test[task].shape) == 1:
+                        test_pearson = pearsonr(
+                            self.y_test[task],
+                            self.y_test_pred[task]
+                        )
+                        test_ken_tau = kendalltau(
+                            self.y_test[task],
+                            self.y_test_pred[task]
+                        )
+                    else:
+                        test_pearson = pearsonr(
+                            self.y_test[task][:, idx],
+                            self.y_test_pred[task][:, idx]
+                        )
+                        test_ken_tau = kendalltau(
+                            self.y_test[task][:, idx],
+                            self.y_test_pred[task][:, idx]
+                        )
                     test_pearsons.append(test_pearson)
-                    test_ken_tau = kendalltau(
-                        np.array(self.y_test[task])[:, idx],
-                        np.array(self.y_test_pred[task])[:, idx],
-                    )
                     test_ken_taus.append(test_ken_tau)
                 self.test_pearson = test_pearsons
                 self.test_ken_tau = test_ken_taus
+                self.calibration_ratio, self.within_calibration = self._within_calibration(
+                    self.y_test_pred[task], self.y_test[task]
+                )
 
                 # Add predictions to test proteins
                 for i in range(len(test)):
@@ -759,6 +862,18 @@ class Model:
             if self.grid_search:
                 print(f"val_acc:\t{self.val_acc}\nval_kappa:\t{self.val_kappa}")
 
+        # Check if the model for the current task is fitted before calling score
+        if task in self._model and hasattr(self._model[task], "predict"):
+            try:
+                check_is_fitted(self._model[task])
+                self.test_r2 = self.score(self.test_data)
+            except NotFittedError:
+                print(f"Warning: Model for task '{task}' is not fitted. Skipping score calculation.")
+                self.test_r2 = None
+        else:
+            print(f"Warning: No model found for task '{task}'. Skipping score calculation.")
+            self.test_r2 = None
+
     def update_proteins(self):
         """
         Updates protein objects with predictions and uncertainties from the trained model.
@@ -814,30 +929,30 @@ class Model:
             if y_sigmas_tmp.ndim == 1:
                 y_sigmas_tmp = y_sigmas_tmp.reshape(-1, 1)
 
+            # Verify array lengths match
+            if len(y_preds_tmp) != len(proteins):
+                print(f"Warning: Length mismatch in predictions. Expected {len(proteins)}, got {len(y_preds_tmp)}")
+                # Pad or truncate arrays to match expected length
+                if len(y_preds_tmp) < len(proteins):
+                    # Pad with zeros
+                    pad_length = len(proteins) - len(y_preds_tmp)
+                    y_preds_tmp = np.pad(y_preds_tmp, ((0, pad_length), (0, 0)), mode='constant')
+                    y_sigmas_tmp = np.pad(y_sigmas_tmp, ((0, pad_length), (0, 0)), mode='constant')
+                else:
+                    # Truncate
+                    y_preds_tmp = y_preds_tmp[:len(proteins)]
+                    y_sigmas_tmp = y_sigmas_tmp[:len(proteins)]
+
             if task == "num":
                 for i, idx in enumerate(self.num_ind):
-                    y_preds[:, idx] = (
-                        y_preds_tmp[:, i]
-                        if y_preds_tmp.ndim > 1
-                        else y_preds_tmp.ravel()
-                    )
-                    y_sigmas[:, idx] = (
-                        y_sigmas_tmp[:, i]
-                        if y_sigmas_tmp.ndim > 1
-                        else y_sigmas_tmp.ravel()
-                    )
+                    if i < y_preds_tmp.shape[1]:  # Check if we have enough columns
+                        y_preds[:, idx] = y_preds_tmp[:, i]
+                        y_sigmas[:, idx] = y_sigmas_tmp[:, i]
             elif task == "class":
                 for i, idx in enumerate(self.class_ind):
-                    y_preds[:, idx] = (
-                        y_preds_tmp[:, i]
-                        if y_preds_tmp.ndim > 1
-                        else y_preds_tmp.ravel()
-                    )
-                    y_sigmas[:, idx] = (
-                        y_sigmas_tmp[:, i]
-                        if y_sigmas_tmp.ndim > 1
-                        else y_sigmas_tmp.ravel()
-                    )
+                    if i < y_preds_tmp.shape[1]:  # Check if we have enough columns
+                        y_preds[:, idx] = y_preds_tmp[:, i]
+                        y_sigmas[:, idx] = y_sigmas_tmp[:, i]
 
         # Update protein objects
         for i, prot in enumerate(proteins):
@@ -878,6 +993,11 @@ class Model:
         if not isinstance(y_cal_pred, np.ndarray):
             y_cal_pred = np.array(y_cal_pred)
 
+        # Check for None values in predictions
+        if None in y_cal_pred or np.isnan(y_cal_pred).any():
+            print("Warning: None or NaN values found in predictions. Skipping calibration.")
+            return None
+
         residuals = y_cal - y_cal_pred
         conformity_scores = np.sort(np.abs(residuals))[::-1]
         quantile_index = int((1 - confidence) * (len(conformity_scores) + 1)) - 1
@@ -903,6 +1023,11 @@ class Model:
             y_pred = np.array(y_pred)
         if not isinstance(y_true, np.ndarray):
             y_true = np.array(y_true)
+
+        # Check for None values in predictions
+        if None in y_pred or np.isnan(y_pred).any():
+            print("Warning: None or NaN values found in predictions. Skipping within calibration calculation.")
+            return None, None
 
         residuals = np.abs(y_pred - y_true)
         within_cal = np.where(residuals <= self.calibration, 1, 0)
@@ -1109,13 +1234,43 @@ class Model:
                     y_stack = np.stack(ys)
                     y_pred = np.mean(y_stack, axis=0)
                     sigma_pred = np.std(y_stack, axis=0)
+                    
+                    # Ensure predictions and sigmas are properly shaped
+                    if len(y_pred.shape) == 1:
+                        y_pred = y_pred.reshape(-1, 1)
+                        sigma_pred = sigma_pred.reshape(-1, 1)
+                    
+                    # Calculate acquisition scores
                     acq_score = acq(y_pred, sigma_pred, self.y_best)
+                    
+                    # Ensure acq_score has the right shape
+                    if len(acq_score.shape) == 1:
+                        acq_score = acq_score.reshape(-1, 1)
+                    
+                    # If we have multiple outputs, ensure acq_score matches
+                    if y_pred.shape[1] > 1 and acq_score.shape[1] == 1:
+                        acq_score = np.repeat(acq_score, y_pred.shape[1], axis=1)
 
                 # Handle single model
                 else:
                     y_pred = self._model[task].predict(x)
                     sigma_pred = np.zeros_like(y_pred)
+                    
+                    # Ensure predictions are properly shaped
+                    if len(y_pred.shape) == 1:
+                        y_pred = y_pred.reshape(-1, 1)
+                        sigma_pred = sigma_pred.reshape(-1, 1)
+                    
+                    # Calculate acquisition scores
                     acq_score = acq(y_pred, sigma_pred, self.y_best)
+                    
+                    # Ensure acq_score has the right shape
+                    if len(acq_score.shape) == 1:
+                        acq_score = acq_score.reshape(-1, 1)
+                    
+                    # If we have multiple outputs, ensure acq_score matches
+                    if y_pred.shape[1] > 1 and acq_score.shape[1] == 1:
+                        acq_score = np.repeat(acq_score, y_pred.shape[1], axis=1)
 
                 batch_predictions.append(y_pred)
                 batch_sigmas.append(sigma_pred)
@@ -1126,8 +1281,16 @@ class Model:
             all_sigma_pred = np.concatenate(batch_sigmas)
             all_acq_scores = np.concatenate(batch_acq_scores)
 
+            # Ensure all arrays have the right shape
+            if len(all_y_pred.shape) == 1:
+                all_y_pred = all_y_pred.reshape(-1, 1)
+            if len(all_sigma_pred.shape) == 1:
+                all_sigma_pred = all_sigma_pred.reshape(-1, 1)
+            if len(all_acq_scores.shape) == 1:
+                all_acq_scores = all_acq_scores.reshape(-1, 1)
+
             # compute average acq_scores
-            if len(acq_score.shape) > 1:
+            if len(all_acq_scores.shape) > 1:
                 avg_acq_score = np.mean(all_acq_scores, axis=-1)
             else:
                 avg_acq_score = all_acq_scores
@@ -1142,60 +1305,112 @@ class Model:
             y_val_sigma = all_sigma_pred[sorted_indices]
             sorted_acq_score = all_acq_scores[sorted_indices]
 
-            if len(y_val_pred.shape) > 1:
-                y_val_pred = [row for row in y_val_pred]
-                y_val_sigma = [row for row in y_val_sigma]
-                sorted_acq_score = [row for row in sorted_acq_score]
+            # Initialize acq_score for all proteins
+            for prot in pred_proteins:
+                if (not hasattr(prot, 'acq_score')) or (prot.acq_score is None) or (len(prot.acq_score) != len(self.library.y_types)):
+                    prot.acq_score = [None] * len(self.library.y_types)
 
-            for i, prot in enumerate(pred_proteins):
-                if len(prot.y_pred) < n_vars:
-                    prot.y_pred = [None] * n_vars
-                    prot.y_sigma = [None] * n_vars
-                    prot.acq_score = [None] * n_vars
+            # Check first protein's acq_score length
+            first_prot = pred_proteins[0]
 
+            # Process first protein with detailed debug info
+            i = 0
+            prot = pred_proteins[i]
+            
+            if task == "num":
+                # Handle single output case
+                if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
+                    for idx in self.num_ind:
+                        prot.y_pred[idx] = y_val_pred[i]
+                        prot.y_sigma[idx] = y_val_sigma[i]
+                        prot.acq_score[idx] = float(sorted_acq_score[i][0])
+                # Handle multiple output case
+                else:
+                    # Get the number of numerical outputs
+                    n_num_outputs = len(self.num_ind)
+                    
+                    # Ensure we have enough acquisition scores
+                    if len(sorted_acq_score[i]) < n_num_outputs:
+                        acq_scores = np.repeat(sorted_acq_score[i][0], n_num_outputs)
+                    else:
+                        acq_scores = sorted_acq_score[i][:n_num_outputs]
+                    
+                    # Assign predictions, sigmas, and acquisition scores
+                    for j, idx in enumerate(self.num_ind):
+                        if j < len(y_val_pred[i]):
+                            prot.y_pred[idx] = y_val_pred[i][j]
+                        if j < len(y_val_sigma[i]):
+                            prot.y_sigma[idx] = y_val_sigma[i][j]
+                        prot.acq_score[idx] = float(acq_scores[j])
+            elif task == "class":
+                # Handle single output case
+                if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
+                    for idx in self.class_ind:
+                        prot.y_pred[idx] = y_val_pred[i]
+                        prot.y_sigma[idx] = y_val_sigma[i]
+                        prot.acq_score[idx] = float(sorted_acq_score[i][0])
+                # Handle multiple output case
+                else:
+                    
+                    # Get the number of classification outputs
+                    n_class_outputs = len(self.class_ind)
+
+                    
+                    # Ensure we have enough acquisition scores
+                    if len(sorted_acq_score[i]) < n_class_outputs:
+                        acq_scores = np.repeat(sorted_acq_score[i][0], n_class_outputs)
+                    else:
+                        acq_scores = sorted_acq_score[i][:n_class_outputs]
+                    
+                    # Assign predictions, sigmas, and acquisition scores
+                    for j, idx in enumerate(self.class_ind):
+
+                        if j < len(y_val_pred[i]):
+                            prot.y_pred[idx] = y_val_pred[i][j]
+                        if j < len(y_val_sigma[i]):
+                            prot.y_sigma[idx] = y_val_sigma[i][j]
+                        prot.acq_score[idx] = float(acq_scores[j])
+
+            # Process remaining proteins without debug prints
+            for i, prot in enumerate(pred_proteins[1:], 1):
                 if task == "num":
-                    # Handle single output case
                     if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
                         for idx in self.num_ind:
                             prot.y_pred[idx] = y_val_pred[i]
                             prot.y_sigma[idx] = y_val_sigma[i]
-                            prot.acq_score[idx] = sorted_acq_score[i]
-                    # Handle multiple output case
+                            prot.acq_score[idx] = float(sorted_acq_score[i][0])
                     else:
-                        for idx, val in zip(self.num_ind, y_val_pred[i]):
-                            prot.y_pred[idx] = val
-                        for idx, sigma_val in zip(self.num_ind, y_val_sigma[i]):
-                            prot.y_sigma[idx] = sigma_val
-                        for idx, acq_val in zip(self.num_ind, sorted_acq_score[i]):
-                            prot.acq_score[idx] = acq_val
-
+                        n_num_outputs = len(self.num_ind)
+                        if len(sorted_acq_score[i]) < n_num_outputs:
+                            acq_scores = np.repeat(sorted_acq_score[i][0], n_num_outputs)
+                        else:
+                            acq_scores = sorted_acq_score[i][:n_num_outputs]
+                        
+                        for j, idx in enumerate(self.num_ind):
+                            if j < len(y_val_pred[i]):
+                                prot.y_pred[idx] = y_val_pred[i][j]
+                            if j < len(y_val_sigma[i]):
+                                prot.y_sigma[idx] = y_val_sigma[i][j]
+                            prot.acq_score[idx] = float(acq_scores[j])
                 elif task == "class":
-                    # Handle single output case
                     if isinstance(y_val_pred[i], (np.float64, np.float32, float)):
                         for idx in self.class_ind:
                             prot.y_pred[idx] = y_val_pred[i]
                             prot.y_sigma[idx] = y_val_sigma[i]
-                            prot.acq_score[idx] = sorted_acq_score[i]
-                    # Handle multiple output case
+                            prot.acq_score[idx] = float(sorted_acq_score[i][0])
                     else:
-                        for idx, val in zip(self.class_ind, y_val_pred[i]):
-                            prot.y_pred[idx] = val
-                        for idx, sigma_val in zip(self.class_ind, y_val_sigma[i]):
-                            prot.y_sigma[idx] = sigma_val
-                        for idx, acq_val in zip(self.class_ind, sorted_acq_score[i]):
-                            prot.acq_score[idx] = acq_val
-
-            # Prediction dataframe
-            # Create column names for each objective
-            y_true_cols = []
-            y_pred_cols = []
-            y_sigma_cols = []
-            acq_cols = []
-            for i, col_name in enumerate(self.library.y_cols):
-                y_true_cols.append(f"y_true_{col_name}")
-                y_pred_cols.append(f"y_predicted_{col_name}")
-                y_sigma_cols.append(f"y_sigma_{col_name}")
-                acq_cols.append(f"acq_score_{col_name}")
+                        n_class_outputs = len(self.class_ind)
+                        if len(sorted_acq_score[i]) < n_class_outputs:
+                            acq_scores = np.repeat(sorted_acq_score[i][0], n_class_outputs)
+                        else:
+                            acq_scores = sorted_acq_score[i][:n_class_outputs]
+                        
+                        for j, idx in enumerate(self.class_ind):
+                            if j < len(y_val_pred[i]):
+                                prot.y_pred[idx] = y_val_pred[i][j]
+                            if j < len(y_val_sigma[i]):
+                                prot.y_sigma[idx] = y_val_sigma[i][j]
+                            prot.acq_score[idx] = float(acq_scores[j])
 
             # Prediction dataframe with multi-objective columns
             data = {
@@ -1289,6 +1504,9 @@ class Model:
             "class_dict": self.library.class_dict,
             "dr_df": None,
             "pred_proteins": proteins,
+            "y_pred": [prot.y_pred for prot in proteins],
+            "y_true": [prot.y for prot in proteins],
+            "y_sigma": [prot.y_sigma for prot in proteins],
         }
 
         return out
@@ -1321,7 +1539,7 @@ class Model:
         y = [protein.y for protein in proteins]
         y = np.array(y)
         y_num = y[:, self.num_ind]
-        y_class = y[:, self.num_ind]
+        y_class = y[:, self.class_ind]
 
         # predictions for num and reg
         scores = {}
@@ -1335,12 +1553,28 @@ class Model:
 
             if isinstance(self._model[task], list):
                 for model in self._model[task]:
-                    score = model.score(x, _y)
+                    check_is_fitted(model)
+                    if task == "class":
+                        # For classification, ensure y is properly shaped
+                        y_reshaped = _y.ravel() if _y.ndim > 1 else _y
+                        score = model.score(x, y_reshaped)
+                    else:
+                        score = model.score(x, _y)
                     ensemble_scores.append(score)
-                ensemble_scores = np.stack(ensemble_scores)
-                scores[task] = np.mean(ensemble_scores, axis=0)
+                if ensemble_scores:
+                    ensemble_scores = np.stack(ensemble_scores)
+                    scores[task] = np.mean(ensemble_scores, axis=0)
+                else:
+                    scores[task] = None
             else:
-                scores[task] = self._model.score(x, _y)
+                check_is_fitted(self._model[task])
+                if task == "class":
+                    # For classification, ensure y is properly shaped
+                    y_reshaped = _y.ravel() if _y.ndim > 1 else _y
+                    scores[task] = self._model[task].score(x, y_reshaped)
+                else:
+                    scores[task] = self._model[task].score(x, _y)
+
 
         return scores
 
@@ -1365,19 +1599,28 @@ class Model:
         if not os.path.exists(dest):
             os.makedirs(dest)
 
-        # get the index of the label
-        i = list(self.library.y_labels.keys()).index(label)
+        # get the index of the label in the original y_cols list
+        i = self.library.y_cols.index(label)
+        
+        # determine if this is a numerical or classification task
+        task = "num" if i in self.num_ind else "class"
 
         # get the y_true and y_pred for the given label
-        y_true = [y[i] for y in self.y_test["num"]]
-        y_pred = [y[i] for y in self.y_test_pred["num"]]
-        calibration = self.calibration[i]
+        y_true = [y[i] for y in self.y_test[task]]
+        y_pred = [y[i] for y in self.y_test_pred[task]]
+        
+        # get calibration if available and if this is a numerical task
+        calibration = None
+        if task == "num" and hasattr(self, 'calibration') and self.calibration is not None:
+            # Find the index in num_ind to get the correct calibration value
+            num_idx = self.num_ind.index(i)
+            calibration = self.calibration[num_idx]
 
         fig, ax = vis.plot_predictions_vs_groundtruth(
             y_true=y_true,
             y_pred=y_pred,
             title=f"Predicted vs True {label}",
-            calibration=calibration,
+            width=calibration,
         )
 
         return fig, ax
@@ -1400,10 +1643,15 @@ class Model:
             labels = self.library.y_labels.keys()
 
         for label in labels:
-            fig, ax = self.predicted_vs_true(
-                label=label,
-            )
-            plot_objects.append((fig, ax))
+            try:
+                fig, ax = self.predicted_vs_true(
+                    label=label,
+                )
+                if fig is not None and ax is not None:
+                    plot_objects.append((fig, ax))
+            except Exception as e:
+                print(f"Warning: Could not create plot for {label}: {str(e)}")
+                continue
 
         return plot_objects
 
